@@ -13,5 +13,8 @@ in
     registryFile = "/home/gytkk/.config/trading-agent/profiles.toml";
     accessConfigFile = "/home/gytkk/.config/trading-agent/access.toml";
     databaseDirectory = "/home/gytkk/.local/share/trading-agent/imports/pylv-onyx-20261024/databases";
+    accountsConfigFile = "/home/gytkk/.config/trading-agent/live-accounts/accounts.toml";
+    accountConfigsDirectory = "/home/gytkk/.config/trading-agent/live-accounts/configs";
+    accountCredentialsDirectory = "/home/gytkk/.config/trading-agent/live-accounts/credentials";
   };
 }
