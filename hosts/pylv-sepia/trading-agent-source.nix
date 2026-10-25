@@ -1,4 +1,4 @@
 builtins.fetchGit {
   url = "file:///home/gytkk/workspace/trading-agent";
-  rev = "8e0d1f86209acdc49b14c54e998e2bd00dd1482b";
+  rev = "109efed22e4b872bd171369873e64252f8b5bbed";
 }
