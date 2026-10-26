@@ -48,9 +48,18 @@ license = "LICENSE"
 [skill_sources.vercel.skills]
 find-skills = "skills/find-skills"
 
+[skill_sources.impeccable]
+kind = "git"
+url = "https://github.com/pbakaus/impeccable.git"
+update = "latest-default-branch"
+license = "LICENSE"
+
+[skill_sources.impeccable.skills]
+impeccable = ".agents/skills/impeccable"
+
 [skill_targets.shared]
 runtimes = ["codex", "pi"]
-skills = ["codebase-design", "code-review", "data-analysis", "data-visualization", "devils-advocate", "diagnosing-bugs", "domain-modeling", "find-skills", "grilling", "korean", "openai-decisions", "parallel-research-merge", "pi-agent", "prototype", "repeated-work-analyzer", "research", "tdd", "theme-template-authoring", "user-friction-review", "wizard", "writing-for-agents"]
+skills = ["codebase-design", "code-review", "data-analysis", "data-visualization", "devils-advocate", "diagnosing-bugs", "domain-modeling", "find-skills", "grilling", "impeccable", "korean", "openai-decisions", "parallel-research-merge", "pi-agent", "prototype", "repeated-work-analyzer", "research", "tdd", "theme-template-authoring", "user-friction-review", "wizard", "writing-for-agents"]
 
 [skill_targets.claude]
 runtimes = ["claude"]

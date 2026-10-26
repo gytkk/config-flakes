@@ -77,6 +77,7 @@ The `devsisters` base profile enables `modules.claude.mumu.enable`, which regist
 - `gytkk` (local marketplace — `modules/claude/marketplace`)
 - `backnotprop/plannotator`
 - `openai/codex-plugin-cc`
+- `DietrichGebert/ponytail`, `pbakaus/impeccable`
 - `devsisters/mumu` (Devsisters profile only)
 
 ### Installed Plugins
@@ -84,6 +85,8 @@ The `devsisters` base profile enables `modules.claude.mumu.enable`, which regist
 - `document-skills`, `commit-commands`, `security-guidance`
 - `devils-advocate` (runtime-specific multi-pass review command and agent)
 - `ralph-loop`, `superpowers`
+- `ponytail@ponytail` (minimal implementation guidance, review commands, and session hooks)
+- `impeccable@impeccable` (frontend design skill and automatic design checks)
 - `slack` (Slack's hosted MCP server plus Slack developer skills)
 - LSP plugins: `gopls-lsp`, `rust-analyzer-lsp`, `typescript-lsp`, `pyright-lsp`, `terraform-ls`, `nixd-lsp`
 - `plannotator` (visual plan annotation and review)

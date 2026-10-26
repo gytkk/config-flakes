@@ -13,7 +13,7 @@ from agent_core.cli import main
 
 
 @pytest.mark.parametrize(
-    ("target", "count"), [("shared", 21), ("claude", 19)]
+    ("target", "count"), [("shared", 22), ("claude", 19)]
 )
 def test_plan_selections_apply_approved_addition_and_removal(
     target: str, count: int
@@ -26,7 +26,10 @@ def test_plan_selections_apply_approved_addition_and_removal(
         for runtime in plan["runtimes"]
         for name in manifest["runtimes"][runtime]["skills"]
     }
-    assert selected == (legacy | {"find-skills", "korean"}) - {
+    additions = {"find-skills", "korean"}
+    if target == "shared":
+        additions.add("impeccable")
+    assert selected == (legacy | additions) - {
         "resolving-merge-conflicts"
     }
     assert len(selected) == count
@@ -40,7 +43,13 @@ def test_plan_selections_apply_approved_addition_and_removal(
     assert plan["cli_version"] == "1.7.2"
     assert plan["target"] == target
     assert plan["runtimes"] == skill_sources.TARGET_RUNTIMES[target]
-    assert [source["id"] for source in plan["sources"]] == ["local", "matt", "vercel"]
+    sources = ["local", "matt", "vercel"]
+    if target == "shared":
+        sources.append("impeccable")
+        assert plan["sources"][-1]["skills"] == {
+            "impeccable": ".agents/skills/impeccable"
+        }
+    assert [source["id"] for source in plan["sources"]] == sources
     assert (
         Path(plan["sources"][0]["path"]) == (core.resource_root() / "skills").resolve()
     )

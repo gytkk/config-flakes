@@ -25,6 +25,8 @@ let
     "anthropics/claude-plugins-official"
     "backnotprop/plannotator"
     "openai/codex-plugin-cc"
+    "DietrichGebert/ponytail"
+    "pbakaus/impeccable"
   ]
   ++ lib.optional cfg.mumu.enable "devsisters/mumu";
 
@@ -45,6 +47,8 @@ let
 
     "ralph-loop@claude-plugins-official"
     "superpowers@claude-plugins-official"
+    "ponytail@ponytail"
+    "impeccable@impeccable"
 
     "slack@claude-plugins-official"
 

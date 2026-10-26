@@ -62,6 +62,10 @@ Superpowers는 공식 Codex marketplace의 `superpowers@openai-curated` 플러�
 codex plugin add superpowers@openai-curated
 ```
 
+Ponytail은 `DietrichGebert/ponytail` marketplace의 `ponytail@ponytail` 플러그인으로 설치한다. Home Manager activation은 marketplace 등록과 플러그인 설치를 실행하며, 실패하면 activation을 중단한다. 처음 설치한 뒤 Codex의 `/hooks`에서 Ponytail lifecycle hook을 검토하고 승인한 다음 새 세션을 시작한다. `$ponytail:ponytail-review`로 현재 변경을 검토할 수 있다.
+
+Impeccable은 [agent-core manifest](../../agent-core/manifest.toml)의 외부 skill source로 관리한다. Agent skills activation이 공식 저장소의 `.agents/skills/impeccable`을 공용 `~/.agents/skills/impeccable`에 설치하므로 Codex와 Pi에서 발견할 수 있다. `$impeccable audit`, `$impeccable polish`로 호출한다. Claude는 별도 공식 플러그인을 사용하므로 shared installer의 Claude target에는 중복 설치하지 않는다. Codex의 자동 디자인 검사 hook은 프로젝트별 선택 사항이며 전역 설치에 포함하지 않는다. 필요한 프런트엔드 프로젝트에 [공식 hook 설정](https://impeccable.style/docs/hooks)을 추가하면 Codex의 `/hooks`에서 검토하고 승인한다. Agent-core가 소유한 전역 skill을 다른 installer로 덮어쓰지 않는다. Launcher는 첫 실행 때 고정된 engine binary를 내려받을 수 있다.
+
 `sites-building`과 `sites-hosting`은 공식 remote marketplace의 Sites 플러그인이 스크립트와 템플릿을 포함해 제공한다. 일반 웹 artifact 생성과 Sites 배포에는 이 플러그인을 사용한다. 사용자 환경에서 다음 명령으로 설치하고 새 Codex 세션을 시작한다. Nix activation은 이 설치를 관리하지 않는다. 실제 Sites 사용에는 선택한 계정과 workspace의 기능 접근 권한도 필요하다.
 
 ```bash

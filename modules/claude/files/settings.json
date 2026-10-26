@@ -111,6 +111,8 @@
     "security-guidance@claude-code-plugins": true,
     "ralph-loop@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
+    "ponytail@ponytail": true,
+    "impeccable@impeccable": true,
     "slack@claude-plugins-official": true,
     "gopls-lsp@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
@@ -125,6 +127,20 @@
     "cc-plugin-you-should-know@builtin": true
   },
   "extraKnownMarketplaces": {
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      },
+      "autoUpdate": true
+    },
+    "impeccable": {
+      "source": {
+        "source": "github",
+        "repo": "pbakaus/impeccable"
+      },
+      "autoUpdate": true
+    },
     "anthropic-agent-skills": {
       "source": {
         "source": "github",
