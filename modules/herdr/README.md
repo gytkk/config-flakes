@@ -6,7 +6,7 @@ The custom palette follows `modules.commonTheme`, including its secondary text c
 
 The current space and agent use a row background derived from the sidebar and normal text colors, with at least 1.8:1 contrast against the sidebar. One Half Light uses a darker gray row background; the keyboard navigation cursor retains its separate selection color. The generator keeps normal and secondary text readable on focused rows and adjusts the selected-tab accent to provide at least 4.5:1 contrast with its label color. One Half Light uses light labels on a darker blue selected tab. The source colors and contrast rules live in the [canonical theme pipeline](../../themes/README.md#nix-integration).
 
-The active-row shade uses 0.1% blending steps so running status green retains enough contrast on selected agents for [Ghostty's configured minimum](../ghostty/files/config). Ghostty replaces colors below this threshold with black or white, as described in its [contrast behavior](https://github.com/ghostty-org/ghostty/issues/1524).
+Running status green has a 1.8:1 sRGB contrast target against sidebar and active-row backgrounds, leaving margin above [Ghostty's configured minimum](../ghostty/files/config) of 1.6. Ghostty 1.3.1's [Metal renderer](https://github.com/ghostty-org/ghostty/blob/v1.3.1/src/renderer/shaders/shaders.metal) converts sRGB colors to Display P3 before checking contrast, so a passing sRGB ratio alone does not guarantee that green survives its black or white fallback. One Half Light uses `#4e974e` for the theme's running green and the Claude/Codex subagent rules. Herdr requires literal hex colors in those rules. Regression tests check both sRGB and Metal contrast calculations on sidebar and active-row backgrounds.
 
 ## Terminal shortcuts
 

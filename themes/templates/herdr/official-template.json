@@ -22,6 +22,11 @@
       "kind": "official-source",
       "ref": "Herdr v0.9.5 focused agent background and secondary text",
       "url": "https://github.com/herdrdev/herdr/blob/v0.9.5/src/client/shell/agent_sidebar.rs"
+    },
+    {
+      "kind": "official-source",
+      "ref": "Ghostty v1.3.1 Metal color conversion and minimum contrast fallback",
+      "url": "https://github.com/ghostty-org/ghostty/blob/v1.3.1/src/renderer/shaders/shaders.metal"
     }
   ],
   "config_schema": {
@@ -55,7 +60,7 @@
         { "key": "text", "value": "$ui_fg" },
         { "key": "subtext0", "value": "$muted_text" },
         { "key": "mauve", "value": "$focused_space_text" },
-        { "key": "green", "value": "$palette_green" },
+        { "key": "green", "value": "$running_green" },
         { "key": "yellow", "value": "$palette_yellow" },
         { "key": "red", "value": "$palette_red" },
         { "key": "blue", "value": "$palette_blue" },

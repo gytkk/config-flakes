@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 import tomllib
-from generate import contrast_ratio, herdr_theme_toml, load_yaml, theme_context
+from generate import contrast_ratio, herdr_theme_toml, hex_to_rgb, load_yaml, theme_context
 
 ROOT = Path(__file__).resolve().parent
 CUSTOM_COLOR_KEYS = {
@@ -30,6 +30,34 @@ CUSTOM_COLOR_KEYS = {
     "teal",
     "peach",
 }
+
+
+def ghostty_metal_contrast_ratio(foreground: str, background: str) -> float:
+    # Ghostty 1.3.1 shaders.metal converts sRGB to Display P3 before contrast checks.
+    # https://github.com/ghostty-org/ghostty/blob/v1.3.1/src/renderer/shaders/shaders.metal
+    def luminance(color: str) -> float:
+        rgb = [value / 255 for value in hex_to_rgb(color)]
+        linear = [
+            value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+            for value in rgb
+        ]
+        for matrix in (
+            (
+                (0.4360747, 0.3850649, 0.1430804),
+                (0.2225045, 0.7168786, 0.0606169),
+                (0.0139322, 0.0971045, 0.7141733),
+            ),
+            (
+                (2.40414768, -0.99010704, -0.39759019),
+                (-0.84239098, 1.79905954, 0.01597023),
+                (0.04838763, -0.09752546, 1.27393636),
+            ),
+        ):
+            linear = [sum(a * b for a, b in zip(row, linear)) for row in matrix]
+        return sum(a * b for a, b in zip(linear, (0.2126, 0.7152, 0.0722)))
+
+    a, b = luminance(foreground), luminance(background)
+    return (max(a, b) + 0.05) / (min(a, b) + 0.05)
 
 
 class HerdrGeneratorTest(unittest.TestCase):
@@ -135,14 +163,36 @@ class HerdrGeneratorTest(unittest.TestCase):
             if rule.get("starts_with") == "●"
         }
         self.assertTrue(running_colors)
+        self.assertEqual(
+            {self.colors(self.context("one-half-light"))["green"]}, running_colors
+        )
         for theme_path in sorted((ROOT / "core").glob("*.yaml")):
             colors = self.colors(self.context(theme_path.stem))
             for foreground in running_colors | {colors["green"]}:
                 with self.subTest(theme=theme_path.stem, foreground=foreground):
                     for background in (colors["sidebar_bg"], colors["active_row_bg"]):
-                        self.assertGreaterEqual(
-                            contrast_ratio(foreground, background), minimum
-                        )
+                        for contrast in (contrast_ratio, ghostty_metal_contrast_ratio):
+                            with self.subTest(
+                                background=background, renderer=contrast.__name__
+                            ):
+                                self.assertGreaterEqual(
+                                    contrast(foreground, background), minimum
+                                )
+
+    def test_theme_running_green_has_margin_above_terminal_minimum_contrast(self) -> None:
+        for theme_path in sorted((ROOT / "core").glob("*.yaml")):
+            colors = self.colors(self.context(theme_path.stem))
+            for key in ("sidebar_bg", "active_row_bg"):
+                with self.subTest(theme=theme_path.stem, background=key):
+                    self.assertGreaterEqual(
+                        contrast_ratio(colors["green"], colors[key]), 1.8
+                    )
+
+    def test_metal_contrast_catches_the_previous_srgb_only_false_positive(self) -> None:
+        self.assertGreater(contrast_ratio("#50a14f", "#b6b8bc"), 1.6)
+        ratio = ghostty_metal_contrast_ratio("#50a14f", "#b6b8bc")
+        self.assertAlmostEqual(1.5876304, ratio, places=6)
+        self.assertLess(ratio, 1.6)
 
 
 if __name__ == "__main__":

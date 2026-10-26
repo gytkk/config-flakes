@@ -1220,7 +1220,7 @@ def herdr_theme_toml(ctx: dict[str, Any], root: Path) -> str:
     }
     slots.update({f"palette_{name}": value for name, value in ctx["palette"].items()})
     ui = ctx["roles"]["ui"]
-    # Fine steps preserve status-color contrast when the first visible row shade is chosen.
+    # Fine steps choose the least prominent shade that meets row visibility targets.
     for step in range(1001):
         candidate = mix(ui["sidebarBg"], ui["fg"], step / 1000)
         if (
@@ -1231,6 +1231,16 @@ def herdr_theme_toml(ctx: dict[str, Any], root: Path) -> str:
             break
     else:
         raise RuntimeError(f"{ctx['meta']['id']}: Herdr active row cannot meet visibility and text contrast targets")
+    # Leave margin above Ghostty's 1.6 minimum for its Metal color-space conversion.
+    green = ctx["palette"]["green"]
+    status_backgrounds = [ui["sidebarBg"], slots["active_row_bg"]]
+    for step in range(101):
+        candidate = green if step == 0 else mix(green, ui["fg"], step / 100)
+        if all(contrast_ratio(candidate, bg) >= 1.8 for bg in status_backgrounds):
+            slots["running_green"] = candidate
+            break
+    else:
+        raise RuntimeError(f"{ctx['meta']['id']}: Herdr running green cannot reach 1.8:1 contrast")
     backgrounds = [ui[key] for key in ("bg", "panelBg", "sidebarBg", "bgAlt")]
     backgrounds.append(slots["active_row_bg"])
     # Herdr uses panel_bg as selected tab text and accent as its background.
