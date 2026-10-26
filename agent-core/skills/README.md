@@ -2,7 +2,7 @@
 
 This directory owns local shared skills and retains legacy vendored files during host migration. `agent-core/manifest.toml` declares local and external sources and CLI target selections. See [installation and migration status](../README.md) before removing legacy sources.
 
-New installations acquire eight Matt skills and Vercel's `find-skills` directly from the latest default-branch SHA resolved once per operation. `resolving-merge-conflicts` was removed upstream and is excluded from new installations with user approval. The imported directories below remain only for legacy rendering and recovery until all host gates pass. Local `code-review`, `writing-for-agents`, `pi-agent`, and the other nine locally maintained skills remain canonical here. Each external installation preserves its own revision's root license separately; the legacy license below does not replace those notices.
+New installations acquire the Matt skills selected under the external source in `agent-core/manifest.toml` and Vercel's `find-skills` directly from the latest default-branch SHA resolved once per operation. `resolving-merge-conflicts` was removed upstream and is excluded from new installations with user approval. Imported directories still selected from external sources remain for legacy rendering and recovery until all host gates pass. Locally selected skills remain canonical here. Each external installation preserves its own revision's root license separately; the legacy license below does not replace those notices.
 
 The skills imported from [mattpocock/skills](https://github.com/mattpocock/skills) are `code-review`, `codebase-design`, `diagnosing-bugs`, `domain-modeling`, `grilling`, `prototype`, `research`, `resolving-merge-conflicts`, `tdd`, `wizard`, and `writing-for-agents`.
 
@@ -15,6 +15,8 @@ The imported selection excludes user-invoked wrappers and setup workflows. Each 
 `pi-agent` is a separate import with its own [Pi skill license](pi-agent/LICENSE.md). The other skills are maintained locally.
 
 [korean](korean/SKILL.md) restates the previous assistant answer in natural Korean while preserving its meaning, uncertainty, code, and links.
+
+[diagnosing-bugs](diagnosing-bugs/SKILL.md) is maintained locally to support evidence-based investigation when reproduction is unavailable, bounded intermittent and performance checks, and diagnosis-only requests. Existing installations recorded under the `matt` source need the reviewed ownership handoff described in [Agent core](../README.md#skill-설치와-복구) before they can use the local source.
 
 ## Quokka adaptations
 

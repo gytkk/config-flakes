@@ -33,6 +33,10 @@ def test_plan_selections_apply_approved_addition_and_removal(
     assert plan["sources"][0]["skills"]["parallel-research-merge"] == (
         "parallel-research-merge"
     )
+    assert plan["sources"][0]["skills"]["diagnosing-bugs"] == "diagnosing-bugs"
+    assert all(
+        "diagnosing-bugs" not in source["skills"] for source in plan["sources"][1:]
+    )
     assert plan["cli_version"] == "1.7.2"
     assert plan["target"] == target
     assert plan["runtimes"] == skill_sources.TARGET_RUNTIMES[target]

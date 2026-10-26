@@ -22,7 +22,7 @@ agent-core/
 └── tests/
 ```
 
-`manifest.toml`의 `skill_sources`는 로컬 12개, Matt upstream 8개, Vercel의 `find-skills`를 선언한다. 두 외부 source는 설치 작업마다 기본 branch의 최신 full SHA를 한 번 결정하며, 같은 작업의 모든 target에 같은 SHA를 사용한다. `resolving-merge-conflicts`는 최신 upstream에서 삭제되어 사용자 결정에 따라 새 설치 목록에서 제외한다. 최신 upstream의 workflow와 UI metadata 변경도 첫 전환에 포함된다.
+`manifest.toml`의 `skill_sources`는 로컬 skill, Matt upstream skill, Vercel의 `find-skills`를 선언한다. 두 외부 source는 설치 작업마다 기본 branch의 최신 full SHA를 한 번 결정하며, 같은 작업의 모든 target에 같은 SHA를 사용한다. `resolving-merge-conflicts`는 최신 upstream에서 삭제되어 사용자 결정에 따라 새 설치 목록에서 제외한다. 최신 upstream의 workflow와 UI metadata 변경도 첫 전환에 포함된다.
 
 `skill_targets`는 Codex/Pi 공통 pool과 Claude copy에 설치할 skill을 선택한다. Codex와 Pi는 `~/.agents/skills`를 공유하므로 Pi에서도 `openai-decisions`를, Codex에서도 `pi-agent`를 발견할 수 있다. [OpenAI API 모듈](../modules/openai-api/README.md)은 API client에 agenix 키를 전달하며, skill 설치 자체가 package나 credential을 준비하지는 않는다.
 
@@ -211,6 +211,8 @@ uv run --project agent-core scripts/install-agent-skills.py install \
 `--replay` 없이 직접 설치해도 외부 latest를 새로 결정한다. `--revision matt=<full-sha> --revision vercel=<full-sha>`로 명시적 revision을 지정할 수도 있다. 설치는 먼저 격리된 경로에서 모든 source를 검증한 뒤 실제 target에 CLI를 실행하고 파일 bytes를 대조한다. 최신 source에 선택한 이름이나 license가 없으면 기존 설치를 변경하지 않는다.
 
 소유권은 설치 경로와 이름별로 `$XDG_STATE_HOME/agent-core/skills` 또는 `~/.local/state/agent-core/skills`에 기록한다. 원본 SHA 또는 local content, 설치 파일의 hash와 mode, 추가한 `AGENT-CORE-SOURCE-LICENSE`를 구분해 기록한다. CLI의 이름별 global lock을 target별 소유권으로 간주하지 않는다. 사용자 수정, 동명 타 source, 선택 목록에서 빠진 기존 관리 항목은 검토 전까지 중단한다. 포괄적인 `skills update`와 자동 삭제는 사용하지 않는다.
+
+`diagnosing-bugs`는 로컬 수정본을 설치한다. 기존 소유권 기록이 `matt`이면 다음 switch의 사전 검사에서 `source change requires review`로 중단하므로, switch 전에 해당 skill의 source 전환을 검토해야 한다. 설치본과 소유권 기록, CLI lock을 백업하고 기존 파일의 사용자 수정 여부를 확인한 뒤 승인된 인계를 진행한다. Manifest 변경만으로 설치본이나 소유권 기록을 덮어쓰지 않는다.
 
 실제 설치 오류는 backup 경로를 출력한다. 다른 skill의 lock 항목을 보존하며 선택한 항목만 복구한다. Backup 이후 같은 이름의 lock이나 설치 파일, 소유권이 변경되었다면 복구를 중단한다. Symlink나 특수 파일을 남긴 비정상 실패는 기존 backup을 유지하고 수동 보존이 필요하다고 보고한다.
 
