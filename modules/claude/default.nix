@@ -66,24 +66,25 @@ let
   ]
   ++ lib.optional cfg.mumu.enable "mumu@mumu";
 
-  settingsFile =
+  mumuSettings = pkgs.writeText "claude-mumu-settings.json" (
+    builtins.toJSON {
+      enabledPlugins."mumu@mumu" = true;
+      extraKnownMarketplaces.mumu = {
+        source = {
+          source = "github";
+          repo = "devsisters/mumu";
+        };
+        autoUpdate = true;
+      };
+    }
+  );
+  claudePackage =
     if cfg.mumu.enable then
-      pkgs.writeText "claude-settings.json" (
-        builtins.toJSON (
-          lib.recursiveUpdate (builtins.fromJSON (builtins.readFile ./files/settings.json)) {
-            enabledPlugins."mumu@mumu" = true;
-            extraKnownMarketplaces.mumu = {
-              source = {
-                source = "github";
-                repo = "devsisters/mumu";
-              };
-              autoUpdate = true;
-            };
-          }
-        )
-      )
+      pkgs.writeShellScriptBin "claude" ''
+        exec ${claude} --settings ${mumuSettings} "$@"
+      ''
     else
-      mkSymlink "files/settings.json";
+      pkgs.claude-code;
 
   mcpCommands = [
     {
@@ -335,7 +336,7 @@ in
 
   config = lib.mkIf cfg.enable {
     home.packages = [
-      pkgs.claude-code
+      claudePackage
     ];
 
     # Add ~/.local/bin to PATH (plannotator install.sh installs here)
@@ -346,7 +347,7 @@ in
     home.file = {
       # Claude plugin operations may temporarily leave this as a regular file.
       ".claude/settings.json" = {
-        source = settingsFile;
+        source = mkSymlink "files/settings.json";
         force = true;
       };
       ".claude/CLAUDE.md".source = "${agentCoreOutput}/CLAUDE.md";
