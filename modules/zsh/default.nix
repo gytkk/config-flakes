@@ -127,6 +127,8 @@ in
           '';
 
           zshConfig = lib.mkOrder 1000 ''
+            ${builtins.readFile ./nix-command-timing.zsh}
+
             # gh auth 후 자동으로 ~/.netrc 업데이트 (Nix flake용)
             gh-auth-netrc() {
               gh auth "$@"

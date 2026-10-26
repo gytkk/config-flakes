@@ -36,6 +36,12 @@ This module configures Zsh, a Starship prompt, shell aliases, and tool integrati
 
 The [Terraform module](../terraform/README.md) owns the optional `tf` alias and its `runEnv` variables.
 
+### Nix command timing
+
+Interactive Zsh prints total elapsed time after foreground `home-manager` and `nixos-rebuild` commands, including the `hm`, `hmb`, and `hms` aliases and commands prefixed with `sudo`. For example, `[home-manager] 소요 시간: 2분 13초` appears on stderr when the next prompt is displayed, including after a failed command. The [timing hooks](nix-command-timing.zsh) inspect the expanded command without wrapping its executable or changing arguments, output streams, or exit status.
+
+This measures the whole command line, including sudo authentication and any subsequent pipeline or chained commands. It does not divide evaluation, builds, and activation into stages. Background jobs, commands embedded in scripts or compound shell constructs, and noninteractive shells are outside this measurement. After applying the module, run `exec zsh -l` to load the hooks. To measure the first switch before applying them, run `source modules/zsh/nix-command-timing.zsh` from the checkout in the current Zsh session.
+
 ### Tool integration
 
 - **fzf**: Fuzzy finder with Zsh integration
