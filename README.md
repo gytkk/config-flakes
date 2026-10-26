@@ -353,7 +353,7 @@ Ghostty opens new windows maximized to the current monitor's available area. On 
 
 Standalone Home Manager outputs are still available for profile-only testing.
 
-The [Zsh timing hooks](modules/zsh/README.md#nix-command-timing) print total elapsed minutes and seconds after interactive Home Manager and NixOS rebuild commands, including `sudo nixos-rebuild`.
+The [Zsh timing runner](modules/zsh/README.md#nix-command-timing) prints a table of elapsed time between stage messages and the total after interactive Home Manager and NixOS rebuild commands, including `sudo nixos-rebuild`. Home Manager activation steps are shown individually; NixOS uses its own build and system activation stages.
 
 ```bash
 home-manager switch --flake .#devsisters-macbook

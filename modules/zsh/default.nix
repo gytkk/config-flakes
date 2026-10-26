@@ -12,6 +12,9 @@ let
   cfg = config.modules.zsh;
   isPylvOnyx = osConfig != null && (osConfig.networking.hostName or null) == "pylv-onyx";
   locale = if isWSL then "C.UTF-8" else "en_US.UTF-8";
+  nixCommandTiming = pkgs.writeShellScriptBin "nix-command-timing" ''
+    exec ${pkgs.python3}/bin/python ${./nix-command-timing.py} "$@"
+  '';
 in
 let
   starshipThemeConfig = config.lib.file.mkOutOfStoreSymlink (
@@ -28,6 +31,7 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = with pkgs; [
       zsh
+      nixCommandTiming
     ];
 
     # Zsh configuration
