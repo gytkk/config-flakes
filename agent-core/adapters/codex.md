@@ -10,11 +10,6 @@ behavior.
 - Use `apply_patch` for manual file edits. Formatting commands and generated
   outputs do not require `apply_patch`.
 
-## Opening pages
-
-- Always use the system default browser when opening a page for the user, including local previews and authentication links. Use `open <URL>` on macOS, `xdg-open <URL>` on Linux, or the Windows default URL handler from WSL, without selecting a browser application, executable, channel, or profile.
-- Use browser automation tools for requested automation or testing, not solely to display a page. If the system URL opener fails, report the error instead of falling back to Chrome or another specific browser.
-
 ## Codex skills
 
 - When creating or updating repository-managed skills, use Codex's built-in

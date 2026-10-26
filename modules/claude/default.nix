@@ -95,6 +95,7 @@ let
   removedMcpServers = [
     "cloudflare"
     "notion"
+    "playwright"
   ];
 
   mkClaudeCommand = duration: command: ''

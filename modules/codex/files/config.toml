@@ -24,10 +24,6 @@ command = "mcp-nixos"
 [mcp_servers.pyright]
 command = "codex-pyright-mcp"
 
-[mcp_servers.playwright]
-command = "npx"
-args = ["-y", "@playwright/mcp@latest"]
-
 [features]
 default_mode_request_user_input = true
 multi_agent = true

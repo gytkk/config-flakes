@@ -134,6 +134,8 @@ The [LSP module](modules/lsp/default.nix) installs Pyright alongside ty. Claude 
 
 See the [Codex module README](modules/codex/README.md) for official bundle packaging, model delegation, reasoning effort, opening pages in the system default browser, configuration ownership, and activation behavior. The [Herdr integration](modules/codex/README.md#herdr-subagent-sidebar) runs Codex without the shared daemon inside Herdr so each pane retains its own session and subagent metadata.
 
+Codex and Claude Code follow shared instructions to display pages in the system default browser and use `agent-browser` for automation, with headless mode as the default. See [Claude browser use](modules/claude/README.md#browser-use) for Playwright MCP cleanup and activation.
+
 The Codex and Claude Herdr watchers share the [JSONL reader](modules/herdr/README.md#shared-jsonl-reader), which handles incremental reads, file replacement, and malformed records.
 
 [Claude plugin activation](modules/claude/README.md#skills-and-plugins) checks marketplace revisions and caches successful plugin updates. Unchanged sources and installations skip update commands; network revision checks still run during each switch.
