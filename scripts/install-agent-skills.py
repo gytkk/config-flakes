@@ -478,9 +478,66 @@ def restore(backup, home, state):
     write_json(backup / "operation.json", receipt)
 
 
-def prepare(plans, staging, overrides, replay=None):
-    env = environment(staging, staging / "state")
-    revs = revisions(plans, overrides, env)
+def source_inputs(plans, home, state, overrides, replay=None):
+    revs = revisions(plans, overrides, environment(home, state))
+    local_hashes = {
+        name: tree(Path(source["path"]) / relative, allow_hardlinks=True)
+        for plan in plans
+        for source in plan["sources"]
+        if source["kind"] == "local"
+        for name, relative in source["skills"].items()
+    }
+    if replay and (
+        replay.get("revisions") != revs or replay.get("local_hashes") != local_hashes
+    ):
+        raise ValidationError(
+            "replay source content differs from recorded installation"
+        )
+    return revs, local_hashes
+
+
+def installation_state(plan, revs, local_hashes, home, state):
+    names = selected(plan)
+    return {
+        "plan": plan,
+        "revisions": {
+            source["id"]: revs[source["id"]]
+            for source in plan["sources"]
+            if source["kind"] == "git"
+        },
+        "local_hashes": {
+            name: local_hashes[name] for name in names if name in local_hashes
+        },
+        "locks": {
+            str(path): lock_entries(path, names) for path in lock_paths(home, state)
+        },
+    }
+
+
+def successful_owner(owner):
+    path = owner.get("installation_receipt")
+    if not isinstance(path, str):
+        return False
+    receipt = read_json(Path(path), {})
+    return (
+        isinstance(receipt, dict)
+        and receipt.get("status") == "installed"
+        and isinstance(receipt.get("targets"), list)
+        and any(
+            isinstance(item, dict)
+            and item.get("destination") == owner["destination"]
+            and item.get("after_owner") == owner
+            for item in receipt.get("targets", [])
+        )
+    )
+
+
+def prepare(plans, staging, overrides, replay=None, inputs=None):
+    revs, local_hashes = (
+        inputs
+        if inputs is not None
+        else source_inputs(plans, staging, staging / "state", overrides, replay)
+    )
     sources = {}
     for plan in plans:
         for source in plan["sources"]:
@@ -494,14 +551,6 @@ def prepare(plans, staging, overrides, replay=None):
         if source["kind"] == "git"
     }
     prepared = {}
-    local_hashes = {}
-    for source in sources.values():
-        if source["kind"] == "local":
-            for name, relative in source["skills"].items():
-                # Nix store optimisation hardlinks sources; we only read them.
-                local_hashes[name] = tree(
-                    Path(source["path"]) / relative, allow_hardlinks=True
-                )
     for plan in plans:
         stage_home = staging / plan["target"]
         for source in plan["sources"]:
@@ -542,9 +591,20 @@ def install(plans, home, state, overrides, replay=None):
         exclusive(state),
         tempfile.TemporaryDirectory(prefix="agent-skills-") as temporary,
     ):
-        preflight(plans, home, state)
+        items = preflight(plans, home, state)
+        inputs = source_inputs(plans, home, state, overrides, replay)
+        revs, local_hashes = inputs
+        items = preflight(plans, home, state)
+        if all(
+            set(owner["skills"]) == set(selected(plan))
+            and owner.get("installation")
+            == installation_state(plan, revs, local_hashes, home, state)
+            and successful_owner(owner)
+            for plan, _, _, owner in items
+        ):
+            return None
         revs, notices, prepared, local_hashes = prepare(
-            plans, Path(temporary).resolve(), overrides, replay
+            plans, Path(temporary).resolve(), overrides, replay, inputs=inputs
         )
         # Recheck ownership after network preparation, before touching user files.
         items = preflight(plans, home, state)
@@ -583,6 +643,16 @@ def install(plans, home, state, overrides, replay=None):
             )
         write_json(backup / "operation.json", receipt)
         try:
+            # A partial retry must never reuse a previous successful cache record.
+            for _, _, owner_file, owner in items:
+                write_json(
+                    owner_file,
+                    {
+                        key: value
+                        for key, value in owner.items()
+                        if key not in ("installation", "installation_receipt")
+                    },
+                )
             for index, (plan, destination, owner_file, owner) in enumerate(items):
                 for source in plan["sources"]:
                     cli_add(plan, source, revs.get(source["id"]), home, state)
@@ -604,6 +674,13 @@ def install(plans, home, state, overrides, replay=None):
                 write_json(
                     owner_file, {"destination": str(destination), "skills": records}
                 )
+            for plan, _, owner_file, _ in items:
+                owner = read_json(owner_file)
+                owner["installation"] = installation_state(
+                    plan, revs, local_hashes, home, state
+                )
+                owner["installation_receipt"] = str(backup / "operation.json")
+                write_json(owner_file, owner)
             receipt["status"] = "installed"
         except BaseException as error:
             receipt["status"] = "failed"
@@ -701,7 +778,12 @@ def main(argv=None):
             print(f"isolated installation verified; source receipt: {args.output}")
             return 0
         backup = install(plans, home, state, overrides, replay)
-        print(f"installation verified; backup and exact source receipt: {backup}")
+        if backup is None:
+            print(
+                "installation unchanged; verified sources, ownership, files, and CLI locks"
+            )
+        else:
+            print(f"installation verified; backup and exact source receipt: {backup}")
         return 0
     except (ValidationError, OSError, KeyError, TypeError) as error:
         print(f"agent-skills: {error}", file=sys.stderr)

@@ -107,7 +107,9 @@ def test_hardlinked_destination_is_rejected_before_cli(fixture, tmp_path):
     installed = installer.location("shared", home) / "one/SKILL.md"
     (tmp_path / "other-file").hardlink_to(installed)
     before = len(calls)
-    with pytest.raises(installer.ValidationError, match="not an ordinary unlinked file"):
+    with pytest.raises(
+        installer.ValidationError, match="not an ordinary unlinked file"
+    ):
         installer.install([plan], home, state, {})
     assert len(calls) == before
 
@@ -333,6 +335,7 @@ def test_partial_unsafe_output_keeps_failure_receipt_and_original_backup(
     plan, home, state, _, fake_cli = fixture
     installer.install([plan], home, state, {})
     original = installer.tree(installer.location("shared", home) / "one")
+    (Path(plan["sources"][0]["path"]) / "one/reference.md").write_text("new source")
 
     def unsafe(plan, source, revision, install_home, install_state, **kwargs):
         fake_cli(plan, source, revision, install_home, install_state, **kwargs)
@@ -450,3 +453,146 @@ def test_license_acquisition_failure_preserves_installed_files(fixture, monkeypa
         )
     assert len(calls) == previous_calls
     assert installer.tree(destination) == before
+
+
+def test_unchanged_install_skips_preparation_and_backup(fixture, monkeypatch):
+    plan, home, state, calls, _ = fixture
+    backup = installer.install([plan], home, state, {})
+    count = len(calls)
+    monkeypatch.setattr(
+        installer, "prepare", lambda *a, **kw: pytest.fail("prepared unchanged install")
+    )
+    assert installer.install([plan], home, state, {}) is None
+    assert len(calls) == count
+    assert list(backup.parent.iterdir()) == [backup]
+
+
+def test_shared_and_claude_targets_skip_together(fixture):
+    plan, home, state, calls, _ = fixture
+    claude = {**plan, "target": "claude", "runtimes": ["claude"]}
+    installer.install([plan, claude], home, state, {})
+    count = len(calls)
+    assert installer.install([plan, claude], home, state, {}) is None
+    assert len(calls) == count
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "content",
+        "mode",
+        "cli",
+        "lock",
+        "missing_lock",
+        "old_owner",
+        "owner_metadata",
+        "failed_receipt",
+    ],
+)
+def test_changed_install_inputs_require_preparation(fixture, change):
+    plan, home, state, calls, _ = fixture
+    backup = installer.install([plan], home, state, {})
+    count = len(calls)
+    source = Path(plan["sources"][0]["path"]) / "one/reference.md"
+    if change == "content":
+        source.write_text("updated")
+    elif change == "mode":
+        source.chmod(0o755)
+    elif change == "cli":
+        plan = {**plan, "cli_version": "new-version"}
+    elif change in ("lock", "missing_lock"):
+        path = installer.lock_paths(home, state)[0]
+        if change == "missing_lock":
+            path.unlink()
+        else:
+            value = installer.read_json(path)
+            value["skills"]["one"] = {"changed": True}
+            installer.write_json(path, value)
+    elif change in ("old_owner", "owner_metadata"):
+        path = installer.owner_path(state, installer.location("shared", home))
+        value = installer.read_json(path)
+        if change == "old_owner":
+            value.pop("installation")
+        else:
+            value["skills"]["one"]["revision"] = "changed"
+        installer.write_json(path, value)
+    else:
+        receipt = installer.read_json(backup / "operation.json")
+        receipt["status"] = "failed"
+        installer.write_json(backup / "operation.json", receipt)
+    assert installer.install([plan], home, state, {}) is not None
+    assert len(calls) == count + 2
+
+
+@pytest.mark.parametrize("change", ["missing", "modified", "unowned"])
+def test_cached_install_preserves_ownership_checks(fixture, change):
+    plan, home, state, calls, _ = fixture
+    installer.install([plan], home, state, {})
+    count = len(calls)
+    destination = installer.location("shared", home)
+    if change == "missing":
+        shutil.rmtree(destination / "one")
+    elif change == "modified":
+        (destination / "one/reference.md").write_text("user edit")
+    else:
+        installer.owner_path(state, destination).unlink()
+    with pytest.raises(
+        installer.ValidationError, match="user modification|unowned skill collision"
+    ):
+        installer.install([plan], home, state, {})
+    assert len(calls) == count
+
+
+def test_failed_install_retries_instead_of_caching(fixture, monkeypatch):
+    plan, home, state, calls, fake_cli = fixture
+    installer.install([plan], home, state, {})
+    (Path(plan["sources"][0]["path"]) / "one/reference.md").write_text("new source")
+
+    def failure(plan, source, revision, install_home, install_state, **kwargs):
+        if install_home == home:
+            raise installer.ValidationError("retry required")
+        fake_cli(plan, source, revision, install_home, install_state, **kwargs)
+
+    monkeypatch.setattr(installer, "cli_add", failure)
+    with pytest.raises(installer.ValidationError, match="retry required"):
+        installer.install([plan], home, state, {})
+    count = len(calls)
+    monkeypatch.setattr(installer, "cli_add", fake_cli)
+    assert installer.install([plan], home, state, {}) is not None
+    assert len(calls) == count + 2
+
+
+def test_remote_head_checked_once_even_when_install_is_unchanged(fixture, monkeypatch):
+    plan, home, state, calls, _ = fixture
+    source = {
+        **plan["sources"][0],
+        "kind": "git",
+        "url": "https://github.com/test/skills.git",
+        "license": "LICENSE",
+    }
+    plan = {**plan, "sources": [source]}
+    revision = ["1" * 40]
+    remote_calls = []
+    license_calls = []
+
+    def remote(*args, **kwargs):
+        remote_calls.append(args)
+        return f"ref: refs/heads/main\tHEAD\n{revision[0]}\tHEAD\n"
+
+    def license(*args):
+        license_calls.append(args)
+        return b"license"
+
+    monkeypatch.setattr(installer, "run", remote)
+    monkeypatch.setattr(installer, "license_bytes", license)
+    installer.install([plan], home, state, {})
+    count = len(calls)
+    assert installer.install([plan], home, state, {}) is None
+    assert len(remote_calls) == 2
+    assert len(license_calls) == 1
+    assert len(calls) == count
+    revision[0] = "2" * 40
+    assert installer.install([plan], home, state, {}) is not None
+    assert len(remote_calls) == 3
+    assert len(license_calls) == 2
+    assert len(calls) == count + 2

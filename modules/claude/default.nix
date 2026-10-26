@@ -134,24 +134,6 @@ let
       log "Local marketplace already registered: $LOCAL_MP_NAME"
     fi'';
 
-  mkPluginSetup = plugin: ''
-    HAS_USER_SCOPE=0
-    if [ -f "$INSTALLED_PLUGINS" ]; then
-      if [ "$(${pkgs.jq}/bin/jq -r --arg p "${plugin}" '
-            (.plugins[$p] // []) | map(select(.scope == "user")) | length
-          ' "$INSTALLED_PLUGINS" 2>/dev/null)" != "0" ]; then
-        HAS_USER_SCOPE=1
-      fi
-    fi
-    if [ "$HAS_USER_SCOPE" = "0" ]; then
-      PLUGIN_ACTION="install"
-      log "Installing plugin (user scope): ${plugin}"
-    else
-      PLUGIN_ACTION="update"
-      log "Updating plugin (user scope): ${plugin}"
-    fi
-    ${mkClaudeCommand "60s" ''plugin "$PLUGIN_ACTION" -s user ${plugin}''}'';
-
   mkMcpRemoval = name: ''
     if printf '%s\n' "$MCP_CACHE" | ${pkgs.ripgrep}/bin/rg -q --fixed-strings -- "${name}"; then
       log "Removing MCP server: ${name}"
@@ -184,13 +166,9 @@ let
       KNOWN_MARKETPLACES="$HOME/.claude/plugins/known_marketplaces.json"
       ${lib.concatMapStringsSep "\n    " mkLocalMarketplaceRegistration localMarketplaces}
 
-      log "Updating marketplace index..."
-      ${timeout} 30s ${claude} plugin marketplace update < /dev/null >> "$SETUP_LOG" 2>&1 || log "Marketplace update failed"
     '';
 
   mkPluginsSetup = plugins: ''
-    INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
-
     # Temporarily run plugin install/update against a copy so activation
     # does not mutate the repository-backed settings symlink.
     SETTINGS_FILE="$HOME/.claude/settings.json"
@@ -202,9 +180,12 @@ let
       log "Temporarily made settings.json writable for plugin operations"
     fi
 
-    # 다른 프로젝트에서 설치를 다시 묻지 않도록 플러그인은 항상 user scope에 설치한다.
-    # installed_plugins.json에서는 scope를 직접 확인해 project 항목과 구분한다.
-    ${lib.concatMapStringsSep "\n    " mkPluginSetup plugins}
+    if ! run ${pkgs.python3}/bin/python ${./plugin-updates.py} \
+      --claude ${claude} \
+      --plugins ${pkgs.writeText "claude-plugins.json" (builtins.toJSON plugins)} \
+      >> "$SETUP_LOG" 2>&1; then
+      log "Plugin update checks failed; retry on the next switch"
+    fi
 
     if [ -n "$SETTINGS_LINK_TARGET" ]; then
       ${pkgs.coreutils}/bin/ln -sf "$SETTINGS_LINK_TARGET" "$SETTINGS_FILE"

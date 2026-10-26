@@ -136,10 +136,12 @@ See the [Codex module README](modules/codex/README.md) for official bundle packa
 
 The Codex and Claude Herdr watchers share the [JSONL reader](modules/herdr/README.md#shared-jsonl-reader), which handles incremental reads, file replacement, and malformed records.
 
+[Claude plugin activation](modules/claude/README.md#skills-and-plugins) checks marketplace revisions and caches successful plugin updates. Unchanged sources and installations skip update commands; network revision checks still run during each switch.
+
 Codex and Claude share the `openai-decisions` skill through agent-core for `gpt-6-luna` Decisions API judgments. The [OpenAI API module](modules/openai-api/README.md) supplies `with-openai` to run API clients with the existing agenix-managed `OPENAI_API_KEY`.
 
 - On NixOS hosts, the static Codex base config is installed to the overridable system layer at `/etc/codex/config.toml`.
-- Repository-managed skill sources and selections are declared in `agent-core/manifest.toml` and installed or updated during Home Manager activation into the Codex/Pi native pool at `~/.agents/skills`.
+- Repository-managed skill sources and selections are declared in `agent-core/manifest.toml`. [Skill activation](modules/agent-skills/README.md) checks source revisions and installation integrity, skipping unchanged installations into the Codex/Pi native pool at `~/.agents/skills` and Claude's skill directory.
 - On standalone Home Manager environments, `home-manager switch` ensures `/etc/codex/config.toml` is a symlink to this repo's `modules/codex/files/config.toml`.
 - Existing standalone `/etc/codex/skills` links require an ownership check and backup during migration; activation no longer manages them.
 - Standalone activation only prompts for `sudo` when `/etc/codex` needs to be created or repaired, or when removing the legacy `/etc/codex/managed_config.toml` symlink.
