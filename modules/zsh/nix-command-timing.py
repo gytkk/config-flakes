@@ -1,14 +1,18 @@
 """Stream a Nix command's output and report elapsed time between stage messages."""
 
 import argparse
+import errno
 import os
+import pty
 import re
 import selectors
 import signal
 import subprocess
 import sys
+import termios
 import time
 import unicodedata
+from contextlib import ExitStack
 
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
@@ -114,11 +118,31 @@ def report(tool, rows, returncode, output):
 
 
 def run(tool, command):
+    with ExitStack() as streams:
+        return run_with_streams(tool, command, streams)
+
+
+def run_with_streams(tool, command, streams):
     timings = Timings(tool, time.monotonic())
+    outputs = []
+    terminals = {}
     try:
-        process = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
+        for output in (sys.stdout.buffer, sys.stderr.buffer):
+            is_terminal = output.isatty()
+            read_fd, write_fd = pty.openpty() if is_terminal else os.pipe()
+            reader = streams.enter_context(os.fdopen(read_fd, "rb", buffering=0))
+            writer = streams.enter_context(os.fdopen(write_fd, "wb", buffering=0))
+            if is_terminal:
+                attributes = termios.tcgetattr(write_fd)
+                # The real terminal applies output processing after forwarding.
+                attributes[1] &= ~termios.OPOST
+                termios.tcsetattr(write_fd, termios.TCSANOW, attributes)
+                termios.tcsetwinsize(read_fd, termios.tcgetwinsize(output.fileno()))
+                terminals[read_fd] = output
+            outputs.append((reader, writer, output))
+        process = subprocess.Popen(command, stdout=outputs[0][1], stderr=outputs[1][1])
+        for _, writer, _ in outputs:
+            writer.close()
     except OSError as error:
         print(f"{command[0]}: {error}", file=sys.stderr)
         result = 127 if isinstance(error, FileNotFoundError) else 126
@@ -132,17 +156,21 @@ def run(tool, command):
             except ProcessLookupError:
                 pass
 
+    def resize(number, frame):
+        for fd, output in terminals.items():
+            termios.tcsetwinsize(fd, termios.tcgetwinsize(output.fileno()))
+        forward_signal(number, frame)
+
     previous = {
         number: signal.signal(number, forward_signal)
         for number in (signal.SIGINT, signal.SIGTERM)
     }
+    if terminals:
+        previous[signal.SIGWINCH] = signal.signal(signal.SIGWINCH, resize)
     buffers = {}
     try:
         with selectors.DefaultSelector() as selector:
-            for pipe, output in (
-                (process.stdout, sys.stdout.buffer),
-                (process.stderr, sys.stderr.buffer),
-            ):
+            for pipe, _, output in outputs:
                 selector.register(pipe, selectors.EVENT_READ, output)
                 buffers[pipe] = b""
             while selector.get_map():
@@ -151,7 +179,13 @@ def run(tool, command):
                 if not events and process.poll() is not None:
                     break
                 for key, _ in events:
-                    data = os.read(key.fd, 65536)
+                    try:
+                        data = os.read(key.fd, 65536)
+                    except OSError as error:
+                        # Linux PTY masters report EIO when the slave closes.
+                        if key.fd not in terminals or error.errno != errno.EIO:
+                            raise
+                        data = b""
                     now = time.monotonic()
                     if not data:
                         if buffers[key.fileobj]:
@@ -159,6 +193,7 @@ def run(tool, command):
                                 buffers[key.fileobj].decode(errors="replace"), now
                             )
                         selector.unregister(key.fileobj)
+                        terminals.pop(key.fd, None)
                         key.fileobj.close()
                         continue
                     key.data.write(data)
@@ -172,6 +207,7 @@ def run(tool, command):
                     timings.line(
                         buffers[key.fileobj].decode(errors="replace"), time.monotonic()
                     )
+                terminals.pop(key.fd, None)
                 key.fileobj.close()
         code = process.wait()
     except BaseException:

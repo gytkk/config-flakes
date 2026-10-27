@@ -359,7 +359,7 @@ The [Neovim module](modules/vim/README.md) configures the nightly editor with La
 
 Standalone Home Manager outputs are still available for profile-only testing.
 
-The [Zsh timing runner](modules/zsh/README.md#nix-command-timing) prints a table of elapsed time between stage messages and the total after interactive Home Manager and NixOS rebuild commands, including `sudo nixos-rebuild`. Home Manager activation steps are shown individually; NixOS uses its own build and system activation stages.
+The [Zsh timing runner](modules/zsh/README.md#nix-command-timing) preserves terminal progress displays and prints a table of elapsed time between stage messages and the total after interactive Home Manager and NixOS rebuild commands, including `sudo nixos-rebuild`. Home Manager activation steps are shown individually; NixOS uses its own build and system activation stages.
 
 ```bash
 home-manager switch --flake .#devsisters-macbook

@@ -1,6 +1,8 @@
+import errno
 import importlib.util
 import json
 import os
+import pty
 import select
 import shlex
 import shutil
@@ -8,6 +10,8 @@ import signal
 import subprocess
 import sys
 import tempfile
+import termios
+import time
 import unittest
 from pathlib import Path
 
@@ -95,6 +99,108 @@ class RunnerTest(unittest.TestCase):
         self.assertTrue(readable, "runner did not forward child output")
         self.assertEqual(os.read(process.stdout.fileno(), 5), b"READY")
 
+    def terminal(self):
+        master, slave = pty.openpty()
+        self.addCleanup(os.close, master)
+        self.addCleanup(os.close, slave)
+        attributes = termios.tcgetattr(slave)
+        attributes[1] &= ~termios.OPOST
+        termios.tcsetattr(slave, termios.TCSANOW, attributes)
+        return master, slave
+
+    def read_terminal(self, master, marker=None):
+        output = b""
+        deadline = time.monotonic() + 10
+        while marker is None or marker not in output:
+            remaining = deadline - time.monotonic()
+            self.assertGreater(remaining, 0, "runner terminal output timed out")
+            readable, _, _ = select.select([master], [], [], remaining)
+            self.assertTrue(readable, "runner did not forward terminal output")
+            try:
+                chunk = os.read(master, 65536)
+            except OSError as error:
+                if error.errno != errno.EIO:
+                    raise
+                break
+            if not chunk:
+                break
+            output += chunk
+        return output
+
+    def test_preserves_each_output_terminal_and_redirect(self):
+        for stdout_tty, stderr_tty in ((True, True), (True, False), (False, True)):
+            with self.subTest(stdout_tty=stdout_tty, stderr_tty=stderr_tty):
+                stdout_master, stdout_slave = self.terminal()
+                stderr_master, stderr_slave = self.terminal()
+                result = subprocess.run(
+                    self.command(
+                        "import os; "
+                        "os.write(1,str(os.isatty(1)).encode()+b'\\n'); "
+                        "os.write(2,str(os.isatty(2)).encode()+b'\\n')"
+                    ),
+                    stdout=stdout_slave if stdout_tty else subprocess.PIPE,
+                    stderr=stderr_slave if stderr_tty else subprocess.PIPE,
+                    timeout=10,
+                    check=False,
+                )
+                stdout = (
+                    self.read_terminal(stdout_master, b"\n")
+                    if stdout_tty
+                    else result.stdout
+                )
+                stderr = (
+                    self.read_terminal(stderr_master, b"\n")
+                    if stderr_tty
+                    else result.stderr
+                )
+                self.assertEqual(result.returncode, 0)
+                self.assertEqual(stdout, str(stdout_tty).encode() + b"\n")
+                self.assertTrue(stderr.startswith(str(stderr_tty).encode() + b"\n"))
+
+    def test_terminal_preserves_ansi_carriage_returns_and_newlines(self):
+        stdout_master, stdout_slave = self.terminal()
+        stderr_master, stderr_slave = self.terminal()
+        payload = b"\x1b[32mprogress\x1b[0m\rnext\nlast\r\nEND"
+        result = subprocess.run(
+            self.command(
+                f"import os; os.write(1,{payload!r}); os.write(2,{payload!r})"
+            ),
+            stdout=stdout_slave,
+            stderr=stderr_slave,
+            timeout=10,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(self.read_terminal(stdout_master, b"END"), payload)
+        self.assertTrue(self.read_terminal(stderr_master, b"END").startswith(payload))
+
+    def test_terminal_size_and_sigwinch_are_forwarded(self):
+        master, slave = self.terminal()
+        termios.tcsetwinsize(slave, (31, 97))
+        process = subprocess.Popen(
+            self.command(
+                "import os,signal; "
+                "report=lambda *_: os.write(1,(repr(tuple(os.get_terminal_size(1)))+'\\n').encode()); "
+                "signal.signal(signal.SIGWINCH,report); report(); "
+                "os.read(0,1)"
+            ),
+            stdin=subprocess.PIPE,
+            stdout=slave,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+        )
+        try:
+            self.assertEqual(self.read_terminal(master, b"\n"), b"(97, 31)\n")
+            termios.tcsetwinsize(slave, (43, 121))
+            process.send_signal(signal.SIGWINCH)
+            self.assertEqual(self.read_terminal(master, b"\n"), b"(121, 43)\n")
+            process.communicate(b"x", timeout=10)
+            self.assertEqual(process.returncode, 0)
+        finally:
+            if process.poll() is None:
+                os.killpg(process.pid, signal.SIGKILL)
+            process.communicate()
+
     def test_preserves_stdout_stderr_bytes_exit_status_and_stdin(self):
         payload = b"stdin\x00\xff\nsecond line"
         result = subprocess.run(
@@ -152,6 +258,26 @@ class RunnerTest(unittest.TestCase):
             _, stderr = process.communicate(timeout=10)
             self.assertEqual(process.returncode, 143)
             self.assertIn("종료 코드: 143".encode(), stderr)
+        finally:
+            if process.poll() is None:
+                os.killpg(process.pid, signal.SIGKILL)
+            process.communicate()
+
+    @unittest.skipUnless(os.name == "posix", "POSIX signals required")
+    def test_sigint_is_forwarded_and_reported(self):
+        master, slave = self.terminal()
+        process = subprocess.Popen(
+            self.command("import os,time; os.write(1,b'READY'); time.sleep(60)"),
+            stdout=slave,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+        )
+        try:
+            self.assertEqual(self.read_terminal(master, b"READY"), b"READY")
+            process.send_signal(signal.SIGINT)
+            _, stderr = process.communicate(timeout=10)
+            self.assertEqual(process.returncode, 130)
+            self.assertIn("종료 코드: 130".encode(), stderr)
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGKILL)
