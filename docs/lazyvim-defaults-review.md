@@ -2,7 +2,7 @@
 
 기존 조작을 유지하기 위해 추가한 개인 설정 중에서 키 매핑과 중복 설정부터 LazyVim 기본값으로 정리하는 것을 권장한다. Git, 상태줄, 수동 포맷은 기본 구현을 활용하고, Nix 연동과 의도적으로 선택한 편집 동작은 개인 설정으로 유지한다.
 
-이 문서는 2026-10-27 기준 비교와 권장안이며, 아래 변경을 적용했다는 뜻은 아니다. 비교 기준은 LazyVim 전환 커밋 `ca8d121`의 개인 설정과 LazyVim `v16.0.1` 커밋 `999700997f72227187d49d8b92667183dc7fc809`이다. 실제 설정 구조와 사용법은 [Neovim README](../modules/vim/README.md)를 따른다.
+이 문서의 비교 기준은 2026-10-27의 LazyVim 전환 커밋 `ca8d121` 개인 설정과 LazyVim `v16.0.1` 커밋 `999700997f72227187d49d8b92667183dc7fc809`이다. 현재 설정은 아래 "기본 키 매핑으로 정리할 항목"과 "기본 구현을 활용할 항목"의 권장안을 따른다. 프로젝트 루트와 편집 옵션은 기존 개인 설정을 유지한다. 실제 설정 구조와 사용법은 [Neovim README](../modules/vim/README.md)를 따른다.
 
 ## 기본 키 매핑으로 정리할 항목
 
@@ -28,9 +28,9 @@ LazyVim의 `<Space>sR`과 개인 설정의 `<Space>sr`은 모두 `Snacks.picker.
 
 ### LSP와 Git의 연관 설정
 
-Trouble을 `<Space>cS`로 정리할 때는 개인 Trouble 매핑과 기본 `<Space>cl`을 비활성화하는 LSP 설정을 함께 제거해야 한다. 관련 설정은 [ui.lua](../modules/vim/files/lua/plugins/ui.lua)와 [lsp.lua](../modules/vim/files/lua/plugins/lsp.lua)에 있다.
+현재 Trouble은 LazyVim의 기본 `<Space>cS`를 사용하며, `<Space>cl`은 기본 LSP 정보 화면을 연다. [ui.lua](../modules/vim/files/lua/plugins/ui.lua)와 [lsp.lua](../modules/vim/files/lua/plugins/lsp.lua)는 이 키들을 다시 정의하거나 비활성화하지 않는다.
 
-개인 [git.lua](../modules/vim/files/lua/plugins/git.lua)의 `on_attach`는 LazyVim의 기본 키 등록 함수를 통째로 대체한다. 기본 구현에는 diff 화면을 고려한 변경 부분 이동, 선택 영역 stage/reset, 버퍼 전체 stage, 첫 번째와 마지막 변경 부분 이동 등이 있으므로 기본값으로 돌아갈 실익이 크다. 이때 `<Space>gh`에 지정한 개인 blame 매핑도 함께 정리해 기본 Git 변경 부분 조작 키의 접두사로 사용할 수 있게 한다. 기본 키를 채택하면 preview 방식 등 세부 동작도 기본 구현을 따른다.
+현재 [git.lua](../modules/vim/files/lua/plugins/git.lua)는 개인 Git 표시 기호만 설정하고 `on_attach`는 LazyVim 기본 구현을 사용한다. 기본 구현은 diff 화면을 고려한 변경 부분 이동, 선택 영역 stage/reset, 버퍼 전체 stage, 첫 번째와 마지막 변경 부분 이동을 제공한다. `<Space>gh`는 Git 변경 부분 조작 키의 접두사이며, `<Space>ghb`로 blame을 표시한다. Preview 방식 등 세부 동작도 기본 구현을 따른다.
 
 ## 기본 구현을 활용할 항목
 
@@ -40,7 +40,7 @@ Trouble을 `<Space>cS`로 정리할 때는 개인 Trouble 매핑과 기본 `<Spa
 | lualine 상태줄 | 개인 설정이 전체 구성을 교체 | 기본 `opts`에 Minuet 상태 등 필요한 항목만 추가 |
 | 수동 포맷 | 개인 `<Space>cf`가 Conform을 직접 호출 | 기본 `<Space>cf`의 LazyVim 공통 포맷 경로 사용 |
 
-토글은 [keymaps.lua](../modules/vim/files/lua/config/keymaps.lua), 상태줄은 [ui.lua](../modules/vim/files/lua/plugins/ui.lua), 포맷은 [editing.lua](../modules/vim/files/lua/plugins/editing.lua)에서 확인한다. 상태줄 전체를 반환해 대체하는 대신 기존 `opts`를 수정하면 LazyVim의 기본 구성 변경을 받아들이기 쉽다. 수동 포맷 키를 정리하더라도 포맷터 선택과 파일 형식별 자동 포맷 제외 정책은 유지한다.
+현재 토글과 수동 포맷 키는 LazyVim이 등록한다. [ui.lua](../modules/vim/files/lua/plugins/ui.lua)는 기본 상태줄의 `opts`에 Minuet 상태만 추가하고, [editing.lua](../modules/vim/files/lua/plugins/editing.lua)는 선택한 포맷터와 실행 옵션을 설정한다. [autocmds.lua](../modules/vim/files/lua/config/autocmds.lua)의 Markdown 및 YAML 자동 포맷 제외 정책을 유지하며, 이 파일 형식에서도 기본 `<Space>cf`로 수동 포맷을 실행할 수 있다.
 
 ## 유지할 개인 설정
 

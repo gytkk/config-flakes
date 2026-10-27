@@ -26,7 +26,7 @@ Flash is pinned to the upstream Neovim 0.13 search-state fix. Older versions acc
 
 For `/` and `?` searches, entering insert mode, changing buffer text, leaving a buffer, or reloading an externally changed file clears search highlights and Noice's inline search count. Press `<Esc>` in normal mode to clear them manually. The pattern remains available, and `n` or `N` resumes the search with highlights and the count.
 
-Open grep pickers rerun the current search after a file is saved, after Neovim reloads an externally changed file, and when Neovim regains focus. Results and preview refresh while preserving the query and scope, including a picker reopened with `<leader>sr`. External edits appear when Neovim detects the change or regains focus; there is no continuous filesystem polling.
+Open grep pickers rerun the current search after a file is saved, after Neovim reloads an externally changed file, and when Neovim regains focus. Results and preview refresh while preserving the query and scope, including a picker reopened with `<leader>sR`. External edits appear when Neovim detects the change or regains focus; there is no continuous filesystem polling.
 
 ## Blink and Minuet
 
@@ -46,29 +46,40 @@ EDITOR=vim agx -e openai-api-key.age
 
 ## Notable keymaps
 
-See the [LazyVim defaults review](../../docs/lazyvim-defaults-review.md) for proposed keymap simplifications and personal settings to retain. The review describes recommendations; the mappings below describe the current configuration.
+The recommendations for keymaps and default implementations in the [LazyVim defaults review](../../docs/lazyvim-defaults-review.md) are applied. `<leader>` is `<Space>`. LazyVim supplies the search, rename, implementation, Trouble, Git hunk, toggle, and manual formatting defaults below. Personal search refresh hooks, completion, root selection, and editing options remain configured separately. Lualine extends the default statusline with Minuet status.
 
 - `<leader>e`: file explorer
 - `<leader>ff`: find files
+- `<leader>fb`, `<leader>,`: buffer list
 - `<leader>sg`: grep, saving the current modified file and checking external changes first
-- `<leader>sr`: resume the previous picker with its query and scope
+- `<leader>sR`: resume the previous picker with its query and scope
+- `<leader>sr`: search and replace
+- `<leader>sb`: search lines in the current buffer
+- `<leader>s/`: search history
 - `<leader>gs`, `<leader>gb`, `<leader>gd`, `<leader>gS`: git status, branches, diff, and stash pickers
 - `<leader>gf`, `<leader>gl`, `<leader>gL`: git log for current file, repository, and current line
 - `<leader>gg`: lazygit
 - `<leader>gB`: open current file or selection in the git remote browser
-- `<leader>gh`: blame current line
+- `<leader>ghs`, `<leader>ghr`: stage or reset the current hunk or visual selection
+- `<leader>ghp`: preview the current hunk inline
+- `<leader>ghb`: blame current line
+- `]h`, `[h`, `]H`, `[H`: next, previous, last, and first Git hunk
 - `<leader>gi`, `<leader>gp`: GitHub issues and pull requests
 - `<leader>qs`, `<leader>qS`, `<leader>ql`: restore directory session, select a session, and restore the last session
 - `<leader>qd`: stop saving the session on exit
 - `gd`: go to definition
+- `gI`: go to implementation; `gi` uses Vim's native last-insert-position behavior
 - `gb`: jump back in the jumplist
+- `<leader>cr`: rename symbol
 - `<leader>cR`: rename current file with LSP-aware updates
+- `<leader>cl`: LSP information
+- `<leader>cS`: LSP references and definitions in Trouble
 - `<leader>ud`: toggle diagnostics
 - `[d`, `]d`: previous and next diagnostic
 - `<leader>d`: toggle all diagnostics on the current line
 - `<leader>xX`, `<leader>xx`: current-buffer and workspace diagnostics in Trouble
 - `<leader>uh`, `<leader>ul`, `<leader>uS`, `<leader>uw`: toggle inlay hints, line numbers, smooth scrolling, and wrap
-- `<leader>cf`: format current buffer
+- `<leader>cf`: format the buffer or visual selection through LazyVim, including Markdown and YAML with automatic formatting disabled
 
 ## Usage and rollout
 
@@ -97,7 +108,7 @@ nvim --headless modules/vim/README.md \
   '+lua dofile("modules/vim/tests/startup.lua")'
 ```
 
-The startup check covers theme loading, the initial Markdown buffer and Marksman attachment, Nix ownership of server installation, diagnostics, and automatic versus manual formatting. Wait for parser installation before running it. It can also run against a standalone MDX file. In headless mode the test supplies the terminal's `UIEnter` event.
+The startup check covers theme loading, the initial Markdown buffer and Marksman attachment, Nix ownership of server installation, default keymaps, Minuet in the default statusline, diagnostics, and automatic versus manual formatting. Wait for parser installation before running it. Its Git keymap checks require a tracked file; it can also run against a tracked MDX file. In headless mode the test supplies the terminal's `UIEnter` event.
 
 For checks that must preserve normal session and plugin state, use a temporary `NVIM_APPNAME` with a config directory linked to the installed config and isolated data, state, and cache. Install the recorded plugins in that runtime before running startup checks. There is no permanent candidate launcher.
 

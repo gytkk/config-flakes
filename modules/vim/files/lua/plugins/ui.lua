@@ -74,51 +74,8 @@ return {
       "milanglacier/minuet-ai.nvim",
     },
     event = "VeryLazy",
-    opts = function()
-      return {
-        options = {
-          theme = "auto",
-          component_separators = { left = "|", right = "|" },
-          section_separators = { left = "", right = "" },
-        },
-        sections = {
-          lualine_a = { "mode" },
-          lualine_b = { "branch", "diff", "diagnostics" },
-          lualine_c = { "filename" },
-          lualine_x = {
-            require("minuet.lualine"),
-            {
-              function()
-                local clients = vim.lsp.get_clients({ bufnr = 0 })
-                if #clients == 0 then return "-" end
-                local names = {}
-                for _, c in ipairs(clients) do
-                  table.insert(names, c.name)
-                end
-                return table.concat(names, ", ")
-              end,
-              icon = " ",
-            },
-            "filetype",
-          },
-          lualine_y = { "progress" },
-          lualine_z = { "location" },
-        },
-      }
+    opts = function(_, opts)
+      table.insert(opts.sections.lualine_x, 1, require("minuet.lualine"))
     end,
-  },
-
-  {
-    "folke/trouble.nvim",
-    cmd = "Trouble",
-    opts = {},
-    keys = {
-      { "<leader>xx", "<cmd>Trouble diagnostics toggle<cr>",                        desc = "Diagnostics (Trouble)" },
-      { "<leader>xX", "<cmd>Trouble diagnostics toggle filter.buf=0<cr>",           desc = "Buffer Diagnostics (Trouble)" },
-      { "<leader>cs", "<cmd>Trouble symbols toggle focus=false<cr>",                desc = "Symbols (Trouble)" },
-      { "<leader>cl", "<cmd>Trouble lsp toggle focus=false win.position=right<cr>", desc = "LSP Definitions / References (Trouble)" },
-      { "<leader>xL", "<cmd>Trouble loclist toggle<cr>",                            desc = "Location List (Trouble)" },
-      { "<leader>xQ", "<cmd>Trouble qflist toggle<cr>",                             desc = "Quickfix List (Trouble)" },
-    },
   },
 }

@@ -5,10 +5,7 @@ return {
       local keys = {
         { "gd", function() Snacks.picker.lsp_definitions() end, desc = "Goto Definition" },
         { "gr", function() Snacks.picker.lsp_references() end, desc = "References" },
-        { "gi", function() Snacks.picker.lsp_implementations() end, desc = "Goto Implementation" },
         { "gb", "<C-o>", desc = "Jump Back" },
-        { "<leader>rn", vim.lsp.buf.rename, desc = "Rename" },
-        { "<leader>cl", false },
       }
       opts.servers["*"].keys = vim.list_extend(opts.servers["*"].keys, keys)
       for _, name in ipairs({

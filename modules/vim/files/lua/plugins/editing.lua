@@ -20,9 +20,6 @@ return {
         python = { "ruff_format" },
       }
     end,
-    keys = {
-      { "<leader>cf", function() require("conform").format({ async = true }) end, mode = "", desc = "Format Buffer" },
-    },
   },
   {
     "MeanderingProgrammer/render-markdown.nvim",

@@ -105,14 +105,10 @@ return {
     -- Picker: files
     { "<leader>ff", function() Snacks.picker.files() end,                     desc = "Find Files" },
     { "<leader>fr", function() Snacks.picker.recent() end,                    desc = "Recent Files" },
-    { "<leader>b",  function() Snacks.picker.buffers() end,                   desc = "Buffers" },
-    { "<leader>fb", function() Snacks.picker.buffers() end,                   desc = "Buffers" },
     -- Picker: search
     { "<leader>/",  function() sync_search_files(); Snacks.picker.grep() end, desc = "Grep (Project)" },
     { "<leader>sg", function() sync_search_files(); Snacks.picker.grep() end, desc = "Grep" },
-    { "<leader>sr", function() Snacks.picker.resume() end,                    desc = "Resume Search" },
     { "<leader>sw", function() sync_search_files(); Snacks.picker.grep_word() end, desc = "Grep Word",             mode = { "n", "x" } },
-    { "<leader>s/", function() Snacks.picker.lines() end,                     desc = "Buffer Lines" },
     -- Picker: git
     { "<leader>gb", function() Snacks.picker.git_branches() end,              desc = "Git Branches" },
     { "<leader>gd", function() Snacks.picker.git_diff() end,                  desc = "Git Diff (Hunks)" },
@@ -123,7 +119,6 @@ return {
     { "<leader>gL", function() Snacks.picker.git_log_line() end,              desc = "Git Log Line" },
     { "<leader>gg", function() Snacks.lazygit() end,                          desc = "Lazygit" },
     { "<leader>gB", function() Snacks.gitbrowse() end,                        desc = "Git Browse",                 mode = { "n", "v" } },
-    { "<leader>gh", function() Snacks.git.blame_line() end,                   desc = "Git Blame Line" },
     -- Picker: GitHub
     { "<leader>gi", function() Snacks.picker.gh_issue() end,                  desc = "GitHub Issues (Open)" },
     { "<leader>gI", function() Snacks.picker.gh_issue({ state = "all" }) end, desc = "GitHub Issues (All)" },
@@ -133,7 +128,6 @@ return {
     { "gd",         function() Snacks.picker.lsp_definitions() end,           desc = "Goto Definition" },
     { "gb",         "<C-o>",                                                 desc = "Jump Back" },
     { "gr",         function() Snacks.picker.lsp_references() end,            nowait = true,                       desc = "References" },
-    { "gi",         function() Snacks.picker.lsp_implementations() end,       desc = "Goto Implementation" },
     -- Picker: misc
     { "<leader>:",  function() Snacks.picker.command_history() end,           desc = "Command History" },
     { "<leader>cR", function() Snacks.rename.rename_file() end,               desc = "Rename File" },

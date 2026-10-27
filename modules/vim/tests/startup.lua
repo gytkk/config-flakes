@@ -35,6 +35,33 @@ local function check()
   assert(vim.deep_equal(conform.formatters_by_ft.typescript, { "biome" }))
   assert(conform.default_format_opts.timeout_ms == 1000)
 
+  require("lazy").load({ plugins = { "grug-far.nvim", "trouble.nvim", "lualine.nvim" } })
+  for lhs, desc in pairs({
+    [" sR"] = "Resume", [" sr"] = "Search and Replace", [" s/"] = "Search History",
+    [" sb"] = "Buffer Lines", [" fb"] = "Buffers", [" ,"] = "Buffers",
+    [" cS"] = "LSP references/definitions/... (Trouble)",
+    [" ud"] = "Toggle Diagnostics", [" uh"] = "Toggle Inlay Hints",
+    [" ul"] = "Toggle Line Numbers", [" uS"] = "Toggle Smooth Scroll", [" uw"] = "Toggle Wrap",
+  }) do
+    assert(vim.fn.maparg(lhs, "n", false, true).desc == desc, "Unexpected mapping: " .. lhs)
+  end
+  for _, lhs in ipairs({ " b", " rn", " gh", " hs", " hr", " hp", " hb", "gi" }) do
+    assert(vim.tbl_isempty(vim.fn.maparg(lhs, "n", false, true)), "Legacy mapping must be absent: " .. lhs)
+  end
+  local lspKeys = require("lazy.core.handler.keys").resolve(lsp.servers["*"].keys)
+  for _, lhs in ipairs({ "gI", " cr", " cl" }) do
+    assert(lspKeys[lhs] and lspKeys[lhs].rhs, "Missing default LSP mapping: " .. lhs)
+  end
+  assert(vim.fn.maparg(" cl", "n", false, true).desc == "Lsp Info")
+  assert(vim.wait(1000, function()
+    return vim.fn.maparg(" ghs", "n", false, true).desc == "Stage Hunk"
+  end), "Default Git mappings must attach to the tracked file")
+  assert(vim.fn.maparg(" ghs", "x", false, true).desc == "Stage Hunk")
+  assert(vim.fn.maparg(" ghp", "n", false, true).desc == "Preview Hunk Inline")
+  local lualine = Plugin.values(plugins["lualine.nvim"], "opts")
+  assert(lualine.sections.lualine_x[1] == require("minuet.lualine"))
+  assert(#lualine.sections.lualine_c >= 4 and #lualine.sections.lualine_x > 1)
+
   local formatted = 0
   LazyVim.format.register({
     name = "offline-test", primary = true, priority = 10000,
@@ -51,19 +78,15 @@ local function check()
       hooks = #vim.api.nvim_get_autocmds({ event = "BufWritePre" }),
     }))
   end
-  local format = require("conform").format
-  require("conform").format = function() formatted = formatted + 1 end
-  vim.bo.filetype = "markdown"
-  local keys = require("lazy.core.handler.keys").resolve(Plugin.values(plugins["conform.nvim"], "keys"))
-  for _, key in pairs(keys) do
-    if key.lhs == "<leader>cf" then key.rhs() end
+  for _, ft in ipairs({ "markdown", "yaml" }) do
+    vim.bo.filetype = ft
+    assert(vim.b.autoformat == false)
+    vim.fn.maparg(" cf", "n", false, true).callback()
   end
-  require("conform").format = format
-  assert(formatted == 2, "Manual formatting must still work for Markdown")
+  assert(formatted == 3, "Default manual formatting must still work for Markdown and YAML")
   vim.bo.filetype = "lua"
   assert(vim.b.autoformat == nil, "Changing from Markdown to Lua must restore global formatting policy")
-  assert(vim.fn.maparg(" sr", "n") ~= "" or vim.fn.maparg(" sr", "n", false, true).callback)
-  io.stdout:write("PASS: LazyVim startup, startup Markdown/MDX, Marksman, theme, Nix LSP ownership, diagnostics, save/manual formatting\n")
+  io.stdout:write("PASS: LazyVim startup, Markdown/MDX, Marksman, theme, Nix LSP ownership, default keymaps, Minuet statusline, diagnostics, save/manual formatting\n")
 end
 
 vim.defer_fn(function()
