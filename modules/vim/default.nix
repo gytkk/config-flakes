@@ -29,6 +29,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    home.packages = [ pkgs.tree-sitter ];
+
     xdg.configFile."nvim/lua/config".source = mkSymlink "files/config";
     xdg.configFile."nvim/themes".source = nvimThemeExports;
 

@@ -299,6 +299,10 @@ The shared `modules.commonTheme` default is `one-half-light` for Ghostty, Herdr,
 
 Ghostty opens new windows maximized to the current monitor's available area. On macOS, it also preserves saved windows, tabs, and splits. See the [Ghostty module README](modules/ghostty/README.md) for applying the configuration and resizing restored windows.
 
+## Neovim config
+
+The [Neovim module](modules/vim/README.md) manages the nightly editor, Nix-installed language servers, shared themes, and personal Lua configuration. An isolated [LazyVim candidate](modules/vim/README.md#lazyvim-후보-환경) is available for compatibility testing with Blink-based Minuet completion. The default editor continues to use the existing configuration until the candidate is promoted.
+
 ## Zed config
 
 - Zed is managed through `modules/zed/default.nix`.

@@ -124,9 +124,56 @@ Markdown files opened directly receive both in-buffer rendering and Marksman sup
 - `modules/vim/files/config/plugins/*.lua`: plugin specs grouped by feature area
 - `themes/exports/nvim/*.lua`: generated colorscheme definitions
 
+## LazyVim 후보 환경
+
+`files/lazyvim/`는 기존 설정과 비교하기 위한 LazyVim 후보 설정이다. 기본 `nvim`, `vi`, `vim`은 계속 `files/config/`를 사용한다. 후보는 `NVIM_APPNAME=nvim-lazyvim`을 사용하므로 플러그인, parser, 세션, 캐시를 기존 환경과 별도로 저장한다. 공통 테마와 agenix 키 경로는 현재 Home Manager가 생성한 `nvim/init.lua`에서 가져오며 비밀 키 자체를 복사하지 않는다.
+
+먼저 해당 환경에서 Home Manager를 적용하여 갱신된 nightly와 parser 설치에 필요한 `tree-sitter` CLI를 설치한다. NixOS에서는 해당 호스트의 rebuild 절차를 사용한다. 저장소 루트에서 후보를 실행한다.
+
+```bash
+home-manager switch --flake .#pylv-denim
+bash modules/vim/try-lazyvim.sh
+bash modules/vim/try-lazyvim.sh README.md
+```
+
+다른 실행 파일을 시험할 때는 `NVIM_BIN=/absolute/path/to/nvim`을 지정한다. 첫 실행에는 플러그인 다운로드와 parser 설치가 필요하다. LazyVim은 `16.0.1`을 사용하며 플러그인 revision은 [후보 lockfile](files/lazyvim/lazy-lock.json)에 기록한다. `:Lazy restore`로 기록된 revision을 복원할 수 있다. `:Lazy update`는 이 파일을 수정하므로 diff를 검토하고 커밋한다. `:LazyExtras` 선택은 후보의 `lazyvim.json`에 저장되며 이 저장소에서 관리하지 않는다. 재현할 구성이 확정되면 개인 spec에 명시한다.
+
+후보는 Nix가 설치한 기존 LSP 서버, Rust의 client watcher, formatter 선택, Markdown과 YAML의 저장 시 포맷 제외, 검색 갱신, 주요 단축키, 세션 복원과 탐색기 시작 동작을 유지한다. Mason, Dashboard, Bufferline은 비활성화한다. 포맷 실행과 공통 LSP 초기화는 LazyVim이 담당한다. `config/legacy.lua`는 비교 기간에 기존 개인 설정을 재사용하는 연결부이며, 기본 환경으로 전환할 때 남길 helper를 옮긴 뒤 제거한다. 기타 LazyVim 기본 기능은 포함되므로 모든 편집 옵션이 기존 환경과 같다는 뜻은 아니다.
+
+### Blink와 Minuet
+
+후보에서는 Minuet이 `gpt-6-luna`에 요청하고 Blink가 일반 완성과 AI 추천을 같은 메뉴에 표시한다. 자동 AI 요청에 사용하는 언어 목록, context window, throttle, debounce, timeout, agenix 키 읽기는 기존 설정을 유지한다. 인라인 AI 자동 제안과 insert-mode ghost text는 사용하지 않는다.
+
+- 입력 중 LSP, snippet, 경로, buffer 완성과 함께 AI 추천을 비동기로 요청한다. 메뉴의 source 이름으로 Minuet 항목을 구분한다.
+- `<Tab>`은 Blink의 `super-tab` 규칙을 따른다. 활성 snippet에서는 선택한 메뉴 항목을 먼저 수락하고, 수락할 항목이 없으면 다음 snippet 입력 위치로 이동한다. snippet 밖에서는 선택한 항목 또는 첫 항목을 수락하며, 메뉴가 없으면 일반 Tab으로 동작한다.
+- `<C-y>`는 Minuet 추천만 수동 요청한다. 수동 요청은 Minuet의 자동 요청 언어 제한과 throttle을 우회한다.
+- 기존 인라인 전용 `<C-g>l`, `<C-g>e`, `<C-g>n`, `<C-g>p`는 후보에서 제공하지 않는다.
+- Minuet의 점수 보정은 `-50`이다. 일반 완성을 우선하기 위한 상대 점수이며, AI를 항상 마지막에 배치하는 엄격한 정렬 규칙은 아니다.
+
+2026-10-27 조사에서 기존 Minuet의 인라인 표시와 Blink 연동이 OpenAI backend의 요청 취소 상태를 공유함을 확인했다. 오프라인 검사에서는 Blink 메뉴를 여는 것만으로 기존 인라인 표시가 지워지지 않았고, 인라인 표시를 닫은 뒤에도 진행 중인 응답이 다시 표시될 수 있었다. 따라서 후보는 요청과 표시 경로를 Blink로 통일한다. [Minuet virtualtext](https://github.com/milanglacier/minuet-ai.nvim/blob/ee03326381c93f6417fa66aeb2ca85a26c0706e7/lua/minuet/virtualtext.lua), [공통 OpenAI backend](https://github.com/milanglacier/minuet-ai.nvim/blob/ee03326381c93f6417fa66aeb2ca85a26c0706e7/lua/minuet/backends/openai_base.lua), [LazyVim Blink 설정](https://github.com/LazyVim/LazyVim/blob/999700997f72227187d49d8b92667183dc7fc809/lua/lazyvim/plugins/extras/coding/blink.lua)
+
+이 방식은 LSP 메뉴가 열린 동안에도 자동 AI 요청을 허용하므로 기존 인라인 방식보다 요청 횟수가 늘 수 있다. 실제 API 응답 품질, 지연과 사용량은 별도 확인 대상이다.
+
+### 후보 검증과 전환 기준
+
+오프라인 완성 검사는 실제 LazyVim spec 병합과 Blink, Minuet 코드를 사용하되 backend를 대체하여 외부 요청과 credential 접근을 차단한다. 후보 설치 후 저장소 루트에서 실행한다.
+
+```bash
+LAZYVIM_SOURCE="${XDG_DATA_HOME:-$HOME/.local/share}/nvim-lazyvim/lazy/LazyVim" \
+NVIM_PLUGIN_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/nvim-lazyvim/lazy" \
+nvim --headless -u NONE -l modules/vim/tests/completion.lua
+
+bash modules/vim/try-lazyvim.sh --headless modules/vim/README.md \
+  '+lua dofile("modules/vim/tests/candidate.lua")'
+```
+
+두 번째 검사는 테마, 최초 Markdown 로딩과 Marksman 연결, Nix의 서버 설치 책임, 진단 표시, 저장 시 포맷 예외와 수동 포맷을 확인한다. parser 설치가 끝난 뒤 실행한다. 프로젝트 밖의 MDX 파일을 인자로 지정해서 같은 검사를 실행할 수도 있다. headless 검사에서는 실제 터미널의 `UIEnter` 이벤트를 대신 발생시킨다.
+
+기본 설정 전환 전에는 실제 편집에서 세션 유무별 시작, 파일 지정 실행, 검색 저장과 외부 변경 갱신, AI 추천 수락, macOS의 Rust watcher 동작을 확인한다. 후보의 설정 파일과 lockfile만으로 테스트를 재현하고, 개인 helper를 정리한 뒤 Home Manager의 기본 설정 연결을 바꾼다. 현재 설정을 사용하려면 후보를 닫고 일반 `nvim`을 실행하면 된다. 후보의 세션은 기존 세션과 별도로 유지한다.
+
 ## LazyVim 도입 검토
 
-2026-10-27에 검토한 내용을 향후 도입 판단의 배경으로 기록한다. 저장소 기준은 `0080d76222accbafbfaf2bc08e1c15241d40ae8e`이며, LazyVim 비교는 아래 공식 문서의 당시 기본 설정을 기준으로 한다. LazyVim 도입과 기존 동작 변경은 아직 결정하지 않았다. 도입 시에는 선택한 LazyVim 버전에서 기본값과 호환성을 다시 확인한다.
+2026-10-27의 초기 검토를 기록한다. 저장소 기준은 `0080d76222accbafbfaf2bc08e1c15241d40ae8e`이며, LazyVim 비교는 아래 공식 문서의 당시 기본 설정을 기준으로 한다. 당시에는 LazyVim 도입과 기존 동작 변경을 결정하지 않았다. 이후 진행한 후보 구성과 전환 기준은 위의 후보 환경 설명을 따른다.
 
 ### 검토 배경과 판단
 
