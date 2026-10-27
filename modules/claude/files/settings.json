@@ -108,7 +108,6 @@
   },
   "enabledPlugins": {
     "document-skills@anthropic-agent-skills": true,
-    "security-guidance@claude-code-plugins": true,
     "ralph-loop@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
     "ponytail@ponytail": true,
@@ -181,8 +180,14 @@
   "language": "english",
   "feedbackDrafts": "off",
   "spinnerTipsEnabled": false,
+  "subagentPromptCacheTtl": "1h",
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "high"
+    }
+  },
   "tui": "fullscreen",
   "autoMemoryEnabled": true,
   "autoDreamEnabled": true,
@@ -190,11 +195,5 @@
   "theme": "light-ansi",
   "editorMode": "normal",
   "teammateMode": "auto",
-  "skipAutoPermissionPrompt": true,
-  "subagentPromptCacheTtl": "1h",
-  "modelSettings": {
-    "claude-opus-5-5": {
-      "effortLevel": "high"
-    }
-  }
+  "skipAutoPermissionPrompt": true
 }
