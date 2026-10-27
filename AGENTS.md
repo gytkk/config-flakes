@@ -137,7 +137,7 @@ This table lists selected modules, with paths relative to the repository root. S
 | `modules/k9s/` | Kubernetes manager | `modules/k9s/default.nix` | NO |
 | `modules/lsp/` | LSP server packages | `modules/lsp/default.nix` | NO |
 | `modules/terraform/` | Terraform versions | `modules/terraform/default.nix` (tenv) | NO |
-| `modules/vim/` | Neovim | `modules/vim/files/config/`, `themes/exports/nvim` | 부분적 |
+| `modules/vim/` | Neovim | `modules/vim/files/lua/`, `modules/vim/files/lazy-lock.json`, `themes/exports/nvim` | 부분적 |
 | `modules/vscode/` | VSCode (disabled) | `modules/vscode/default.nix`, `modules/vscode/one-half-light-theme/` | NO |
 | `modules/zed/` | Zed editor | `modules/zed/files/settings.json`, `themes/exports/zed` | 부분적 |
 | `modules/zsh/` | Zsh shell | `modules/zsh/default.nix`, `themes/exports/starship` | 부분적 |
@@ -148,7 +148,7 @@ This table lists selected modules, with paths relative to the repository root. S
 
 #### Neovim (`modules/vim/`)
 
-[Neovim README](modules/vim/README.md)에서 설정 구조와 적용 방식을 확인한다. LSP 서버를 추가할 때는 `modules/vim/files/config/lsp.lua`의 `lspServers` 목록과 `modules/lsp/default.nix`의 바이너리를 함께 확인한다.
+[Neovim README](modules/vim/README.md)에서 LazyVim 설정 구조와 적용 방식을 확인한다. LSP 서버를 추가할 때는 `modules/vim/files/lua/plugins/lsp.lua`의 서버 설정과 `modules/lsp/default.nix`의 바이너리를 함께 확인한다.
 
 #### VSCode (`modules/vscode/`) — DISABLED
 

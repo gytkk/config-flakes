@@ -14,4 +14,14 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
   end
 end
 
-return lazypath
+vim.opt.rtp:prepend(lazypath)
+
+require("lazy").setup({
+  spec = {
+    { "LazyVim/LazyVim", version = "16.0.1", import = "lazyvim.plugins" },
+    { import = "plugins" },
+  },
+  lockfile = vim.g.nix_flakes_lockfile,
+  checker = { enabled = false },
+  change_detection = { notify = false },
+})

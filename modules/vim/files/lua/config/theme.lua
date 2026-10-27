@@ -23,37 +23,32 @@ local function load_exported_theme(theme_name)
   return true
 end
 
-return {
-  "nix-flakes-exported-theme",
-  virtual = true,
-  priority = 1000,
-  config = function()
-    local ok, err = load_exported_theme(exportedThemeName)
-    if ok then
+return function()
+  local ok, err = load_exported_theme(exportedThemeName)
+  if ok then
+    return
+  end
+
+  if exportedThemeName ~= fallbackExportedThemeName then
+    vim.notify(
+      ("Failed to load theme '%s': %s. Falling back to '%s'."):format(
+        exportedThemeName,
+        err,
+        fallbackExportedThemeName
+      ),
+      vim.log.levels.WARN
+    )
+
+    local fallback_ok, fallback_err = load_exported_theme(fallbackExportedThemeName)
+    if fallback_ok then
       return
     end
 
-    if exportedThemeName ~= fallbackExportedThemeName then
-      vim.notify(
-        ("Failed to load theme '%s': %s. Falling back to '%s'."):format(
-          exportedThemeName,
-          err,
-          fallbackExportedThemeName
-        ),
-        vim.log.levels.WARN
-      )
+    err = fallback_err
+  end
 
-      local fallback_ok, fallback_err = load_exported_theme(fallbackExportedThemeName)
-      if fallback_ok then
-        return
-      end
-
-      err = fallback_err
-    end
-
-    vim.notify(
-      ("Failed to load fallback theme '%s': %s"):format(fallbackExportedThemeName, err),
-      vim.log.levels.ERROR
-    )
-  end,
-}
+  vim.notify(
+    ("Failed to load fallback theme '%s': %s"):format(fallbackExportedThemeName, err),
+    vim.log.levels.ERROR
+  )
+end

@@ -301,7 +301,7 @@ Ghostty opens new windows maximized to the current monitor's available area. On 
 
 ## Neovim config
 
-The [Neovim module](modules/vim/README.md) manages the nightly editor, Nix-installed language servers, shared themes, and personal Lua configuration. An isolated [LazyVim candidate](modules/vim/README.md#lazyvim-후보-환경) is available for compatibility testing with Blink-based Minuet completion. The default editor continues to use the existing configuration until the candidate is promoted.
+The [Neovim module](modules/vim/README.md) configures the nightly editor with LazyVim, Nix-installed language servers, shared themes, and personal Lua settings. Blink displays ordinary completions and Minuet's `gpt-6-luna` suggestions in one menu, with `<Tab>` acceptance. See the module's [rollout instructions](modules/vim/README.md#usage-and-rollout) when applying the configuration.
 
 ## Zed config
 

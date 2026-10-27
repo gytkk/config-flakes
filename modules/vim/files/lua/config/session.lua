@@ -1,20 +1,5 @@
 local M = {}
 
-M.plugin = {
-  "folke/persistence.nvim",
-  event = "BufReadPre",
-  opts = {
-    need = 1,
-    branch = true,
-  },
-  keys = {
-    { "<leader>qs", function() require("persistence").load() end,               desc = "Restore Session" },
-    { "<leader>qS", function() require("persistence").select() end,             desc = "Select Session" },
-    { "<leader>ql", function() require("persistence").load({ last = true }) end, desc = "Restore Last Session" },
-    { "<leader>qd", function() require("persistence").stop() end,               desc = "Stop Session Save" },
-  },
-}
-
 local function hasCurrentSession(persistence_module)
   local session = persistence_module.current()
   if vim.fn.filereadable(session) ~= 0 then return true end

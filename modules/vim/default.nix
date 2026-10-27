@@ -31,7 +31,8 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = [ pkgs.tree-sitter ];
 
-    xdg.configFile."nvim/lua/config".source = mkSymlink "files/config";
+    xdg.configFile."nvim/lua/config".source = mkSymlink "files/lua/config";
+    xdg.configFile."nvim/lua/plugins".source = mkSymlink "files/lua/plugins";
     xdg.configFile."nvim/themes".source = nvimThemeExports;
 
     programs.neovim = {
@@ -44,7 +45,8 @@ in
       initLua = ''
         vim.g.nix_flakes_theme = ${builtins.toJSON config.modules.commonTheme}
         vim.g.openai_api_key_path = ${builtins.toJSON openAIKeySecretPath}
-        require('config')
+        vim.g.nix_flakes_lockfile = ${builtins.toJSON "${flakeDirectory}/modules/vim/files/lazy-lock.json"}
+        require('config.lazy')
       '';
     };
   };

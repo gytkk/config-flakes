@@ -1,9 +1,10 @@
+-- Keep test buffers out of the user's saved session.
+require("persistence").stop()
+
 -- lazy.nvim starts VeryLazy after UIEnter; headless checks must supply that event.
 vim.api.nvim_exec_autocmds("UIEnter", { modeline = false })
 
 local function check()
-  assert(vim.env.NVIM_APPNAME == "nvim-lazyvim")
-  assert(vim.fn.stdpath("data"):match("nvim%-lazyvim$"))
   assert(LazyVim.config.version == "16.0.1")
   assert(not LazyVim.has("mason.nvim") and not LazyVim.has("mason-lspconfig.nvim"))
   assert(not LazyVim.has("bufferline.nvim"))
@@ -62,7 +63,7 @@ local function check()
   vim.bo.filetype = "lua"
   assert(vim.b.autoformat == nil, "Changing from Markdown to Lua must restore global formatting policy")
   assert(vim.fn.maparg(" sr", "n") ~= "" or vim.fn.maparg(" sr", "n", false, true).callback)
-  io.stdout:write("PASS: isolated candidate, startup Markdown/MDX, Marksman, theme, Nix LSP ownership, diagnostics, save/manual formatting\n")
+  io.stdout:write("PASS: LazyVim startup, startup Markdown/MDX, Marksman, theme, Nix LSP ownership, diagnostics, save/manual formatting\n")
 end
 
 vim.defer_fn(function()

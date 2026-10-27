@@ -31,6 +31,7 @@ return {
   lazy = false,
   ---@type snacks.Config
   opts = {
+    dashboard = { enabled = false },
     explorer = { enabled = true },
     picker = {
       enabled = true,

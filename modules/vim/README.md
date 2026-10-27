@@ -1,225 +1,116 @@
-# Vim Module
+# Vim module
 
-This module configures Neovim as the primary editor with a modern Lua-based setup managed through Home Manager.
+This module configures the pinned Neovim 0.13 development build with LazyVim and personal Lua settings managed through Home Manager. It installs Neovim as the default editor and creates `vi` and `vim` aliases.
 
-## What it does
+## Configuration
 
-- Installs the pinned Neovim 0.13 development build and configures it as the default editor
-- Creates `vi` and `vim` aliases that point to `nvim`
-- Loads the Neovim configuration from modular Lua files under `modules/vim/files/config/`
-- Exposes every generated colorscheme from `themes/exports/nvim/`
-- Loads the selected shared theme and falls back to `one-half-light` if its generated export is missing
+Home Manager links `nvim/lua/config` and `nvim/lua/plugins` separately to the corresponding directories under `modules/vim/files/lua/`. The generated `init.lua` supplies the shared theme, decrypted agenix key path, and `vim.g.nix_flakes_lockfile`, then loads `config.lazy`. LazyVim provides common plugin setup; personal specs preserve the selected language servers, formatting, keymaps, search refresh, and startup behavior. Mason, Dashboard, and Bufferline are disabled.
 
-Vira Graphene follows the original editor's syntax and UI colors through a theme override, with comments slightly brightened to `#676767` for readability. Its selection uses the brighter gray `#545454` to stay visible against the editor background. Neovim cannot alpha-blend a Visual highlight background. See the [canonical theme resolution rules](../../themes/README.md#resolution-rules) for the source and Zed selection behavior.
+LazyVim is pinned to `16.0.1`. Plugin revisions are recorded in the [repository lockfile](files/lazy-lock.json), which Lazy uses directly. An existing unmanaged `~/.config/nvim/lazy-lock.json` is left untouched and is ignored. Run `:Lazy restore` to restore recorded revisions. `:Lazy update` modifies the repository lockfile, so review and commit its diff. Configure reproducible extras in repository specs; interactive `:LazyExtras` selections are not managed here.
 
-## Included Features
+The module exposes every generated colorscheme from `themes/exports/nvim/`, loads the selected shared theme, and falls back to `one-half-light` if its export is missing. Vira Graphene follows the original editor's syntax and UI colors through a theme override, with comments brightened to `#676767` and selection set to `#545454`. Neovim cannot alpha-blend a Visual highlight background. See the [canonical theme resolution rules](../../themes/README.md#resolution-rules).
 
-- `lazy.nvim` plugin management
-- `snacks.nvim` for file picking, explorer, notifications, status column, inlay hint toggles, and lazygit integration
-- `snacks.nvim` extras for git browse, file rename, smooth scrolling, and inline image rendering
-- `snacks.nvim` GitHub integration for issues and pull requests via the `gh` CLI
-- `persistence.nvim` for directory and branch-aware session saving and restore on bare `nvim` startup
-- `blink.cmp` completion with LSP, snippets, path, buffer, and on-demand Minuet AI suggestions
-- `minuet-ai.nvim` inline suggestions backed by OpenAI `gpt-6-luna`
-- Built-in Neovim LSP configuration for Nix, Go, Rust, TypeScript, HTML, CSS, JSON, Lua, shell, Terraform, YAML, Markdown and MDX, TOML, and Python via `ty`
-- Neovim watches Rust files for rust-analyzer to avoid a macOS server watcher startup stall
-- `nvim-treesitter` syntax parsing for the main languages used in this repository
-- `conform.nvim` formatting on save, including `nixfmt`, `prettier`, `rustfmt`, `gofmt`, and `ruff_format`
-- `gitsigns.nvim`, `lualine.nvim`, `flash.nvim`, `which-key.nvim`, `trouble.nvim`, and `render-markdown.nvim`
-- Native diagnostics show a color-coded circle and the current-line message directly after the code
-- Markdown and MDX rendering uses `render-markdown.nvim` for an in-buffer preview that returns to raw Markdown or MDX source in insert mode
+## Features
 
-## Flash compatibility
+- Snacks provides file picking, explorer, notifications, status column, inlay hint toggles, lazygit, git browse, file rename, smooth scrolling, inline images, and GitHub issues and pull requests through `gh`.
+- Persistence saves directory and branch-aware sessions and restores them on bare `nvim` startup.
+- Blink combines LSP, snippets, paths, buffers, and Minuet AI suggestions in one completion menu.
+- Nix installs language servers; Rust uses rust-analyzer from the active rustup toolchain. Neovim watches Rust files to avoid a macOS server watcher startup stall.
+- Treesitter provides syntax parsing. Conform formats with the selected tools, including `nixfmt`, `prettier`, `rustfmt`, `gofmt`, and `ruff_format`. Markdown and YAML skip formatting on save; manual formatting remains available.
+- Native diagnostics show a color-coded circle and the current-line message directly after the code.
+- Markdown and MDX use `render-markdown.nvim` for an in-buffer preview that returns to source in insert mode. Directly opened standalone Markdown files receive Marksman support.
 
-`flash.nvim` is pinned to the upstream Neovim 0.13 search-state fix. Older versions access removed `search_match_*` globals and can repeatedly report `Flash error during redraw` after a character motion, including when saving MDX files. Run `:Lazy update flash.nvim` after applying this configuration and restart Neovim.
+Flash is pinned to the upstream Neovim 0.13 search-state fix. Older versions access removed `search_match_*` globals and can repeatedly report `Flash error during redraw` after a character motion, including when saving MDX files. Restore the recorded plugins after applying this configuration and restart Neovim.
 
 ## Search refresh
 
-For `/` and `?` searches, entering insert mode, changing buffer text, leaving a buffer, or reloading an externally changed file clears search highlights and Noice's inline search count. Press `<Esc>` in normal mode to clear them manually. The search pattern remains available, and `n` or `N` resumes the search with highlights and the count.
+For `/` and `?` searches, entering insert mode, changing buffer text, leaving a buffer, or reloading an externally changed file clears search highlights and Noice's inline search count. Press `<Esc>` in normal mode to clear them manually. The pattern remains available, and `n` or `N` resumes the search with highlights and the count.
 
-Open grep pickers rerun the current search after a file is saved, after Neovim reloads an externally changed file, and when Neovim regains focus. The results and preview refresh while preserving the search query and scope. This also applies to a grep picker reopened with `<leader>sr`. External edits do not trigger continuous filesystem polling; they appear when Neovim detects the change or regains focus.
+Open grep pickers rerun the current search after a file is saved, after Neovim reloads an externally changed file, and when Neovim regains focus. Results and preview refresh while preserving the query and scope, including a picker reopened with `<leader>sr`. External edits appear when Neovim detects the change or regains focus; there is no continuous filesystem polling.
 
-## Minuet
+## Blink and Minuet
 
-- Store the OpenAI API key in `secrets/openai-api-key.age` before launching Neovim.
-- NixOS hosts decrypt the secret with system agenix under `/run/agenix/openai-api-key`; home-only environments declare it through the [OpenAI API module](../openai-api/README.md) and decrypt it with Home Manager agenix.
-- The vim module wires the decrypted agenix path into Neovim as `vim.g.openai_api_key_path` on every environment.
-- Inline suggestions use Minuet's virtual text frontend to avoid duplicate OpenAI API requests from the completion menu.
-- Minuet requests OpenAI Fast mode for lower latency at the Fast mode token rate.
-- Minuet uses a 6,000-character context window, a 900ms request throttle, and a 4-second streamed-response timeout. The on-demand Blink source uses the same 4-second timeout. This keeps AI suggestions responsive without requesting a completion on every keystroke.
-- Press `<Tab>` to accept the current Minuet inline suggestion when one is visible.
-- Press `<C-y>` to open Minuet suggestions in the `blink.cmp` menu on demand.
+Minuet requests OpenAI `gpt-6-luna` suggestions and Blink displays them alongside ordinary completion items. Automatic AI requests run asynchronously for the configured coding filetypes. The menu's source name identifies Minuet items. Inline AI suggestions and insert-mode ghost text are disabled.
 
-Create or update the secret with:
+- `<Tab>` follows Blink's `super-tab` rules. In an active snippet it accepts a selected menu item, or moves to the next snippet position when no item is accepted. Outside a snippet it accepts the selected or first item; with no menu it falls back to ordinary Tab behavior.
+- `<C-y>` requests Minuet suggestions manually, bypassing the automatic filetype restriction and throttle.
+- The former inline-only `<C-g>l`, `<C-g>e`, `<C-g>n`, and `<C-g>p` mappings are no longer provided.
+- Minuet uses a 6,000-character context window, a 900ms throttle, a 180ms debounce, and a 4-second timeout. The Blink source also has a 4-second timeout. The `-50` score offset favors ordinary completions but does not guarantee AI suggestions appear last.
+- Requests use OpenAI Fast mode at its Fast mode token rate. Automatic requests can run while an LSP menu is open, which can increase request counts compared with the former inline setup. Actual API quality, latency, and usage require live verification.
+
+Store the API key in `secrets/openai-api-key.age`. NixOS decrypts it under `/run/agenix/openai-api-key`; home-only environments use Home Manager agenix through the [OpenAI API module](../openai-api/README.md). The vim module supplies the decrypted path as `vim.g.openai_api_key_path`.
 
 ```bash
 EDITOR=vim agx -e openai-api-key.age
 ```
 
-## Notable Keymaps
+## Notable keymaps
 
 - `<leader>e`: file explorer
 - `<leader>ff`: find files
-- `<leader>sg`: grep (saves the current modified file and reloads external changes first)
-- `<leader>sr`: resume the previous picker with its search query and scope
-- `<leader>gs`: git status picker
-- `<leader>gb`: git branches picker
-- `<leader>gd`: git diff picker
-- `<leader>gf`: git log for current file
-- `<leader>gS`: git stash picker
-- `<leader>gl`: git log picker
-- `<leader>gL`: git log for current line
+- `<leader>sg`: grep, saving the current modified file and checking external changes first
+- `<leader>sr`: resume the previous picker with its query and scope
+- `<leader>gs`, `<leader>gb`, `<leader>gd`, `<leader>gS`: git status, branches, diff, and stash pickers
+- `<leader>gf`, `<leader>gl`, `<leader>gL`: git log for current file, repository, and current line
 - `<leader>gg`: lazygit
 - `<leader>gB`: open current file or selection in the git remote browser
 - `<leader>gh`: blame current line
-- `<leader>gi`: open GitHub issues
-- `<leader>gp`: open GitHub pull requests
-- `<leader>qs`: restore the current directory session
-- `<leader>qS`: select a saved session
-- `<leader>ql`: restore the last saved session
-- `<leader>qd`: stop saving the current session on exit
+- `<leader>gi`, `<leader>gp`: GitHub issues and pull requests
+- `<leader>qs`, `<leader>qS`, `<leader>ql`: restore directory session, select a session, and restore the last session
+- `<leader>qd`: stop saving the session on exit
 - `gd`: go to definition
 - `gb`: jump back in the jumplist
 - `<leader>cR`: rename current file with LSP-aware updates
 - `<leader>ud`: toggle diagnostics
-- `[d` / `]d`: jump to the previous or next diagnostic
+- `[d`, `]d`: previous and next diagnostic
 - `<leader>d`: toggle all diagnostics on the current line
-- `<leader>xX`: show current-buffer diagnostics in Trouble
-- `<leader>xx`: show workspace diagnostics in Trouble
-- `<leader>uh`: toggle LSP inlay hints
-- `<leader>ul`: toggle line numbers
-- `<leader>uS`: toggle smooth scrolling
-- `<leader>uw`: toggle wrap
+- `<leader>xX`, `<leader>xx`: current-buffer and workspace diagnostics in Trouble
+- `<leader>uh`, `<leader>ul`, `<leader>uS`, `<leader>uw`: toggle inlay hints, line numbers, smooth scrolling, and wrap
 - `<leader>cf`: format current buffer
-- `<Tab>`: accept current Minuet inline suggestion, otherwise fall back to the usual blink/snippet behavior
-- `<C-g>l`: accept current Minuet suggestion line
-- `<C-g>e`: dismiss current Minuet suggestion
-- `<C-g>n`: show next Minuet inline suggestion
-- `<C-g>p`: show previous Minuet inline suggestion
-- `<C-y>`: request Minuet completion in the blink menu
 
-## Usage
+## Usage and rollout
 
-Open a project with the saved session and the left file explorer:
+Bare `nvim` restores the saved session and opens the left explorer. Opening a file with `nvim filename.txt`, `vim filename.txt`, or `vi filename.txt` skips startup session restore and explorer opening. The default setup uses the existing `nvim` session state. Sessions from the former isolated candidate are not copied.
 
-```bash
-nvim
-```
-
-Opening a specific file skips startup session restore and explorer opening:
-
-```bash
-nvim filename.txt
-vim filename.txt
-vi filename.txt
-```
-
-Markdown files opened directly receive both in-buffer rendering and Marksman support, including standalone files outside a Git repository or a directory with `.marksman.toml`. Filetype and syntax activation runs after plugin loading handlers are registered so plugins can handle the initial file's events.
-
-## Files
-
-- `modules/vim/default.nix`: Home Manager wiring
-- `modules/vim/files/config/init.lua`: small bootstrap for options, lazy.nvim, plugin specs, and startup hooks
-- `modules/vim/files/config/*.lua`: focused modules for options, lazy.nvim bootstrap, theme loading, LSP, session restore, AI helpers, and autocmds
-- `modules/vim/files/config/plugins/*.lua`: plugin specs grouped by feature area
-- `themes/exports/nvim/*.lua`: generated colorscheme definitions
-
-## LazyVim 후보 환경
-
-`files/lazyvim/`는 기존 설정과 비교하기 위한 LazyVim 후보 설정이다. 기본 `nvim`, `vi`, `vim`은 계속 `files/config/`를 사용한다. 후보는 `NVIM_APPNAME=nvim-lazyvim`을 사용하므로 플러그인, parser, 세션, 캐시를 기존 환경과 별도로 저장한다. 공통 테마와 agenix 키 경로는 현재 Home Manager가 생성한 `nvim/init.lua`에서 가져오며 비밀 키 자체를 복사하지 않는다.
-
-먼저 해당 환경에서 Home Manager를 적용하여 갱신된 nightly와 parser 설치에 필요한 `tree-sitter` CLI를 설치한다. NixOS에서는 해당 호스트의 rebuild 절차를 사용한다. 저장소 루트에서 후보를 실행한다.
+Before applying the promoted setup, close Neovim. If rollback is needed, first save the existing config lockfile and Neovim data, including sessions, outside their active directories. Apply Home Manager for the target environment, restore the repository's plugin revisions, and restart Neovim:
 
 ```bash
 home-manager switch --flake .#pylv-denim
-bash modules/vim/try-lazyvim.sh
-bash modules/vim/try-lazyvim.sh README.md
+nvim --headless '+Lazy! restore' +qa
+nvim
 ```
 
-다른 실행 파일을 시험할 때는 `NVIM_BIN=/absolute/path/to/nvim`을 지정한다. 첫 실행에는 플러그인 다운로드와 parser 설치가 필요하다. LazyVim은 `16.0.1`을 사용하며 플러그인 revision은 [후보 lockfile](files/lazyvim/lazy-lock.json)에 기록한다. `:Lazy restore`로 기록된 revision을 복원할 수 있다. `:Lazy update`는 이 파일을 수정하므로 diff를 검토하고 커밋한다. `:LazyExtras` 선택은 후보의 `lazyvim.json`에 저장되며 이 저장소에서 관리하지 않는다. 재현할 구성이 확정되면 개인 spec에 명시한다.
+Use the corresponding `nixos-rebuild switch --flake .#<host>` procedure on NixOS. The first restore may download plugins and install parsers; the module installs the required `tree-sitter` CLI. Applying Home Manager or rebuilding the host is a user-run step.
 
-후보는 Nix가 설치한 기존 LSP 서버, Rust의 client watcher, formatter 선택, Markdown과 YAML의 저장 시 포맷 제외, 검색 갱신, 주요 단축키, 세션 복원과 탐색기 시작 동작을 유지한다. Mason, Dashboard, Bufferline은 비활성화한다. 포맷 실행과 공통 LSP 초기화는 LazyVim이 담당한다. `config/legacy.lua`는 비교 기간에 기존 개인 설정을 재사용하는 연결부이며, 기본 환경으로 전환할 때 남길 helper를 옮긴 뒤 제거한다. 기타 LazyVim 기본 기능은 포함되므로 모든 편집 옵션이 기존 환경과 같다는 뜻은 아니다.
+## Regression checks
 
-### Blink와 Minuet
-
-후보에서는 Minuet이 `gpt-6-luna`에 요청하고 Blink가 일반 완성과 AI 추천을 같은 메뉴에 표시한다. 자동 AI 요청에 사용하는 언어 목록, context window, throttle, debounce, timeout, agenix 키 읽기는 기존 설정을 유지한다. 인라인 AI 자동 제안과 insert-mode ghost text는 사용하지 않는다.
-
-- 입력 중 LSP, snippet, 경로, buffer 완성과 함께 AI 추천을 비동기로 요청한다. 메뉴의 source 이름으로 Minuet 항목을 구분한다.
-- `<Tab>`은 Blink의 `super-tab` 규칙을 따른다. 활성 snippet에서는 선택한 메뉴 항목을 먼저 수락하고, 수락할 항목이 없으면 다음 snippet 입력 위치로 이동한다. snippet 밖에서는 선택한 항목 또는 첫 항목을 수락하며, 메뉴가 없으면 일반 Tab으로 동작한다.
-- `<C-y>`는 Minuet 추천만 수동 요청한다. 수동 요청은 Minuet의 자동 요청 언어 제한과 throttle을 우회한다.
-- 기존 인라인 전용 `<C-g>l`, `<C-g>e`, `<C-g>n`, `<C-g>p`는 후보에서 제공하지 않는다.
-- Minuet의 점수 보정은 `-50`이다. 일반 완성을 우선하기 위한 상대 점수이며, AI를 항상 마지막에 배치하는 엄격한 정렬 규칙은 아니다.
-
-2026-10-27 조사에서 기존 Minuet의 인라인 표시와 Blink 연동이 OpenAI backend의 요청 취소 상태를 공유함을 확인했다. 오프라인 검사에서는 Blink 메뉴를 여는 것만으로 기존 인라인 표시가 지워지지 않았고, 인라인 표시를 닫은 뒤에도 진행 중인 응답이 다시 표시될 수 있었다. 따라서 후보는 요청과 표시 경로를 Blink로 통일한다. [Minuet virtualtext](https://github.com/milanglacier/minuet-ai.nvim/blob/ee03326381c93f6417fa66aeb2ca85a26c0706e7/lua/minuet/virtualtext.lua), [공통 OpenAI backend](https://github.com/milanglacier/minuet-ai.nvim/blob/ee03326381c93f6417fa66aeb2ca85a26c0706e7/lua/minuet/backends/openai_base.lua), [LazyVim Blink 설정](https://github.com/LazyVim/LazyVim/blob/999700997f72227187d49d8b92667183dc7fc809/lua/lazyvim/plugins/extras/coding/blink.lua)
-
-이 방식은 LSP 메뉴가 열린 동안에도 자동 AI 요청을 허용하므로 기존 인라인 방식보다 요청 횟수가 늘 수 있다. 실제 API 응답 품질, 지연과 사용량은 별도 확인 대상이다.
-
-### 후보 검증과 전환 기준
-
-오프라인 완성 검사는 실제 LazyVim spec 병합과 Blink, Minuet 코드를 사용하되 backend를 대체하여 외부 요청과 credential 접근을 차단한다. 후보 설치 후 저장소 루트에서 실행한다.
+The completion check uses the real merged LazyVim, Blink, and Minuet specs with a substituted backend, preventing external requests and credential access. After plugins are installed, run it from the repository root:
 
 ```bash
-LAZYVIM_SOURCE="${XDG_DATA_HOME:-$HOME/.local/share}/nvim-lazyvim/lazy/LazyVim" \
-NVIM_PLUGIN_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/nvim-lazyvim/lazy" \
+LAZYVIM_SOURCE="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/lazy/LazyVim" \
+NVIM_PLUGIN_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/lazy" \
 nvim --headless -u NONE -l modules/vim/tests/completion.lua
 
-bash modules/vim/try-lazyvim.sh --headless modules/vim/README.md \
-  '+lua dofile("modules/vim/tests/candidate.lua")'
+nvim --headless modules/vim/README.md \
+  '+lua dofile("modules/vim/tests/startup.lua")'
 ```
 
-두 번째 검사는 테마, 최초 Markdown 로딩과 Marksman 연결, Nix의 서버 설치 책임, 진단 표시, 저장 시 포맷 예외와 수동 포맷을 확인한다. parser 설치가 끝난 뒤 실행한다. 프로젝트 밖의 MDX 파일을 인자로 지정해서 같은 검사를 실행할 수도 있다. headless 검사에서는 실제 터미널의 `UIEnter` 이벤트를 대신 발생시킨다.
+The startup check covers theme loading, the initial Markdown buffer and Marksman attachment, Nix ownership of server installation, diagnostics, and automatic versus manual formatting. Wait for parser installation before running it. It can also run against a standalone MDX file. In headless mode the test supplies the terminal's `UIEnter` event.
 
-기본 설정 전환 전에는 실제 편집에서 세션 유무별 시작, 파일 지정 실행, 검색 저장과 외부 변경 갱신, AI 추천 수락, macOS의 Rust watcher 동작을 확인한다. 후보의 설정 파일과 lockfile만으로 테스트를 재현하고, 개인 helper를 정리한 뒤 Home Manager의 기본 설정 연결을 바꾼다. 현재 설정을 사용하려면 후보를 닫고 일반 `nvim`을 실행하면 된다. 후보의 세션은 기존 세션과 별도로 유지한다.
+For checks that must preserve normal session and plugin state, use a temporary `NVIM_APPNAME` with a config directory linked to the installed config and isolated data, state, and cache. Install the recorded plugins in that runtime before running startup checks. There is no permanent candidate launcher.
 
-## LazyVim 도입 검토
+Real editing checks still cover startup with and without sessions, file arguments, search refresh after saves and external edits, AI acceptance, and Rust watchers on macOS. Offline checks do not establish live API behavior or platform-specific UI behavior.
 
-2026-10-27의 초기 검토를 기록한다. 저장소 기준은 `0080d76222accbafbfaf2bc08e1c15241d40ae8e`이며, LazyVim 비교는 아래 공식 문서의 당시 기본 설정을 기준으로 한다. 당시에는 LazyVim 도입과 기존 동작 변경을 결정하지 않았다. 이후 진행한 후보 구성과 전환 기준은 위의 후보 환경 설명을 따른다.
+## Files
 
-### 검토 배경과 판단
+- [default.nix](default.nix): Home Manager wiring and generated initialization
+- `modules/vim/files/lua/config/`: LazyVim bootstrap, options, autocmds, keymaps, AI credentials, theme loading, and session helpers
+- `modules/vim/files/lua/plugins/`: personal plugin specs grouped by feature
+- [lazy-lock.json](files/lazy-lock.json): recorded plugin revisions
+- `themes/exports/nvim/`: generated colorschemes
 
-Neovim은 편집기이고, `lazy.nvim`은 플러그인 관리자이며, LazyVim은 `lazy.nvim`을 사용하는 Neovim 설정 배포판이다. 이 모듈은 LazyVim 없이 플러그인과 Lua 설정을 직접 조합한다. 확인한 로컬 설치는 Neovim `0.13.0-nightly+c049b8f`였으며, `~/.config/nvim/lua/config`는 이 저장소의 설정 디렉터리를 참조했다.
+## Historical investigation
 
-현재 구성에는 LazyVim에서도 사용하는 Snacks, Blink, Flash, which-key, Gitsigns, Trouble, Lualine, Noice, Conform, Persistence 등이 이미 포함되어 있다. 따라서 전환으로 얻을 핵심 이점은 새로운 편집 기능보다 공통 설정을 직접 관리하는 부담을 줄이는 데 있다. 개인 설정을 이식하면 사용감을 비슷하게 유지할 수 있지만, LazyVim 기본 설정으로 교체하는 것만으로 현재 동작이 보존되지는 않는다.
+The 2026-10-27 investigation compared the hand-maintained setup at `0080d76222accbafbfaf2bc08e1c15241d40ae8e` with LazyVim. Most core plugins were already shared, so the expected benefit was reduced ownership of common configuration. An isolated candidate tested the personal search, session, language-server, formatting, theme, and completion behavior before promotion to the default configuration.
 
-### 구성 비교
-
-| 항목 | 검토 시점의 구성 | LazyVim 도입 시 차이 |
-| --- | --- | --- |
-| 플러그인 관리 | `lazy.nvim`으로 플러그인과 설정을 직접 조합 | 같은 관리자를 사용하며 LazyVim의 기본 spec에 개인 설정을 추가 |
-| 탐색과 검색 | Snacks 사용. 검색 전 저장과 외부 변경 확인, 열린 검색 결과 갱신을 직접 구현 | 기본 탐색과 검색은 유사하지만 프로젝트 root와 현재 디렉터리를 구분한다. 기존 저장과 갱신 동작은 별도 이식 필요 |
-| 자동 완성과 AI | Blink의 `super-tab` 기반 설정, Minuet 제안을 우선 수락하는 `<Tab>`, agenix 키 연결 | Blink 기본값은 `enter` preset이다. Minuet와 키 연결, 완성 키 동작은 별도 설정 필요 |
-| 언어 서버 | Nix가 서버 패키지를 설치하고 Lua에서 활성화. Rust는 활성 rustup toolchain 사용 | Mason 연동과 언어별 Extras를 제공한다. 기존 설치 방식을 유지하려면 서버별 Mason 사용 여부와 활성화 목록 조정 필요 |
-| 포맷 | Conform에서 도구를 지정하며 Markdown과 YAML은 저장 시 포맷 제외 | 같은 플러그인을 사용하지만 기존 도구 선택과 예외 규칙은 별도 설정 필요 |
-| 세션과 시작 화면 | 인자 없는 실행에서 세션 복원과 탐색기 열기. 파일을 지정하면 해당 동작 생략 | Persistence와 대시보드를 제공한다. 현재의 자동 복원 조건과 창 처리 로직은 별도 이식 필요 |
-| 테마와 UI | 공통 테마 export를 로드하며 확인한 로컬 선택값은 `one-half-light` | 기본 테마는 TokyoNight이며 Bufferline과 대시보드 등을 포함한다. 공통 테마 연결과 UI 선택 필요 |
-| 단축키 | 이름 변경은 `<leader>rn`, 검색 재개는 `<leader>sr` | 각각 `<leader>cr`, `<leader>sR`이다. 유지할 개인 키와 수용할 기본 키를 구분해야 함 |
-| 기능 확장과 유지보수 | 플러그인을 직접 선택하고 공통 설정과 개인 설정을 함께 관리 | `:LazyExtras`로 준비된 구성을 활성화할 수 있다. 공통 설정 변경은 LazyVim에서 받아오고 개인 설정과의 호환성을 관리 |
-
-기본값 비교의 근거는 공식 [설정 구조](https://www.lazyvim.org/configuration), [기본 플러그인](https://www.lazyvim.org/plugins), [Blink 설정](https://www.lazyvim.org/extras/coding/blink), [LSP 설정](https://www.lazyvim.org/plugins/lsp), [세션 관리](https://www.lazyvim.org/plugins/util), [단축키](https://www.lazyvim.org/keymaps) 문서다. 현재 구성의 세부 동작은 이 README의 기능 설명과 아래 소스 파일을 기준으로 확인한다.
-
-### 설정을 줄일 수 있는 범위
-
-검토 시점에 `files/config/`의 Lua 파일은 15개, 빈 줄과 주석을 포함해 1,027줄이었다. 이미 기능별로 분리되어 있으므로 LazyVim 도입의 정리 효과는 파일을 합치는 것보다 기본 플러그인 선언과 초기화 코드를 줄이는 데 있다. 다음은 실제 전환 전의 예상이며, 줄 수 감소를 측정한 결과는 아니다.
-
-| 현재 파일 | 정리 가능한 부분 | 계속 관리할 부분 |
-| --- | --- | --- |
-| [init.lua](files/config/init.lua), [plugins/init.lua](files/config/plugins/init.lua) | 기본 플러그인 목록의 수동 조합과 일부 초기화 연결 | LazyVim 초기화와 개인 spec 연결. 파일 열기 이벤트 순서는 회귀 확인 필요 |
-| [plugins/ui.lua](files/config/plugins/ui.lua), [plugins/git.lua](files/config/plugins/git.lua) | 기본 spec과 중복되는 의존성, 로딩 조건, 키 설정 | 개인 상태 표시줄, 알림과 Git 표시, 유지할 키, Flash 버전 고정 |
-| [lsp.lua](files/config/lsp.lua), [plugins/treesitter.lua](files/config/plugins/treesitter.lua) | 공통 capabilities와 서버 초기화, 기본 parser 설정 | Nix 설치 서버 선택, 진단 표시, Rust watcher 설정, 필요한 언어 목록 |
-| [plugins/completion.lua](files/config/plugins/completion.lua), [plugins/editing.lua](files/config/plugins/editing.lua) | 기본 완성 및 포맷 설정과 중복되는 선언 | Minuet 연동, 완성 키, 포맷 도구와 예외, Markdown 외부 변경 처리 |
-| [plugins/snacks.lua](files/config/plugins/snacks.lua), [session.lua](files/config/session.lua), [autocmds.lua](files/config/autocmds.lua) | 기본 탐색기, 세션 플러그인, 일부 이벤트와 키 선언 | 검색 갱신, 탐색기 창 처리, 자동 세션 복원, 외부 변경 후 화면 갱신 |
-| [default.nix](default.nix), [ai.lua](files/config/ai.lua), [theme.lua](files/config/theme.lua) | 설정 디렉터리 연결 방식의 조정 | Home Manager 설치, agenix 키 읽기, 공통 테마 로딩과 fallback |
-
-LazyVim은 개인 `opts`와 `keys`를 기본 spec에 병합하고 설정 파일을 정해진 시점에 로드한다. 이 방식을 사용하면 기본값과 다른 설정을 중심으로 파일을 유지할 수 있다. 기존 `config` callback과 초기화 코드를 그대로 복사하면 공통 설정을 대체하거나 중복 실행할 수 있으므로 각 파일을 역할에 맞게 이식해야 한다. [플러그인 병합 규칙](https://www.lazyvim.org/configuration/plugins), [설정 로딩 규칙](https://www.lazyvim.org/configuration/general)
-
-현재 동작을 모두 유지하면 개인 로직이 상당 부분 남으므로 파일 수나 줄 수가 크게 줄어든다고 단정할 수 없다. LazyVim 기본 UI와 단축키를 수용할수록 설정을 더 줄일 수 있지만, 어느 동작을 바꿀지는 별도 결정이 필요하다.
-
-### 도입 전에 결정하고 확인할 사항
-
-- 전환 목적을 공통 설정의 유지보수 부담 감소로 둘지 판단한다. 현재 기능에 만족한다면 기능 추가만을 이유로 전환할 필요는 크지 않다는 것이 이번 검토의 판단이다.
-- 기존 단축키, 완성 수락 방식, 시작 화면, 검색 범위 중 유지할 동작과 LazyVim 기본값을 따를 동작을 정한다. 현재 동작 변경에 대한 합의는 없다.
-- Nix의 패키지 설치, agenix 비밀 키 처리, 공통 테마 export 연결은 유지하는 방향을 검토한다. Mason을 통한 중복 설치와 서버 중복 활성화 여부를 확인한다.
-- 자동 세션 복원, 파일 지정 실행, Markdown과 MDX의 최초 로딩, 검색 갱신, 저장 시 포맷 예외, Minuet 완성과 진단 표시를 전환 전후에 비교한다.
-- Neovim nightly에 필요한 Flash 수정과 Rust watcher 설정은 호환성을 확인하기 전까지 유지한다. LazyVim 도입 자체가 기존 문제를 해결한다고 가정하지 않는다.
-
-이번 검토는 저장소 설정, 로컬 실행 파일 버전과 설정 경로, 공식 문서 확인에 한정했다. LazyVim 설치, 실제 전환, Nix 평가나 빌드, 시작 시간과 실행 성능 비교는 하지 않았다. 따라서 설정 감소량, 호환성, 성능 개선 여부는 확인하지 않은 상태다.
+The same investigation found that Minuet's inline frontend and Blink integration shared OpenAI backend cancellation state. Offline checks showed that opening the Blink menu did not clear inline text and an in-flight response could redisplay it after dismissal. The promoted setup therefore routes requests and presentation through Blink. Evidence: [Minuet virtualtext](https://github.com/milanglacier/minuet-ai.nvim/blob/ee03326381c93f6417fa66aeb2ca85a26c0706e7/lua/minuet/virtualtext.lua), [shared OpenAI backend](https://github.com/milanglacier/minuet-ai.nvim/blob/ee03326381c93f6417fa66aeb2ca85a26c0706e7/lua/minuet/backends/openai_base.lua), and [LazyVim Blink configuration](https://github.com/LazyVim/LazyVim/blob/999700997f72227187d49d8b92667183dc7fc809/lua/lazyvim/plugins/extras/coding/blink.lua).
