@@ -77,7 +77,6 @@ rustPlatform.buildRustPackage {
     "app::api::plugins"
     "detect::tests::identify_agent"
     "ui::sidebar::tokens::tests::separator_"
-    "ui::sidebar::tokens::tests::token_background_"
   ];
 
   meta = {

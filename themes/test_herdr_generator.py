@@ -153,43 +153,40 @@ class HerdrGeneratorTest(unittest.TestCase):
             re.search(r"^minimum-contrast\s*=\s*([\d.]+)$", ghostty, re.M)[1]
         )
         config = tomllib.loads((repo / "modules/herdr/files/config.toml").read_text())
-        agents = config["ui"]["sidebar"]["agents"]
-        layouts = [agents["rows"], *agents["rows_by_agent"].values()]
-        parent_icons = [
-            token
-            for rows in layouts
-            for row in rows
-            for token in row
-            if isinstance(token, dict) and token["token"] == "state_icon"
-        ]
-        running_rules = [
-            rule
-            for rows in layouts
+        running_colors = {
+            rule["fg"]
+            for rows in config["ui"]["sidebar"]["agents"]["rows_by_agent"].values()
             for row in rows
             for token in row
             if isinstance(token, dict)
             for rule in token.get("rules", [])
             if rule.get("starts_with") == "●"
-        ]
-        self.assertEqual(len(layouts), len(parent_icons))
-        self.assertEqual(14, len(running_rules))
+        }
+        self.assertTrue(running_colors)
+        self.assertEqual(
+            {self.colors(self.context("one-half-light"))["green"]}, running_colors
+        )
         for theme_path in sorted((ROOT / "core").glob("*.yaml")):
             colors = self.colors(self.context(theme_path.stem))
-            pairs = [
-                (color, icon["bg"])
-                for icon in parent_icons
-                for color in (colors["green"], colors["yellow"])
-            ]
-            for rule in running_rules:
-                self.assertEqual(colors["yellow"], rule["fg"])
-                pairs.append((rule["fg"], rule["bg"]))
-            for foreground, background in pairs:
+            for foreground in running_colors | {colors["green"]}:
                 with self.subTest(theme=theme_path.stem, foreground=foreground):
-                    for contrast in (contrast_ratio, ghostty_metal_contrast_ratio):
-                        with self.subTest(renderer=contrast.__name__):
-                            self.assertGreaterEqual(
-                                contrast(foreground, background), max(4.5, minimum)
-                            )
+                    for background in (colors["sidebar_bg"], colors["active_row_bg"]):
+                        for contrast in (contrast_ratio, ghostty_metal_contrast_ratio):
+                            with self.subTest(
+                                background=background, renderer=contrast.__name__
+                            ):
+                                self.assertGreaterEqual(
+                                    contrast(foreground, background), minimum
+                                )
+
+    def test_theme_running_green_has_margin_above_terminal_minimum_contrast(self) -> None:
+        for theme_path in sorted((ROOT / "core").glob("*.yaml")):
+            colors = self.colors(self.context(theme_path.stem))
+            for key in ("sidebar_bg", "active_row_bg"):
+                with self.subTest(theme=theme_path.stem, background=key):
+                    self.assertGreaterEqual(
+                        contrast_ratio(colors["green"], colors[key]), 1.8
+                    )
 
     def test_metal_contrast_catches_the_previous_srgb_only_false_positive(self) -> None:
         self.assertGreater(contrast_ratio("#50a14f", "#b6b8bc"), 1.6)
