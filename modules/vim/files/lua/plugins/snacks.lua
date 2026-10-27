@@ -93,31 +93,23 @@ return {
     lazygit = { enabled = true },
     quickfile = { enabled = true },
     rename = { enabled = true },
-    scroll = { enabled = false },
     scope = { enabled = true },
     statuscolumn = { enabled = true },
     toggle = { enabled = true },
     words = { enabled = true },
   },
   keys = {
-    -- Explorer
-    { "<leader>e",  function() Snacks.explorer() end,                         desc = "File Explorer" },
-    -- Picker: files
-    { "<leader>ff", function() Snacks.picker.files() end,                     desc = "Find Files" },
-    { "<leader>fr", function() Snacks.picker.recent() end,                    desc = "Recent Files" },
     -- Picker: search
-    { "<leader>/",  function() sync_search_files(); Snacks.picker.grep() end, desc = "Grep (Project)" },
-    { "<leader>sg", function() sync_search_files(); Snacks.picker.grep() end, desc = "Grep" },
-    { "<leader>sw", function() sync_search_files(); Snacks.picker.grep_word() end, desc = "Grep Word",             mode = { "n", "x" } },
+    { "<leader>/",  function() sync_search_files(); LazyVim.pick.open("grep") end, desc = "Grep (Root Dir)" },
+    { "<leader>sg", function() sync_search_files(); LazyVim.pick.open("live_grep") end, desc = "Grep (Root Dir)" },
+    { "<leader>sw", function() sync_search_files(); LazyVim.pick.open("grep_word") end, desc = "Visual selection or word (Root Dir)", mode = { "n", "x" } },
     -- Picker: git
     { "<leader>gb", function() Snacks.picker.git_branches() end,              desc = "Git Branches" },
     { "<leader>gd", function() Snacks.picker.git_diff() end,                  desc = "Git Diff (Hunks)" },
     { "<leader>gf", function() Snacks.picker.git_log_file() end,              desc = "Git Log File" },
     { "<leader>gs", function() Snacks.picker.git_status() end,                desc = "Git Status" },
     { "<leader>gS", function() Snacks.picker.git_stash() end,                 desc = "Git Stash" },
-    { "<leader>gl", function() Snacks.picker.git_log() end,                   desc = "Git Log" },
     { "<leader>gL", function() Snacks.picker.git_log_line() end,              desc = "Git Log Line" },
-    { "<leader>gg", function() Snacks.lazygit() end,                          desc = "Lazygit" },
     { "<leader>gB", function() Snacks.gitbrowse() end,                        desc = "Git Browse",                 mode = { "n", "v" } },
     -- Picker: GitHub
     { "<leader>gi", function() Snacks.picker.gh_issue() end,                  desc = "GitHub Issues (Open)" },

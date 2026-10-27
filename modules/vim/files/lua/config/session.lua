@@ -65,7 +65,7 @@ local function openStartupExplorer()
   if #Snacks.picker.get({ source = "explorer", tab = false }) > 0 then return end
 
   local current_win = vim.api.nvim_get_current_win()
-  Snacks.explorer()
+  Snacks.explorer({ cwd = LazyVim.root() })
 
   vim.defer_fn(function()
     if vim.api.nvim_win_is_valid(current_win) and not vim.w[current_win].snacks_layout then
@@ -104,7 +104,7 @@ function M.setup()
         return
       end
 
-      Snacks.explorer()
+      Snacks.explorer({ cwd = LazyVim.root() })
     end,
   })
 end

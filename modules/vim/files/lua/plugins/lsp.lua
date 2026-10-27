@@ -15,7 +15,6 @@ return {
         opts.servers[name] = vim.tbl_deep_extend("force", opts.servers[name] or {}, { mason = false })
       end
       opts.servers.rust_analyzer.settings = { ["rust-analyzer"] = { files = { watcher = "client" } } }
-      opts.folds.enabled = false
       opts.diagnostics.virtual_lines = false
       opts.diagnostics.virtual_text = {
         current_line = true, spacing = 2, prefix = "●", virt_text_pos = "eol",

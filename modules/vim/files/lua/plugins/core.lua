@@ -21,7 +21,6 @@ return {
   {
     "nvim-treesitter/nvim-treesitter",
     opts = {
-      folds = { enable = false },
       ensure_installed = {
         "go", "gomod", "gosum", "rust", "nix", "hcl", "terraform", "dockerfile", "css",
       },

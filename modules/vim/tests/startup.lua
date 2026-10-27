@@ -12,6 +12,13 @@ local function check()
   assert(vim.g.colors_name and vim.g.colors_name ~= "tokyonight")
   assert(vim.bo.filetype == "markdown", "Open a Markdown or MDX fixture directly")
   assert(vim.b.autoformat == false)
+  assert(vim.o.autowrite and vim.o.relativenumber and vim.o.list and vim.o.cursorline)
+  assert(vim.go.wrap == false and vim.wo.wrap and vim.wo.spell)
+  assert(vim.go.conceallevel == 2 and vim.o.laststatus == 3 and vim.o.updatetime == 200)
+  assert(vim.o.foldlevel == 99 and vim.o.foldmethod ~= "manual")
+  assert(vim.bo.formatexpr == "v:lua.LazyVim.format.formatexpr()")
+  assert(vim.g.mapleader == " " and vim.g.maplocalleader == "\\")
+  assert(Snacks.config.scroll.enabled)
   assert(require("lazy.core.config").plugins["render-markdown.nvim"]._.loaded)
   assert(vim.wait(5000, function()
     return #vim.lsp.get_clients({ bufnr = 0, name = "marksman" }) == 1
@@ -27,6 +34,7 @@ local function check()
     assert(lsp.servers[server].mason == false and vim.lsp.is_enabled(server), server)
   end
   assert(lsp.servers.rust_analyzer.settings["rust-analyzer"].files.watcher == "client")
+  assert(lsp.folds.enabled and Plugin.values(plugins["nvim-treesitter"], "opts").folds.enable)
   assert(not vim.lsp.is_enabled("pyright") and not vim.lsp.is_enabled("vtsls"))
   local diagnostics = vim.diagnostic.config()
   assert(diagnostics.virtual_text.current_line and diagnostics.virtual_lines == false)
@@ -61,6 +69,27 @@ local function check()
   local lualine = Plugin.values(plugins["lualine.nvim"], "opts")
   assert(lualine.sections.lualine_x[1] == require("minuet.lualine"))
   assert(#lualine.sections.lualine_c >= 4 and #lualine.sections.lualine_x > 1)
+  assert(lualine.options.globalstatus)
+
+  local cwd = vim.fn.getcwd()
+  local root = LazyVim.root()
+  vim.api.nvim_set_current_dir(cwd .. "/modules/vim")
+  assert(LazyVim.root() == root and LazyVim.root() ~= vim.fn.getcwd())
+  local pickerOpen = LazyVim.pick.picker.open
+  local picked
+  LazyVim.pick.picker.open = function(source, opts)
+    picked = { source, opts.cwd or vim.fn.getcwd() }
+  end
+  for _, case in ipairs({
+    { " ff", "files", root }, { " fF", "files", vim.fn.getcwd() },
+    { " /", "grep", root }, { " sg", "grep", root }, { " sG", "grep", vim.fn.getcwd() },
+    { " sw", "grep_word", root }, { " sW", "grep_word", vim.fn.getcwd() },
+  }) do
+    vim.fn.maparg(case[1], "n", false, true).callback()
+    assert(vim.deep_equal(picked, { case[2], case[3] }), "Incorrect search scope: " .. case[1])
+  end
+  LazyVim.pick.picker.open = pickerOpen
+  vim.api.nvim_set_current_dir(cwd)
 
   local formatted = 0
   LazyVim.format.register({
@@ -72,6 +101,7 @@ local function check()
     local buf = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_set_current_buf(buf)
     vim.bo[buf].filetype = ft
+    assert(vim.wo.wrap == (ft == "markdown"), "Unexpected default wrapping: " .. ft)
     vim.api.nvim_exec_autocmds("BufWritePre", { buffer = buf })
     assert(formatted == (ft == "lua" and 1 or 0), "Save formatting policy failed: " .. vim.inspect({
       filetype = ft, count = formatted, global = vim.g.autoformat, buffer = vim.b[buf].autoformat,
@@ -86,7 +116,7 @@ local function check()
   assert(formatted == 3, "Default manual formatting must still work for Markdown and YAML")
   vim.bo.filetype = "lua"
   assert(vim.b.autoformat == nil, "Changing from Markdown to Lua must restore global formatting policy")
-  io.stdout:write("PASS: LazyVim startup, Markdown/MDX, Marksman, theme, Nix LSP ownership, default keymaps, Minuet statusline, diagnostics, save/manual formatting\n")
+  io.stdout:write("PASS: LazyVim startup, Markdown/MDX, Marksman, theme, Nix LSP ownership, default options/keymaps, root/cwd search scopes, Minuet statusline, diagnostics, save/manual formatting\n")
 end
 
 vim.defer_fn(function()

@@ -22,6 +22,12 @@ The module exposes every generated colorscheme from `themes/exports/nvim/`, load
 
 Flash is pinned to the upstream Neovim 0.13 search-state fix. Older versions access removed `search_match_*` globals and can repeatedly report `Flash error during redraw` after a character motion, including when saving MDX files. Restore the recorded plugins after applying this configuration and restart Neovim.
 
+## Root and editing defaults
+
+LazyVim detects the project root from the attached LSP, then `.git` or `lua` markers, and finally the working directory. File search, grep, and the explorer use that root. `<leader>fF`, `<leader>sG`, and `<leader>E` use the working directory instead. `:LazyRoot` shows the detected roots. Grep still saves the current buffer before searching through `<leader>/`, `<leader>sg`, or `<leader>sw`, and refreshes results after file changes.
+
+Editing options inherit LazyVim defaults, including automatic writes during eligible buffer switches and commands, relative line numbers, visible whitespace, current-line highlighting, smooth scrolling, and a global statusline. Code buffers do not wrap; text filetypes such as Markdown and MDX enable wrapping and spell checking. Folding uses indentation or available Treesitter/LSP support, with folds initially open. `<leader>` is `<Space>` and `<localleader>` is `\`. The Markdown/YAML automatic formatting exclusions remain separate from automatic writes.
+
 ## Search refresh
 
 For `/` and `?` searches, entering insert mode, changing buffer text, leaving a buffer, or reloading an externally changed file clears search highlights and Noice's inline search count. Press `<Esc>` in normal mode to clear them manually. The pattern remains available, and `n` or `N` resumes the search with highlights and the count.
@@ -46,12 +52,13 @@ EDITOR=vim agx -e openai-api-key.age
 
 ## Notable keymaps
 
-The recommendations for keymaps and default implementations in the [LazyVim defaults review](../../docs/lazyvim-defaults-review.md) are applied. `<leader>` is `<Space>`. LazyVim supplies the search, rename, implementation, Trouble, Git hunk, toggle, and manual formatting defaults below. Personal search refresh hooks, completion, root selection, and editing options remain configured separately. Lualine extends the default statusline with Minuet status.
+The recommendations for keymaps, default implementations, root detection, and editing options in the [LazyVim defaults review](../../docs/lazyvim-defaults-review.md) are applied. `<leader>` is `<Space>`. LazyVim supplies the search, rename, implementation, Trouble, Git hunk, toggle, and manual formatting defaults below. Personal search refresh hooks and completion remain configured separately. Lualine extends the default statusline with Minuet status.
 
-- `<leader>e`: file explorer
-- `<leader>ff`: find files
+- `<leader>e`, `<leader>E`: file explorer at the project root or working directory
+- `<leader>ff`, `<leader>fF`: find files at the project root or working directory
 - `<leader>fb`, `<leader>,`: buffer list
-- `<leader>sg`: grep, saving the current modified file and checking external changes first
+- `<leader>sg`: grep at the project root, saving the current modified file and checking external changes first
+- `<leader>sG`: grep in the working directory
 - `<leader>sR`: resume the previous picker with its query and scope
 - `<leader>sr`: search and replace
 - `<leader>sb`: search lines in the current buffer
@@ -108,7 +115,7 @@ nvim --headless modules/vim/README.md \
   '+lua dofile("modules/vim/tests/startup.lua")'
 ```
 
-The startup check covers theme loading, the initial Markdown buffer and Marksman attachment, Nix ownership of server installation, default keymaps, Minuet in the default statusline, diagnostics, and automatic versus manual formatting. Wait for parser installation before running it. Its Git keymap checks require a tracked file; it can also run against a tracked MDX file. In headless mode the test supplies the terminal's `UIEnter` event.
+The startup check covers theme loading, the initial Markdown buffer and Marksman attachment, Nix ownership of server installation, default options and keymaps, project-root versus working-directory search scopes, Minuet in the default statusline, diagnostics, and automatic versus manual formatting. Wait for parser installation before running it. Its Git keymap checks require a tracked file; it can also run against a tracked MDX file. In headless mode the test supplies the terminal's `UIEnter` event.
 
 For checks that must preserve normal session and plugin state, use a temporary `NVIM_APPNAME` with a config directory linked to the installed config and isolated data, state, and cache. Install the recorded plugins in that runtime before running startup checks. There is no permanent candidate launcher.
 
