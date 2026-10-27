@@ -46,6 +46,8 @@ EDITOR=vim agx -e openai-api-key.age
 
 ## Notable keymaps
 
+See the [LazyVim defaults review](../../docs/lazyvim-defaults-review.md) for proposed keymap simplifications and personal settings to retain. The review describes recommendations; the mappings below describe the current configuration.
+
 - `<leader>e`: file explorer
 - `<leader>ff`: find files
 - `<leader>sg`: grep, saving the current modified file and checking external changes first
