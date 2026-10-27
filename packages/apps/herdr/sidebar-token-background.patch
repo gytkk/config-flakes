@@ -1,0 +1,173 @@
+--- a/src/config/sidebar.rs
++++ b/src/config/sidebar.rs
+@@ -74,7 +74,7 @@
+         });
+         let Some(hex) = hex else {
+             return Err(serde::de::Error::custom(
+-                "sidebar token fg must be #RGB or #RRGGBB",
++                "sidebar token color must be #RGB or #RRGGBB",
+             ));
+         };
+         let (r, g, b) = if hex.len() == 3 {
+@@ -100,6 +100,7 @@
+ #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+ pub struct SidebarTokenStyle {
+     pub fg: Option<SidebarTokenColor>,
++    pub bg: Option<SidebarTokenColor>,
+     pub bold: Option<bool>,
+     pub dim: Option<bool>,
+ }
+@@ -177,6 +178,8 @@
+     #[serde(default)]
+     fg: Option<SidebarTokenColor>,
+     #[serde(default)]
++    bg: Option<SidebarTokenColor>,
++    #[serde(default)]
+     bold: Option<bool>,
+     #[serde(default)]
+     dim: Option<bool>,
+@@ -208,6 +211,7 @@
+                     token.token,
+                     Some(SidebarTokenStyle {
+                         fg: token.fg,
++                        bg: token.bg,
+                         bold: token.bold,
+                         dim: token.dim,
+                     }),
+@@ -255,6 +259,9 @@
+     map.serialize_entry("token", &name)?;
+     if let Some(fg) = style.fg {
+         map.serialize_entry("fg", &fg)?;
++    }
++    if let Some(bg) = style.bg {
++        map.serialize_entry("bg", &bg)?;
+     }
+     if let Some(bold) = style.bold {
+         map.serialize_entry("bold", &bold)?;
+--- a/src/config/sidebar/rules.rs
++++ b/src/config/sidebar/rules.rs
+@@ -40,6 +40,8 @@
+     ignore_case: Option<bool>,
+     #[serde(skip_serializing_if = "Option::is_none")]
+     fg: Option<SidebarTokenColor>,
++    #[serde(skip_serializing_if = "Option::is_none")]
++    bg: Option<SidebarTokenColor>,
+     #[serde(skip_serializing_if = "Option::is_none")]
+     bold: Option<bool>,
+     #[serde(skip_serializing_if = "Option::is_none")]
+@@ -97,6 +99,7 @@
+             hide: raw.hide,
+             style: SidebarTokenStyle {
+                 fg: raw.fg,
++                bg: raw.bg,
+                 bold: raw.bold,
+                 dim: raw.dim,
+             },
+@@ -109,6 +112,7 @@
+         let mut raw = Self {
+             ignore_case: rule.ignore_case.then_some(true),
+             fg: rule.style.fg,
++            bg: rule.style.bg,
+             bold: rule.style.bold,
+             dim: rule.style.dim,
+             hide: rule.hide,
+@@ -185,6 +189,7 @@
+             }
+             return Some(SidebarTokenStyle {
+                 fg: rule.style.fg.or(base.fg),
++                bg: rule.style.bg.or(base.bg),
+                 bold: rule.style.bold.or(base.bold),
+                 dim: rule.style.dim.or(base.dim),
+             });
+--- a/src/ui/sidebar.rs
++++ b/src/ui/sidebar.rs
+@@ -278,6 +278,9 @@
+     if let Some(foreground) = patch.fg {
+         style = style.fg(foreground.ratatui());
+     }
++    if let Some(background) = patch.bg {
++        style = style.bg(background.ratatui());
++    }
+     if let Some(bold) = patch.bold {
+         style = if bold {
+             style.add_modifier(Modifier::BOLD)
+--- a/src/ui/sidebar/tokens.rs
++++ b/src/ui/sidebar/tokens.rs
+@@ -231,6 +231,77 @@
+     }
+ 
+     #[test]
++    fn token_background_roundtrips_and_only_styles_token_spans() {
++        use ratatui::style::{Color, Style};
++        let config: AgentsSidebarConfig = toml::from_str(
++            r##"
++rows = [
++  [{ token = "state_icon", bg = "#383a42" }, "workspace"],
++  [{ token = "$status", rules = [{ equals = "●", fg = "#ffe600", bg = "#383a42" }] }, "workspace"],
++  [{ token = "$status", bg = "#383a42", rules = [{ equals = "●", fg = "#ffe600" }] }, "workspace"]
++]
++"##,
++        )
++        .unwrap();
++        let encoded = toml::to_string(&config).unwrap();
++        assert_eq!(
++            toml::from_str::<AgentsSidebarConfig>(&encoded).unwrap(),
++            config
++        );
++        let background = Some(Color::Rgb(56, 58, 66));
++        let mut entry = entry();
++        for status in ["●", "✓"] {
++            entry.tokens.insert("status".into(), status.into());
++            let rows = agent_rows(&config, context(&entry), "working");
++            for (index, row) in rows.iter().enumerate() {
++                let spans = super::super::resolved_token_spans(
++                    row,
++                    ("●", Style::default()),
++                    Style::default(),
++                    Style::default(),
++                    Style::default(),
++                    Style::default(),
++                    &super::super::Palette::catppuccin(),
++                    40,
++                );
++                assert_eq!(spans.len(), 3);
++                assert_eq!(
++                    spans[0].style.bg,
++                    if index == 1 && status != "●" {
++                        None
++                    } else {
++                        background
++                    }
++                );
++                if index > 0 && status == "●" {
++                    assert_eq!(spans[0].style.fg, Some(Color::Rgb(255, 230, 0)));
++                }
++                assert_eq!(spans[1].content, " ");
++                assert_eq!(spans[1].style.bg, None);
++                assert_eq!(spans[2].style.bg, None);
++                let mut buffer =
++                    ratatui::buffer::Buffer::empty(ratatui::layout::Rect::new(0, 0, 40, 1));
++                ratatui::widgets::Widget::render(
++                    ratatui::widgets::Paragraph::new(ratatui::text::Line::from(spans))
++                        .style(Style::default().bg(Color::White)),
++                    buffer.area,
++                    &mut buffer,
++                );
++                assert_eq!(
++                    buffer[(0, 0)].bg,
++                    if index == 1 && status != "●" {
++                        Color::White
++                    } else {
++                        background.unwrap()
++                    }
++                );
++                assert_eq!(buffer[(1, 0)].bg, Color::White);
++                assert_eq!(buffer[(2, 0)].bg, Color::White);
++            }
++        }
++    }
++
++    #[test]
+     fn conditional_styles_merge_first_match_and_keep_missing_values_absent() {
+         let config: AgentsSidebarConfig = toml::from_str(r##"
+ rows = [["state_icon", { token = "machine", fg = "#fff", bold = true, dim = true, rules = [{ equals = "Local", fg = "#f00", bold = false }, { contains = "Loc", fg = "#0f0", dim = false }] }], [{ token = "$missing", rules = [{ equals = "", bold = true }] }]]

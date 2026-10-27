@@ -34,6 +34,10 @@
     "token_prefix": "$",
     "value_type": "hex-color"
   },
+  "status_colors": {
+    "green": "#00e040",
+    "yellow": "#ffe600"
+  },
   "sections": [
     {
       "name": "selection",
@@ -60,8 +64,8 @@
         { "key": "text", "value": "$ui_fg" },
         { "key": "subtext0", "value": "$muted_text" },
         { "key": "mauve", "value": "$focused_space_text" },
-        { "key": "green", "value": "$running_green" },
-        { "key": "yellow", "value": "$palette_yellow" },
+        { "key": "green", "value": "$status_green" },
+        { "key": "yellow", "value": "$status_yellow" },
         { "key": "red", "value": "$palette_red" },
         { "key": "blue", "value": "$palette_blue" },
         { "key": "teal", "value": "$palette_cyan" },
