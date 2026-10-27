@@ -123,7 +123,8 @@
     "ty-lsp@gytkk": false,
     "terraform-ls@gytkk": true,
     "nixd-lsp@gytkk": true,
-    "cc-plugin-you-should-know@builtin": true
+    "cc-plugin-you-should-know@builtin": true,
+    "ark@ark": true
   },
   "extraKnownMarketplaces": {
     "ponytail": {
@@ -174,6 +175,12 @@
         "repo": "openai/codex-plugin-cc"
       },
       "autoUpdate": true
+    },
+    "ark": {
+      "source": {
+        "source": "github",
+        "repo": "devsisters/ark"
+      }
     }
   },
   "otelHeadersHelper": "~/.local/bin/claude-otel-headers",
