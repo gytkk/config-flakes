@@ -67,6 +67,27 @@ Trouble을 `<Space>cS`로 정리할 때는 개인 Trouble 매핑과 기본 `<Spa
 3. 유지할 개인 설정의 회귀 여부를 확인한다. Blink 메뉴의 Tab 완성, 검색 결과 갱신, 세션 복원, 테마와 LSP 연동을 점검한다.
 4. 프로젝트 루트와 편집 옵션은 원하는 동작을 결정한 뒤 별도로 변경한다. 루트 기준 검색과 작업 디렉터리 기준 검색의 범위를 확인한다.
 
+## Mason과 Nix의 도구 관리 범위
+
+2026-10-27에 확인한 공식 소스와 저장소 구성으로 판단하면, 현재 환경에서는 공통 실행 파일을 Nix로 유지하는 편을 권장한다. Mason은 Neovim에서만 사용하는 도구를 빠르게 추가하고 LazyVim의 자동 설치 흐름을 따르려는 경우에 유용하다. 따라서 앞의 Mason 비활성화 유지 권장은 이 저장소의 공유 도구와 여러 호스트 구성을 고려한 선택이며, Mason으로 도구를 관리할 수 없다는 뜻은 아니다.
+
+`tree-sitter` CLI 누락은 Mason으로도 해결할 수 있다. [LazyVim v16.0.1의 설치 코드](https://github.com/LazyVim/LazyVim/blob/999700997f72227187d49d8b92667183dc7fc809/lua/lazyvim/util/treesitter.lua#L111)는 PATH에 CLI가 없으면 Mason의 `tree-sitter-cli` 패키지 설치를 시도한다. [공식 registry 정의](https://github.com/mason-org/mason-registry/blob/main/packages/tree-sitter-cli/package.yaml)는 조회 시점에 `v0.27.1`의 플랫폼별 GitHub release 실행 파일을 내려받도록 되어 있다. 현재 [Neovim Nix 모듈](../modules/vim/default.nix)에도 `pkgs.tree-sitter`가 선언되어 있으므로, CLI 누락만으로 전체 도구 관리 방식을 바꿀 필요는 없다.
+
+| 판단 기준 | Mason | 현재 Nix 구성 |
+| --- | --- | --- |
+| LazyVim 연동 | CLI 누락 시 자동 설치 등 기본 흐름 활용 | 필요한 실행 파일을 직접 선언하고 Home Manager로 적용 |
+| 다른 프로그램과 공유 | 기본 설치 경로와 PATH 추가가 Neovim 세션 기준 | [LSP 모듈](../modules/lsp/default.nix)의 실행 파일을 Claude Code 등에서도 사용 |
+| 버전 복원 | 패키지별 버전 지정 가능. 별도 관리 필요 | 저장소의 flake 입력 고정과 패키지 선언으로 관리 |
+| 현재 Nix LSP | 공식 registry에는 `nil`이 있지만 `nixd`는 조회 시점에 없음 | 현재 사용하는 `nixd` 제공 |
+
+Mason의 [공식 설명](https://github.com/mason-org/mason.nvim#introduction)에 따르면 실행 파일은 기본적으로 Neovim data 디렉터리에 설치되고 Neovim의 PATH 앞에 추가된다. 공통 LSP 패키지를 Nix에서 제거하면 [Claude Code의 nixd 플러그인](../modules/claude/marketplace/lsp/nixd-lsp/README.md)처럼 PATH에서 실행 파일을 찾는 소비자도 별도로 처리해야 한다. [공식 package 목록](https://mason-registry.dev/registry/list)에 없는 `nixd`까지 Mason으로 옮기려면 추가 registry 등을 준비해야 한다.
+
+Mason은 [공식 명령 문서](https://github.com/mason-org/mason.nvim/blob/main/doc/mason.txt)에 명시된 `:MasonInstall package@version`으로 특정 버전을 설치할 수 있다. 다만 [lazy.nvim의 lockfile](https://lazy.folke.io/usage/lockfile)은 플러그인 revision을 복원하므로 Mason이 설치한 외부 실행 파일의 버전까지 고정하지는 않는다.
+
+NixOS에서는 일부 사전 빌드 Linux 실행 파일이 기대하는 동적 로더와 공유 라이브러리가 문제가 될 수 있다. 이 저장소는 [NixOS 공통 설정](../modules/nixos/baseline.nix)에서 [실행 파일 호환성을 위한 nix-ld](https://github.com/nix-community/nix-ld#how-does-nix-ld-work)를 이미 활성화한다. 그래도 Mason 전환 시 각 실행 파일의 라이브러리 요구 조건은 확인해야 하며, macOS와 일반 Linux 위의 Home Manager 환경에는 NixOS의 로더 제약을 그대로 적용하지 않는다.
+
+전체 전환보다 작은 대안은 공통 LSP와 CLI를 Nix로 유지하고, 필요할 때 Neovim 전용 DAP adapter 등에만 Mason을 사용하는 것이다. 이 경우 동일 실행 파일의 중복 설치와 Mason의 PATH 우선순위를 확인해야 한다. 이 비교를 위해 설정을 변경하거나 도구를 설치하지 않았다.
+
 ## 근거
 
 기본값은 비교 버전의 소스를 우선한다. 공식 사이트는 이후 버전에 맞춰 바뀔 수 있다.
