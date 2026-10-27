@@ -18,6 +18,8 @@ The imported selection excludes user-invoked wrappers and setup workflows. Each 
 
 [diagnosing-bugs](diagnosing-bugs/SKILL.md) is maintained locally to support evidence-based investigation when reproduction is unavailable, bounded intermittent and performance checks, and diagnosis-only requests. Existing installations recorded under the `matt` source need the reviewed ownership handoff described in [Agent core](../README.md#skill-설치와-복구) before they can use the local source.
 
+[codebase-design](codebase-design/SKILL.md) is maintained locally to connect caller evidence to module designs, preserve behavior during deepening, and compare alternatives in proportion to the decision. It also serves vocabulary-only requests from other skills. For example, ask it to find repeated caller coordination in a named module, compare two interface designs, or identify a seam that would make failure behavior testable. Existing `matt` installations require the same reviewed ownership handoff.
+
 ## Quokka adaptations
 
 The following guidance is independently rewritten from workflow ideas reviewed in [devsisters/quokka](https://github.com/devsisters/quokka/tree/4e39746192faed7e106f4d446884a4314bccbf37) on 2026-10-07. The reviewed snapshot is commit `4e39746192faed7e106f4d446884a4314bccbf37` on `develop`. No Quokka implementation, bundled library, third-party skill text, or company schema is copied.

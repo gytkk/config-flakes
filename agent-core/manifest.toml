@@ -10,6 +10,7 @@ kind = "local"
 path = "skills"
 
 [skill_sources.local.skills]
+codebase-design = "codebase-design"
 code-review = "code-review"
 data-analysis = "data-analysis"
 data-visualization = "data-visualization"
@@ -31,7 +32,6 @@ update = "latest-default-branch"
 license = "LICENSE"
 
 [skill_sources.matt.skills]
-codebase-design = "skills/engineering/codebase-design"
 domain-modeling = "skills/engineering/domain-modeling"
 grilling = "skills/productivity/grilling"
 prototype = "skills/engineering/prototype"

@@ -212,7 +212,7 @@ uv run --project agent-core scripts/install-agent-skills.py install \
 
 소유권은 설치 경로와 이름별로 `$XDG_STATE_HOME/agent-core/skills` 또는 `~/.local/state/agent-core/skills`에 기록한다. 원본 SHA 또는 local content, 설치 파일의 hash와 mode, 추가한 `AGENT-CORE-SOURCE-LICENSE`를 구분해 기록한다. CLI의 이름별 global lock을 target별 소유권으로 간주하지 않는다. 사용자 수정, 동명 타 source, 선택 목록에서 빠진 기존 관리 항목은 검토 전까지 중단한다. 포괄적인 `skills update`와 자동 삭제는 사용하지 않는다.
 
-`diagnosing-bugs`는 로컬 수정본을 설치한다. 기존 소유권 기록이 `matt`이면 다음 switch의 사전 검사에서 `source change requires review`로 중단하므로, switch 전에 해당 skill의 source 전환을 검토해야 한다. 설치본과 소유권 기록, CLI lock을 백업하고 기존 파일의 사용자 수정 여부를 확인한 뒤 승인된 인계를 진행한다. Manifest 변경만으로 설치본이나 소유권 기록을 덮어쓰지 않는다.
+`diagnosing-bugs`와 `codebase-design`은 로컬 수정본을 설치한다. 기존 소유권 기록이 `matt`이면 다음 switch의 사전 검사에서 `source change requires review`로 중단하므로, switch 전에 해당 skill의 source 전환을 검토해야 한다. 설치본과 소유권 기록, CLI lock을 백업하고 기존 파일의 사용자 수정 여부를 확인한 뒤 승인된 인계를 진행한다. Manifest 변경만으로 설치본이나 소유권 기록을 덮어쓰지 않는다.
 
 실제 설치 오류는 backup 경로를 출력한다. 다른 skill의 lock 항목을 보존하며 선택한 항목만 복구한다. Backup 이후 같은 이름의 lock이나 설치 파일, 소유권이 변경되었다면 복구를 중단한다. Symlink나 특수 파일을 남긴 비정상 실패는 기존 backup을 유지하고 수동 보존이 필요하다고 보고한다.
 

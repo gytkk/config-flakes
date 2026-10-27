@@ -1,37 +1,31 @@
 # Deepening
 
-How to deepen a cluster of shallow modules safely, given its dependencies. Assumes the vocabulary in [SKILL.md](SKILL.md): **module**, **interface**, **seam**, **adapter**.
+Use this reference when consolidating related modules or changing dependency seams. It uses the vocabulary in [SKILL.md](SKILL.md).
 
-## Dependency categories
+## Select what belongs together
 
-When assessing a candidate for deepening, classify its dependencies. The category determines how the deepened module is tested across its seam.
+Start from a caller's task and the invariant it must preserve. Move repeated orchestration behind an interface only when the operations share responsibility and change together. Keep independently owned policies, resource lifetimes, and deployment constraints explicit. Being in-process alone does not justify merging modules.
 
-### 1. In-process
+Show the caller before and after. Name the decisions the new module owns, the decisions callers retain, and any changed failure or transaction behavior. Consolidation should remove coordination, not merely move it into a larger file.
 
-Pure computation, in-memory state, no I/O. Always deepenable: merge the modules and test through the new interface directly. No adapter needed.
+## Choose dependency treatment
 
-### 2. Local-substitutable
+Use the repository's existing integration and test facilities before adding ports or substitutes. Choose based on the behavior the test must establish:
 
-Dependencies that have local test stand-ins (PGLite for Postgres, in-memory filesystem). Deepenable if the stand-in exists. The deepened module is tested with the stand-in running in the test suite. The seam is internal; no port at the module's external interface.
+| Dependency | Starting point | Verification limit |
+| --- | --- | --- |
+| In-process computation or state | Exercise the new interface directly; retain focused algorithm tests where useful. | Shared state, concurrency, and lifecycle constraints still matter. |
+| Filesystem or database | Use a temporary real resource or an existing compatible local test service. | An in-memory substitute may differ in transactions, queries, locking, permissions, or durability. Verify relied-on semantics against the real dependency. |
+| Remote service owned by the team | Reuse its client or transport seam; inject it if tests need controlled responses or failures. | A fake verifies consumer logic, not wire compatibility or the deployed service. Keep contract or integration checks for that boundary. |
+| Third-party service | Isolate the operations the module uses behind an existing client seam or a narrow port when needed. | Mocks establish behavior under assumed responses. Verify serialization and failure mapping with existing fixtures, contract checks, or an authorized sandbox. |
 
-### 3. Remote but owned (Ports & Adapters)
+Keep dependency wiring at the existing composition point. An internal seam can support tests without becoming an extra choice every public caller must configure. A port is justified by the control or isolation it provides; creating a second adapter solely to justify it adds no value.
 
-Your own services across a network boundary (microservices, internal APIs). Define a **port** (interface) at the seam. The deep module owns the logic; the transport is injected as an **adapter**. Tests use an in-memory adapter. Production uses an HTTP/gRPC/queue adapter.
+## Preserve behavior during migration
 
-Recommendation shape: *"Define a port at the seam, implement an HTTP adapter for production and an in-memory adapter for testing, so the logic sits in one deep module even though it's deployed across a network."*
+1. Identify affected callers and existing tests for the behavior being moved, including errors and dependency interactions. Note any coverage gaps before removing code.
+2. Add or adapt tests through the proposed interface for the preserved contract. Include failure, state, or concurrency cases when the moved responsibility depends on them.
+3. Migrate callers in a bounded change and remove wrappers made obsolete by it. Preserve public compatibility when required; identify any necessary contract change explicitly.
+4. Delete an old test only when its behavior is covered at the new interface or the behavior was intentionally removed. Keep unique regression cases, complex algorithm tests, and adapter integration coverage. A test that changes during refactoring is a reason to inspect its purpose, not automatic evidence that it is waste.
 
-### 4. True external (Mock)
-
-Third-party services (Stripe, Twilio, etc.) you don't control. The deepened module takes the external dependency as an injected port; tests provide a mock adapter.
-
-## Seam discipline
-
-- **One adapter means a hypothetical seam. Two adapters means a real one.** Don't introduce a port unless at least two adapters are justified (typically production + test). A single-adapter seam is just indirection.
-- **Internal seams vs external seams.** A deep module can have internal seams (private to its implementation, used by its own tests) as well as the external seam at its interface. Don't expose internal seams through the interface just because tests use them.
-
-## Testing strategy: replace, don't layer
-
-- Old unit tests on shallow modules become waste once tests at the deepened module's interface exist; delete them.
-- Write new tests at the deepened module's interface. The **interface is the test surface**.
-- Tests assert on observable outcomes through the interface, not internal state.
-- Tests should survive internal refactors, since they describe behaviour, not implementation. If a test has to change when the implementation changes, it's testing past the interface.
+Finish with evidence that callers no longer coordinate the moved responsibility and that the preserved contracts still hold. If real dependency checks cannot run, distinguish what substitutes verified from what remains unverified.

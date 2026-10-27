@@ -1,114 +1,48 @@
 ---
 name: codebase-design
-description: Shared vocabulary for designing deep modules. Use when the user wants to design or improve a module's interface, find deepening opportunities, decide where a seam goes, make code more testable or AI-navigable, or when another skill needs the deep-module vocabulary.
+description: Design module interfaces and seams from concrete callers and dependencies. Use to find deepening opportunities, compare interface designs, or improve structural testability and code navigation. Also supplies shared deep-module vocabulary to other skills. Routine fixes and mechanical refactors do not need this workflow unless the module's shape is in question.
 ---
 
-# Codebase Design
+# Codebase design
 
-Design **deep modules**: a lot of behaviour behind a small interface, placed at a clean seam, testable through that interface. Use this language and these principles wherever code is being designed or restructured. The aim is leverage for callers, locality for maintainers, and testability for everyone.
+Design deep modules: useful behavior behind an interface that callers can learn and use without reconstructing the implementation. Judge a design by the knowledge and coordination it removes from callers, not by method counts or implementation size.
+
+## Choose the scope
+
+- For a vocabulary question or a reference from another skill, consult the glossary and relevant principles only. Continue the calling workflow without starting a design investigation.
+- For an existing module or a search for opportunities, trace a representative caller through the implementation, dependencies, and tests. Start in the requested area and expand only along relevant connections.
+- For a new module, ground the design in required caller scenarios and existing neighboring conventions. Label proposed behavior separately from observed behavior.
+- For a design-only request, finish with a recommendation. For an implementation request, carry the chosen design through affected callers and checks within the user's authorized scope.
+
+## Work from evidence to a design
+
+1. **Locate the cost.** Read applicable context and domain terminology, then follow the relevant call path. Identify what callers repeatedly coordinate: ordering, configuration, data conversion, error handling, or shared invariants. Record concrete symbols and paths. A file count or a preference for fewer layers is not evidence of a problem.
+2. **Describe the current interface.** Include inputs, results, state ownership, side effects, failures, and any ordering or performance constraints that matter to callers. Identify who owns each dependency and how tests exercise it. For opportunity searches, rank candidates by demonstrated caller burden and change scope; stop when there is enough evidence to recommend a bounded candidate.
+3. **Choose the smallest useful change.** Compare keeping the current design with the proposed change. Try deleting a redundant wrapper, moving an invariant to its owner, or combining operations that callers must always coordinate before adding a new abstraction. Explain which knowledge disappears from callers and which remains explicit. Read [DEEPENING.md](DEEPENING.md) when consolidating a cluster or changing dependency seams. Read [DESIGN-IT-TWICE.md](DESIGN-IT-TWICE.md) when the user requests alternatives or materially different designs remain plausible.
+4. **Make the proposal reviewable.** Show a representative caller before and after, using a compact signature or pseudocode when helpful. State the hidden responsibility, dependency strategy, observable behavior to preserve, affected callers, and tests that would verify the change. Recommend keeping the current design if no candidate reduces the demonstrated cost.
+
+A design recommendation is complete when it connects a concrete problem to an interface, shows how a caller uses it, and identifies the migration and verification needed. Cite code locations for observed claims and label unresolved assumptions. Scale the answer to the task; a single-function decision does not need a full architecture report.
 
 ## Glossary
 
-Use these terms exactly: don't substitute "component," "service," "API," or "boundary." Consistent language is the whole point.
+Use these terms consistently in design reasoning while retaining the repository's domain names and exact identifiers.
 
-**Module**: anything with an interface and an implementation. Deliberately scale-agnostic: a function, class, package, or tier-spanning slice. _Avoid_: unit, component, service.
+| Term | Meaning |
+| --- | --- |
+| Module | Anything with an interface and an implementation: a function, class, package, or larger cohesive unit. |
+| Interface | Everything a caller must know to use a module correctly, including invariants, ordering, errors, configuration, and relevant performance behavior. A language-level signature is only part of it. |
+| Implementation | The code and internal collaboration behind an interface. |
+| Depth | Useful behavior available relative to the knowledge a caller must learn. A shallow module exposes nearly as much complexity as it handles. |
+| Seam | A place where behavior can be substituted without editing the code that uses it. Seam placement and interface design are related but separate decisions. |
+| Adapter | A concrete implementation that satisfies an interface at a seam, such as a production transport or a test substitute. |
+| Leverage | Capability callers gain from learning an interface. |
+| Locality | How well related knowledge, changes, and verification concentrate in one place. |
 
-**Interface**: everything a caller must know to use the module correctly: the type signature, but also invariants, ordering constraints, error modes, required configuration, and performance characteristics. _Avoid_: API, signature (too narrow, they refer only to the type-level surface).
+## Design principles
 
-**Implementation**: what's inside a module, its body of code. Distinct from **Adapter**: a thing can be a small adapter with a large implementation (a Postgres repo) or a large adapter with a small implementation (an in-memory fake). Reach for "adapter" when the seam is the topic; "implementation" otherwise.
-
-**Depth**: leverage at the interface. The amount of behaviour a caller (or test) can exercise per unit of interface they have to learn. A module is **deep** when a large amount of behaviour sits behind a small interface, **shallow** when the interface is nearly as complex as the implementation.
-
-**Seam** _(Michael Feathers)_: a place where you can alter behaviour without editing in that place; the *location* at which a module's interface lives. Where to put the seam is its own design decision, distinct from what goes behind it. _Avoid_: boundary (overloaded with DDD's bounded context).
-
-**Adapter**: a concrete thing that satisfies an interface at a seam. Describes *role* (what slot it fills), not substance (what's inside).
-
-**Leverage**: what callers get from depth. More capability per unit of interface they learn. One implementation pays back across N call sites and M tests.
-
-**Locality**: what maintainers get from depth. Change, bugs, knowledge, and verification concentrate in one place rather than spreading across callers. Fix once, fixed everywhere.
-
-## Deep vs shallow
-
-**Deep module** = small interface + lots of implementation:
-
-```
-┌─────────────────────┐
-│   Small Interface   │  ← Few methods, simple params
-├─────────────────────┤
-│                     │
-│  Deep Implementation│  ← Complex logic hidden
-│                     │
-└─────────────────────┘
-```
-
-**Shallow module** = large interface + little implementation (avoid):
-
-```
-┌─────────────────────────────────┐
-│       Large Interface           │  ← Many methods, complex params
-├─────────────────────────────────┤
-│  Thin Implementation            │  ← Just passes through
-└─────────────────────────────────┘
-```
-
-When designing an interface, ask:
-
-- Can I reduce the number of methods?
-- Can I simplify the parameters?
-- Can I hide more complexity inside?
-
-## Principles
-
-- **Depth is a property of the interface, not the implementation.** A deep module can be internally composed of small, mockable, swappable parts; they just aren't part of the interface. A module can have **internal seams** (private to its implementation, used by its own tests) as well as the **external seam** at its interface.
-- **The deletion test.** Imagine deleting the module. If complexity vanishes, it was a pass-through. If complexity reappears across N callers, it was earning its keep.
-- **The interface is the test surface.** Callers and tests cross the same seam. If you want to test *past* the interface, the module is probably the wrong shape.
-- **One adapter means a hypothetical seam. Two adapters means a real one.** Don't introduce a seam unless something actually varies across it.
-
-## Designing for testability
-
-Good interfaces make testing natural:
-
-1. **Accept dependencies, don't create them.**
-
-   ```typescript
-   // Testable
-   function processOrder(order, paymentGateway) {}
-
-   // Hard to test
-   function processOrder(order) {
-     const gateway = new StripeGateway();
-   }
-   ```
-
-2. **Return results, don't produce side effects.**
-
-   ```typescript
-   // Testable
-   function calculateDiscount(cart): Discount {}
-
-   // Hard to test
-   function applyDiscount(cart): void {
-     cart.total -= discount;
-   }
-   ```
-
-3. **Small surface area.** Fewer methods = fewer tests needed. Fewer params = simpler test setup.
-
-## Relationships
-
-- A **Module** has exactly one **Interface** (the surface it presents to callers and tests).
-- **Depth** is a property of a **Module**, measured against its **Interface**.
-- A **Seam** is where a **Module**'s **Interface** lives.
-- An **Adapter** sits at a **Seam** and satisfies the **Interface**.
-- **Depth** produces **Leverage** for callers and **Locality** for maintainers.
-
-## Rejected framings
-
-- **Depth as ratio of implementation-lines to interface-lines** (Ousterhout): rewards padding the implementation. We use depth-as-leverage instead.
-- **"Interface" as the TypeScript `interface` keyword or a class's public methods**: too narrow: interface here includes every fact a caller must know.
-- **"Boundary"**: overloaded with DDD's bounded context. Say **seam** or **interface**.
-
-## Going deeper
-
-- **Deepening a cluster given its dependencies**, see [DEEPENING.md](DEEPENING.md): dependency categories, seam discipline, and replace-don't-layer testing.
-- **Exploring alternative interfaces**, see [DESIGN-IT-TWICE.md](DESIGN-IT-TWICE.md): spin up parallel sub-agents to design the interface several radically different ways, then compare on depth, locality, and seam placement.
+- **Count caller knowledge, not methods.** One method with hidden ordering rules can be harder to use than several explicit operations. A larger implementation does not make a module deeper.
+- **Apply the deletion test.** If removing a wrapper removes complexity without scattering its responsibilities, remove it. If its invariants would reappear across callers, keep those responsibilities together. A small adapter can still earn its place by translating a protocol or isolating a dependency.
+- **Hide mechanisms, preserve meaningful choices.** Keep policy and invariants with their owner. Do not hide required error handling, transaction boundaries, resource lifetime, or latency behind an apparently simple interface.
+- **Justify seams with a concrete need.** Production substitution, controlled failure tests, or an existing ownership boundary can justify a seam. A second adapter is evidence of variation, not a quota to fill with a needless fake.
+- **Keep test setup local.** Separate deterministic decisions from I/O where useful, and accept dependencies where control is needed. Reuse existing injection or configuration patterns; callers should not have to assemble internal collaborators merely to make tests possible.
+- **Test observable contracts.** Public behavior is the primary test surface. Focused tests of complex internal algorithms and real adapter contracts can remain valuable. Fewer parameters or methods do not imply fewer behaviors to verify.
