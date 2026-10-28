@@ -1,8 +1,10 @@
 vim.api.nvim_del_augroup_by_name("lazyvim_checktime")
 
-vim.api.nvim_create_autocmd("FileType", {
-  pattern = "markdown",
-  callback = function()
+vim.api.nvim_create_autocmd({ "FileType", "BufWinEnter" }, {
+  callback = function(event)
+    if vim.bo[event.buf].filetype ~= "markdown" then return end
+    vim.opt_local.wrap = true
+    vim.opt_local.linebreak = true
     vim.opt_local.spell = false
   end,
 })

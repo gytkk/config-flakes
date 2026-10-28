@@ -14,6 +14,12 @@ local function check()
   assert(vim.b.autoformat == false)
   assert(vim.o.autowrite and vim.o.relativenumber and vim.o.list and vim.o.cursorline)
   assert(vim.go.wrap == false and vim.wo.wrap and not vim.wo.spell)
+  local markdown = vim.api.nvim_get_current_buf()
+  vim.wo.wrap = false
+  vim.wo.linebreak = false
+  vim.cmd("enew")
+  vim.api.nvim_win_set_buf(0, markdown)
+  assert(vim.wo.wrap and vim.wo.linebreak, "Returning to Markdown must restore display wrapping")
   assert(vim.go.conceallevel == 2 and vim.o.laststatus == 3 and vim.o.updatetime == 200)
   assert(vim.o.foldlevel == 99 and vim.o.foldmethod ~= "manual")
   assert(vim.o.foldlevelstart == 99)
