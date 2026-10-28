@@ -26,7 +26,7 @@ Flash is pinned to the upstream Neovim 0.13 search-state fix. Older versions acc
 
 LazyVim detects the project root from the attached LSP, then `.git` or `lua` markers, and finally the working directory. File search, grep, and the explorer use that root. `<leader>fF`, `<leader>sG`, and `<leader>E` use the working directory instead. `:LazyRoot` shows the detected roots. Grep still saves the current buffer before searching through `<leader>/`, `<leader>sg`, or `<leader>sw`, and refreshes results after file changes.
 
-Editing options inherit LazyVim defaults, including automatic writes during eligible buffer switches and commands, relative line numbers, visible whitespace, current-line highlighting, smooth scrolling, and a global statusline. Code buffers do not wrap; text filetypes such as Markdown and MDX enable wrapping and spell checking. Folding uses indentation or available Treesitter/LSP support, with folds initially open. `<leader>` is `<Space>` and `<localleader>` is `\`. The Markdown/YAML automatic formatting exclusions remain separate from automatic writes.
+Editing options inherit LazyVim defaults, including automatic writes during eligible buffer switches and commands, relative line numbers, visible whitespace, current-line highlighting, smooth scrolling, and a global statusline. Code buffers do not wrap; text filetypes such as Markdown and MDX enable wrapping and spell checking. Folding uses indentation or available Treesitter/LSP support. New buffers and restored sessions start with all folds open; manual folding remains available. `<leader>` is `<Space>` and `<localleader>` is `\`. The Markdown/YAML automatic formatting exclusions remain separate from automatic writes.
 
 ## Search refresh
 
@@ -103,6 +103,12 @@ nvim
 Use the corresponding `nixos-rebuild switch --flake .#<host>` procedure on NixOS. The first restore may download plugins and install parsers; the module installs the required `tree-sitter` CLI. Applying Home Manager or rebuilding the host is a user-run step.
 
 ## Regression checks
+
+Check folding defaults without loading plugins or touching saved sessions:
+
+```bash
+nvim --headless -u NONE -i NONE -l modules/vim/tests/folds.lua
+```
 
 The completion check uses the real merged LazyVim, Blink, and Minuet specs with a substituted backend, preventing external requests and credential access. After plugins are installed, run it from the repository root:
 

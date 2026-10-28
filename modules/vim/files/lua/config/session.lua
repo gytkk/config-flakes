@@ -88,7 +88,12 @@ end
 function M.setup()
   vim.api.nvim_create_autocmd("User", {
     pattern = "PersistenceLoadPost",
-    callback = closeSessionBlankWindows,
+    callback = function()
+      closeSessionBlankWindows()
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        vim.wo[win].foldlevel = 99
+      end
+    end,
   })
 
   vim.api.nvim_create_autocmd("VimEnter", {
