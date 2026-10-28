@@ -31,6 +31,7 @@ return {
   lazy = false,
   ---@type snacks.Config
   opts = {
+    scroll = { enabled = false },
     dashboard = { enabled = false },
     explorer = { enabled = true },
     picker = {

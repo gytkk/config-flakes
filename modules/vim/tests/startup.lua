@@ -19,7 +19,7 @@ local function check()
   assert(vim.o.foldlevelstart == 99)
   assert(vim.bo.formatexpr == "v:lua.LazyVim.format.formatexpr()")
   assert(vim.g.mapleader == " " and vim.g.maplocalleader == "\\")
-  assert(Snacks.config.scroll.enabled)
+  assert(not Snacks.config.scroll.enabled)
   assert(require("lazy.core.config").plugins["render-markdown.nvim"]._.loaded)
   assert(vim.wait(5000, function()
     return #vim.lsp.get_clients({ bufnr = 0, name = "marksman" }) == 1

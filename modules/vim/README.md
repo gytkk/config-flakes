@@ -12,7 +12,7 @@ The module exposes every generated colorscheme from `themes/exports/nvim/`, load
 
 ## Features
 
-- Snacks provides file picking, explorer, notifications, status column, inlay hint toggles, lazygit, git browse, file rename, smooth scrolling, inline images, and GitHub issues and pull requests through `gh`.
+- Snacks provides file picking, explorer, notifications, status column, inlay hint toggles, lazygit, git browse, file rename, inline images, and GitHub issues and pull requests through `gh`. Scroll animation is disabled by default; `<leader>uS` toggles it for the current session.
 - Persistence saves directory and branch-aware sessions and restores them on bare `nvim` startup.
 - Blink combines LSP, snippets, paths, buffers, and Minuet AI suggestions in one completion menu.
 - Nix installs language servers; Rust uses rust-analyzer from the active rustup toolchain. Neovim watches Rust files to avoid a macOS server watcher startup stall.
@@ -26,7 +26,7 @@ Flash is pinned to the upstream Neovim 0.13 search-state fix. Older versions acc
 
 LazyVim detects the project root from the attached LSP, then `.git` or `lua` markers, and finally the working directory. File search, grep, and the explorer use that root. `<leader>fF`, `<leader>sG`, and `<leader>E` use the working directory instead. `:LazyRoot` shows the detected roots. Grep still saves the current buffer before searching through `<leader>/`, `<leader>sg`, or `<leader>sw`, and refreshes results after file changes.
 
-Editing options inherit LazyVim defaults, including automatic writes during eligible buffer switches and commands, relative line numbers, visible whitespace, current-line highlighting, smooth scrolling, and a global statusline. Code buffers do not wrap; text filetypes such as Markdown and MDX enable wrapping and spell checking. Folding uses indentation or available Treesitter/LSP support. New buffers and restored sessions start with all folds open; manual folding remains available. `<leader>` is `<Space>` and `<localleader>` is `\`. The Markdown/YAML automatic formatting exclusions remain separate from automatic writes.
+Editing options inherit LazyVim defaults, including automatic writes during eligible buffer switches and commands, relative line numbers, visible whitespace, current-line highlighting, and a global statusline. Page motions such as `<C-f>`, `<C-b>`, `<C-d>`, and `<C-u>` scroll immediately without animation. Code buffers do not wrap; text filetypes such as Markdown and MDX enable wrapping and spell checking. Folding uses indentation or available Treesitter/LSP support. New buffers and restored sessions start with all folds open; manual folding remains available. `<leader>` is `<Space>` and `<localleader>` is `\`. The Markdown/YAML automatic formatting exclusions remain separate from automatic writes.
 
 ## Search refresh
 
