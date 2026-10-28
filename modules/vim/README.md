@@ -93,7 +93,7 @@ The recommendations for keymaps, default implementations, root detection, and ed
 
 ## Usage and rollout
 
-Bare `nvim` restores the saved session and opens the left explorer. Opening a file with `nvim filename.txt`, `vim filename.txt`, or `vi filename.txt` skips startup session restore and explorer opening. The default setup uses the existing `nvim` session state. Sessions from the former isolated candidate are not copied.
+Bare `nvim` restores the saved session and opens the left explorer after all `VeryLazy` handlers finish. LazyVim's default and personal autocmds are registered before restoration opens files, so their normal file and window events apply settings across restored tabs and splits. Opening a file with `nvim filename.txt`, `vim filename.txt`, or `vi filename.txt` skips startup session restore and explorer opening. The default setup uses the existing `nvim` session state. Sessions from the former isolated candidate are not copied.
 
 Before applying the promoted setup, close Neovim. If rollback is needed, first save the existing config lockfile and Neovim data, including sessions, outside their active directories. Apply Home Manager for the target environment, restore the repository's plugin revisions, and restart Neovim:
 
@@ -125,6 +125,12 @@ nvim --headless modules/vim/README.md \
 ```
 
 The startup check covers theme loading, the initial Markdown buffer and Marksman attachment, Nix ownership of server installation, default options and keymaps, project-root versus working-directory search scopes, Minuet in the default statusline, diagnostics, and automatic versus manual formatting. Wait for parser installation before running it. Its Git keymap checks require a tracked file; it can also run against a tracked MDX file. In headless mode the test supplies the terminal's `UIEnter` event.
+
+The session check attaches an embedded UI to a child Neovim with no file arguments, using installed plugins and a temporary workspace and state directory. It checks that LazyVim setup precedes restoration, filetype hooks run, and Markdown/MDX settings apply across restored tabs and splits, including a subsequent manual restore. Existing saved sessions are not used or modified.
+
+```bash
+nvim --headless -u NONE -i NONE -l modules/vim/tests/session.lua
+```
 
 For checks that must preserve normal session and plugin state, use a temporary `NVIM_APPNAME` with a config directory linked to the installed config and isolated data, state, and cache. Install the recorded plugins in that runtime before running startup checks. There is no permanent candidate launcher.
 

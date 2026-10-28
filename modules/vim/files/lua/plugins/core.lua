@@ -12,7 +12,7 @@ return {
     "folke/persistence.nvim",
     opts = { need = 1, branch = true },
     init = function()
-      -- Register VimEnter before it fires; config/autocmds.lua can load after it.
+      -- Register startup before VeryLazy; config/autocmds.lua loads during it.
       if #vim.api.nvim_list_uis() > 0 then
         require("config.session").setup()
       end
