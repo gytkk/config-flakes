@@ -57,6 +57,7 @@ The recommendations for keymaps, default implementations, root detection, and ed
 - `<leader>e`, `<leader>E`: file explorer at the project root or working directory
 - `<leader>ff`, `<leader>fF`: find files at the project root or working directory
 - `<leader>fb`, `<leader>,`: buffer list
+- `H`, `L`: Vim's native screen-top and screen-bottom motions, respecting `scrolloff`; `[b` and `]b` switch buffers
 - `<leader>sg`: grep at the project root, saving the current modified file and checking external changes first
 - `<leader>sG`: grep in the working directory
 - `<leader>sR`: resume the previous picker with its query and scope

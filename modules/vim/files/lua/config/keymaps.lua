@@ -1,3 +1,6 @@
+vim.keymap.del("n", "<S-h>")
+vim.keymap.del("n", "<S-l>")
+
 local diagnosticWin
 vim.keymap.set("n", "<leader>d", function()
   if diagnosticWin and vim.api.nvim_win_is_valid(diagnosticWin) then
