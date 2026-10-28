@@ -1,7 +1,7 @@
 {
-  "revision": "38acf9e22926611568b7bfb24e37b1abd1c1fc85",
+  "revision": "8b6e9b9f7a5b0a971cd226e69bd9d4fbfcf90c14",
   "revisionDate": "2026-10-28",
-  "sourceHash": "sha256-z+E5XWyAIi7kLOe5xohqlUQmsK54uV7Jtr6gG4+F54w=",
+  "sourceHash": "sha256-18q1ZW3EVTYGVF+O7sE5w9Z75t/wpiNClGAkXSERO5g=",
   "herdrAnnotate": {
     "version": "0.2.3",
     "hashes": {
@@ -12,8 +12,8 @@
     }
   },
   "plannotatorTui": {
-    "version": "0.9.7",
-    "sourceHash": "sha256-ZKDM8MOxc/X0Ytab+9zQR5KSxrG3wiFqv8xrcFygpxI=",
-    "cargoHash": "sha256-p5GDDObv9jQLXWHVkRuaPL26kvUUM245vEzbgcMtLic="
+    "version": "0.9.8",
+    "sourceHash": "sha256-o9Fs5XJBR4X0cLSfLM2hlwSZwDwFaMO6a0qNCOrTrtc=",
+    "cargoHash": "sha256-qp7h7gRCHnTjfQRgke9dfYB0Qsux8YK3sQe03MPHX6w="
   }
 }

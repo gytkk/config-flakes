@@ -9,7 +9,7 @@
 }:
 
 let
-  version = "0.9.7";
+  version = "0.9.8";
   sources = builtins.fromJSON (builtins.readFile ./sources.json);
 
   platformMap = {
