@@ -59,7 +59,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 | gksdud | 1.6.0 |
 | herdr | 0.9.5 |
 | herdr-annotate | 0.9.7 |
-| herdr-auto-title | 0.16.0 |
+| herdr-auto-title | 0.17.0 |
 | lspi | 0.2.0 |
 | notion-cli | 0.23.25 |
 | pantry | main-69de978b5555 |
