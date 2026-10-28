@@ -13,6 +13,7 @@ local function check()
   assert(vim.bo.filetype == "markdown", "Open a Markdown or MDX fixture directly")
   assert(vim.b.autoformat == false)
   assert(vim.o.autowrite and vim.o.relativenumber and vim.o.list and vim.o.cursorline)
+  assert(vim.opt.listchars:get().trail == " ", "Trailing spaces must display as blanks")
   assert(vim.go.wrap == false and vim.wo.wrap and not vim.wo.spell)
   local markdown = vim.api.nvim_get_current_buf()
   vim.wo.wrap = false

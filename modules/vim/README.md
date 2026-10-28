@@ -24,6 +24,8 @@ Flash is pinned to the upstream Neovim 0.13 search-state fix. Older versions acc
 
 ## Root and editing defaults
 
+Trailing spaces display as blanks in every filetype. Tabs and non-breaking spaces retain their visible markers.
+
 LazyVim detects the project root from the attached LSP, then `.git` or `lua` markers, and finally the working directory. File search, grep, and the explorer use that root. `<leader>fF`, `<leader>sG`, and `<leader>E` use the working directory instead. `:LazyRoot` shows the detected roots. Grep still saves the current buffer before searching through `<leader>/`, `<leader>sg`, or `<leader>sw`, and refreshes results after file changes.
 
 Editing options inherit LazyVim defaults, including automatic writes during eligible buffer switches and commands, relative line numbers, visible whitespace, current-line highlighting, and a global statusline. Page motions such as `<C-f>`, `<C-b>`, `<C-d>`, and `<C-u>` scroll immediately without animation. Code buffers do not wrap. Markdown and MDX explicitly enable `wrap` and `linebreak` when their filetype is set or they enter a window, so returning to a document restores wrapping even if it was toggled off. This wraps display lines without inserting newlines into the file. Spell checking is disabled in these documents to avoid marking Korean text as misspelled. Other text filetypes retain LazyVim's wrapping and spell-checking defaults. Folding uses indentation or available Treesitter/LSP support. New buffers and restored sessions start with all folds open; manual folding remains available. `<leader>` is `<Space>` and `<localleader>` is `\`. The Markdown/YAML automatic formatting exclusions remain separate from automatic writes.

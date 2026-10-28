@@ -11,3 +11,4 @@ vim.g.ai_cmp = false
 
 vim.opt.foldlevelstart = 99
 vim.opt.scrolloff = 2
+vim.opt.listchars:append({ trail = " " })
