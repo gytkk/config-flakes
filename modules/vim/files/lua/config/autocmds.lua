@@ -1,5 +1,12 @@
 vim.api.nvim_del_augroup_by_name("lazyvim_checktime")
 
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "markdown",
+  callback = function()
+    vim.opt_local.spell = false
+  end,
+})
+
 local function refreshReloadedBuffer(buf)
   if not vim.api.nvim_buf_is_valid(buf) or vim.bo[buf].buftype ~= "" then return end
 
