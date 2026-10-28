@@ -58,7 +58,7 @@ nixos-rebuild switch --flake .#<host>
 
 ### Architecture
 
-Nix flake configuration for standalone Home Manager and NixOS environments on macOS and Linux, plus an independent Nix-on-Droid target for Android.
+Nix flake configuration for standalone Home Manager and NixOS environments on macOS and Linux.
 
 ```text
 flake.nix                         # Main flake configuration
@@ -69,7 +69,6 @@ agent-core/                       # Canonical agent rules, adapters, skills, and
 modules/<name>/default.nix        # Reusable Home Manager or NixOS module
 modules/nixos/                    # Common NixOS modules and shared secrets
 hosts/<name>/configuration.nix    # NixOS host configuration
-hosts/pylv-termux/default.nix     # Independent Nix-on-Droid configuration
 packages/                        # Package catalog, shared helpers, updaters, and tests
 packages/apps/                   # Non-nixpkgs app packages
 lib/pkgs.nix                      # Overlay and per-system package-set construction
@@ -88,8 +87,6 @@ Defined in `inventory.nix` (single source of truth). `kind` field determines bui
 - **pylv-denim**: x86_64 Linux/WSL, pylv base, home-only
 - **pylv-sepia**: x86_64 Linux/NixOS server, pylv base (with Disko, agenix, copyparty)
 - **pylv-onyx**: x86_64 Linux/NixOS, pylv base (with niri, DankMaterialShell, user-managed OpenClaw)
-
-`pylv-termux` is an aarch64-linux Nix-on-Droid target declared separately in `flake.nix` under `nixOnDroidConfigurations`. It uses `hosts/pylv-termux/default.nix` without importing the workstation base.
 
 #### Base System
 
