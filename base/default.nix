@@ -153,6 +153,7 @@ in
         git
         gh
         lazygit
+        gitui
         delta
         bat
 
