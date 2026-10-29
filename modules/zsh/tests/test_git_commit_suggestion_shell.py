@@ -6,7 +6,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-SHELL = Path(__file__).resolve().parents[1] / "git-commit-suggestion.zsh"
+SHELL = (
+    Path(__file__).resolve().parents[1]
+    / "plugins/git-commit-suggestions/git-commit-suggestions.plugin.zsh"
+)
 PLUGINS = sorted(
     Path("/nix/store").glob(
         "*-zsh-autosuggestions-*/share/zsh-autosuggestions/zsh-autosuggestions.zsh"

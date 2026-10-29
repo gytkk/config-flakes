@@ -10,7 +10,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location(
-    "git_commit_message", Path(__file__).resolve().parents[1] / "git-commit-message.py"
+    "git_commit_message",
+    Path(__file__).resolve().parents[1]
+    / "plugins/git-commit-suggestions/git-commit-message.py",
 )
 message = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(message)

@@ -16,7 +16,7 @@ let
     exec ${pkgs.python3}/bin/python ${./nix-command-timing.py} "$@"
   '';
   gitCommitMessage = pkgs.writeShellScriptBin "git-commit-message" ''
-    exec with-openai ${pkgs.python3}/bin/python ${./git-commit-message.py} "$@"
+    exec with-openai ${pkgs.python3}/bin/python ${./plugins/git-commit-suggestions/git-commit-message.py} "$@"
   '';
 in
 let
@@ -56,6 +56,14 @@ in
       autosuggestion.enable = true;
       enableCompletion = true;
       syntaxHighlighting.enable = true;
+
+      plugins = lib.optionals config.modules.openaiApi.enable [
+        {
+          name = "git-commit-suggestions";
+          src = ./plugins/git-commit-suggestions;
+          file = "git-commit-suggestions.plugin.zsh";
+        }
+      ];
 
       # History
       history = {
@@ -138,9 +146,6 @@ in
 
           zshConfig = lib.mkOrder 1000 ''
             ${builtins.readFile ./nix-command-timing.zsh}
-            ${lib.optionalString config.modules.openaiApi.enable (
-              builtins.readFile ./git-commit-suggestion.zsh
-            )}
 
             # gh auth 후 자동으로 ~/.netrc 업데이트 (Nix flake용)
             gh-auth-netrc() {

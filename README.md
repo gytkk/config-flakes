@@ -68,7 +68,7 @@ New Darwin environments leave [Claude session mining](modules/claude-session-min
 
 ## Zsh config
 
-Typing `gc -m` requests an [AI commit subject](modules/zsh/README.md#ai-commit-subjects) from the staged diff and global/repository commit rules using Minuet's OpenAI key. Accept the gray suggestion with the right arrow, review it, then press Enter to commit.
+The local [git-commit-suggestions Zsh plugin](modules/zsh/README.md#ai-commit-subjects) requests an AI commit subject when you type `gc -m`, using the staged diff, global/repository commit rules, and Minuet's OpenAI key. Accept the gray suggestion with the right arrow, review it, then press Enter to commit.
 
 On macOS, login shells prioritize `~/.nix-profile/bin` after the system PATH setup, so commands such as `python3` use their Nix versions. See the [Zsh module README](modules/zsh/README.md#nix-executable-priority-on-macos) for application steps.
 
