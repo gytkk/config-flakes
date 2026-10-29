@@ -15,6 +15,9 @@ let
   nixCommandTiming = pkgs.writeShellScriptBin "nix-command-timing" ''
     exec ${pkgs.python3}/bin/python ${./nix-command-timing.py} "$@"
   '';
+  gitCommitMessage = pkgs.writeShellScriptBin "git-commit-message" ''
+    exec with-openai ${pkgs.python3}/bin/python ${./git-commit-message.py} "$@"
+  '';
 in
 let
   starshipThemeConfig = config.lib.file.mkOutOfStoreSymlink (
@@ -29,10 +32,13 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = with pkgs; [
-      zsh
-      nixCommandTiming
-    ];
+    home.packages =
+      with pkgs;
+      [
+        zsh
+        nixCommandTiming
+      ]
+      ++ lib.optionals config.modules.openaiApi.enable [ gitCommitMessage ];
 
     # Zsh configuration
     programs.zsh = {
@@ -132,6 +138,9 @@ in
 
           zshConfig = lib.mkOrder 1000 ''
             ${builtins.readFile ./nix-command-timing.zsh}
+            ${lib.optionalString config.modules.openaiApi.enable (
+              builtins.readFile ./git-commit-suggestion.zsh
+            )}
 
             # gh auth 후 자동으로 ~/.netrc 업데이트 (Nix flake용)
             gh-auth-netrc() {
