@@ -11,11 +11,13 @@ local function check()
   vim.fn.writefile({ "# Markdown", string.rep("Long paragraph ", 30) }, workspace .. "/readme.md")
   vim.fn.writefile({ "# MDX", "Another document" }, workspace .. "/notes.mdx")
   vim.fn.writefile({ "return {}" }, workspace .. "/code.lua")
+  vim.fn.writefile({ "description: " .. string.rep("Long paragraph ", 30) }, workspace .. "/config.yaml")
   vim.api.nvim_set_current_dir(workspace)
   vim.cmd.edit("readme.md")
   vim.cmd.vsplit()
   vim.cmd.tabedit("notes.mdx")
   vim.cmd.vsplit("code.lua")
+  vim.cmd.tabedit("config.yaml")
   vim.opt.sessionoptions = { "buffers", "curdir", "tabpages", "winsize", "help", "globals", "skiprtp", "folds" }
   local session = state .. "/nvim/sessions/" .. workspace:gsub("[\\/:]+", "%%") .. ".vim"
   vim.cmd("mksession " .. vim.fn.fnameescape(session))
@@ -61,7 +63,7 @@ local function check()
   local verify = [[
     assert(vim.fn.argc() == 0, "Startup must have no file arguments")
     assert(vim.g.session_test_ready, "LazyVim setup must finish before session restoration starts")
-    local markdown, code = 0, 0
+    local markdown, yaml, code = 0, 0, 0
     for _, win in ipairs(vim.api.nvim_list_wins()) do
       local buf = vim.api.nvim_win_get_buf(win)
       if vim.bo[buf].buftype == "" then
@@ -73,12 +75,16 @@ local function check()
           "Restored Markdown/MDX window must wrap: " .. vim.api.nvim_buf_get_name(buf))
         assert(not vim.wo[win].spell and vim.wo[win].foldlevel == 99)
         assert(vim.b[buf].autoformat == false)
+      elseif vim.bo[buf].filetype == "yaml" then
+        yaml = yaml + 1
+        assert(vim.wo[win].wrap and vim.wo[win].linebreak, "Restored YAML window must wrap")
+        assert(vim.b[buf].autoformat == false)
       elseif vim.bo[buf].filetype == "lua" then
         code = code + 1
         assert(not vim.wo[win].wrap, "Code must retain its wrapping default")
       end
     end
-    assert(markdown == 3 and code == 1, "Restore every split and tab in the fixture")
+    assert(markdown == 3 and yaml == 1 and code == 1, "Restore every split and tab in the fixture")
     assert(vim.opt.listchars:get().trail == " ")
   ]]
   vim.rpcrequest(child, "nvim_exec_lua", verify, {})
@@ -100,4 +106,4 @@ end
 vim.api.nvim_set_current_dir(root)
 vim.fn.delete(temp, "rf")
 assert(ok, err)
-io.stdout:write("PASS: bare startup and manual session restore apply Markdown/MDX settings across splits and tabs\n")
+io.stdout:write("PASS: bare startup and manual session restore apply Markdown/MDX/YAML settings across splits and tabs\n")

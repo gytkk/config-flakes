@@ -109,7 +109,15 @@ local function check()
     local buf = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_set_current_buf(buf)
     vim.bo[buf].filetype = ft
-    assert(vim.wo.wrap == (ft == "markdown"), "Unexpected default wrapping: " .. ft)
+    assert(vim.wo.wrap == (ft == "markdown" or ft == "yaml"), "Unexpected default wrapping: " .. ft)
+    if ft == "yaml" then
+      assert(vim.wo.linebreak, "YAML must wrap at word boundaries")
+      vim.wo.wrap = false
+      vim.wo.linebreak = false
+      vim.api.nvim_win_set_buf(0, vim.api.nvim_create_buf(true, false))
+      vim.api.nvim_win_set_buf(0, buf)
+      assert(vim.wo.wrap and vim.wo.linebreak, "Returning to YAML must restore display wrapping")
+    end
     vim.api.nvim_exec_autocmds("BufWritePre", { buffer = buf })
     assert(formatted == (ft == "lua" and 1 or 0), "Save formatting policy failed: " .. vim.inspect({
       filetype = ft, count = formatted, global = vim.g.autoformat, buffer = vim.b[buf].autoformat,
