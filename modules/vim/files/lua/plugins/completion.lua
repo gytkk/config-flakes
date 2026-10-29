@@ -24,7 +24,7 @@ local automaticFiletypes = {
 return {
   {
     "milanglacier/minuet-ai.nvim",
-    event = "InsertEnter",
+    event = { "BufReadPre", "BufNewFile" },
     opts = {
       provider = "openai",
       n_completions = 1,
@@ -40,9 +40,11 @@ return {
           return vim.tbl_contains(automaticFiletypes, vim.bo.filetype)
         end,
       },
-      blink = { enable_auto_complete = true },
-      -- Blink owns automatic requests and presentation, including AI suggestions.
-      virtualtext = { auto_trigger_ft = {} },
+      blink = { enable_auto_complete = false },
+      virtualtext = {
+        auto_trigger_ft = automaticFiletypes,
+        show_on_completion_menu = true,
+      },
       provider_options = {
         openai = {
           model = "gpt-6.1-terra",
@@ -63,24 +65,26 @@ return {
     dependencies = { "milanglacier/minuet-ai.nvim" },
     opts = function(_, opts)
       opts.keymap.preset = "super-tab"
-      opts.keymap["<C-y>"] = require("minuet").make_blink_map()
+      opts.keymap["<Tab>"] = require("blink.cmp.keymap.presets").get("super-tab")["<Tab>"]
+      table.insert(opts.keymap["<Tab>"], 1, function(cmp)
+        local suggestion = require("minuet.virtualtext").action
+        if suggestion.is_visible() then
+          cmp.hide()
+          suggestion.accept()
+          return true
+        end
+      end)
+      opts.keymap["<C-y>"] = {
+        function()
+          require("minuet.virtualtext").action.next()
+          return true
+        end,
+      }
       opts.completion.documentation.auto_show_delay_ms = 300
       opts.completion.ghost_text.enabled = false
-      local draw = opts.completion.menu.draw
-      draw.columns = draw.columns or { { "kind_icon" }, { "label", "label_description", gap = 1 } }
-      table.insert(draw.columns, { "source_name" })
       opts.completion.trigger = vim.tbl_extend("force", opts.completion.trigger or {}, {
         prefetch_on_insert = false,
       })
-      table.insert(opts.sources.default, "minuet")
-      opts.sources.providers = opts.sources.providers or {}
-      opts.sources.providers.minuet = {
-        name = "minuet",
-        module = "minuet.blink",
-        async = true,
-        timeout_ms = 4000,
-        score_offset = -50,
-      }
       opts.signature = vim.tbl_extend("force", opts.signature or {}, { enabled = true })
     end,
   },

@@ -14,7 +14,7 @@ The module exposes every generated colorscheme from `themes/exports/nvim/`, load
 
 - Snacks provides file picking, explorer, notifications, status column, inlay hint toggles, lazygit, git browse, file rename, inline images, and GitHub issues and pull requests through `gh`. Scroll animation is disabled by default; `<leader>uS` toggles it for the current session.
 - Persistence saves directory and branch-aware sessions and restores them on bare `nvim` startup.
-- Blink combines LSP, snippets, paths, buffers, and Minuet AI suggestions in one completion menu.
+- Blink combines LSP, snippets, paths, and buffers in a completion menu. Minuet displays automatic AI suggestions as dimmed inline text.
 - Nix installs language servers; Rust uses rust-analyzer from the active rustup toolchain. Neovim watches Rust files to avoid a macOS server watcher startup stall.
 - Treesitter provides syntax parsing. Conform formats with the selected tools, including `nixfmt`, `prettier`, `rustfmt`, `gofmt`, and `ruff_format`. Markdown and YAML skip formatting on save; manual formatting remains available.
 - Native diagnostics show a color-coded circle and the current-line message directly after the code.
@@ -38,13 +38,13 @@ Open grep pickers rerun the current search after a file is saved, after Neovim r
 
 ## Blink and Minuet
 
-Minuet requests OpenAI `gpt-6.1-terra` suggestions with `low` reasoning effort and Blink displays them alongside ordinary completion items. Automatic AI requests run asynchronously for the configured coding filetypes. The menu's source name identifies Minuet items. Inline AI suggestions and insert-mode ghost text are disabled.
+Minuet requests OpenAI `gpt-6.1-terra` suggestions with `low` reasoning effort and displays them automatically as inline text for the configured coding filetypes, including Nix. The text uses the theme's `Comment` highlight and can appear while Blink's ordinary completion menu is open. Minuet loads before filetype detection so automatic suggestions also work in the first opened file. AI requests use only Minuet's inline frontend; Blink's own ghost text is disabled.
 
-- `<Tab>` follows Blink's `super-tab` rules. In an active snippet it accepts a selected menu item, or moves to the next snippet position when no item is accepted. Outside a snippet it accepts the selected or first item; with no menu it falls back to ordinary Tab behavior.
-- `<C-y>` requests Minuet suggestions manually, bypassing the automatic filetype restriction and throttle.
-- The former inline-only `<C-g>l`, `<C-g>e`, `<C-g>n`, and `<C-g>p` mappings are no longer provided.
-- Minuet uses a 6,000-character context window, a 900ms throttle, a 180ms debounce, and a 4-second timeout. The Blink source also has a 4-second timeout. The `-50` score offset favors ordinary completions but does not guarantee AI suggestions appear last.
-- Requests use OpenAI Fast mode at its Fast mode token rate, with a 1,024-token limit shared by reasoning and visible output. Automatic requests can run while an LSP menu is open, which can increase request counts compared with the former inline setup. Actual API quality, latency, and usage require live verification.
+- `<Tab>` accepts a visible AI suggestion and closes the Blink menu. Without an AI suggestion, it follows Blink's `super-tab` rules: accept a menu item, advance an active snippet, or fall back to ordinary Tab behavior.
+- `<C-y>` requests an inline suggestion manually when none is available, bypassing the automatic filetype restriction and throttle.
+- `<Esc>` leaves insert mode and clears the inline suggestion.
+- Minuet uses a 6,000-character context window, a 900ms throttle, a 180ms debounce, and a 4-second timeout.
+- Requests use OpenAI Fast mode at its Fast mode token rate, with a 1,024-token limit shared by reasoning and visible output. Automatic requests can run while an LSP menu is open. Actual API quality, latency, and usage require live verification.
 
 Store the API key in `secrets/openai-api-key.age`. NixOS decrypts it under `/run/agenix/openai-api-key`; home-only environments use Home Manager agenix through the [OpenAI API module](../openai-api/README.md). The vim module supplies the decrypted path as `vim.g.openai_api_key_path`.
 
@@ -113,7 +113,7 @@ Check folding defaults without loading plugins or touching saved sessions:
 nvim --headless -u NONE -i NONE -l modules/vim/tests/folds.lua
 ```
 
-The completion check uses the real merged LazyVim, Blink, and Minuet specs with a substituted backend, preventing external requests and credential access. After plugins are installed, run it from the repository root:
+The completion check uses the real merged LazyVim, Blink, and Minuet specs with a substituted backend, preventing external requests and credential access. It covers automatic Nix inline suggestions, preview rendering, Tab acceptance, ordinary completion and snippet fallbacks, and filetype filtering. After plugins are installed, run it from the repository root:
 
 ```bash
 LAZYVIM_SOURCE="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/lazy/LazyVim" \
@@ -148,4 +148,4 @@ Real editing checks still cover startup with and without sessions, file argument
 
 The 2026-10-27 investigation compared the hand-maintained setup at `0080d76222accbafbfaf2bc08e1c15241d40ae8e` with LazyVim. Most core plugins were already shared, so the expected benefit was reduced ownership of common configuration. An isolated candidate tested the personal search, session, language-server, formatting, theme, and completion behavior before promotion to the default configuration.
 
-The same investigation found that Minuet's inline frontend and Blink integration shared OpenAI backend cancellation state. Offline checks showed that opening the Blink menu did not clear inline text and an in-flight response could redisplay it after dismissal. The promoted setup therefore routes requests and presentation through Blink. Evidence: [Minuet virtualtext](https://github.com/milanglacier/minuet-ai.nvim/blob/ee03326381c93f6417fa66aeb2ca85a26c0706e7/lua/minuet/virtualtext.lua), [shared OpenAI backend](https://github.com/milanglacier/minuet-ai.nvim/blob/ee03326381c93f6417fa66aeb2ca85a26c0706e7/lua/minuet/backends/openai_base.lua), and [LazyVim Blink configuration](https://github.com/LazyVim/LazyVim/blob/999700997f72227187d49d8b92667183dc7fc809/lua/lazyvim/plugins/extras/coding/blink.lua).
+The same investigation found that Minuet's inline frontend and Blink integration shared OpenAI backend cancellation state. Offline checks showed that opening the Blink menu did not clear inline text and an in-flight response could redisplay it after dismissal. The initial promotion used Blink for AI requests and presentation. The current setup uses only the inline frontend for AI requests, allowing inline suggestions alongside Blink's ordinary completion menu. Evidence: [Minuet virtualtext](https://github.com/milanglacier/minuet-ai.nvim/blob/ee03326381c93f6417fa66aeb2ca85a26c0706e7/lua/minuet/virtualtext.lua), [shared OpenAI backend](https://github.com/milanglacier/minuet-ai.nvim/blob/ee03326381c93f6417fa66aeb2ca85a26c0706e7/lua/minuet/backends/openai_base.lua), and [LazyVim Blink configuration](https://github.com/LazyVim/LazyVim/blob/999700997f72227187d49d8b92667183dc7fc809/lua/lazyvim/plugins/extras/coding/blink.lua).
