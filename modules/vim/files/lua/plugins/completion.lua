@@ -52,7 +52,7 @@ return {
           optional = {
             -- The completion budget includes reasoning tokens.
             max_completion_tokens = 1024,
-            reasoning_effort = "low",
+            reasoning_effort = "none",
             service_tier = "fast",
           },
         },
