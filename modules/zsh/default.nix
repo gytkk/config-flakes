@@ -16,7 +16,7 @@ let
     exec ${pkgs.python3}/bin/python ${./nix-command-timing.py} "$@"
   '';
   gitCommitMessage = pkgs.writeShellScriptBin "git-commit-message" ''
-    exec with-openai ${pkgs.python3}/bin/python ${./plugins/git-commit-suggestions/git-commit-message.py} "$@"
+    exec with-openai ${pkgs.bun}/bin/bun ${./plugins/git-commit-suggestions/git-commit-message.ts} "$@"
   '';
 in
 let

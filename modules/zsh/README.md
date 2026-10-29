@@ -40,7 +40,7 @@ The [Terraform module](../terraform/README.md) owns the optional `tf` alias and 
 
 When `modules.openaiApi.enable` is enabled, type `gc -m` and pause to request a concise commit subject as gray autosuggestion text. A trailing space or opening single/double quote also works. Press the right arrow at the end of the line to accept, edit if needed, then press Enter to commit. `gc` remains the `git commit` alias; generating or accepting a suggestion does not stage files or execute the command. Other commands keep history suggestions; old `gc -m` commands are excluded from history suggestions so they cannot mask a fresh request.
 
-The local [git-commit-suggestions plugin](plugins/git-commit-suggestions/git-commit-suggestions.plugin.zsh) is registered through `programs.zsh.plugins`. Home Manager loads it after `zsh-autosuggestions` and installs the bundled [generator](plugins/git-commit-suggestions/git-commit-message.py) as `git-commit-message`. The Nix module owns installation and authentication wiring; the plugin directory owns the suggestion strategy and generation logic. Loading the `.plugin.zsh` file directly requires `zsh-autosuggestions` to be loaded first and `git-commit-message` to be on `PATH`.
+The local [git-commit-suggestions plugin](plugins/git-commit-suggestions/git-commit-suggestions.plugin.zsh) is registered through `programs.zsh.plugins`. Home Manager loads it after `zsh-autosuggestions` and installs the bundled [TypeScript generator](plugins/git-commit-suggestions/git-commit-message.ts) as `git-commit-message`, executed by Bun without additional npm packages. The Nix module owns installation and authentication wiring; the plugin directory owns the suggestion strategy and generation logic. Loading the `.plugin.zsh` file directly requires `zsh-autosuggestions` to be loaded first and `git-commit-message` to be on `PATH`.
 
 The generator uses OpenAI `gpt-6.1-terra` with no reasoning, a 256-token output limit, and an 8-second network timeout. The strategy uses the existing asynchronous autosuggestion plugin and waits 300ms before starting, so continued typing cancels pending work. It triggers only for the empty message forms above, not for every character of a manually written subject. No suggestion is requested when the index is empty.
 
@@ -51,7 +51,8 @@ The existing [OpenAI API module](../openai-api/README.md) supplies Minuet's agen
 Offline checks use temporary Git repositories and mocked API responses:
 
 ```bash
-uv run --no-project -m unittest discover -s modules/zsh/tests -p 'test_git_commit*.py'
+bun test modules/zsh/tests/git-commit-message.test.ts
+uv run --no-project -m unittest discover -s modules/zsh/tests -p test_git_commit_suggestion_shell.py
 ```
 
 ### Nix command timing
