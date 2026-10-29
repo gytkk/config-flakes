@@ -38,13 +38,13 @@ Open grep pickers rerun the current search after a file is saved, after Neovim r
 
 ## Blink and Minuet
 
-Minuet requests OpenAI `gpt-6-luna` suggestions and Blink displays them alongside ordinary completion items. Automatic AI requests run asynchronously for the configured coding filetypes. The menu's source name identifies Minuet items. Inline AI suggestions and insert-mode ghost text are disabled.
+Minuet requests OpenAI `gpt-6.1-terra` suggestions with `low` reasoning effort and Blink displays them alongside ordinary completion items. Automatic AI requests run asynchronously for the configured coding filetypes. The menu's source name identifies Minuet items. Inline AI suggestions and insert-mode ghost text are disabled.
 
 - `<Tab>` follows Blink's `super-tab` rules. In an active snippet it accepts a selected menu item, or moves to the next snippet position when no item is accepted. Outside a snippet it accepts the selected or first item; with no menu it falls back to ordinary Tab behavior.
 - `<C-y>` requests Minuet suggestions manually, bypassing the automatic filetype restriction and throttle.
 - The former inline-only `<C-g>l`, `<C-g>e`, `<C-g>n`, and `<C-g>p` mappings are no longer provided.
 - Minuet uses a 6,000-character context window, a 900ms throttle, a 180ms debounce, and a 4-second timeout. The Blink source also has a 4-second timeout. The `-50` score offset favors ordinary completions but does not guarantee AI suggestions appear last.
-- Requests use OpenAI Fast mode at its Fast mode token rate. Automatic requests can run while an LSP menu is open, which can increase request counts compared with the former inline setup. Actual API quality, latency, and usage require live verification.
+- Requests use OpenAI Fast mode at its Fast mode token rate, with a 1,024-token limit shared by reasoning and visible output. Automatic requests can run while an LSP menu is open, which can increase request counts compared with the former inline setup. Actual API quality, latency, and usage require live verification.
 
 Store the API key in `secrets/openai-api-key.age`. NixOS decrypts it under `/run/agenix/openai-api-key`; home-only environments use Home Manager agenix through the [OpenAI API module](../openai-api/README.md). The vim module supplies the decrypted path as `vim.g.openai_api_key_path`.
 

@@ -45,11 +45,12 @@ return {
       virtualtext = { auto_trigger_ft = {} },
       provider_options = {
         openai = {
-          model = "gpt-6-luna",
+          model = "gpt-6.1-terra",
           api_key = require("config.ai").getOpenAIKey,
           optional = {
-            max_completion_tokens = 128,
-            reasoning_effort = "none",
+            -- The completion budget includes reasoning tokens.
+            max_completion_tokens = 1024,
+            reasoning_effort = "low",
             service_tier = "fast",
           },
         },
