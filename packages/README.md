@@ -58,7 +58,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 | databricks-cli | 1.19.0 |
 | gksdud | 1.6.0 |
 | herdr | 0.9.5 |
-| herdr-annotate | 0.9.8 |
+| herdr-annotate | 0.9.9 |
 | herdr-auto-title | 0.17.0 |
 | lspi | 0.2.0 |
 | notion-cli | 0.23.25 |
