@@ -121,6 +121,8 @@ The [LSP module](modules/lsp/default.nix) installs Pyright alongside ty. Claude 
 
 See the [Codex module README](modules/codex/README.md) for official bundle packaging, model delegation, reasoning effort, opening pages in the system default browser, configuration ownership, and activation behavior. The [Herdr integration](modules/codex/README.md#herdr-subagent-sidebar) runs Codex without the shared daemon inside Herdr so each pane retains its own session and subagent metadata.
 
+Home Manager installs Ponytail only when it is missing and preserves its installed version and enabled state on later switches. Update it explicitly with `codex plugin add ponytail@ponytail`; changed plugin contents require hook approval again. See [Codex activation](modules/codex/README.md#적용) for hook trust and update behavior.
+
 Codex and Claude Code follow shared instructions to display pages in the system default browser and use `agent-browser` for automation, with headless mode as the default. See [Claude browser use](modules/claude/README.md#browser-use) for Playwright MCP cleanup and activation.
 
 The Codex and Claude Herdr watchers share the [JSONL reader](modules/herdr/README.md#shared-jsonl-reader), which handles incremental reads, file replacement, and malformed records.

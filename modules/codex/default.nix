@@ -116,20 +116,12 @@ in
         errorEcho "Could not install superpowers@openai-curated. See $SETUP_LOG and retry home-manager switch."
         exit 1
       fi
-      log "Registering Ponytail marketplace"
-      if run ${codex} plugin marketplace add DietrichGebert/ponytail < /dev/null >> "$SETUP_LOG" 2>&1; then
+      log "Ensuring plugin is installed: ponytail@ponytail"
+      if run ${pkgs.bash}/bin/bash ${./files/install-ponytail.sh} ${codex} ${pkgs.jq}/bin/jq < /dev/null >> "$SETUP_LOG" 2>&1; then
         log "  -> OK"
       else
         log "  -> FAILED (exit $?)"
-        errorEcho "Could not register the Ponytail marketplace. See $SETUP_LOG and retry home-manager switch."
-        exit 1
-      fi
-      log "Installing plugin: ponytail@ponytail"
-      if run ${codex} plugin add ponytail@ponytail < /dev/null >> "$SETUP_LOG" 2>&1; then
-        log "  -> OK"
-      else
-        log "  -> FAILED (exit $?)"
-        errorEcho "Could not install ponytail@ponytail. See $SETUP_LOG and retry home-manager switch."
+        errorEcho "Could not check or install ponytail@ponytail. See $SETUP_LOG and retry home-manager switch."
         exit 1
       fi
       log "=== Codex plugin setup finished ==="
