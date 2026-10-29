@@ -8,6 +8,10 @@ vim.fn.mkdir(state .. "/nvim/sessions", "p")
 local child
 
 local function check()
+  local external = temp .. "/external"
+  vim.fn.mkdir(external .. "/.git", "p")
+  vim.fn.writefile({ "External settings" }, external .. "/settings.txt")
+  assert(vim.uv.fs_symlink(external .. "/settings.txt", temp .. "/settings.txt"))
   vim.fn.writefile({ "# Markdown", string.rep("Long paragraph ", 30) }, workspace .. "/readme.md")
   vim.fn.writefile({ "# MDX", "Another document" }, workspace .. "/notes.mdx")
   vim.fn.writefile({ "return {}" }, workspace .. "/code.lua")
@@ -18,6 +22,7 @@ local function check()
   vim.cmd.tabedit("notes.mdx")
   vim.cmd.vsplit("code.lua")
   vim.cmd.tabedit("config.yaml")
+  vim.cmd.tabedit(temp .. "/settings.txt")
   vim.opt.sessionoptions = { "buffers", "curdir", "tabpages", "winsize", "help", "globals", "skiprtp", "folds" }
   local session = state .. "/nvim/sessions/" .. workspace:gsub("[\\/:]+", "%%") .. ".vim"
   vim.cmd("mksession " .. vim.fn.fnameescape(session))
@@ -89,6 +94,14 @@ local function check()
   ]]
   vim.rpcrequest(child, "nvim_exec_lua", verify, {})
   vim.rpcrequest(child, "nvim_exec_lua", [[
+    local workspace = ...
+    assert(vim.fn.getcwd() == workspace, "Restore the launching directory's session")
+    assert(LazyVim.root() ~= workspace, "Fixture must restore a symlink into another project")
+    local explorers = Snacks.picker.get({ source = "explorer", tab = false })
+    assert(#explorers == 1 and explorers[1]:cwd() == workspace,
+      "Startup explorer must stay in the launching directory even when the restored file belongs to another project")
+  ]], { workspace })
+  vim.rpcrequest(child, "nvim_exec_lua", [[
     for _, win in ipairs(vim.api.nvim_list_wins()) do
       vim.wo[win].wrap = false
       vim.wo[win].spell = true
@@ -106,4 +119,4 @@ end
 vim.api.nvim_set_current_dir(root)
 vim.fn.delete(temp, "rf")
 assert(ok, err)
-io.stdout:write("PASS: bare startup and manual session restore apply Markdown/MDX/YAML settings across splits and tabs\n")
+io.stdout:write("PASS: startup explorer stays in the working directory; restored Markdown/MDX/YAML windows retain their settings\n")
