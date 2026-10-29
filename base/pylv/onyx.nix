@@ -32,6 +32,7 @@
   home.packages = [
     pkgs.alacritty
     pkgs.btop
+    pkgs.kicad
     pkgs.walker
     pkgs.wezterm
     pkgs.obsidian
