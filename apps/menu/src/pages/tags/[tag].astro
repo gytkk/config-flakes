@@ -1,0 +1,40 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { publishedRecipes, tagSlug, tagsFor } from "../../lib/recipes";
+
+const recipes = publishedRecipes(await getCollection("recipes"));
+export async function getStaticPaths() {
+  const entries = tagsFor(publishedRecipes(await getCollection("recipes")));
+  return [...entries].map(([slug, tag]) => ({
+    params: { tag: slug },
+    props: { tag },
+  }));
+}
+
+const tag: string = Astro.props.tag;
+const matchingRecipes = recipes.filter((recipe) =>
+  recipe.data.tags.some(
+    (recipeTag: string) => tagSlug(recipeTag) === tagSlug(tag),
+  ),
+);
+---
+
+<BaseLayout
+  title={`${tag} | Menu by pylv`}
+  description={`Recipes tagged ${tag}.`}
+  canonicalPath={`/tags/${tagSlug(tag)}/`}
+>
+  <section aria-labelledby="tag-title">
+    <h1 id="tag-title">{tag}</h1>
+    <ul class="recipe-list">
+      {
+        matchingRecipes.map((recipe) => (
+          <li>
+            <a href={`/recipes/${recipe.id}/`}>{recipe.data.title}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</BaseLayout>

@@ -1,0 +1,28 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { publishedRecipes, tagsFor } from "../../lib/recipes";
+
+const tags = [
+  ...tagsFor(publishedRecipes(await getCollection("recipes"))).entries(),
+].sort(([left], [right]) => left.localeCompare(right));
+---
+
+<BaseLayout
+  title="Tags | Menu by pylv"
+  description="All recipe tags."
+  canonicalPath="/tags/"
+>
+  <section aria-labelledby="tags">
+    <h1 id="tags">Tags</h1>
+    <ul class="tag-list">
+      {
+        tags.map(([slug, tag]) => (
+          <li>
+            <a href={`/tags/${slug}/`}>{tag}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</BaseLayout>

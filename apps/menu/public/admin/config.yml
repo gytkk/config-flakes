@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://unpkg.com/@sveltia/cms@0.181.1/schema/sveltia-cms.json
+backend:
+  name: github
+  repo: gytkk/menu
+  branch: main
+slug:
+  encoding: unicode
+  lowercase: true
+  trim: true
+media_libraries:
+  all:
+    max_file_size: 10485760
+    slugify_filename: true
+    transformations:
+      raster_image:
+        format: webp
+        quality: 85
+        width: 2000
+        height: 2000
+  cloudflare_r2:
+    access_key_id: 9eb6c3bac8fe6975f47311c54917836b
+    account_id: 910d658b051ca9e5fa5be458140853d9
+    bucket: pylv-menu-media
+    jurisdiction: default
+    public_url: https://media.pylv.dev
+    prefix: menu/
+collections:
+  - name: recipes
+    label: Recipes
+    folder: src/content/recipes
+    create: true
+    extension: md
+    format: yaml-frontmatter
+    slug: "{{slug}}"
+    fields:
+      - name: title
+        label: Title
+        widget: string
+      - name: description
+        label: Description
+        widget: text
+      - name: publishedAt
+        label: Published at
+        widget: datetime
+        type: date
+        format: YYYY-MM-DD
+      - name: updatedAt
+        label: Updated at
+        widget: datetime
+        type: date
+        format: YYYY-MM-DD
+        required: false
+      - name: draft
+        label: Draft
+        widget: boolean
+        default: true
+      - name: tags
+        label: Tags
+        widget: list
+        default: []
+      - name: cover
+        label: Cover image
+        widget: image
+        required: false
+      - name: coverAlt
+        label: Cover image description
+        widget: string
+        hint: Required for CMS entries so every selected cover has accessible alternative text.
+      - name: body
+        label: Body
+        widget: markdown

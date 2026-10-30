@@ -1,0 +1,37 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { publishedRecipes } from "../lib/recipes";
+
+const recipes = publishedRecipes(await getCollection("recipes"));
+---
+
+<BaseLayout
+  title="Menu by pylv"
+  description="Approachable recipes for deciding what to cook."
+>
+  <section aria-labelledby="latest-recipes">
+    <h1 id="latest-recipes">Latest recipes</h1>
+    {
+      recipes.length > 0 ? (
+        <ul class="recipe-list">
+          {recipes.map((recipe) => (
+            <li>
+              <article>
+                <h2>
+                  <a href={`/recipes/${recipe.id}/`}>{recipe.data.title}</a>
+                </h2>
+                <p>{recipe.data.description}</p>
+                <time datetime={recipe.data.publishedAt.toISOString()}>
+                  {recipe.data.publishedAt.toLocaleDateString("en-CA")}
+                </time>
+              </article>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No recipes yet.</p>
+      )
+    }
+  </section>
+</BaseLayout>
