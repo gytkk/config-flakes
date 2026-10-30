@@ -7,7 +7,7 @@ meta:
   family: catppuccin
   author: catppuccin, pylv
   description: >-
-    Canonical Catppuccin Mocha theme definition for nix-flakes, based on the
+    Canonical Catppuccin Mocha theme definition for ws, based on the
     official Mocha palette and Catppuccin style-guide usage recommendations.
 
 palette:

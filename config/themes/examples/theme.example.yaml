@@ -7,7 +7,7 @@ meta:
   family: example
   author: your-name
   description: >-
-    Example canonical theme definition using the nix-flakes theme schema.
+    Example canonical theme definition using the ws theme schema.
 
 palette:
   # Base24-compatible base slots.

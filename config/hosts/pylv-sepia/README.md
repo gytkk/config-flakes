@@ -24,7 +24,7 @@ nix run nixpkgs#nixos-rebuild -- switch \
 ### On the Server
 
 ```bash
-sudo nixos-rebuild switch --flake github:gytkk/nix-flakes#pylv-sepia
+sudo nixos-rebuild switch --flake github:gytkk/ws#pylv-sepia
 ```
 
 ### Build memory

@@ -7,7 +7,7 @@ meta:
   family: template-family
   author: your-name
   description: >-
-    Strict authoring template for canonical theme definitions in nix-flakes.
+    Strict authoring template for canonical theme definitions in ws.
 
 palette:
   # Base24 호환 슬롯으로, base00부터 base07까지 배경에서 텍스트 방향으로

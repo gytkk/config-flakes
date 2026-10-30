@@ -12,12 +12,14 @@ sudo mkdir -p /etc/nix
 echo "experimental-features = nix-command flakes" | sudo tee -a /etc/nix/nix.conf
 ```
 
-- This repo assumes the checkout lives at `~/development/nix-flakes`. Several modules create out-of-store symlinks from that path.
+- This repo assumes the checkout lives at `~/ws`. Several modules create out-of-store symlinks from that path.
 - Standalone Home Manager commands evaluate without `--impure`. The checkout path still matters for modules that intentionally install out-of-store symlinks back to the repo.
 
 ## Checkout paths and migration
 
-Runtime checkout paths default to `~/development/nix-flakes`, including when evaluation runs in another worktree. Worktrees are allowed for editing and validation. Before switching from a worktree, deliberately configure its checkout path or apply the change from the main checkout so mutable links and runtime scripts point to the intended files.
+Runtime checkout paths default to `~/ws`, including when evaluation runs in another worktree. Worktrees are allowed for editing and validation. Before switching from a worktree, deliberately configure its checkout path or apply the change from the main checkout so mutable links and runtime scripts point to the intended files.
+
+When moving an existing checkout from `~/development/nix-flakes` to `~/ws`, keep a symlink at the old path until installed generations and stored marketplace paths no longer use it. Move each host's checkout before applying the new default, or set that host's `flakeDirectory` in `config/inventory.nix` to its actual checkout path.
 
 The root `modules`, `themes`, and `secrets` symlinks temporarily forward old checkout paths to `config/`. Keep these links until every deployed generation, every generation still required for rollback, and stored marketplace paths have migrated to the new paths. Moving the sources does not apply Home Manager or NixOS activation; users must switch each environment and verify its runtime configuration before removing the links.
 

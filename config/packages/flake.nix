@@ -1,5 +1,5 @@
 {
-  description = "Self-contained non-nixpkgs app packages for nix-flakes.";
+  description = "Self-contained non-nixpkgs app packages for ws.";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 

@@ -5,7 +5,7 @@
   "sources": [
     {
       "kind": "local-config",
-      "ref": "nix-flakes plugin highlight support",
+      "ref": "ws plugin highlight support",
       "path": "config/themes/templates/nvim/plugins.json"
     }
   ],

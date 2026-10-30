@@ -8,7 +8,7 @@ The repository-wide instructions in [../AGENTS.md](../AGENTS.md) also apply. Thi
 
 ### Critical Rules
 
-- Worktrees are allowed for editing and validation. Runtime checkout paths still default to `~/development/nix-flakes`; switch from a worktree only after deliberately configuring its checkout path, or apply from the main checkout.
+- Worktrees are allowed for editing and validation. Runtime checkout paths still default to `~/ws`; switch from a worktree only after deliberately configuring its checkout path, or apply from the main checkout.
 - Follow existing code patterns and module structure in this repository
 - Use `nixfmt` to format all Nix files before committing
 - Prefer narrow, fast checks. Run time-consuming Nix evaluation commands such as `nix eval` and `nix flake check --no-build` only when they are required to validate the requested change or the user explicitly requests them. Skip them for documentation-only changes, simple edits, and checks unrelated to the changed behavior.

@@ -7,7 +7,7 @@ meta:
   family: one-half
   author: pylv
   description: >-
-    Canonical One Half Light theme for nix-flakes, consolidated from the current
+    Canonical One Half Light theme for ws, consolidated from the current
     Neovim, Zed, and VS Code theme definitions.
 
 palette:

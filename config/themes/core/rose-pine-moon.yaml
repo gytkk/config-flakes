@@ -7,7 +7,7 @@ meta:
   family: rose-pine
   author: rose-pine, pylv
   description: >-
-    Canonical Rosé Pine Moon theme definition for nix-flakes, based on the
+    Canonical Rosé Pine Moon theme definition for ws, based on the
     official Moon variant palette and used as the default shared theme.
 
 palette:

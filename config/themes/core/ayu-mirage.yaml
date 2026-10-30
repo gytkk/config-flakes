@@ -7,7 +7,7 @@ meta:
   family: ayu
   author: ayu-theme, pylv
   description: >-
-    Canonical Ayu Mirage theme definition for nix-flakes, based on the official
+    Canonical Ayu Mirage theme definition for ws, based on the official
     ayu color palette package and its published mirage variant values.
 
 palette:

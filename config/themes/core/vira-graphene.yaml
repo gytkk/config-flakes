@@ -7,7 +7,7 @@ meta:
   family: vira
   author: vira, pylv
   description: >-
-    Canonical Vira Graphene theme definition for nix-flakes, aligned to the
+    Canonical Vira Graphene theme definition for ws, aligned to the
     provided Ghostty palette so terminal output matches the observed official
     Graphene look as closely as possible.
 

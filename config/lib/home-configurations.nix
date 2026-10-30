@@ -1,6 +1,6 @@
 { inputs, systemPkgs }:
 let
-  mkFlakeDirectory = homeDirectory: "${homeDirectory}/development/nix-flakes";
+  mkFlakeDirectory = homeDirectory: "${homeDirectory}/ws";
 in
 {
   inherit mkFlakeDirectory;

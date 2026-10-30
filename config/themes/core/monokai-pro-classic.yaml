@@ -7,7 +7,7 @@ meta:
   family: monokai-pro
   author: pylv
   description: >-
-    Canonical Monokai Pro Classic-style theme definition for nix-flakes, based on
+    Canonical Monokai Pro Classic-style theme definition for ws, based on
     publicly available palette references and UI color listings on the web.
 
 palette:
