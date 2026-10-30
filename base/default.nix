@@ -124,6 +124,7 @@ in
         nixfmt
 
         # System utilities
+        bashInteractive
         coreutils
         findutils
         gnupg
