@@ -1,8 +1,10 @@
 # Repository instructions
 
+Before starting work in `config/`, `apps/<project>/`, or `workspace/<project>/`, you must read and follow that directory's `AGENTS.md` and any more specific `AGENTS.md` files that apply to the task.
+
 This repository contains independent configuration and agent-resource areas. Follow global agent instructions and preserve unrelated work.
 
-- Before changing `config/`, the root `flake.nix` or `flake.lock`, or configuration package workflows under `.github/`, read [config/AGENTS.md](config/AGENTS.md).
+- Before changing the root `flake.nix` or `flake.lock`, or configuration package workflows under `.github/`, read and follow [config/AGENTS.md](config/AGENTS.md).
 - Before changing shared agent rules, runtime adapters, skills, source selections, or renderer behavior, read [agent-core/README.md](agent-core/README.md). Canonical shared sources remain in `agent-core/`; runtime settings belong in `config/modules/`.
 - Keep root `flake.nix` as the input and entry-point boundary, with configuration outputs in `config/outputs.nix`. Keep root `scripts/` for shared repository tools.
 - Worktrees are allowed. Runtime checkout paths default to `~/ws`; before switching from a worktree, deliberately configure that path or apply from the main checkout.
