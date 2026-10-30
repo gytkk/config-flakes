@@ -52,6 +52,8 @@ JSONL 파일 읽기는 Claude watcher와 같은 [공통 reader](../herdr/README.
 
 감시 프로세스의 상태 파일은 쓰기와 탐색 권한이 있는 기존 `XDG_RUNTIME_DIR` 아래에 저장한다. 값이 없거나 절대 경로가 아니거나 해당 디렉터리를 사용할 수 없으면 시스템 임시 디렉터리를 사용한다. macOS에서 Linux용 `/run/user/<uid>` 값이 남아 있어도 해당 경로를 생성하지 않는다.
 
+Linux와 WSL에서는 PID와 `/proc/<pid>/stat`의 시작 tick으로 부모와 감시 프로세스를 식별한다. WSL의 시계 보정으로 `ps lstart`의 시작 시각이 달라져도 실행 중인 프로세스를 종료된 것으로 판단하지 않는다. macOS에서는 기존 `ps` 기반 식별을 사용한다.
+
 ## 적용
 
 Superpowers는 공식 Codex marketplace의 `superpowers@openai-curated` 플러그인으로 설치한다. Home Manager activation은 이 플러그인을 설치하고 활성화한 뒤, `~/.agents/skills/superpowers`가 예전 `~/.codex/superpowers/skills`를 가리키면 해당 링크를 제거한다. 설치가 실패하면 activation을 중단하고 `~/.codex/nix-setup.log`에 오류를 기록한다. 다른 대상의 링크와 일반 디렉터리는 보존한다.

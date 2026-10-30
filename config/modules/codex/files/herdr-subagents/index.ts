@@ -100,7 +100,19 @@ function alive(pid: number | undefined): boolean {
   }
 }
 
-async function processIdentity(pid: number): Promise<string | undefined> {
+export async function processIdentity(pid: number): Promise<string | undefined> {
+  if (process.platform === "linux") {
+    try {
+      const value = await readFile(`/proc/${pid}/stat`, "utf8");
+      // WSL clock corrections can change ps lstart; kernel start ticks stay fixed.
+      const startTicks = value.slice(value.lastIndexOf(")") + 2).split(" ")[19];
+      if (!startTicks || !/^\d+$/.test(startTicks)) throw new Error("invalid process start ticks");
+      return `linux:${startTicks}`;
+    } catch (error) {
+      if (["ENOENT", "ESRCH"].includes(code(error) ?? "")) return;
+      throw new Error(`Reading process identity for PID ${pid}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
   try {
     const { stdout } = await exec("ps", ["-p", String(pid), "-o", "lstart=", "-o", "comm="], {
       timeout: 1_000,
@@ -150,8 +162,12 @@ async function rootTranscript(path: string, sessionId: string): Promise<boolean>
   } catch { return false; }
 }
 
-function processStartedAt(identity: string): number {
-  const parsed = Date.parse(identity.split(/\s+/).slice(0, 5).join(" "));
+async function processStartedAt(pid: number): Promise<number> {
+  const { stdout } = await exec("ps", ["-p", String(pid), "-o", "lstart="], {
+    timeout: 1_000,
+    env: { ...process.env, LC_ALL: "C" },
+  });
+  const parsed = Date.parse(stdout.trim());
   return Number.isFinite(parsed) ? parsed : Date.now();
 }
 
@@ -212,7 +228,7 @@ export async function handleHook(payload: unknown): Promise<void> {
     if (!workerHealthy || codexChanged) {
       const replayAfter = owner?.sessionId === hook.session_id && owner.codexIdentity === codex.identity
         ? owner.replayAfter
-        : processStartedAt(codex.identity) - 1_000;
+        : await processStartedAt(codex.pid) - 1_000;
       owner = {
         token: randomUUID(),
         sessionId: hook.session_id,

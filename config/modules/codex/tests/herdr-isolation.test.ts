@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "bun:test";
+import { processIdentity } from "../files/herdr-subagents";
 
 async function atomicJson(path: string, value: unknown): Promise<void> {
   await writeFile(`${path}.tmp`, JSON.stringify(value));
@@ -41,9 +42,7 @@ test("concurrent panes isolate children in a shared sessions directory", async (
     await mkdir(sessions, { recursive: true });
     await writeFile(log, "");
     await writeFile(join(temporary, "herdr"), "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$HERDR_TEST_LOG\"\n");
-    await writeFile(join(temporary, "ps"), "#!/bin/sh\nprintf '%s\\n' 'synthetic-process-identity'\n");
     await chmod(join(temporary, "herdr"), 0o700);
-    await chmod(join(temporary, "ps"), 0o700);
 
     for (const fixture of fixtures) {
       await writeFile(join(sessions, `rollout-${fixture.child}.jsonl`), jsonl([
@@ -77,7 +76,7 @@ test("concurrent panes isolate children in a shared sessions directory", async (
       await atomicJson(join(directory, fixture.parent, `${foreign.child}.json`), { id: foreign.child, name: foreign.name });
       const owner = {
         path: join(directory, "owner.json"),
-        value: { token: randomUUID(), sessionId: fixture.parent, transcript, codexPid: process.pid, codexIdentity: "synthetic-process-identity", replayAfter: 0 },
+        value: { token: randomUUID(), sessionId: fixture.parent, transcript, codexPid: process.pid, codexIdentity: await processIdentity(process.pid), replayAfter: 0 },
       };
       owners.push(owner);
       await atomicJson(owner.path, owner.value);
