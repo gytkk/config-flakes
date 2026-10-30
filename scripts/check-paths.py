@@ -31,6 +31,7 @@ INLINE_LINK = re.compile(r"(?<!!)\[[^]]*\]\(([^)]+)\)")
 INLINE_CODE = re.compile(r"`([^`]+)`")
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 REPOSITORY_PATH = re.compile(rf"(?<![\w./:$~*-])((?:{REPOSITORY_DIRS})/\S+)")
+FLAKE_UPDATE_INPUT = re.compile(r"\bnix flake update\s+(?:[\w][\w./-]*\s+)*$")
 
 
 def is_skipped(target: str) -> bool:
@@ -97,6 +98,9 @@ def check_document(document: Path) -> list[str]:
         code_chunks = [line] if in_fence else INLINE_CODE.findall(line)
         for code in code_chunks:
             for match in REPOSITORY_PATH.finditer(code):
+                # Positional flake update arguments name inputs, not filesystem paths.
+                if FLAKE_UPDATE_INPUT.search(code[: match.start()]):
+                    continue
                 raw_target = match.group(1)
                 if is_skipped(raw_target):
                     continue

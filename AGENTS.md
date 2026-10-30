@@ -6,7 +6,7 @@ This repository contains configuration, shared agent resources, applications, an
 
 - Before changing the root `flake.nix` or `flake.lock`, or configuration package workflows under `.github/`, read and follow [config/AGENTS.md](config/AGENTS.md).
 - Before changing shared agent rules, runtime adapters, skills, source selections, or renderer behavior, read [agent-core/README.md](agent-core/README.md). Canonical shared sources remain in `agent-core/`; runtime settings belong in `config/modules/`.
-- Keep root `flake.nix` as the input and entry-point boundary, with configuration outputs in `config/outputs.nix`. Keep root `scripts/` for shared repository tools.
+- Keep root `flake.nix` as a forwarding entry point, configuration inputs in `config/flake.nix`, and configuration outputs in `config/outputs.nix`. Manage configuration dependency pins in the root `flake.lock`. Keep root `scripts/` for shared repository tools.
 - Worktrees are allowed. Configuration runtime checkout paths default to `~/ws`; before applying Home Manager or NixOS configuration from a worktree, deliberately configure that path or apply from the main checkout.
 - Use `config/modules`, `config/themes`, and `config/secrets` for configuration paths. Read [checkout migration](config/README.md#checkout-paths-and-migration) when applying or rolling back generations that use the former root paths.
 - Route former `nix-flakes` tasks to `~/ws/config/`; the flake entry point and Git root are `~/ws`. Route keyboard assets to `workspace/keyboards/` and the trackball project to `workspace/keycult-trackball/`, reading its local `AGENTS.md` before edits. Confirm the actual subtree before translating any other legacy repository path.

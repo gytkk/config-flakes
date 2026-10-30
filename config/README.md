@@ -1,10 +1,10 @@
 # System configuration
 
-`config/` owns the Home Manager and NixOS configuration, package catalog, secrets, and theme pipeline. The repository-root `flake.nix` retains inputs and delegates outputs to `config/outputs.nix`. Run every command in this document from the repository root.
+`config/` owns the Home Manager and NixOS configuration, package catalog, secrets, and theme pipeline. `config/flake.nix` declares inputs and delegates outputs to `config/outputs.nix`. The repository-root `flake.nix` forwards those outputs through the relative input `path:./config`; the root `flake.lock` pins configuration dependencies. Run every command in this document from the repository root so updates and evaluation use that lockfile.
 
 ## Prerequisites
 
-- Install Nix: <https://nixos.org/download>
+- Install Nix 2.26 or newer: <https://nixos.org/download>. The root flake uses [relative path inputs](https://nix.dev/manual/nix/2.29/release-notes/rl-2.26.html), whose lockfile format is not supported by older versions.
 - Enable flakes:
 
 ```bash
@@ -46,7 +46,8 @@ agx -r
 This flake supports standalone Home Manager environments and NixOS hosts. macOS entries in `config/inventory.nix` are Home Manager only; Linux NixOS entries compose system configuration plus a Home Manager user.
 
 ```text
-flake.nix                         # Repository-root inputs and output entry point
+flake.nix                         # Repository-root forwarding entry point
+config/flake.nix                  # Configuration inputs and output entry point
 config/outputs.nix               # Home Manager, NixOS, package, app, and check outputs
 config/inventory.nix                     # All Home Manager environments and NixOS hosts
 config/base/default.nix                  # Common Home Manager imports and default enables
@@ -436,7 +437,7 @@ nix flake update
 # Update a single input to its latest tracked ref (rewrites flake.lock only).
 # Example: bump kc2aws (keycloak2aws input) to the latest commit on main,
 # then apply it with a home-manager switch and commit the flake.lock change.
-nix flake update keycloak2aws
+nix flake update config/keycloak2aws
 ```
 
 Generic tooling that probes `nix build .` now hits a small compatibility package instead of failing on a missing default output. For actual host builds, keep using explicit flake attributes such as `.#homeConfigurations...` or `.#nixosConfigurations...`.

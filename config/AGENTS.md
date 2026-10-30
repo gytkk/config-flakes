@@ -61,7 +61,8 @@ sudo nixos-rebuild switch --flake .#<host>
 Nix flake configuration for standalone Home Manager and NixOS environments on macOS and Linux.
 
 ```text
-flake.nix                               # Repository-root inputs and output entry point
+flake.nix                               # Repository-root forwarding entry point
+config/flake.nix                        # Configuration inputs and output entry point
 config/outputs.nix                       # Configuration outputs
 config/inventory.nix                     # All Home Manager environments and NixOS hosts
 config/base/default.nix                  # Common Home Manager configuration
@@ -176,4 +177,4 @@ AI 코딩 에이전트 설정을 변경할 때 공통 지침, runtime adapter, s
 - **LSP servers** (`config/modules/lsp/`): nixd, gopls, typescript-language-server, terraform-ls, ty, pyright, yaml-language-server, marksman (`rust-analyzer` must be installed in the active rustup toolchain)
 - **Devsisters-specific** (`config/base/devsisters/`): saml2aws, vault, kc2aws, wg-cli, scala, ruby, databricks-cli, pantry. `kc2aws` and `wg-cli` come from the private `keycloak2aws` and `devsisters-wg` flake inputs.
 
-The private `keycloak2aws` flake input is pinned in the root `flake.lock`. To update `kc2aws`, run `nix flake update keycloak2aws`, apply Home Manager, and commit the resulting lockfile change.
+The private `keycloak2aws` flake input is declared in `config/flake.nix` and pinned in the root `flake.lock`. To update `kc2aws`, run `nix flake update config/keycloak2aws` from the repository root, apply Home Manager, and commit the resulting lockfile change.

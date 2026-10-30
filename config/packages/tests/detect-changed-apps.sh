@@ -85,6 +85,10 @@ printf '{ }\n' > "$REPO/config/outputs.nix"
 outputs_sha="$(commit 'change configuration outputs')"
 assert_apps "configuration outputs rebuild every app" '["alpha","beta"]' "$pkgs_sha" "$outputs_sha"
 
+printf '{ }\n' > "$REPO/config/flake.nix"
+config_flake_sha="$(commit 'change configuration inputs')"
+assert_apps "configuration inputs rebuild every app" '["alpha","beta"]' "$outputs_sha" "$config_flake_sha"
+
 rm "$APP_ROOT/alpha/package.nix"
 deleted_sha="$(commit 'delete alpha')"
-assert_apps "deleted package rebuilds all remaining apps" '["beta"]' "$outputs_sha" "$deleted_sha"
+assert_apps "deleted package rebuilds all remaining apps" '["beta"]' "$config_flake_sha" "$deleted_sha"

@@ -13,7 +13,7 @@ This repository manages Home Manager and NixOS configuration alongside shared co
 | [agent-core/](agent-core/README.md) | Shared agent rules, adapters, skills, and renderer |
 | [apps/trading-agent/](apps/trading-agent/README.md) | Rust trading agent, broker clients, and execution runtime |
 | [scripts/](scripts) | Documentation path checks and agent skill installation |
-| [flake.nix](flake.nix), `flake.lock` | Nix inputs and entry point; outputs come from [config/outputs.nix](config/outputs.nix) |
+| [flake.nix](flake.nix), `flake.lock` | Forwarding entry point and dependency pins; inputs live in [config/flake.nix](config/flake.nix) and outputs in [config/outputs.nix](config/outputs.nix) |
 
 Project tasks use this checkout, including OpenClaw-initiated work. Former `nix-flakes` edits now target `config/`; keyboard assets and the trackball project live under `workspace/`. OpenClaw's independent workspace instructions, skills, and runbooks are not imported here; see [OpenClaw task routing](config/modules/openclaw/README.md#task-routing-in-the-monorepo) before migrating those resources.
 
