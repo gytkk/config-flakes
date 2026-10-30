@@ -3,8 +3,9 @@ name: App Packages CI
 on:
   pull_request:
     paths:
-      - "packages/**"
-      - "lib/pkgs.nix"
+      - "config/packages/**"
+      - "config/lib/pkgs.nix"
+      - "config/outputs.nix"
       - "flake.nix"
       - "flake.lock"
       - ".github/workflows/apps-ci.yml"
@@ -12,8 +13,9 @@ on:
   push:
     branches: [main]
     paths:
-      - "packages/**"
-      - "lib/pkgs.nix"
+      - "config/packages/**"
+      - "config/lib/pkgs.nix"
+      - "config/outputs.nix"
       - "flake.nix"
       - "flake.lock"
       - ".github/workflows/apps-ci.yml"
@@ -42,16 +44,16 @@ jobs:
       - name: Install ripgrep
         run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: Test changed-app detection
-        run: bash packages/tests/detect-changed-apps.sh
+        run: bash config/packages/tests/detect-changed-apps.sh
       - name: Test app updaters and patch preflight
         run: |
-          bash packages/tests/update-all.sh
-          bash packages/tests/check-nix-patches.sh
-          bash packages/tests/notion-cli-update.sh
-          bash packages/tests/pi-update.sh
+          bash config/packages/tests/update-all.sh
+          bash config/packages/tests/check-nix-patches.sh
+          bash config/packages/tests/notion-cli-update.sh
+          bash config/packages/tests/pi-update.sh
       - name: Test Codex package validation
-        run: bash packages/tests/codex-check-package.sh
-      - run: nix flake check ./packages --no-build
+        run: bash config/packages/tests/codex-check-package.sh
+      - run: nix flake check ./config/packages --no-build
 
   detect-app-changes:
     name: Detect changed app packages
@@ -81,7 +83,7 @@ jobs:
             base_sha=""
           fi
 
-          apps=$(packages/scripts/detect-changed-apps.sh "$base_sha" "${{ github.sha }}")
+          apps=$(config/packages/scripts/detect-changed-apps.sh "$base_sha" "${{ github.sha }}")
           echo "apps=$apps" >> "$GITHUB_OUTPUT"
 
   build-changed-apps:
@@ -102,9 +104,9 @@ jobs:
         env:
           APP: ${{ matrix.app }}
         run: |
-          packages=$(nix eval ./packages#packages.x86_64-linux --apply builtins.attrNames --json)
+          packages=$(nix eval ./config/packages#packages.x86_64-linux --apply builtins.attrNames --json)
           if jq -e --arg app "$APP" 'index($app) != null' <<<"$packages" >/dev/null; then
-            nix build "./packages#packages.x86_64-linux.$APP" --no-link
+            nix build "./config/packages#packages.x86_64-linux.$APP" --no-link
           else
             echo "Skipping $APP: not available for x86_64-linux"
           fi

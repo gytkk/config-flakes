@@ -1,0 +1,27 @@
+# Auto-generated from config/themes/core/catppuccin-mocha.yaml
+# Template: herdr-theme-template v1
+
+[theme]
+name = "terminal"
+auto_switch = false
+
+[theme.custom]
+accent = "#b4befe"
+panel_bg = "#181825"
+sidebar_bg = "#181825"
+active_row_bg = "#414354"
+selection_bg = "#9399b2"
+surface0 = "#181825"
+surface1 = "#313244"
+surface_dim = "#6c7086"
+overlay0 = "#bac2de"
+overlay1 = "#cdd6f4"
+text = "#cdd6f4"
+subtext0 = "#bac2de"
+mauve = "#cba6f7"
+green = "#a6e3a1"
+yellow = "#f9e2af"
+red = "#f38ba8"
+blue = "#89b4fa"
+teal = "#94e2d5"
+peach = "#fab387"

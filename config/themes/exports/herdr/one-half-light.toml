@@ -1,0 +1,27 @@
+# Auto-generated from config/themes/core/one-half-light.yaml
+# Template: herdr-theme-template v1
+
+[theme]
+name = "terminal"
+auto_switch = false
+
+[theme.custom]
+accent = "#0a78a8"
+panel_bg = "#f3f5f7"
+sidebar_bg = "#f3f5f7"
+active_row_bg = "#b6b8bc"
+selection_bg = "#bfceff"
+surface0 = "#f3f5f7"
+surface1 = "#edf0f3"
+surface_dim = "#e2e6ea"
+overlay0 = "#474952"
+overlay1 = "#383a42"
+text = "#383a42"
+subtext0 = "#474952"
+mauve = "#6f3073"
+green = "#4e974e"
+yellow = "#c18401"
+red = "#e45649"
+blue = "#0184bc"
+teal = "#427b58"
+peach = "#d65d0e"

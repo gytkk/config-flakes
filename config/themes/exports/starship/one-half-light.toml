@@ -1,0 +1,185 @@
+# Auto-generated from config/themes/core/one-half-light.yaml
+# Template: starship-theme-template v1
+"$schema" = "https://starship.rs/config-schema.json"
+
+palette = "one_half_light"
+format = """
+[](rose)\
+[ 󰉋 ](bg:rose fg:base)\
+[](fg:rose bg:foam)\
+$directory\
+[](fg:foam bg:layer3)\
+$git_branch\
+$git_status\
+[](fg:layer3 bg:layer2)\
+$c\
+$cpp\
+$rust\
+$golang\
+$nodejs\
+$php\
+$java\
+$kotlin\
+$haskell\
+$python\
+[](fg:layer2 bg:layer1)\
+$docker_context\
+$conda\
+$pixi\
+[](fg:layer1)\
+$fill\
+[](fg:layer1)\
+$kubernetes\
+[](fg:layer2 bg:layer1)\
+$hostname\
+[](fg:layer3 bg:layer2)\
+$time\
+[](fg:layer3)
+$character"""
+
+[fill]
+"symbol" = " "
+
+[directory]
+"style" = "fg:base bg:foam"
+"format" = "[ $path ]($style)"
+"truncation_length" = 4
+"truncation_symbol" = "…/"
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = "󰇚 "
+"Music" = "󰝚 "
+"Pictures" = "󰈟 "
+"Developer" = "󰲷 "
+
+[git_branch]
+"symbol" = ""
+"style" = "fg:foam bg:layer3"
+"format" = "[ $symbol $branch ]($style)"
+
+[git_status]
+"style" = "fg:foam bg:layer3"
+"format" = "[($conflicted$staged$modified$untracked$renamed$deleted$stashed$ahead_behind )]($style)"
+"conflicted" = "[=](bold fg:love bg:layer3)[$count](fg:love bg:layer3) "
+"staged" = "[+](bold fg:pine bg:layer3)[$count](fg:pine bg:layer3) "
+"modified" = "[!](bold fg:gold bg:layer3)[$count](fg:gold bg:layer3) "
+"untracked" = "[?](bold fg:gold bg:layer3)[$count](fg:gold bg:layer3) "
+"renamed" = "[»](bold fg:foam bg:layer3)$count "
+"deleted" = "[-](bold fg:love bg:layer3)[$count](fg:love bg:layer3) "
+"stashed" = "[*](bold fg:foam bg:layer3)$count "
+"ahead" = "[↑$count](fg:foam bg:layer3)"
+"behind" = "[↓$count](fg:foam bg:layer3)"
+"diverged" = "[↑$ahead_count↓$behind_count](fg:foam bg:layer3)"
+
+[c]
+"symbol" = " "
+"style" = "fg:iris bg:layer2"
+"format" = "[ $symbol($version) ]($style)"
+
+[cpp]
+"symbol" = " "
+"style" = "fg:iris bg:layer2"
+"format" = "[ $symbol($version) ]($style)"
+
+[nodejs]
+"symbol" = " "
+"style" = "fg:iris bg:layer2"
+"format" = "[ $symbol($version) ]($style)"
+
+[rust]
+"symbol" = "󱘗 "
+"style" = "fg:iris bg:layer2"
+"format" = "[ $symbol($version) ]($style)"
+
+[golang]
+"symbol" = " "
+"style" = "fg:iris bg:layer2"
+"format" = "[ $symbol($version) ]($style)"
+
+[php]
+"symbol" = " "
+"style" = "fg:iris bg:layer2"
+"format" = "[ $symbol($version) ]($style)"
+
+[java]
+"symbol" = " "
+"style" = "fg:iris bg:layer2"
+"format" = "[ $symbol($version) ]($style)"
+
+[kotlin]
+"symbol" = " "
+"style" = "fg:iris bg:layer2"
+"format" = "[ $symbol($version) ]($style)"
+
+[haskell]
+"symbol" = " "
+"style" = "fg:iris bg:layer2"
+"format" = "[ $symbol($version) ]($style)"
+
+[python]
+"symbol" = " "
+"style" = "fg:iris bg:layer2"
+"format" = "[ $symbol($version) ]($style)"
+
+[docker_context]
+"symbol" = " "
+"style" = "fg:foam bg:layer1"
+"format" = "[ $symbol($context) ]($style)"
+
+[conda]
+"symbol" = " "
+"style" = "fg:iris bg:layer1"
+"format" = "[ $symbol($environment) ]($style)"
+
+[pixi]
+"symbol" = "󰏗 "
+"style" = "fg:iris bg:layer1"
+"format" = "[ $symbol($version) ($environment) ]($style)"
+
+[kubernetes]
+"disabled" = false
+"symbol" = "󱃾 "
+"style" = "fg:foam bg:layer1"
+"format" = "[ $symbol$context ]($style)"
+
+[time]
+"disabled" = false
+"time_format" = "%R"
+"style" = "fg:text bg:layer3"
+"format" = "[ 󰥔 $time ]($style)"
+
+[hostname]
+"ssh_only" = true
+"style" = "fg:love bg:layer2"
+"format" = "[ $hostname ]($style)"
+
+[character]
+"disabled" = false
+"success_symbol" = "[❯](bold fg:foam)"
+"error_symbol" = "[❯](bold fg:love)"
+"vimcmd_symbol" = "[❮](bold fg:pine)"
+"vimcmd_replace_one_symbol" = "[❮](bold fg:iris)"
+"vimcmd_replace_symbol" = "[❮](bold fg:iris)"
+"vimcmd_visual_symbol" = "[❮](bold fg:gold)"
+
+[palettes.one_half_light]
+base = "#fafbfc"
+surface = "#edf0f3"
+overlay = "#d0d0d0"
+muted = "#9d9d9f"
+subtle = "#383a42"
+text = "#383a42"
+love = "#e45649"
+gold = "#c18401"
+rose = "#a626a4"
+pine = "#50a14f"
+foam = "#0184bc"
+iris = "#d65d0e"
+highlight_low = "#f3f5f7"
+highlight_med = "#e8ebee"
+highlight_high = "#d0d0d0"
+green = "#50a14f"
+layer1 = "#f3f5f7"
+layer2 = "#e8ebee"
+layer3 = "#d0d0d0"

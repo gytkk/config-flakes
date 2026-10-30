@@ -21,7 +21,7 @@ class ConfigActivationTests(unittest.TestCase):
         self.home.mkdir()
         self.source = self.root / "source"
         self.source.mkdir()
-        self.settings = self.source / "modules/zed/files/settings.json"
+        self.settings = self.source / "config/modules/zed/files/settings.json"
         self.settings.parent.mkdir(parents=True)
         self.settings.write_text('{"theme": "new",}\n')  # Zed accepts JSONC.
         self.keymap = self.source / "keymap.json"
@@ -72,7 +72,7 @@ class ConfigActivationTests(unittest.TestCase):
           in result.config.home.activation.NAME
         """
         for key, value in {
-            "MODULE": str(ROOT / "modules" / module / "default.nix"),
+            "MODULE": str(ROOT / "config/modules" / module / "default.nix"),
             "HOME_PATH": json.dumps(str(self.home)),
             "KEYMAP": json.dumps(str(self.keymap)),
             "EXTENSIONS": json.dumps(str(self.extensions)),

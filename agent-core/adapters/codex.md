@@ -17,7 +17,7 @@ behavior.
 - Store the canonical shared skill under `agent-core/skills/` and declare its
   runtime exposure in `agent-core/manifest.toml`.
 - Express required capabilities in the shared skill. Keep Codex packages,
-  settings, plugins, and optional UI metadata in `modules/codex/`.
+  settings, plugins, and optional UI metadata in `config/modules/codex/`.
 - Trim unused scaffold files, keep the skill focused, and align it with
   repository conventions before committing.
 - Use `parallel-research-merge` when independent evidence can change a decision

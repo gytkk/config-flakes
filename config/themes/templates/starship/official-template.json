@@ -1,0 +1,274 @@
+{
+  "name": "starship-theme-template",
+  "version": 1,
+  "description": "Starship prompt theme template derived from the local Starship prompt configuration contract.",
+  "sources": [
+    {
+      "kind": "official-docs",
+      "ref": "Starship configuration reference",
+      "url": "https://starship.rs/config/"
+    },
+    {
+      "kind": "official-schema",
+      "ref": "Starship TOML schema",
+      "url": "https://starship.rs/config-schema.json"
+    },
+    {
+      "kind": "local-example",
+      "ref": "existing zsh module Starship config",
+      "path": "config/modules/zsh/starship.toml"
+    }
+  ],
+  "toml_schema": {
+    "format_key": "format",
+    "palette_table_prefix": "palettes",
+    "value_types": ["string", "boolean"]
+  },
+  "override_schema": {
+    "path": "config/themes/overrides/starship/<theme-id>.yaml",
+    "version": 1,
+    "slots": "Existing palette color slots accept hex colors or canonical references; format accepts a Starship format string.",
+    "modules": "Existing string-valued settings in the template sections only. Starship validates format and style syntax at runtime."
+  },
+  "format": "$format",
+  "sections": [
+    {
+      "name": "fill",
+      "table": "fill",
+      "entries": [
+        { "key": "symbol", "value": " " }
+      ]
+    },
+    {
+      "name": "directory",
+      "table": "directory",
+      "entries": [
+        { "key": "style", "value": "fg:base bg:foam" },
+        { "key": "format", "value": "[ $path ]($style)" },
+        { "key": "truncation_length", "value": 4 },
+        { "key": "truncation_symbol", "value": "…/" }
+      ]
+    },
+    {
+      "name": "directory-substitutions",
+      "table": "directory.substitutions",
+      "entries": [
+        { "key": "Documents", "value": "󰈙 " },
+        { "key": "Downloads", "value": "󰇚 " },
+        { "key": "Music", "value": "󰝚 " },
+        { "key": "Pictures", "value": "󰈟 " },
+        { "key": "Developer", "value": "󰲷 " }
+      ]
+    },
+    {
+      "name": "git-branch",
+      "table": "git_branch",
+      "entries": [
+        { "key": "symbol", "value": "" },
+        { "key": "style", "value": "bg:layer3" },
+        { "key": "format", "value": "[[ $symbol $branch ](fg:pine bg:layer3)]($style)" }
+      ]
+    },
+    {
+      "name": "git-status",
+      "table": "git_status",
+      "entries": [
+        { "key": "style", "value": "bg:layer3" },
+        { "key": "format", "value": "[[($conflicted$staged$modified$untracked$renamed$deleted$stashed$ahead_behind )](fg:pine bg:layer3)]($style)" },
+        { "key": "conflicted", "value": "=$count " },
+        { "key": "staged", "value": "+$count " },
+        { "key": "modified", "value": "!$count " },
+        { "key": "untracked", "value": "?$count " },
+        { "key": "renamed", "value": "»$count " },
+        { "key": "deleted", "value": "-$count " },
+        { "key": "stashed", "value": "*$count " },
+        { "key": "ahead", "value": "↑$count" },
+        { "key": "behind", "value": "↓$count" },
+        { "key": "diverged", "value": "↑$ahead_count↓$behind_count" }
+      ]
+    },
+    {
+      "name": "languages-c",
+      "table": "c",
+      "entries": [
+        { "key": "symbol", "value": " " },
+        { "key": "style", "value": "bg:layer2" },
+        { "key": "format", "value": "[[ $symbol($version) ](fg:foam bg:layer2)]($style)" }
+      ]
+    },
+    {
+      "name": "languages-cpp",
+      "table": "cpp",
+      "entries": [
+        { "key": "symbol", "value": " " },
+        { "key": "style", "value": "bg:layer2" },
+        { "key": "format", "value": "[[ $symbol($version) ](fg:foam bg:layer2)]($style)" }
+      ]
+    },
+    {
+      "name": "languages-nodejs",
+      "table": "nodejs",
+      "entries": [
+        { "key": "symbol", "value": " " },
+        { "key": "style", "value": "bg:layer2" },
+        { "key": "format", "value": "[[ $symbol($version) ](fg:pine bg:layer2)]($style)" }
+      ]
+    },
+    {
+      "name": "languages-rust",
+      "table": "rust",
+      "entries": [
+        { "key": "symbol", "value": "󱘗 " },
+        { "key": "style", "value": "bg:layer2" },
+        { "key": "format", "value": "[[ $symbol($version) ](fg:rose bg:layer2)]($style)" }
+      ]
+    },
+    {
+      "name": "languages-golang",
+      "table": "golang",
+      "entries": [
+        { "key": "symbol", "value": " " },
+        { "key": "style", "value": "bg:layer2" },
+        { "key": "format", "value": "[[ $symbol($version) ](fg:foam bg:layer2)]($style)" }
+      ]
+    },
+    {
+      "name": "languages-php",
+      "table": "php",
+      "entries": [
+        { "key": "symbol", "value": " " },
+        { "key": "style", "value": "bg:layer2" },
+        { "key": "format", "value": "[[ $symbol($version) ](fg:iris bg:layer2)]($style)" }
+      ]
+    },
+    {
+      "name": "languages-java",
+      "table": "java",
+      "entries": [
+        { "key": "symbol", "value": " " },
+        { "key": "style", "value": "bg:layer2" },
+        { "key": "format", "value": "[[ $symbol($version) ](fg:love bg:layer2)]($style)" }
+      ]
+    },
+    {
+      "name": "languages-kotlin",
+      "table": "kotlin",
+      "entries": [
+        { "key": "symbol", "value": " " },
+        { "key": "style", "value": "bg:layer2" },
+        { "key": "format", "value": "[[ $symbol($version) ](fg:iris bg:layer2)]($style)" }
+      ]
+    },
+    {
+      "name": "languages-haskell",
+      "table": "haskell",
+      "entries": [
+        { "key": "symbol", "value": " " },
+        { "key": "style", "value": "bg:layer2" },
+        { "key": "format", "value": "[[ $symbol($version) ](fg:iris bg:layer2)]($style)" }
+      ]
+    },
+    {
+      "name": "languages-python",
+      "table": "python",
+      "entries": [
+        { "key": "symbol", "value": " " },
+        { "key": "style", "value": "bg:layer2" },
+        { "key": "format", "value": "[[ $symbol($version) ](fg:gold bg:layer2)]($style)" }
+      ]
+    },
+    {
+      "name": "contexts-docker",
+      "table": "docker_context",
+      "entries": [
+        { "key": "symbol", "value": " " },
+        { "key": "style", "value": "bg:layer1" },
+        { "key": "format", "value": "[[ $symbol($context) ](fg:foam bg:layer1)]($style)" }
+      ]
+    },
+    {
+      "name": "contexts-conda",
+      "table": "conda",
+      "entries": [
+        { "key": "symbol", "value": " " },
+        { "key": "style", "value": "bg:layer1" },
+        { "key": "format", "value": "[[ $symbol($environment) ](fg:pine bg:layer1)]($style)" }
+      ]
+    },
+    {
+      "name": "contexts-pixi",
+      "table": "pixi",
+      "entries": [
+        { "key": "symbol", "value": "󰏗 " },
+        { "key": "style", "value": "bg:layer1" },
+        { "key": "format", "value": "[[ $symbol($version) ($environment) ](fg:pine bg:layer1)]($style)" }
+      ]
+    },
+    {
+      "name": "contexts-kubernetes",
+      "table": "kubernetes",
+      "entries": [
+        { "key": "disabled", "value": false },
+        { "key": "symbol", "value": "󱃾 " },
+        { "key": "style", "value": "bg:layer1" },
+        { "key": "format", "value": "[[ $symbol$context ](fg:foam bg:layer1)]($style)" }
+      ]
+    },
+    {
+      "name": "contexts-time",
+      "table": "time",
+      "entries": [
+        { "key": "disabled", "value": false },
+        { "key": "time_format", "value": "%R" },
+        { "key": "style", "value": "bg:layer3" },
+        { "key": "format", "value": "[[ 󰥔 $time ](fg:text bg:layer3)]($style)" }
+      ]
+    },
+    {
+      "name": "contexts-hostname",
+      "table": "hostname",
+      "entries": [
+        { "key": "ssh_only", "value": true },
+        { "key": "style", "value": "bg:layer2" },
+        { "key": "format", "value": "[[ $hostname ](fg:love bg:layer2)]($style)" }
+      ]
+    },
+    {
+      "name": "character",
+      "table": "character",
+      "entries": [
+        { "key": "disabled", "value": false },
+        { "key": "success_symbol", "value": "[❯](bold fg:pine)" },
+        { "key": "error_symbol", "value": "[❯](bold fg:love)" },
+        { "key": "vimcmd_symbol", "value": "[❮](bold fg:pine)" },
+        { "key": "vimcmd_replace_one_symbol", "value": "[❮](bold fg:iris)" },
+        { "key": "vimcmd_replace_symbol", "value": "[❮](bold fg:iris)" },
+        { "key": "vimcmd_visual_symbol", "value": "[❮](bold fg:gold)" }
+      ]
+    }
+  ],
+  "palette": {
+    "name": "$palette_name",
+    "entries": [
+      { "key": "base", "value": "$base" },
+      { "key": "surface", "value": "$surface" },
+      { "key": "overlay", "value": "$overlay" },
+      { "key": "muted", "value": "$muted" },
+      { "key": "subtle", "value": "$subtle" },
+      { "key": "text", "value": "$text" },
+      { "key": "love", "value": "$love" },
+      { "key": "gold", "value": "$gold" },
+      { "key": "rose", "value": "$rose" },
+      { "key": "pine", "value": "$pine" },
+      { "key": "foam", "value": "$foam" },
+      { "key": "iris", "value": "$iris" },
+      { "key": "highlight_low", "value": "$highlight_low" },
+      { "key": "highlight_med", "value": "$highlight_med" },
+      { "key": "highlight_high", "value": "$highlight_high" },
+      { "key": "green", "value": "$green" },
+      { "key": "layer1", "value": "$layer1" },
+      { "key": "layer2", "value": "$layer2" },
+      { "key": "layer3", "value": "$layer3" }
+    ]
+  }
+}

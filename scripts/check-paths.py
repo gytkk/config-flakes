@@ -20,9 +20,12 @@ DEFAULT_DOCUMENTS = (
     ROOT / "README.md",
     ROOT / "AGENTS.md",
     ROOT / "CLAUDE.md",
+    ROOT / "config/README.md",
+    ROOT / "config/AGENTS.md",
+    ROOT / "config/CLAUDE.md",
 )
 REPOSITORY_DIRS = (
-    "agent-core|base|docs|hosts|lib|modules|overlays|packages|scripts|secrets|themes"
+    "config|agent-core|base|docs|hosts|lib|modules|overlays|packages|scripts|secrets|themes"
 )
 INLINE_LINK = re.compile(r"(?<!!)\[[^]]*\]\(([^)]+)\)")
 INLINE_CODE = re.compile(r"`([^`]+)`")

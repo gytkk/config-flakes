@@ -28,7 +28,7 @@ behavior.
 - Store the canonical shared skill under `agent-core/skills/` and declare its
   runtime exposure in `agent-core/manifest.toml`.
 - Express required capabilities in the shared skill. Keep Pi packages,
-  settings, extensions, and optional UI metadata in `modules/pi/`.
+  settings, extensions, and optional UI metadata in `config/modules/pi/`.
 - Keep skills focused, trim unused files, and align them with repository
   conventions.
 

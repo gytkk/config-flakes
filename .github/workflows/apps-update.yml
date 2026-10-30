@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "packages/**"
+      - "config/packages/**"
       - ".github/workflows/apps-update.yml"
   schedule:
     - cron: "15 */3 * * *"
@@ -34,7 +34,7 @@ jobs:
           sudo apt-get install -y ripgrep
 
       - name: Run app update scripts
-        run: packages/scripts/update-all.sh
+        run: config/packages/scripts/update-all.sh
 
       - name: Record changed app packages
         shell: bash
@@ -42,32 +42,32 @@ jobs:
           changed_apps_file="$RUNNER_TEMP/changed-apps"
           : > "$changed_apps_file"
 
-          git diff --name-only -- packages/apps \
-            | awk -F/ '$1 == "packages" && $2 == "apps" && NF >= 4 { print $3 }' \
+          git diff --name-only -- config/packages/apps \
+            | awk -F/ '$1 == "config" && $2 == "packages" && $3 == "apps" && NF >= 5 { print $4 }' \
             | sort -u \
             | while IFS= read -r app; do
-                if [ -f "packages/apps/$app/package.nix" ]; then
+                if [ -f "config/packages/apps/$app/package.nix" ]; then
                   printf '%s\n' "$app"
                 fi
               done > "$changed_apps_file"
 
       - name: Evaluate app package flake
-        run: nix flake check ./packages --no-build
+        run: nix flake check ./config/packages --no-build
 
       - name: Build changed app packages
         shell: bash
         run: |
           while IFS= read -r app; do
-            nix build "./packages#packages.x86_64-linux.$app" --no-link
+            nix build "./config/packages#packages.x86_64-linux.$app" --no-link
           done < "$RUNNER_TEMP/changed-apps"
 
       - name: Sync README version table
-        run: packages/scripts/sync-readme-versions.sh
+        run: config/packages/scripts/sync-readme-versions.sh
 
       - name: Commit and push updates
         shell: bash
         run: |
-          git add packages
+          git add config/packages
           if git diff --cached --quiet; then
             echo "No package changes after updates"
             exit 0
@@ -75,7 +75,7 @@ jobs:
 
           app_versions=()
           while IFS= read -r app; do
-            version=$(rg -m 1 -o 'version = "([^"]+)";' --replace '$1' "packages/apps/$app/package.nix")
+            version=$(rg -m 1 -o 'version = "([^"]+)";' --replace '$1' "config/packages/apps/$app/package.nix")
             app_versions+=("$app v$version")
           done < "$RUNNER_TEMP/changed-apps"
 
