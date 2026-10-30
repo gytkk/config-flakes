@@ -296,11 +296,11 @@ The [Neovim module](modules/vim/README.md) configures the nightly editor with La
 
 ## Zed config
 
-- Zed is managed through `modules/zed/default.nix`.
+- Zed is managed through the [Zed module](modules/zed/README.md).
 - Scala syntax support remains installed, with its language server disabled.
 - On macOS and non-WSL Linux, `home-manager switch` installs `~/.config/zed/settings.json` and `keymap.json` as out-of-store symlinks to the repo, and exposes the entire `themes/exports/zed` directory at `~/.config/zed/themes`.
 - That means mutable settings can switch between generated theme names without requiring another switch just to materialize a newly referenced theme file.
-- On WSL hosts, activation still copies settings, keymaps, and the full set of generated `themes/exports/zed/*.json` files into the Windows Zed config directory on each switch.
+- On WSL hosts, activation stages settings, keymaps, and generated themes before replacing files in the Windows Zed config directory. Each changed file keeps its previous contents in a `.bak` file; dry-run makes no changes.
 - The checked-in defaults point both light and dark mode at the generated `One Half Light` theme.
 
 ## Herdr config
@@ -311,7 +311,7 @@ The [Neovim module](modules/vim/README.md) configures the nightly editor with La
 - `Ctrl+Space`, then `Shift+n`, opens a popup that selects a previously visited directory with `zoxide` and `fzf`, then creates and focuses a workspace there.
 - `Ctrl+Shift+Tab` or `Ctrl+Tab` focuses the previous or next tab. In Ghostty on macOS, `Cmd+[` or `Cmd+]` focuses the previous or next workspace, `Cmd+Shift+[` or `Cmd+Shift+]` focuses the previous or next agent in sidebar order, `Cmd+t` creates a Herdr tab, and `Cmd+w` closes the current Herdr tab. `Cmd+1..9` focuses a workspace by index in Ghostty on macOS, and `Alt+1..9` does the same in Windows Terminal on WSL. `Ctrl+Space`, then `Shift+1..9` focuses the corresponding visible agent. The terminal configs forward direct shortcuts as distinct Kitty keyboard sequences so Herdr receives every modifier.
 - `Alt+t` creates a Herdr tab and `Alt+w` closes it through Herdr's own bindings, including in Windows Terminal on WSL. These keys have no Windows Terminal overrides and retain their shell or application behavior outside Herdr.
-- On WSL, the `windows-terminal` module merges the corresponding `sendInput` actions into the existing Windows Terminal `settings.json` during Home Manager activation. Existing profiles, themes, and unrelated keybindings are preserved; the first managed update creates a `settings.json.home-manager.bak` backup.
+- On WSL, the [Windows Terminal module](modules/windows-terminal/README.md) merges the corresponding `sendInput` actions into the existing `settings.json` during Home Manager activation. Existing profiles, themes, and unrelated keybindings are preserved; each changed update saves the previous settings in `settings.json.home-manager.bak`. Dry-run makes no changes.
 - Herdr uses the native terminal cursor so pane applications such as Neovim can preserve mode-specific cursor shapes. On Windows or WSL, this may expose ConPTY cursor flicker that Herdr's default drawn cursor avoids.
 - After applying Home Manager, reload a running server with `herdr server reload-config`.
 - Agents entries show the agent name and reported model on their second row. Pi's [parent status integration](modules/pi/README.md#herdr-parent-status) reports working, idle, and blocked states. Claude, Pi, and Codex also display subagent names, models, and activity. Claude and Codex show lifecycle status markers and excerpts of recent assistant messages, including native subagents working in the background. See [subagents](modules/herdr/README.md#subagents) for model reporting, display limits, and applying the status separator patch, and the [Claude hook and watcher](modules/claude/README.md#herdr-subagent-sidebar), [Pi extension](modules/pi/README.md#herdr-subagent-sidebar), or [Codex hook and watcher](modules/codex/README.md#herdr-subagent-sidebar) for setup and verification.
@@ -338,9 +338,9 @@ The [Neovim module](modules/vim/README.md) configures the nightly editor with La
 
 ## AeroSpace config
 
-- AeroSpace config is managed through `modules/aerospace/default.nix` on Darwin hosts.
+- AeroSpace config is managed through the [AeroSpace module](modules/aerospace/README.md) on Darwin hosts.
 - `home-manager switch` installs `~/.config/aerospace/aerospace.toml` as an out-of-store symlink to `modules/aerospace/files/aerospace.toml`, so the repo file stays mutable.
-- The activation step treats `~/.aerospace.toml` as a legacy path: if it exists, Home Manager backs it up to `~/.aerospace.toml.pre-xdg-backup` and removes the original to avoid path ambiguity.
+- After linking the XDG config, activation removes matching legacy `~/.aerospace.toml` files or moves a differing file to `~/.aerospace.toml.pre-xdg-backup`. A conflicting backup stops migration and preserves both files. Dry-run skips migration.
 - The checked-in config keeps `config-version = 2` plus AeroSpace's default `main` and `service` keybindings.
 - AeroSpace starts automatically at macOS login. Newly detected windows go to their default workspaces: Brave Browser to `1`, Ghostty to `2`, Slack to `3`, Notion to `4`, Brave Browser Beta to `A`, and Discord to `S`.
 - After editing the config, reload it with `Alt+Shift+;`, then `Esc`. Workspace rules apply when windows are detected; reloading does not move existing windows.

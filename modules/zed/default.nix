@@ -71,43 +71,74 @@ let
 
   # WSL: Windows Zed에 설정, 테마, 확장 배포 스크립트
   wslActivationScript = ''
-    mkdir -p "${windowsZedConfigPath}/themes"
-    mkdir -p "${windowsZedDataPath}/extensions/installed"
+    deploy_zed_config() (
+      set -e
+      mkdir -p "${windowsZedConfigPath}/themes"
+      mkdir -p "${windowsZedDataPath}/extensions/installed"
 
-    # settings.json 백업 후 복사
-    if [ -f "${windowsZedConfigPath}/settings.json" ] && [ ! -f "${windowsZedConfigPath}/settings.json.bak" ]; then
-      cp "${windowsZedConfigPath}/settings.json" "${windowsZedConfigPath}/settings.json.bak"
-      echo "Backed up existing settings to settings.json.bak"
-    fi
-    rm -f "${windowsZedConfigPath}/settings.json"
-    cp "${settingsFile}" "${windowsZedConfigPath}/settings.json"
+      stage=$(mktemp -d "${windowsZedConfigPath}/.home-manager.XXXXXX")
+      extension_stage=""
+      cleanup_zed_stage() {
+        rm -rf "$stage"
+        if [ -n "$extension_stage" ]; then
+          if [ -e "$extension_stage/previous" ] || [ -L "$extension_stage/previous" ]; then
+            if [ -e "$target" ] || [ -L "$target" ] || ! mv -T "$extension_stage/previous" "$target"; then
+              echo "Preserved previous Zed extension at $extension_stage/previous" >&2
+              return
+            fi
+          fi
+          rm -rf "$extension_stage"
+        fi
+      }
+      trap cleanup_zed_stage EXIT
+      mkdir "$stage/themes"
+      cp "${settingsFile}" "$stage/settings.json"
+      cmp "${settingsFile}" "$stage/settings.json"
+      cp "${keymapFile}" "$stage/keymap.json"
+      cmp "${keymapFile}" "$stage/keymap.json"
 
-    # keymap.json 백업 후 복사
-    if [ -f "${windowsZedConfigPath}/keymap.json" ] && [ ! -f "${windowsZedConfigPath}/keymap.json.bak" ]; then
-      cp "${windowsZedConfigPath}/keymap.json" "${windowsZedConfigPath}/keymap.json.bak"
-      echo "Backed up existing keymap to keymap.json.bak"
-    fi
-    rm -f "${windowsZedConfigPath}/keymap.json"
-    cp "${keymapFile}" "${windowsZedConfigPath}/keymap.json"
+      for theme in "${zedThemeExportsPath}"/*.json; do
+        [ -f "$theme" ] || continue
+        cp "$theme" "$stage/themes/$(basename "$theme")"
+        cmp "$theme" "$stage/themes/$(basename "$theme")"
+      done
 
-    # 생성된 테마 전체 복사
-    for theme in "${zedThemeExportsPath}"/*.json; do
-      [ -f "$theme" ] || continue
-      cp -f "$theme" "${windowsZedConfigPath}/themes/$(basename "$theme")"
-    done
+      # Stage every config before replacing files; keep the latest pre-replacement bytes.
+      for file in "$stage"/*.json "$stage/themes"/*.json; do
+        [ -f "$file" ] || continue
+        target="${windowsZedConfigPath}/''${file#"$stage/"}"
+        if cmp -s "$file" "$target"; then
+          continue
+        fi
+        if [ -f "$target" ]; then
+          cp -p "$target" "$stage/backup"
+          mv -T "$stage/backup" "$target.bak"
+          chmod --reference="$target" "$file"
+        fi
+        mv -T "$file" "$target"
+      done
 
-    # 확장 복사 (Nix store → Windows 경로)
-    for ext in ${extensionsDir}/*; do
-      ext_name=$(basename "$ext")
-      target="${windowsZedDataPath}/extensions/installed/$ext_name"
-      rm -rf "$target"
-      cp -rL "$ext" "$target"
-    done
+      # 확장 복사 (Nix store → Windows 경로)
+      for ext in ${extensionsDir}/*; do
+        [ -d "$ext" ] || continue
+        ext_name=$(basename "$ext")
+        target="${windowsZedDataPath}/extensions/installed/$ext_name"
+        extension_stage=$(mktemp -d "${windowsZedDataPath}/extensions/installed/.home-manager.XXXXXX")
+        cp -rL "$ext" "$extension_stage/new"
+        if [ -e "$target" ] || [ -L "$target" ]; then
+          mv -T "$target" "$extension_stage/previous"
+        fi
+        mv -T "$extension_stage/new" "$target"
+        rm -rf "$extension_stage"
+        extension_stage=""
+      done
 
-    echo "Zed config deployed to Windows:"
-    echo "  - Settings: ${windowsZedConfigPath}"
-    echo "  - Keymap: ${windowsZedConfigPath}"
-    echo "  - Extensions: ${windowsZedDataPath}/extensions/installed"
+      echo "Zed config deployed to Windows:"
+      echo "  - Settings: ${windowsZedConfigPath}"
+      echo "  - Keymap: ${windowsZedConfigPath}"
+      echo "  - Extensions: ${windowsZedDataPath}/extensions/installed"
+    )
+    run deploy_zed_config
   '';
 in
 {

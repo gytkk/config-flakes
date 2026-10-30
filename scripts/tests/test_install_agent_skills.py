@@ -217,6 +217,207 @@ def test_restore_refuses_edits_since_failed_operation(fixture, monkeypatch):
         installer.restore(backup, home, state)
 
 
+@pytest.mark.parametrize("corruption", ["owner", "lock", "both"])
+@pytest.mark.parametrize("changed", [False, True])
+def test_metadata_corruption_keeps_original_failure_and_backup(
+    fixture, monkeypatch, corruption, changed
+):
+    plan, home, state, _, fake_cli = fixture
+    installer.install([plan], home, state, {})
+    destination = installer.location("shared", home)
+    original = installer.tree(destination / "one")
+    owner_file = installer.owner_path(state, destination)
+    previous_owner = owner_file.read_bytes()
+    for path in installer.lock_paths(home, state):
+        value = installer.read_json(path)
+        value["skills"]["personal"] = {"source": "personal"}
+        value["unrelated_metadata"] = {"keep": True}
+        installer.write_json(path, value)
+    previous_locks = {
+        path: path.read_bytes() for path in installer.lock_paths(home, state)
+    }
+    (Path(plan["sources"][0]["path"]) / "one/reference.md").write_text("new source")
+    damaged = []
+    if corruption in ("owner", "both"):
+        damaged.append(installer.owner_path(state, destination))
+    if corruption in ("lock", "both"):
+        damaged.extend(installer.lock_paths(home, state))
+
+    def partial(plan, source, revision, install_home, install_state, **kwargs):
+        fake_cli(plan, source, revision, install_home, install_state, **kwargs)
+        if install_home == home:
+            for path in damaged:
+                path.write_text("{damaged")
+            raise installer.ValidationError("original CLI failure")
+
+    monkeypatch.setattr(installer, "cli_add", partial)
+    with pytest.raises(
+        installer.ValidationError, match="original CLI failure"
+    ) as caught:
+        installer.install([plan], home, state, {})
+    assert "Restore backup:" in str(caught.value)
+    assert str(caught.value.__cause__) == "original CLI failure"
+    failed = next(
+        path
+        for path in (state / "agent-core/skills/backups").iterdir()
+        if installer.read_json(path / "operation.json")["status"] == "failed"
+    )
+    receipt = installer.read_json(failed / "operation.json")
+    assert receipt["error"] == "original CLI failure"
+    for path in damaged:
+        assert any(str(path) in error for error in receipt["snapshot_errors"])
+    assert installer.tree(failed / "0/one") == original
+    current = installer.tree(destination)
+    if changed:
+        damaged[-1].write_text("{later change")
+        with pytest.raises(installer.ValidationError, match="changed since backup"):
+            installer.restore(failed, home, state)
+        assert installer.tree(destination) == current
+        assert damaged[-1].read_text() == "{later change"
+    else:
+        installer.restore(failed, home, state)
+        assert installer.tree(destination / "one") == original
+        assert owner_file.read_bytes() == previous_owner
+        assert all(
+            path.read_bytes() == content for path, content in previous_locks.items()
+        )
+        assert installer.preflight([plan], home, state)
+
+
+def test_unreadable_failed_metadata_keeps_receipt_and_refuses_restore(
+    fixture, monkeypatch
+):
+    plan, home, state, _, fake_cli = fixture
+    installer.install([plan], home, state, {})
+    destination = installer.location("shared", home)
+    owner = installer.owner_path(state, destination)
+    original = installer.tree(destination / "one")
+    (Path(plan["sources"][0]["path"]) / "one/reference.md").write_text("new source")
+    read_bytes = Path.read_bytes
+
+    def unreadable(path):
+        if path == owner:
+            raise OSError("cannot snapshot owner bytes")
+        return read_bytes(path)
+
+    def partial(plan, source, revision, install_home, install_state, **kwargs):
+        fake_cli(plan, source, revision, install_home, install_state, **kwargs)
+        if install_home == home:
+            owner.write_text("{damaged")
+            monkeypatch.setattr(Path, "read_bytes", unreadable)
+            raise installer.ValidationError("original CLI failure")
+
+    monkeypatch.setattr(installer, "cli_add", partial)
+    with pytest.raises(installer.ValidationError, match="original CLI failure"):
+        installer.install([plan], home, state, {})
+    failed = next(
+        path
+        for path in (state / "agent-core/skills/backups").iterdir()
+        if installer.read_json(path / "operation.json")["status"] == "failed"
+    )
+    receipt = installer.read_json(failed / "operation.json")
+    assert receipt["snapshot_incomplete"] is True
+    assert any(
+        "cannot snapshot owner bytes" in error for error in receipt["snapshot_errors"]
+    )
+    assert installer.tree(failed / "0/one") == original
+    current = installer.tree(destination)
+    with pytest.raises(installer.ValidationError, match="manual preservation"):
+        installer.restore(failed, home, state)
+    assert installer.tree(destination) == current
+
+
+def test_first_install_corrupt_lock_restores_absence(fixture, monkeypatch):
+    plan, home, state, _, fake_cli = fixture
+    lock = installer.lock_paths(home, state)[0]
+    assert not lock.exists()
+
+    def partial(plan, source, revision, install_home, install_state, **kwargs):
+        fake_cli(plan, source, revision, install_home, install_state, **kwargs)
+        if install_home == home:
+            lock.write_text("{damaged")
+            raise installer.ValidationError("original CLI failure")
+
+    monkeypatch.setattr(installer, "cli_add", partial)
+    with pytest.raises(installer.ValidationError, match="original CLI failure"):
+        installer.install([plan], home, state, {})
+    backup = next((state / "agent-core/skills/backups").iterdir())
+    installer.restore(backup, home, state)
+    assert not lock.exists()
+    destination = installer.location("shared", home)
+    assert not installer.owner_path(state, destination).exists()
+    assert all(not (destination / name).exists() for name in ("one", "two"))
+
+
+def test_failed_receipt_write_preserves_original_failure(fixture, monkeypatch):
+    plan, home, state, _, fake_cli = fixture
+    write_json = installer.write_json
+
+    def fail_receipt(path, value):
+        if path.name == "operation.json" and value["status"] == "failed":
+            raise OSError("receipt disk failure")
+        write_json(path, value)
+
+    def partial(plan, source, revision, install_home, install_state, **kwargs):
+        fake_cli(plan, source, revision, install_home, install_state, **kwargs)
+        if install_home == home:
+            raise installer.ValidationError("original CLI failure")
+
+    monkeypatch.setattr(installer, "write_json", fail_receipt)
+    monkeypatch.setattr(installer, "cli_add", partial)
+    with pytest.raises(
+        installer.ValidationError, match="original CLI failure"
+    ) as caught:
+        installer.install([plan], home, state, {})
+    backup = next((state / "agent-core/skills/backups").iterdir())
+    assert "receipt disk failure" in str(caught.value)
+    assert str(backup) in str(caught.value)
+    assert str(caught.value.__cause__) == "original CLI failure"
+    assert installer.read_json(backup / "operation.json")["status"] == "prepared"
+
+
+@pytest.mark.parametrize("snapshot", ["owner", "files"])
+def test_snapshot_failure_after_successful_mutation_marks_failed(
+    fixture, monkeypatch, snapshot
+):
+    plan, home, state, _, _ = fixture
+    destination = installer.location("shared", home)
+    owner = installer.owner_path(state, destination)
+    write_json = installer.write_json
+    tree = installer.tree
+    snapshot_phase = False
+
+    def finish_owner(path, value):
+        nonlocal snapshot_phase
+        write_json(path, value)
+        if path == owner and "installation_receipt" in value:
+            snapshot_phase = True
+            if snapshot == "owner":
+                owner.write_text("{damaged")
+
+    def fail_tree(path, **kwargs):
+        if snapshot_phase and snapshot == "files" and path == destination / "one":
+            raise OSError("file snapshot failure")
+        return tree(path, **kwargs)
+
+    monkeypatch.setattr(installer, "write_json", finish_owner)
+    monkeypatch.setattr(installer, "tree", fail_tree)
+    with pytest.raises(installer.ValidationError, match="Restore backup"):
+        installer.install([plan], home, state, {})
+    backup = next((state / "agent-core/skills/backups").iterdir())
+    receipt = installer.read_json(backup / "operation.json")
+    assert receipt["status"] == "failed"
+    assert receipt["error"]
+    assert (destination / "one/SKILL.md").exists()
+    if snapshot == "files":
+        with pytest.raises(installer.ValidationError, match="manual preservation"):
+            installer.restore(backup, home, state)
+        assert (destination / "one/SKILL.md").exists()
+    else:
+        installer.restore(backup, home, state)
+        assert not (destination / "one").exists()
+
+
 def test_json_protocol_checks_all_names_paths_agents_and_revision(fixture, monkeypatch):
     plan, home, state, _, _ = fixture
     source = plan["sources"][0]

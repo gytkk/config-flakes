@@ -34,9 +34,13 @@ def read_json(path, default=None):
 
 
 def write_json(path, value):
+    write_bytes(path, (json.dumps(value, indent=2, sort_keys=True) + "\n").encode())
+
+
+def write_bytes(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
+    temporary.write_bytes(value)
     temporary.replace(path)
 
 
@@ -285,6 +289,12 @@ def lock_entries(path, names):
 
 
 def restore_lock(path, snapshot):
+    if "after_bytes" in snapshot:
+        if snapshot["existed"]:
+            write_bytes(path, bytes.fromhex(snapshot["before_bytes"]))
+        else:
+            path.unlink(missing_ok=True)
+        return
     value = read_json(path, {})
     skills = value.setdefault("skills", {})
     for name, entry in snapshot["before"].items():
@@ -359,6 +369,10 @@ def validate_receipt(receipt, home, state):
         or receipt.get("status") not in ("installed", "failed")
     ):
         raise ValidationError("backup is invalid, incomplete, or already restored")
+    if receipt.get("snapshot_incomplete"):
+        raise ValidationError(
+            "incomplete metadata snapshot requires manual preservation before restoration"
+        )
     if not isinstance(receipt.get("revisions"), dict) or any(
         not isinstance(value, str) or not SHA.fullmatch(value)
         for value in receipt["revisions"].values()
@@ -395,6 +409,8 @@ def validate_receipt(receipt, home, state):
                 raise ValidationError(f"unsafe skill name in backup: {name}")
             names.add(name)
         before = item.get("before_owner")
+        if "after_owner_bytes" in item:
+            validate_bytes(item["after_owner_bytes"])
         if (
             not isinstance(before, dict)
             or before.get("destination") != str(destination)
@@ -415,28 +431,61 @@ def validate_receipt(receipt, home, state):
     for snapshot in locks.values():
         if (
             not isinstance(snapshot, dict)
-            or set(snapshot) != {"before", "after", "existed"}
+            or not {"before", "after", "existed"} <= set(snapshot)
+            or set(snapshot)
+            - {"before", "after", "existed", "before_bytes", "after_bytes"}
             or not isinstance(snapshot["existed"], bool)
             or any(
                 not isinstance(snapshot[key], dict) or set(snapshot[key]) != names
-                for key in ("before", "after")
+                for key in (
+                    ("before",) if "after_bytes" in snapshot else ("before", "after")
+                )
             )
         ):
             raise ValidationError("invalid selected CLI lock snapshot")
+        if "after_bytes" in snapshot:
+            validate_bytes(snapshot["after_bytes"])
+            validate_bytes(snapshot.get("before_bytes"))
+            try:
+                before = json.loads(bytes.fromhex(snapshot["before_bytes"]))
+            except (ValueError, UnicodeError) as error:
+                raise ValidationError("invalid previous CLI lock bytes") from error
+            if (
+                not isinstance(before, dict)
+                or not isinstance(before.get("skills", {}), dict)
+                or {name: before.get("skills", {}).get(name) for name in names}
+                != snapshot["before"]
+            ):
+                raise ValidationError("invalid previous CLI lock bytes")
+
+
+def validate_bytes(value):
+    if not isinstance(value, str) or not re.fullmatch(r"(?:[0-9a-f]{2})*", value):
+        raise ValidationError("invalid metadata byte snapshot")
 
 
 def restore(backup, home, state):
     receipt = read_json(backup / "operation.json")
     validate_receipt(receipt, home, state)
     for path, snapshot in receipt["locks"].items():
-        if lock_entries(Path(path), snapshot["after"]) != snapshot["after"]:
+        if "after_bytes" in snapshot:
+            unchanged = Path(path).read_bytes().hex() == snapshot["after_bytes"]
+        else:
+            unchanged = lock_entries(Path(path), snapshot["after"]) == snapshot["after"]
+        if not unchanged:
             raise ValidationError(
                 f"selected CLI lock entries changed since backup: {path}"
             )
     for item in receipt["targets"]:
         destination = Path(item["destination"])
         checked_parent(destination)
-        if read_json(Path(item["owner_file"])) != item.get("after_owner"):
+        if "after_owner_bytes" in item:
+            unchanged = (
+                Path(item["owner_file"]).read_bytes().hex() == item["after_owner_bytes"]
+            )
+        else:
+            unchanged = read_json(Path(item["owner_file"])) == item.get("after_owner")
+        if not unchanged:
             raise ValidationError(
                 f"ownership changed since backup: {item['owner_file']}"
             )
@@ -614,6 +663,9 @@ def install(plans, home, state, overrides, replay=None):
                 "before": lock_entries(path, names),
                 "after": {},
                 "existed": path.exists(),
+                "before_bytes": path.read_bytes().hex()
+                if path.exists()
+                else b"{}".hex(),
             }
             for path in lock_paths(home, state)
         }
@@ -642,6 +694,7 @@ def install(plans, home, state, overrides, replay=None):
                 }
             )
         write_json(backup / "operation.json", receipt)
+        failure = None
         try:
             # A partial retry must never reuse a previous successful cache record.
             for _, _, owner_file, owner in items:
@@ -683,12 +736,11 @@ def install(plans, home, state, overrides, replay=None):
                 write_json(owner_file, owner)
             receipt["status"] = "installed"
         except BaseException as error:
+            failure = error
             receipt["status"] = "failed"
             receipt["error"] = str(error)
-            raise ValidationError(
-                f"installation failed; files/locks may be partial. Restore backup: {backup}\n{error}"
-            ) from error
-        finally:
+        try:
+            receipt["snapshot_errors"] = []
             for item in receipt["targets"]:
                 item["snapshot_errors"] = []
                 for name in selected(
@@ -696,12 +748,41 @@ def install(plans, home, state, overrides, replay=None):
                 ):
                     try:
                         item["after"][name] = tree(Path(item["destination"]) / name)
-                    except ValidationError as error:
+                    except (ValidationError, OSError) as error:
                         item["snapshot_errors"].append(str(error))
-                item["after_owner"] = read_json(Path(item["owner_file"]))
+                receipt["snapshot_errors"].extend(item["snapshot_errors"])
+                try:
+                    item["after_owner"] = read_json(Path(item["owner_file"]))
+                except ValidationError as error:
+                    receipt["snapshot_errors"].append(str(error))
+                    item["after_owner_bytes"] = (
+                        Path(item["owner_file"]).read_bytes().hex()
+                    )
             for path, snapshot in receipt["locks"].items():
-                snapshot["after"] = lock_entries(Path(path), names)
+                try:
+                    snapshot["after"] = lock_entries(Path(path), names)
+                except ValidationError as error:
+                    receipt["snapshot_errors"].append(str(error))
+                    snapshot["after_bytes"] = Path(path).read_bytes().hex()
+        except (ValidationError, OSError) as error:
+            receipt["snapshot_errors"].append(str(error))
+            receipt["snapshot_incomplete"] = True
+        if receipt["snapshot_errors"] and failure is None:
+            failure = ValidationError("; ".join(receipt["snapshot_errors"]))
+            receipt["status"] = "failed"
+            receipt["error"] = str(failure)
+        try:
             write_json(backup / "operation.json", receipt)
+        except OSError as error:
+            if failure is None:
+                failure = error
+            raise ValidationError(
+                f"installation failed; could not save recovery receipt: {error}. Backup: {backup}\n{failure}"
+            ) from failure
+        if failure is not None:
+            raise ValidationError(
+                f"installation failed; files/locks may be partial. Restore backup: {backup}\n{failure}"
+            ) from failure
         return backup
 
 

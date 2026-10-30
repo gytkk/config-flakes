@@ -2,7 +2,7 @@
 
 전면적인 디렉터리 재편보다 activation, skill 설치, 세션 기록의 파일 변경과 복구 절차를 바로잡는 것이 우선이다. 현재 `inventory -> builder -> profile -> module` 구조를 전면 교체할 근거는 찾지 못했다.
 
-이 문서는 2026-10-30에 수행한 리뷰의 기록이다. 기준 commit은 `8040d610ca506be6ec43435d0fbdb2137c510236`이며, 당시 작업 트리에는 사용자가 수정한 `modules/claude/files/settings.json`이 있었다. 리뷰에서는 해당 수정을 보존했고 코드를 변경하지 않았다. 아래 줄 번호와 동작 설명은 리뷰 시점 기준이며, 수정 완료를 의미하지 않는다.
+이 문서는 2026-10-30에 수행한 리뷰의 기록이다. 기준 commit은 `8040d610ca506be6ec43435d0fbdb2137c510236`이며, 당시 작업 트리에는 사용자가 수정한 `modules/claude/files/settings.json`이 있었다. 리뷰에서는 해당 수정을 보존했고 코드를 변경하지 않았다. 아래 줄 번호와 원인 설명은 리뷰 시점 기준이다. 이후 수정 여부와 검증 결과는 각 항목의 상태에 기록한다.
 
 검토 대상은 개인용 Mac, WSL, NixOS 환경, 서버 서비스, 에이전트 설치와 기록 도구다. 개인 사용자가 여러 에이전트를 동시에 실행하는 부하를 기준으로 평가했다. Astra 에이전트 두 개와 Sol 에이전트 한 개가 독립적인 영역을 조사했고, 주 에이전트가 Nix 구성과 activation을 조사한 뒤 결정에 영향을 주는 근거를 원문 및 추가 재현과 대조했다. 구조, 유지보수, 예외 상황 순서로 검토하고 후보를 재검토했다. 모든 파일과 외부 의존성을 전수 검증한 것은 아니다.
 
@@ -12,6 +12,8 @@
 
 ### 1. [P1] Sepia의 인증 없는 서비스가 Tailscale로 제한되지 않음
 
+상태: 부분 해결 (2026-10-30). 사용하지 않는 code-server 서비스, 전용 빌드 패치, TCP 8080 방화벽 허용을 제거했다. Copyparty 접근 범위는 이번 수정 요청에 포함되지 않아 미해결이며, Sepia에 실제 NixOS 설정을 적용하지 않았다.
+
 근거: [configuration.nix](../hosts/pylv-sepia/configuration.nix)의 39행과 116행.
 
 code-server는 `0.0.0.0:8080`, `auth = "none"`으로 실행되지만 방화벽은 해당 포트를 모든 인터페이스에 허용한다. Copyparty도 모든 인터페이스에 바인딩하고 익명 읽기와 쓰기를 허용한다. code-server 주석의 Tailscale 접근 제한을 이 설정만으로는 보장하지 않는다.
@@ -20,6 +22,8 @@ code-server는 `0.0.0.0:8080`, `auth = "none"`으로 실행되지만 방화벽�
 
 ### 2. [P1] AeroSpace 마이그레이션이 첫 Home Manager 적용을 막을 수 있음
 
+상태: 해결 (2026-10-30). 실행 순서를 `linkGeneration` 이후로 명시하고, 전체 마이그레이션을 Home Manager의 `run`으로 실행한다. 실제 `devsisters-macbook` activation DAG를 offline으로 평가해 `linkGeneration` 다음에 `aerospaceLegacyConfig`가 실행되는 것을 확인했다. [Activation 회귀 테스트](../scripts/tests/test_config_activation.py)에서 순서 의존성, 첫 적용, 재적용, 관리 설정이 없는 dry-run과 기존 파일 보존을 검증했다. 서로 다른 legacy 파일과 백업이 동시에 있으면 두 파일을 보존하고 중단하는 기존 보호 동작은 유지한다.
+
 근거: [AeroSpace 모듈](../modules/aerospace/default.nix)의 26행.
 
 마이그레이션은 새 설정 파일이 존재해야 진행하지만, 실행 순서에는 `writeBoundary` 이후라는 조건만 선언한다. 실제 Mac 설정의 activation 순서를 평가한 결과 `aerospaceLegacyConfig`가 설정 symlink를 만드는 `linkGeneration`보다 먼저 실행됐다.
@@ -27,6 +31,8 @@ code-server는 `0.0.0.0:8080`, `auth = "none"`으로 실행되지만 방화벽�
 새 환경에서는 파일이 없어 적용이 중단될 수 있다. `linkGeneration` 이후 실행을 명시하고, 기존 설정이 없는 첫 적용을 검증해야 한다.
 
 ### 3. [P1] Activation의 dry-run과 파일 교체가 기존 설정을 보호하지 못함
+
+상태: 해결 (2026-10-30). AeroSpace, Zed, Windows Terminal의 파일 변경 전체를 `run`으로 감쌌다. Zed는 설정을 임시 디렉터리에 복사하고 바이트가 같은지 검사한 뒤 교체하며, Windows Terminal은 임시 파일의 jq 변환이 성공한 뒤 교체한다. 변경 직전 설정을 백업하고, Zed 확장 교체 실패 시 이전 디렉터리를 복원하거나 복원 실패 위치를 보존한다. [Activation 회귀 테스트](../scripts/tests/test_config_activation.py) 17개가 통과했다. Dry-run, 원본 누락, 불완전한 복사, JSON 변환 실패, rename 실패, 백업 갱신을 임시 디렉터리에서 검증했다. 실제 WSL 파일시스템과 Home Manager switch는 검증하지 않았다.
 
 근거: [AeroSpace 모듈](../modules/aerospace/default.nix)의 38행, [Zed 모듈](../modules/zed/default.nix)의 74행과 82행, [Windows Terminal 모듈](../modules/windows-terminal/default.nix)의 23행.
 
@@ -37,6 +43,8 @@ Zed는 원본 설정 파일을 읽을 수 없을 때 설치된 설정부터 삭�
 기존 `run` 기능을 사용하고, 복사와 검증이 끝난 임시 파일을 마지막에 교체해야 한다. 파일 출력용 redirection도 dry-run에서 실행되지 않도록 처리해야 한다. 별도 activation 프레임워크는 필요하지 않다.
 
 ### 4. [P1] Skill 설치 실패를 기록하다가 복구 기능까지 실패함
+
+상태: 해결 (2026-10-30). 설치 오류와 후속 상태 수집 오류를 분리해 원래 오류와 백업 위치가 실패 기록에 남는다. 손상된 owner와 lock JSON은 바이트로 기록하고, 복구 전 해당 바이트와 설치 파일이 그대로인지 확인한다. 손상된 lock은 설치 전 전체 바이트로 복원하며, 정상 lock은 기존처럼 선택한 항목만 복원한다. 읽을 수 없어 상태를 확인하지 못한 파일은 자동으로 덮어쓰지 않는다. [Installer 테스트](../scripts/tests/test_install_agent_skills.py) 51개가 통과했으며, owner와 lock 손상, 이후 변경 시 복구 거부, 첫 설치의 lock 제거, 기록 저장 실패 시 원래 오류 보존을 검증했다. 기록 디렉터리에 쓸 수 없는 경우 실패 기록 저장까지 보장하지는 못하며, 오류 메시지에 백업 위치를 남긴다. 5번의 자식 프로세스 timeout 문제는 별도 미해결 항목이다.
 
 근거: [install-agent-skills.py](../scripts/install-agent-skills.py)의 701행부터 704행과 355행의 `validate_receipt`.
 

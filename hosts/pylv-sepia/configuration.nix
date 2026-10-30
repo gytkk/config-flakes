@@ -21,24 +21,12 @@
   time.timeZone = "Asia/Seoul";
   networking.hostName = "pylv-sepia";
 
-  # Concurrent code-server and Rust builds exhaust this server's memory.
+  # Concurrent package builds can exhaust this server's memory.
   nix.settings.max-jobs = 1;
 
   boot.loader.grub = {
     efiSupport = true;
     efiInstallAsRemovable = true;
-  };
-
-  # Code Server
-  services.code-server = {
-    enable = true;
-    package = pkgs.code-server.overrideAttrs (old: {
-      patches = (old.patches or [ ]) ++ [ ./code-server-serial-bundles.patch ];
-    });
-    user = "gytkk";
-    host = "0.0.0.0";
-    port = 8080;
-    auth = "none"; # Tailscale로 접근 제한하므로 인증 불필요
   };
 
   # Copyparty - file server
@@ -115,7 +103,6 @@
   # Firewall - open ports for services
   networking.firewall.allowedTCPPorts = [
     22 # OpenSSH
-    8080 # Code Server
     3923 # Copyparty
     2283 # Immich
   ];

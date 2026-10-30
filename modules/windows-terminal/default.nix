@@ -21,49 +21,54 @@ in
 
   config = lib.mkIf (cfg.enable && isWSL) {
     home.activation.windowsTerminalHerdrKeybindings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      settings=${lib.escapeShellArg settingsPath}
+      update_windows_terminal() (
+        set -e
+        settings=${lib.escapeShellArg settingsPath}
 
-      if [ ! -f "$settings" ]; then
-        echo "Windows Terminal settings not found; skipping Herdr keybindings: $settings"
-      else
-        backup="$settings.home-manager.bak"
-        tmp="$settings.home-manager.tmp"
-
-        if ! ${pkgs.jq}/bin/jq --slurpfile managed ${lib.escapeShellArg "${managedKeybindings}"} '
-          .actions = (
-            (.actions // [] | map(select(
-              .id != "User.herdrNextWorkspace"
-              and .id != "User.herdrPreviousWorkspace"
-              and (((.id // "") | startswith("User.herdrWorkspace")) | not)
-            ))) + $managed[0].actions
-          )
-          | .keybindings = (
-            (.keybindings // [] | map(select(
-              .id != "User.herdrNextWorkspace"
-              and .id != "User.herdrPreviousWorkspace"
-              and (((.id // "") | startswith("User.herdrWorkspace")) | not)
-              and ((.keys // "") | ascii_downcase) != "ctrl+tab"
-              and ((.keys // "") | ascii_downcase) != "ctrl+shift+tab"
-              and ((((.keys // "") | ascii_downcase | test("^alt\\+[1-9]$"))) | not)
-            ))) + $managed[0].keybindings
-          )
-        ' "$settings" > "$tmp"; then
-          rm -f "$tmp"
-          echo "Failed to update Windows Terminal settings: $settings" >&2
-          exit 1
-        fi
-
-        if ${pkgs.diffutils}/bin/cmp -s "$settings" "$tmp"; then
-          rm -f "$tmp"
+        if [ ! -f "$settings" ]; then
+          echo "Windows Terminal settings not found; skipping Herdr keybindings: $settings"
         else
-          if [ ! -f "$backup" ]; then
-            cp "$settings" "$backup"
+          backup="$settings.home-manager.bak"
+          stage=$(mktemp -d "$settings.home-manager.XXXXXX")
+          trap 'rm -rf "$stage"' EXIT
+          tmp="$stage/settings.json"
+
+          if ! ${pkgs.jq}/bin/jq --slurpfile managed ${lib.escapeShellArg "${managedKeybindings}"} '
+            .actions = (
+              (.actions // [] | map(select(
+                .id != "User.herdrNextWorkspace"
+                and .id != "User.herdrPreviousWorkspace"
+                and (((.id // "") | startswith("User.herdrWorkspace")) | not)
+              ))) + $managed[0].actions
+            )
+            | .keybindings = (
+              (.keybindings // [] | map(select(
+                .id != "User.herdrNextWorkspace"
+                and .id != "User.herdrPreviousWorkspace"
+                and (((.id // "") | startswith("User.herdrWorkspace")) | not)
+                and ((.keys // "") | ascii_downcase) != "ctrl+tab"
+                and ((.keys // "") | ascii_downcase) != "ctrl+shift+tab"
+                and ((((.keys // "") | ascii_downcase | test("^alt\\+[1-9]$"))) | not)
+              ))) + $managed[0].keybindings
+            )
+          ' "$settings" > "$tmp"; then
+            rm -f "$tmp"
+            echo "Failed to update Windows Terminal settings: $settings" >&2
+            exit 1
           fi
-          chmod --reference="$settings" "$tmp"
-          mv "$tmp" "$settings"
-          echo "Windows Terminal Herdr keybindings updated: $settings"
+
+          if ${pkgs.diffutils}/bin/cmp -s "$settings" "$tmp"; then
+            rm -f "$tmp"
+          else
+            cp -p "$settings" "$stage/backup"
+            mv -T "$stage/backup" "$backup"
+            chmod --reference="$settings" "$tmp"
+            mv -T "$tmp" "$settings"
+            echo "Windows Terminal Herdr keybindings updated: $settings"
+          fi
         fi
-      fi
+      )
+      run update_windows_terminal
     '';
   };
 }
