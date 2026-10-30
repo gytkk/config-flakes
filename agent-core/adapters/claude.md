@@ -3,6 +3,10 @@
 These instructions extend the shared global agent rules with Claude Code-specific
 behavior.
 
+## Response language
+
+- When a user-facing message contains two or more paragraphs before translation, provide the English original first, followed by a complete Korean translation in the same message. Preserve the original meaning, uncertainty, and technical identifiers in the translation.
+
 ## GitHub PR synchronization
 
 - Treat `finish it`, `wrap this up`, `handle the rest`, PR preparation, test
