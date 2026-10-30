@@ -1,0 +1,435 @@
+{
+  "status": "conditional desk review; no power, signal-integrity or manufacturing pass",
+  "source_facts": "../sources.md#electrical-desk-review-sources",
+  "input_sha256": {
+    "design/pcb/circuit.json": "fee5bb35da8644f555e54ebbcc4267ac9a7dde32f38eaa2e17ca45cfead9b210",
+    "design/pcb/keycult65.kicad_pcb": "042fb9c0ffadcc64075eb3ea00b2566a0603a3253e0f25b4f91be77d560c431e",
+    "design/pcb/62/circuit.json": "5e9125dbf7a1e1dd975cf6974be440a79bf85a93ee02ddc2479fce3080e5d0a3",
+    "design/pcb/62/keycult62.kicad_pcb": "6b02c66e45482cae42c10bbf6917c0fd90f8ddbd6fb896914e18484b729f0625"
+  },
+  "assumptions": {
+    "power": "150mA total 3V3 planning allocation; MCU 80mA and other loads 5mA are engineering allowances, not measured maxima. Flash 25mA requires cited operating conditions and read clock <=104MHz. LDO ground-current reserve 1mA is assumed.",
+    "thermal": "VBUS 5.5V, no upstream drop credited; thetaJA 184C/W is datasheet No Heatsink reference, not measured board thermal resistance. 125C is a planning ceiling, not a guaranteed device limit.",
+    "capacitance": "Main-board capacitor nominal sums only; not effective capacitance or an inrush model. External board, sensor and cable capacitance, DC bias/tolerance, regulator startup and active load are not modeled.",
+    "drop": "4.4V at daughterboard USB receptacle with 151mA is a low-voltage stress scenario, not permission to draw high-power current from a low-power port. Fuse R1max sum 1.03ohm is reference-temperature data, not a hot-resistance bound. Other loop resistance includes internal wire, contacts, PCB supply/ground and vias; external USB cable drop is already represented by receptacle voltage. 3.5V is a nominal3.3V plus0.2V dropout screening threshold, not proof of regulated output across tolerances.",
+    "usb": "Segment sums include any branches and exclude pad traversal, via barrels, DB1 and cables. Nearest GND via distance alone does not qualify a return path. DRAFT E uses the 7628 candidate stackup and F.Cu pair over In1.Cu. Microstrip estimates omit solder mask, etch, finite plane edges, coplanar copper, tolerances and transitions; they do not qualify the actual route or its B.Cu escapes."
+  },
+  "power_budget_ma": {
+    "mcu_allocation": 80,
+    "flash_allocation": 25,
+    "other_3v3_allocation": 5,
+    "total_3v3_allocation": 150,
+    "conditional_3v3_sensor_allowance": 40,
+    "ldo_ground_reserve": 1,
+    "input_before_daughterboard_leakage": 151
+  },
+  "thermal_scenarios": [
+    {
+      "load_ma": 100,
+      "ambient_c": 25,
+      "loss_w": 0.2255,
+      "estimated_junction_c": 66.49
+    },
+    {
+      "load_ma": 150,
+      "ambient_c": 25,
+      "loss_w": 0.3355,
+      "estimated_junction_c": 86.73
+    },
+    {
+      "load_ma": 200,
+      "ambient_c": 25,
+      "loss_w": 0.4455,
+      "estimated_junction_c": 106.97
+    },
+    {
+      "load_ma": 300,
+      "ambient_c": 25,
+      "loss_w": 0.6655,
+      "estimated_junction_c": 147.45
+    },
+    {
+      "load_ma": 500,
+      "ambient_c": 25,
+      "loss_w": 1.1055,
+      "estimated_junction_c": 228.41
+    },
+    {
+      "load_ma": 100,
+      "ambient_c": 50,
+      "loss_w": 0.2255,
+      "estimated_junction_c": 91.49
+    },
+    {
+      "load_ma": 150,
+      "ambient_c": 50,
+      "loss_w": 0.3355,
+      "estimated_junction_c": 111.73
+    },
+    {
+      "load_ma": 200,
+      "ambient_c": 50,
+      "loss_w": 0.4455,
+      "estimated_junction_c": 131.97
+    },
+    {
+      "load_ma": 300,
+      "ambient_c": 50,
+      "loss_w": 0.6655,
+      "estimated_junction_c": 172.45
+    },
+    {
+      "load_ma": 500,
+      "ambient_c": 50,
+      "loss_w": 1.1055,
+      "estimated_junction_c": 253.41
+    },
+    {
+      "load_ma": 100,
+      "ambient_c": 60,
+      "loss_w": 0.2255,
+      "estimated_junction_c": 101.49
+    },
+    {
+      "load_ma": 150,
+      "ambient_c": 60,
+      "loss_w": 0.3355,
+      "estimated_junction_c": 121.73
+    },
+    {
+      "load_ma": 200,
+      "ambient_c": 60,
+      "loss_w": 0.4455,
+      "estimated_junction_c": 141.97
+    },
+    {
+      "load_ma": 300,
+      "ambient_c": 60,
+      "loss_w": 0.6655,
+      "estimated_junction_c": 182.45
+    },
+    {
+      "load_ma": 500,
+      "ambient_c": 60,
+      "loss_w": 1.1055,
+      "estimated_junction_c": 263.41
+    }
+  ],
+  "thermal_125c_ceiling_at_50c_ma": 182.78,
+  "voltage_drop_scenarios": [
+    {
+      "other_loop_resistance_ohms": 0.5,
+      "series_total_ohms": 1.53,
+      "input_current_ma": 151,
+      "device_connector_vbus_v": 4.4,
+      "drop_v": 0.231,
+      "ldo_input_v": 4.169,
+      "headroom_over_3_5v_screen_v": 0.669
+    },
+    {
+      "other_loop_resistance_ohms": 1.0,
+      "series_total_ohms": 2.03,
+      "input_current_ma": 151,
+      "device_connector_vbus_v": 4.4,
+      "drop_v": 0.3065,
+      "ldo_input_v": 4.0935,
+      "headroom_over_3_5v_screen_v": 0.5935
+    },
+    {
+      "other_loop_resistance_ohms": 2.0,
+      "series_total_ohms": 3.03,
+      "input_current_ma": 151,
+      "device_connector_vbus_v": 4.4,
+      "drop_v": 0.4575,
+      "ldo_input_v": 3.9425,
+      "headroom_over_3_5v_screen_v": 0.4425
+    }
+  ],
+  "stackup_candidates": [
+    {
+      "name": "JLC04161H-7628",
+      "board_nominal_mm": 1.6,
+      "outer_copper_mm": 0.035,
+      "inner_copper_mm": 0.0152,
+      "outer_to_inner_dielectric_mm": 0.2104,
+      "prepreg_er": 4.4,
+      "inner_to_inner_dielectric_mm": 1.065,
+      "assumed_outer_layer_gap_mm": 0.2,
+      "outer_0_2mm_width_estimate_ohms": 108.65,
+      "outer_trial_width_mm": 0.29,
+      "outer_trial_estimate_ohms": 90.34
+    },
+    {
+      "name": "JLC04161H-3313",
+      "board_nominal_mm": 1.6,
+      "outer_copper_mm": 0.035,
+      "inner_copper_mm": 0.0152,
+      "outer_to_inner_dielectric_mm": 0.0994,
+      "prepreg_er": 4.1,
+      "inner_to_inner_dielectric_mm": 1.265,
+      "assumed_outer_layer_gap_mm": 0.2,
+      "outer_0_2mm_width_estimate_ohms": 76.87,
+      "outer_trial_width_mm": 0.16,
+      "outer_trial_estimate_ohms": 89.24
+    }
+  ],
+  "variants": {
+    "65": {
+      "explicit_stackup": true,
+      "main_board_nominal_rail_capacitance_uf": {
+        "VBUS_FUSED": 1.0,
+        "+3V3": 2.9,
+        "+1V1": 1.2
+      },
+      "usb": {
+        "USB_DM": {
+          "segment_sum_mm": 151.4028,
+          "layer_length_mm": {
+            "B.Cu": 4.9,
+            "F.Cu": 146.5028
+          },
+          "layer_widths_mm": {
+            "B.Cu": [
+              0.29
+            ],
+            "F.Cu": [
+              0.29
+            ]
+          },
+          "vias": [
+            {
+              "at_mm": [
+                39.49,
+                112.5
+              ],
+              "nearest_ground_via_mm": 1.2125
+            },
+            {
+              "at_mm": [
+                113.9,
+                54.5
+              ],
+              "nearest_ground_via_mm": 1.3
+            },
+            {
+              "at_mm": [
+                114.8,
+                54.5
+              ],
+              "nearest_ground_via_mm": 1.8439
+            },
+            {
+              "at_mm": [
+                115.4,
+                67.5
+              ],
+              "nearest_ground_via_mm": 2.1154
+            }
+          ]
+        },
+        "USB_DP": {
+          "segment_sum_mm": 157.3721,
+          "layer_length_mm": {
+            "B.Cu": 6.9107,
+            "F.Cu": 150.4615
+          },
+          "layer_widths_mm": {
+            "B.Cu": [
+              0.29
+            ],
+            "F.Cu": [
+              0.29
+            ]
+          },
+          "vias": [
+            {
+              "at_mm": [
+                38.8,
+                111.5
+              ],
+              "nearest_ground_via_mm": 1.7263
+            },
+            {
+              "at_mm": [
+                116.4,
+                55.5
+              ],
+              "nearest_ground_via_mm": 2.2472
+            },
+            {
+              "at_mm": [
+                116.4,
+                68.7
+              ],
+              "nearest_ground_via_mm": 2.2941
+            },
+            {
+              "at_mm": [
+                117.1,
+                54.5
+              ],
+              "nearest_ground_via_mm": 1.4142
+            }
+          ]
+        },
+        "USB_DM_MCU": {
+          "segment_sum_mm": 6.6253,
+          "layer_length_mm": {
+            "B.Cu": 6.6253
+          },
+          "layer_widths_mm": {
+            "B.Cu": [
+              0.15
+            ]
+          },
+          "vias": []
+        },
+        "USB_DP_MCU": {
+          "segment_sum_mm": 6.6253,
+          "layer_length_mm": {
+            "B.Cu": 6.6253
+          },
+          "layer_widths_mm": {
+            "B.Cu": [
+              0.15
+            ]
+          },
+          "vias": []
+        }
+      }
+    },
+    "62": {
+      "explicit_stackup": true,
+      "main_board_nominal_rail_capacitance_uf": {
+        "VBUS_FUSED": 1.0,
+        "+3V3": 2.9,
+        "+1V1": 1.2
+      },
+      "usb": {
+        "USB_DM": {
+          "segment_sum_mm": 151.4028,
+          "layer_length_mm": {
+            "B.Cu": 4.9,
+            "F.Cu": 146.5028
+          },
+          "layer_widths_mm": {
+            "B.Cu": [
+              0.29
+            ],
+            "F.Cu": [
+              0.29
+            ]
+          },
+          "vias": [
+            {
+              "at_mm": [
+                39.49,
+                112.5
+              ],
+              "nearest_ground_via_mm": 1.2125
+            },
+            {
+              "at_mm": [
+                113.9,
+                54.5
+              ],
+              "nearest_ground_via_mm": 1.3
+            },
+            {
+              "at_mm": [
+                114.8,
+                54.5
+              ],
+              "nearest_ground_via_mm": 1.8439
+            },
+            {
+              "at_mm": [
+                115.4,
+                67.5
+              ],
+              "nearest_ground_via_mm": 2.1154
+            }
+          ]
+        },
+        "USB_DP": {
+          "segment_sum_mm": 157.3721,
+          "layer_length_mm": {
+            "B.Cu": 6.9107,
+            "F.Cu": 150.4615
+          },
+          "layer_widths_mm": {
+            "B.Cu": [
+              0.29
+            ],
+            "F.Cu": [
+              0.29
+            ]
+          },
+          "vias": [
+            {
+              "at_mm": [
+                38.8,
+                111.5
+              ],
+              "nearest_ground_via_mm": 1.7263
+            },
+            {
+              "at_mm": [
+                116.4,
+                55.5
+              ],
+              "nearest_ground_via_mm": 2.2472
+            },
+            {
+              "at_mm": [
+                116.4,
+                68.7
+              ],
+              "nearest_ground_via_mm": 2.2941
+            },
+            {
+              "at_mm": [
+                117.1,
+                54.5
+              ],
+              "nearest_ground_via_mm": 1.4142
+            }
+          ]
+        },
+        "USB_DM_MCU": {
+          "segment_sum_mm": 6.6253,
+          "layer_length_mm": {
+            "B.Cu": 6.6253
+          },
+          "layer_widths_mm": {
+            "B.Cu": [
+              0.15
+            ]
+          },
+          "vias": []
+        },
+        "USB_DP_MCU": {
+          "segment_sum_mm": 6.6253,
+          "layer_length_mm": {
+            "B.Cu": 6.6253
+          },
+          "layer_widths_mm": {
+            "B.Cu": [
+              0.15
+            ]
+          },
+          "vias": []
+        }
+      }
+    }
+  },
+  "unresolved": [
+    "Sensor supply/logic and maximum current",
+    "Firmware current before configuration and during suspend",
+    "Loaded LDO ground current and actual board/case thermal resistance",
+    "Hot PTC and cable/connector loop resistance",
+    "Inrush waveform including capacitance behind regulators",
+    "Fabricator-approved impedance geometry and finite reference-plane/transition effects",
+    "USB cable/connector/ESD/via discontinuities and measured full-speed signal quality"
+  ]
+}

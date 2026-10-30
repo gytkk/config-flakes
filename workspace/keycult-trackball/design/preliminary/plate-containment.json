@@ -1,0 +1,22 @@
+{
+  "preferred": {
+    "switch_proxy": {
+      "outside_original_plate_contour": [],
+      "min_clearance_to_original_plate_outer_edge_mm": 2.525
+    },
+    "keycap_assumption": {
+      "outside_original_plate_contour": [],
+      "min_clearance_to_original_plate_outer_edge_mm": 0.326654
+    }
+  },
+  "alternative": {
+    "switch_proxy": {
+      "outside_original_plate_contour": [],
+      "min_clearance_to_original_plate_outer_edge_mm": 2.525
+    },
+    "keycap_assumption": {
+      "outside_original_plate_contour": [],
+      "min_clearance_to_original_plate_outer_edge_mm": 0.525
+    }
+  }
+}

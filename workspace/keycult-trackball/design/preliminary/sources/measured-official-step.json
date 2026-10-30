@@ -1,0 +1,46 @@
+{
+  "No160-Plate/No160-Plate.step": {
+    "xmin": 0.0,
+    "xmax": 285.75,
+    "ymin": 0.0,
+    "ymax": 1.5,
+    "zmin": -6.5,
+    "zmax": 101.75,
+    "xlen": 285.75,
+    "ylen": 1.5,
+    "zlen": 108.25
+  },
+  "No160-Rev1-Plates/Plate-Leaf.step": {
+    "xmin": 0.0,
+    "xmax": 285.75,
+    "ymin": 0.0,
+    "ymax": 1.5,
+    "zmin": -6.5,
+    "zmax": 101.75,
+    "xlen": 285.75,
+    "ylen": 1.5,
+    "zlen": 108.25
+  },
+  "No160-Rev1-Plates/Plate-NoLeaf.step": {
+    "xmin": 0.0,
+    "xmax": 285.75,
+    "ymin": -1.5,
+    "ymax": 0.0,
+    "zmin": -6.5,
+    "zmax": 101.75,
+    "xlen": 285.75,
+    "ylen": 1.5,
+    "zlen": 108.25
+  },
+  "No160-Rev1-Plates/Plate-Partial-NoLeaf.step": {
+    "xmin": 0.0,
+    "xmax": 285.75,
+    "ymin": -1.5,
+    "ymax": 0.0,
+    "zmin": -6.5,
+    "zmax": 101.75,
+    "xlen": 285.75,
+    "ylen": 1.5,
+    "zlen": 108.25
+  }
+}

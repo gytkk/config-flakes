@@ -1,0 +1,225 @@
+{
+  "status": "reviewable draft; NOT manufacturing approval",
+  "key_count": 62,
+  "layout_variant": "rear_clearance",
+  "keepout_mm": [
+    151.425,
+    52.7,
+    208.575,
+    128.575
+  ],
+  "kicad_version": "10.0.7",
+  "erc_count": 0,
+  "erc_by_type": {},
+  "drc_count": 0,
+  "drc_by_type": {},
+  "drc_by_severity": {},
+  "unconnected_item_count": 0,
+  "unconnected_nets": [],
+  "schematic_parity_count": 0,
+  "independent_netlist_mismatch_count": 0,
+  "envelope_bounds_mm": [
+    37.5,
+    52.7,
+    322.5,
+    147.3
+  ],
+  "switch_count": 62,
+  "diode_count": 62,
+  "footprint_count": 174,
+  "net_count": 116,
+  "track_segment_count": 1602,
+  "via_count": 204,
+  "signal_tracks_on_ground_layer": 3,
+  "keepout_intersections": [],
+  "structural_errors": [],
+  "native_export_readback": {
+    "exports/back.svg": {
+      "bytes": 344288,
+      "viewBox": "0.0000 0.0000 284.9880 94.5896"
+    },
+    "exports/front.svg": {
+      "bytes": 286541,
+      "viewBox": "0.0000 0.0000 284.9880 94.5896"
+    },
+    "exports/ground.svg": {
+      "bytes": 542436,
+      "viewBox": "0.0000 0.0000 284.9880 94.5896"
+    },
+    "exports/schematic/keycult62.svg": {
+      "bytes": 2908779,
+      "viewBox": "0.0000 0.0000 840.9940 594.0044"
+    },
+    "exports/schematic.pdf": {
+      "pages": 1,
+      "page_sizes_pt": [
+        [
+          2383.919921875,
+          1683.7900390625
+        ]
+      ]
+    },
+    "exports/board-layers.pdf": {
+      "pages": 6,
+      "page_sizes_pt": [
+        [
+          841.89599609375,
+          595.2960205078125
+        ],
+        [
+          841.89599609375,
+          595.2960205078125
+        ],
+        [
+          841.89599609375,
+          595.2960205078125
+        ],
+        [
+          841.89599609375,
+          595.2960205078125
+        ],
+        [
+          841.89599609375,
+          595.2960205078125
+        ],
+        [
+          841.89599609375,
+          595.2960205078125
+        ]
+      ]
+    }
+  },
+  "commands": [
+    [
+      "kicad-cli",
+      "sch",
+      "erc",
+      "--format",
+      "json",
+      "--severity-all",
+      "-o",
+      "/work/design/pcb/62/reports/erc.json",
+      "/work/design/pcb/62/keycult62.kicad_sch"
+    ],
+    [
+      "kicad-cli",
+      "sch",
+      "export",
+      "netlist",
+      "--format",
+      "kicadxml",
+      "-o",
+      "/work/design/pcb/62/reports/netlist.xml",
+      "/work/design/pcb/62/keycult62.kicad_sch"
+    ],
+    [
+      "kicad-cli",
+      "pcb",
+      "drc",
+      "--schematic-parity",
+      "--refill-zones",
+      "--save-board",
+      "--format",
+      "json",
+      "--severity-all",
+      "-o",
+      "/work/design/pcb/62/reports/drc.json",
+      "/work/design/pcb/62/keycult62.kicad_pcb"
+    ],
+    [
+      "kicad-cli",
+      "sch",
+      "export",
+      "pdf",
+      "--exclude-pdf-property-popups",
+      "-o",
+      "/work/design/pcb/62/exports/schematic.pdf",
+      "/work/design/pcb/62/keycult62.kicad_sch"
+    ],
+    [
+      "kicad-cli",
+      "sch",
+      "export",
+      "svg",
+      "-o",
+      "/work/design/pcb/62/exports/schematic/",
+      "/work/design/pcb/62/keycult62.kicad_sch"
+    ],
+    [
+      "kicad-cli",
+      "pcb",
+      "export",
+      "svg",
+      "--layers",
+      "F.Cu,F.SilkS,Edge.Cuts,Dwgs.User",
+      "--mode-single",
+      "--fit-page-to-board",
+      "--exclude-drawing-sheet",
+      "-o",
+      "/work/design/pcb/62/exports/front.svg",
+      "/work/design/pcb/62/keycult62.kicad_pcb"
+    ],
+    [
+      "kicad-cli",
+      "pcb",
+      "export",
+      "svg",
+      "--layers",
+      "B.Cu,B.SilkS,Edge.Cuts,Dwgs.User",
+      "--mode-single",
+      "--fit-page-to-board",
+      "--exclude-drawing-sheet",
+      "-o",
+      "/work/design/pcb/62/exports/back.svg",
+      "/work/design/pcb/62/keycult62.kicad_pcb"
+    ],
+    [
+      "kicad-cli",
+      "pcb",
+      "export",
+      "svg",
+      "--layers",
+      "In1.Cu,Edge.Cuts,Dwgs.User",
+      "--mode-single",
+      "--fit-page-to-board",
+      "--exclude-drawing-sheet",
+      "-o",
+      "/work/design/pcb/62/exports/ground.svg",
+      "/work/design/pcb/62/keycult62.kicad_pcb"
+    ],
+    [
+      "kicad-cli",
+      "pcb",
+      "export",
+      "pdf",
+      "--layers",
+      "F.Cu,B.Cu,In1.Cu,In2.Cu,Edge.Cuts,Dwgs.User",
+      "--mode-multipage",
+      "--scale",
+      "0",
+      "-o",
+      "/work/design/pcb/62/exports/board-layers.pdf",
+      "/work/design/pcb/62/keycult62.kicad_pcb"
+    ]
+  ],
+  "artifact_sha256": {
+    "keycult62.kicad_pro": "1777de780dac702d509f434fef68f0f6280efa6d7621feddbdec4600f1a251b8",
+    "keycult62.kicad_sch": "ec88717799e90a42800fdd1fbf8ef399adf7a7addbf812e33be1163669d529a7",
+    "keycult62.kicad_pcb": "6b02c66e45482cae42c10bbf6917c0fd90f8ddbd6fb896914e18484b729f0625"
+  },
+  "usb_reference_review": {
+    "f_cu_width_mm": 0.29,
+    "minimum_f_cu_pair_edge_gap_mm": 0.2,
+    "uncovered_projection_mm2": {
+      "USB_DM": 0.0,
+      "USB_DP": 0.0
+    },
+    "transition_exclusion_radius_mm": 0.51,
+    "maximum_signal_via_to_ground_via_mm": 2.294073,
+    "note": "Saved refilled In1 polygons, make_valid for KiCad touching contours. Projection only; .51mm disks exclude signal-via antipads. 3mm stitching rule is a project study condition, not USB compliance. Finite plane edges, transitions and actual impedance still require qualification."
+  },
+  "ground_layer_tracks_by_net": {
+    "COL12": 3,
+    "+3V3": 3
+  }
+}

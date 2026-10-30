@@ -1,0 +1,5 @@
+__pycache__/
+.venv/
+.cache/
+design/preliminary/sources/upstream/
+design/preliminary/sources/local/

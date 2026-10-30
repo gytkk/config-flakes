@@ -1,0 +1,11 @@
+{
+  "page_count": 1,
+  "page_size_mm": [
+    420.2006649441189,
+    297.01066063774954
+  ],
+  "calibration_horizontal_line_lengths_mm": [
+    99.99803059895834
+  ],
+  "print_driver_scaling": "user must still print actual size/100%, no fit-to-page"
+}

@@ -1,0 +1,44 @@
+{
+  "repository_commit": "e1d1948e6e60a83f6b3566a209326508200d64ce",
+  "ball_diameter_mm": 34,
+  "holder_outer_envelope_mm": null,
+  "sensor_board": {
+    "source": "keyball46/ball_design_data/Trackball_PCB_gerber.zip",
+    "outline_mm": [
+      22,
+      25
+    ],
+    "thickness_mm": null,
+    "outline_native_mm": {
+      "xmin": 100,
+      "xmax": 122,
+      "ymin": -100,
+      "ymax": -75
+    },
+    "cutout_mm": [
+      8.6,
+      15.7
+    ],
+    "board_revision_scope": "Keyball46 published sensor board, 2022; not blanket proof of every current module",
+    "installed_orientation": "vertical to main PCB; sits in back pocket of holder; precise pose not known"
+  },
+  "mounting": {
+    "holder_halves": "two small-head M1.7 tapping screws",
+    "holder_to_body": "two wide flat-head M1.7 tapping screws from underside",
+    "support_balls": 3,
+    "holder_screw_coordinates_mm": null
+  },
+  "archive_sha256": "2aa537eb96839a2ab50eac6131db09bdbac6ccb62818b79a50b4a7183c5faf9e",
+  "sources": [
+    "https://github.com/Yowkees/keyball/blob/e1d1948e6e60a83f6b3566a209326508200d64ce/keyball44/doc/rev1/buildguide_en.md#L559",
+    "https://github.com/Yowkees/keyball/blob/e1d1948e6e60a83f6b3566a209326508200d64ce/keyball46/ball_design_data/Trackball_PCB_gerber.zip",
+    "https://github.com/Yowkees/keyball/blob/e1d1948e6e60a83f6b3566a209326508200d64ce/keyball46/ball_design_data/Trackball_circuit.pdf"
+  ],
+  "unknowns": [
+    "holder XY and full assembly envelope",
+    "ball center to mounting surface Z",
+    "PCB connector and solder protrusions",
+    "case fit",
+    "sensor optical center position"
+  ]
+}
