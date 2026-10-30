@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Read these instructions when changing `config/`, the root flake entry point, or configuration package CI. Paths in code examples are relative to the repository root; run commands there.
+Read these instructions when changing `config/`, the root flake entry point, or configuration package CI. Run shell commands from the repository root, and interpret repository paths relative to it. Nix imports are relative to the importing file.
 
 The repository-wide instructions in [../AGENTS.md](../AGENTS.md) also apply. This file owns configuration-specific rules and reference material.
 
@@ -8,9 +8,9 @@ The repository-wide instructions in [../AGENTS.md](../AGENTS.md) also apply. Thi
 
 ### Critical Rules
 
-- Worktrees are allowed for editing and validation. Runtime checkout paths still default to `~/ws`; switch from a worktree only after deliberately configuring its checkout path, or apply from the main checkout.
+- Worktrees are allowed for editing and validation. Runtime checkout paths still default to `~/ws`; apply Home Manager or NixOS configuration from a worktree only after deliberately configuring its checkout path, or apply from the main checkout.
 - Follow existing code patterns and module structure in this repository
-- Use `nixfmt` to format all Nix files before committing
+- Use `nixfmt` to format changed Nix files before committing.
 - Prefer narrow, fast checks. Run time-consuming Nix evaluation commands such as `nix eval` and `nix flake check --no-build` only when they are required to validate the requested change or the user explicitly requests them. Skip them for documentation-only changes, simple edits, and checks unrelated to the changed behavior.
 - Skip Nix package build tests by default because they are expensive. Run `nix build`, `nix-build`, or `nix flake check` without `--no-build` only when the user explicitly requests a build or a concrete build-specific concern cannot be checked with formatting, static checks, targeted tests, or evaluation. A package change alone does not justify a build.
 - When changing the canonical theme pipeline or generated theme exports, leave a local git commit in a sensible rollbackable unit before finishing the work
@@ -19,7 +19,7 @@ The repository-wide instructions in [../AGENTS.md](../AGENTS.md) also apply. Thi
 ### Documentation Guidelines
 
 - Documentation for `config/` belongs in: `AGENTS.md`, `CLAUDE.md`, `README.md`, code comments (sparingly), commit messages
-- When module paths or behavior change, update the module README and its root documentation links. Run `uv run --no-project scripts/check-paths.py` to check the current entry-point documents; pass other changed Markdown files explicitly.
+- When module paths or behavior change, update the module README and its links in `config/README.md` and repository-root guidance as applicable. Run `uv run --no-project scripts/check-paths.py` to check the current entry-point documents; pass other changed Markdown files explicitly.
 - PR descriptions should focus on the change and its purpose, omitting routine validation sections (`검증`, `Validation`, or `Testing`) and checklists for human reviewers to manage. Include validation guidance only when a breaking change requires explicit attention. This affects PR descriptions only; required checks still run.
 
 ### Build/Test/Lint Commands
@@ -39,7 +39,7 @@ Standalone Home Manager commands do not require `--impure`, but several modules 
 
 ```bash
 home-manager switch --flake .#<environment>
-nixos-rebuild switch --flake .#<host>
+sudo nixos-rebuild switch --flake .#<host>
 ```
 
 ---
@@ -51,22 +51,22 @@ nixos-rebuild switch --flake .#<host>
 - **Formatting**: Enforced by `nixfmt` (2-space indent). Use `with pkgs;` for package lists.
 - **Naming**: Variables/options use camelCase, files use lowercase, directories use lowercase/kebab, environments use kebab-case.
 - **Module pattern**: Home Manager modules expose `options.modules.<name>.enable` and gate runtime config with `lib.mkIf cfg.enable`. `config/base/default.nix` owns common default enable values; profile files override with `lib.mkForce` or plain assignments when needed.
-- **Imports**: Use relative paths, import directories by name (e.g., `../modules/claude`)
+- **Imports**: Use paths relative to the importing Nix file; import module directories (e.g., `../modules/claude` from `config/base/default.nix`).
 - **Conditionals**: `lib.mkIf`, `lib.mkMerge`, `lib.mkForce`
 - **Host definition**: See `config/inventory.nix` for required fields (`kind`, `system`, `username`, `homeDirectory`, `profile`)
-- **Secrets**: Use [agenix](https://github.com/ryantm/agenix). Run `agenix -e config/secrets/<name>.age` with the secret's filename; NixOS decrypts it to `/run/agenix/<secretName>`.
+- **Secrets**: Use [agenix](https://github.com/ryantm/agenix) through `agx -e <name>.age`; the Home Manager wrapper selects `config/secrets/`, its rules file, and the workstation identity. See [secret management](README.md#secrets-with-agenix-and-1password) for recovery and rekeying. NixOS decrypts secrets to `/run/agenix/<secretName>`.
 
 ### Architecture
 
 Nix flake configuration for standalone Home Manager and NixOS environments on macOS and Linux.
 
 ```text
-flake.nix                         # Repository-root inputs and output entry point
-config/outputs.nix               # Configuration outputs
+flake.nix                               # Repository-root inputs and output entry point
+config/outputs.nix                       # Configuration outputs
 config/inventory.nix                     # All Home Manager environments and NixOS hosts
 config/base/default.nix                  # Common Home Manager configuration
-config/base/<profile>/home.nix           # Profile-specific Home Manager extensions
-agent-core/                       # Canonical agent rules, adapters, skills, and renderer
+config/base/<profile>/home.nix            # Profile-specific Home Manager extensions
+agent-core/                             # Canonical agent rules, adapters, skills, and renderer
 config/modules/<name>/default.nix        # Reusable Home Manager or NixOS module
 config/modules/nixos/                    # Common NixOS modules and shared secrets
 config/hosts/<name>/configuration.nix    # NixOS host configuration

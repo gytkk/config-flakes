@@ -185,7 +185,7 @@ Freerouting performs local detailed routing via KiCad's Specctra DSN/SES API.
 A small cleanup script removes only KiCad-reported dead-ended copper after zone refill; it never suppresses checks or unconnected nets. Native CAD retains the complete editable route. Each variant's saved SES records the base route for its current key coordinates. `scripts/usb_routing.py` applies the DRAFT E USB and ground changes after seed generation and SES import. Replaying the SES through `route_pcb.py` reproduces the combined route; rerunning the autorouter from a new seed does not replace layout review or guarantee completion.
 See [sources](sources.md) for versions, licenses and hashes.
 
-From the repository root, with the Python version matching KiCad's installed binding (the original Nix runtime uses Python 3.14; the official 10.0.7 Docker image uses Python 3.13). Scripts require Python 3.11 or newer, but `pcbnew` must match the chosen interpreter. Use the [Docker procedure](../../docs/reproduction.md#docker에서-kicad-검증) when KiCad is not installed on the host.
+Run these commands from the project root, `workspace/keycult-trackball/`, with the Python version matching KiCad's installed binding (the original Nix runtime uses Python 3.14; the official 10.0.7 Docker image uses Python 3.13). Scripts require Python 3.11 or newer, but `pcbnew` must match the chosen interpreter. Use the [Docker procedure](../../docs/reproduction.md#docker에서-kicad-검증) when KiCad is not installed on the host.
 
 ```bash
 uv run --python "$(command -v python3)" scripts/build_pcb.py --keys 65

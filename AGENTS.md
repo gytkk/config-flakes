@@ -1,17 +1,17 @@
 # Repository instructions
 
-Before starting work in `config/`, `apps/<project>/`, or `workspace/<project>/`, you must read and follow that directory's `AGENTS.md` and any more specific `AGENTS.md` files that apply to the task.
+Before starting work in `config/`, `apps/<project>/`, or `workspace/<project>/`, you must check for, read, and follow that directory's `AGENTS.md` and any more specific `AGENTS.md` files that apply to the task. If a project has no local `AGENTS.md`, follow the repository-wide instructions.
 
-This repository contains independent configuration and agent-resource areas. Follow global agent instructions and preserve unrelated work.
+This repository contains configuration, shared agent resources, applications, and workspace projects. The repository root is the directory containing this file; each directory under `apps/` or `workspace/` is a project root. Run project commands from the working directory specified by that project's instructions. Follow global agent instructions and preserve unrelated work.
 
 - Before changing the root `flake.nix` or `flake.lock`, or configuration package workflows under `.github/`, read and follow [config/AGENTS.md](config/AGENTS.md).
 - Before changing shared agent rules, runtime adapters, skills, source selections, or renderer behavior, read [agent-core/README.md](agent-core/README.md). Canonical shared sources remain in `agent-core/`; runtime settings belong in `config/modules/`.
 - Keep root `flake.nix` as the input and entry-point boundary, with configuration outputs in `config/outputs.nix`. Keep root `scripts/` for shared repository tools.
-- Worktrees are allowed. Runtime checkout paths default to `~/ws`; before switching from a worktree, deliberately configure that path or apply from the main checkout.
+- Worktrees are allowed. Configuration runtime checkout paths default to `~/ws`; before applying Home Manager or NixOS configuration from a worktree, deliberately configure that path or apply from the main checkout.
 - Use `config/modules`, `config/themes`, and `config/secrets` for configuration paths. Read [checkout migration](config/README.md#checkout-paths-and-migration) when applying or rolling back generations that use the former root paths.
 - Route former `nix-flakes` tasks to `~/ws/config/`; the flake entry point and Git root are `~/ws`. Route keyboard assets to `workspace/keyboards/` and the trackball project to `workspace/keycult-trackball/`, reading its local `AGENTS.md` before edits. Confirm the actual subtree before translating any other legacy repository path.
 - OpenClaw tasks also use this monorepo for project edits. Its independent workspace instructions, skills, and automation runbooks have not been imported here; read [OpenClaw task routing](config/modules/openclaw/README.md#task-routing-in-the-monorepo) before changing those resources or migrating their paths. Shared coding-agent resources in `agent-core/` are not their replacement.
 - Give future application or workspace projects their own local instructions. Configuration-specific documentation restrictions and Nix checks apply to configuration work. Read the target project's guidance and keep edits, validation, and commits scoped to the requested project; monorepo membership does not authorize changes to unrelated projects.
 - Commit completed, validated task changes unless the user requests otherwise. Do not push unless explicitly requested.
 
-For documentation changes, run `uv run --no-project scripts/check-paths.py` and pass other changed Markdown files explicitly when needed. See [README.md](README.md) for repository navigation.
+For documentation changes, run `uv run --no-project scripts/check-paths.py` from the repository root. Pass other changed Markdown files explicitly when their code paths are relative to the repository root; the checker does not resolve project-relative code paths. For project documentation, also run the affected project's documentation checks from its project root. See [README.md](README.md) for repository navigation.
