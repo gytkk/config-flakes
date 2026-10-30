@@ -22,6 +22,8 @@ Running status green has a 1.8:1 sRGB contrast target against sidebar and active
 
 The prefix shortcuts remain available: `c` creates a tab, `Shift+x` closes a tab, `p` / `n` focuses the previous / next tab, and `Shift+,` / `Shift+.` focuses the previous / next agent. `Ctrl+Space`, then `Shift+s`, opens the workspace picker.
 
+`Ctrl+Space`, then `Shift+n`, opens an fzf directory picker populated by zoxide. The new workspace starts in the selected directory and uses its final directory name as the label, such as `keycult-trackball` for `~/ws/workspace/keycult-trackball`. Existing workspace labels remain unchanged.
+
 `Alt+t` and `Alt+w` are handled by Herdr without Windows Terminal overrides. Outside Herdr, these keys retain their shell or application behavior.
 
 In Herdr 0.9.1, closing a tab terminates its panes. Closing the last tab also closes its workspace, normally without confirmation. With the default `confirm_close = true`, closing the last tab prompts when it would close a linked worktree group. Direct shortcuts apply in terminal mode; popups and overlays handle their own input.
