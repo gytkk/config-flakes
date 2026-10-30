@@ -412,7 +412,7 @@ After changing module paths or configuration behavior, update the corresponding 
 uv run --no-project scripts/check-paths.py
 ```
 
-The checker covers local Markdown link targets and concrete repository paths in inline code and code blocks in this README, AGENTS.md, and CLAUDE.md. It skips placeholder and glob paths, installed paths, external URLs, and link anchors. The architecture review preserves historical evidence and is excluded from the default check. Pass additional Markdown files as arguments to check them explicitly.
+The checker covers local Markdown link targets and concrete repository paths in inline code and code blocks in this README, AGENTS.md, and CLAUDE.md. It skips placeholder and glob paths, installed paths, external URLs, and link anchors. The [architecture review](docs/architecture-review.md) preserves historical evidence and is excluded from the default check. Pass additional Markdown files as arguments to check them explicitly.
 
 ```bash
 nix flake show
