@@ -60,6 +60,8 @@ The common Home Manager profile installs GitUI in every environment. Run `gitui`
 
 On `pylv-onyx`, DankMaterialShell comes from the `dms` input, while the login screen uses nixpkgs' `services.displayManager.dms-greeter` module with niri in [the host configuration](hosts/pylv-onyx/configuration.nix). The niri package uses the `niri` input's own pinned package set to keep its library dependencies compatible.
 
+The [Onyx Home Manager profile](base/pylv/onyx.nix) installs KiCad for PCB design and FreeCAD for mechanical CAD. Apply the configuration on Onyx with `sudo nixos-rebuild switch --flake .#pylv-onyx` from this checkout.
+
 New Darwin environments leave [Claude session mining](modules/claude-session-mining/README.md) disabled. The two existing Mac entries select `base/devsisters/session-mining.nix` in `inventory.nix`; that fragment requires the external `gytkk-space` runner checkout. [Home Manager installation compatibility](base/compat/README.md) is imported separately from common package and application defaults.
 
 [Darwin agenix integration](modules/agenix-darwin/README.md) owns the stable login wrapper and activation retries. Both Home Manager builders use `lib/home-manager-modules.nix` for the explicit agenix mount interface and [launchd plist rollback compatibility](lib/launchd/README.md).
