@@ -105,6 +105,8 @@ Git에서 제외하는 `design/preliminary/sources/local/holder-study/65/`와 `6
 
 ## 케이스 참조 형상을 포함한 FreeCAD 검토
 
+기존 순정 홀더 받침 검토와 별도로 생성하는 출력용 홀더는 [출력용 독립 홀더 시제품](#출력용-독립-홀더-시제품)을 따른다.
+
 `scripts/build_case_study.py`는 기존 홀더 검토 FCStd를 읽어 케이스 참조 형상을 추가한 사본을 만든다. 입력 홀더 검토의 배열과 PCB 해시가 현재 파일과 일치해야 한다. 원본 홀더 FCStd와 KiCad는 변경하지 않으며, 기존 입력 객체의 부피 보존과 저장한 FCStd 재열기를 검사한다. 외장 치수의 출처, 내부 치수와 정렬 가정, 해석 범위는 [케이스 참조 모델](../design/preliminary/design.md#케이스-참조-모델)을 따른다.
 
 프로젝트 루트에서 실행한다.
@@ -118,6 +120,25 @@ uv run --python /Applications/FreeCAD.app/Contents/Resources/bin/python scripts/
 2026-10-30 Linux Nix 환경에서 보강판, 홀더 및 케이스 생성과 파일 재열기는 통과했다. GUI 이미지 자동 렌더는 Qt offscreen 환경에서 `Could not initialize GLX`로 종료되어 확인하지 못했다. 이 경우 FCStd는 생성되어 있지만 PNG의 갱신을 보증하지 않으므로 OpenGL을 사용할 수 있는 FreeCAD 앱에서 매크로를 실행한다.
 
 `CurrentPCB`는 현재 native KiCad 형상을 나타내며 65키는 중앙이 막혀 있고 62키는 R1mm 내부 개구가 있다. `ProposedOpenPCB`는 과거 날카로운 직각 개구를 비교하기 위한 대안이므로 객체 표시를 바꿔 확인한다. `CaseShellAssumption`은 반투명 케이스이고, 이를 숨기고 `CaseCutawayAssumption`을 표시하면 왼쪽 절반만 남긴 케이스를 볼 수 있다. `CaseOverlapHighlights`는 가정한 케이스와 겹치는 부분이다. `CaseReferenceParameters`에는 출처와 가정, 객체별 검사 결과를 저장하며 속성을 편집해도 형상이 자동으로 바뀌지 않는다. 치수 변경은 생성기의 `ASSUMED`에 반영한다.
+
+## 출력용 독립 홀더 시제품
+
+[출력용 홀더 안내](../design/printable-holder/README.md)의 조립 조건과 미확정 치수를 확인한다. `scripts/build_printable_holder.py`는 FreeCAD의 `FreeCAD`, `Part`, `Mesh`, `MeshPart` 모듈과 Python 표준 라이브러리만 사용하며 외부 원본 CAD를 읽지 않는다. 프로젝트 루트에서 실행한다.
+
+```bash
+uv run --python /Applications/FreeCAD.app/Contents/Resources/bin/python scripts/build_printable_holder.py
+```
+
+Linux에서는 `FREECAD_ROOT`를 FreeCAD 설치 경로로 지정하고 `uv run --python`에 같은 설치와 호환되는 Python 실행 파일을 지정한다. 저장소의 고정된 Nix 입력에서 도구 경로를 얻는 방법은 다음과 같다. 저장소 루트의 lockfile과 설정은 변경하지 않는다.
+
+```bash
+trackball_repo=$(git rev-parse --show-toplevel)
+export FREECAD_ROOT=$(nix build --no-link --print-out-paths --impure --expr "let f = builtins.getFlake \"$trackball_repo\"; p = import f.inputs.config.inputs.nixpkgs { system = builtins.currentSystem; }; in p.freecad")
+trackball_python=$(nix eval --raw --impure --expr "let f = builtins.getFlake \"$trackball_repo\"; p = import f.inputs.config.inputs.nixpkgs { system = builtins.currentSystem; }; in p.python3.interpreter")
+uv run --no-project --python "$trackball_python" scripts/build_printable_holder.py
+```
+
+실행 결과는 `design/printable-holder/`의 FCStd, STEP, 부품별 STL, SVG 미리보기, 검사 JSON과 ZIP이다. 재생성은 해당 생성 결과를 덮어쓰므로 수동 수정본은 다른 이름으로 저장한다. FreeCAD 속성은 기록용이며 치수는 생성기에서 바꾼다. 검사 범위는 홀더 안내에 기록한다. 기존 예비 배치와 보강판은 변경하지 않으므로 이 생성에 `build_artifacts.py` 및 기존 도면 렌더를 실행할 필요는 없다. SVG는 생성된 솔리드의 삼각형 면을 투영한 검토 그림이며 광학 시뮬레이션이 아니다.
 
 ## KiCad 65키·62키 회로·PCB 초안
 

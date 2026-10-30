@@ -1,0 +1,61 @@
+{
+  "status": "prototype_geometry_checked_not_hardware_qualified",
+  "settings_mm": {
+    "ball_radius": 17.0,
+    "ball_z": 8.0,
+    "bearing_radius": 1.0,
+    "cavity_clearance": 0.5,
+    "cup_radius": 22.0,
+    "bottom_z": -12.0,
+    "split_z": 8.0,
+    "ring_top_z": 16.0,
+    "pcb_top_z": -5.0,
+    "pcb_thickness": 1.6,
+    "plate_thickness": 1.5,
+    "sensor_width": 22.0,
+    "sensor_height": 25.0,
+    "sensor_thickness": 1.6,
+    "sensor_y": -26.5,
+    "sensor_bottom_z": -4.5,
+    "sensor_travel": 3.0,
+    "deck_bottom_z": -10.0,
+    "deck_top_z": -7.0,
+    "mount_pitch": 42.0,
+    "ring_screw_radius": 19.8,
+    "pilot_diameter": 1.7,
+    "clearance_diameter": 2.3
+  },
+  "coordinate_system": "mm; ball XY=(0,0); plate top Z=0; rear=-Y",
+  "pcb_sha256": "7433793fca05d014049d450d2130544e944f69434926bb623427b81e832451cf",
+  "layout_sha256": "588a0343bbc0b660defa6cf3a57b82ed148675d07a9c1473565f9973b84864e1",
+  "max_nominal_overlap_mm3": 0.0,
+  "sensor_radial_travel_mm": [
+    -3.0,
+    3.0
+  ],
+  "ring_aperture_diameter_mm": 31.12876483254676,
+  "printed_assembly_bounds_mm": [
+    -24.0,
+    -34.0,
+    -12.0,
+    24.0,
+    24.0,
+    22.7
+  ],
+  "unverified": [
+    "sensor PCB/lens/components/connector envelope and optical datum",
+    "case depth, plate integration, fasteners, deflection",
+    "printed tolerances, bearing adhesion, optical tracking, cable routing"
+  ],
+  "step_volume_relative_error": 4.160402506730771e-07,
+  "artifact_sha256": {
+    "Cup-PROTOTYPE.stl": "d37d33bab8a6373fb19eb02ae33cd781ba9cd0cd12f202b171ef5ee7ddff4e91",
+    "RetainingRing-PROTOTYPE.stl": "d430664206ea142760dd3120599b12f6448050788631c9fdf425700b17bcc3d3",
+    "SensorCarriage-PROTOTYPE.stl": "3f13c126411334534df35c22da4f3df07c9b233419fcb54762a445621c2b2d57",
+    "SensorCap-PROTOTYPE.stl": "41b198ff39382aa45b5c4636839ec9ff2127c1ee417b38ab353872130390b755",
+    "SeatCoupon-PROTOTYPE.stl": "cabca947cb02eaa6baf0d1a12ae6b5f46b1e32688e3e1763f15ab13901bee5d6",
+    "holder-PROTOTYPE.FCStd": "c3d24c8121f19da96596f844710fa1265c6dd7f3802f6fb830fd7293983fb7b0",
+    "holder-PROTOTYPE.step": "13a67a96fef94af1b78e2c88bab4ae0c6a0d26dbdbf86f21b5bc477bba82e7d0",
+    "preview.svg": "702ce915d1de4545255944c244f69e6bede9f522139d6dd6ff1504b93ed179ac"
+  }
+}
