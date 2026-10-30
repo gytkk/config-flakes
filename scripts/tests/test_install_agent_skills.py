@@ -5,6 +5,10 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
+import subprocess
+import sys
+import time
 
 import pytest
 
@@ -13,6 +17,82 @@ SPEC = importlib.util.spec_from_file_location(
 )
 installer = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(installer)
+
+
+@pytest.mark.parametrize("launcher_exits", [False, True])
+@pytest.mark.parametrize("failure", ["timeout", "interrupt", "io"])
+def test_command_failure_stops_descendant_writes(
+    tmp_path, monkeypatch, launcher_exits, failure
+):
+    marker = tmp_path / "late-write"
+    ready = tmp_path / "child-pid"
+    child = (
+        "import os, signal, time; from pathlib import Path; "
+        "signal.signal(signal.SIGTERM, signal.SIG_IGN); "
+        f"Path({str(ready)!r}).write_text(str(os.getpid())); "
+        f"time.sleep(0.6); Path({str(marker)!r}).write_text('late')"
+    )
+    launcher = (
+        "import subprocess, sys, time; from pathlib import Path; "
+        f"subprocess.Popen([sys.executable, '-c', {child!r}]); "
+        f"ready = Path({str(ready)!r})\n"
+        "while not ready.exists(): time.sleep(0.005)\n"
+        + ("sys.exit(7)" if launcher_exits else "time.sleep(3)")
+    )
+    communicate = subprocess.Popen.communicate
+
+    def short_timeout(process, *args, **kwargs):
+        if kwargs.get("timeout") == 300:
+            kwargs["timeout"] = 0.2
+        try:
+            return communicate(process, *args, **kwargs)
+        except subprocess.TimeoutExpired:
+            if failure == "interrupt":
+                raise KeyboardInterrupt("simulated interruption")
+            if failure == "io":
+                raise OSError("simulated pipe failure")
+            raise
+
+    monkeypatch.setattr(subprocess.Popen, "communicate", short_timeout)
+    try:
+        error = (
+            KeyboardInterrupt if failure == "interrupt" else installer.ValidationError
+        )
+        with pytest.raises(error):
+            installer.run(
+                [sys.executable, "-c", launcher], cwd=tmp_path, env=os.environ
+            )
+        assert ready.exists(), "launcher did not start the synthetic child"
+        time.sleep(0.7)
+        assert not marker.exists(), "descendant wrote after command timeout"
+    finally:
+        if ready.exists():
+            try:
+                os.kill(int(ready.read_text()), signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
+
+def test_command_output_and_failure_messages(tmp_path):
+    assert (
+        installer.run(
+            [sys.executable, "-c", "print('captured')"], cwd=tmp_path, env=os.environ
+        )
+        == "captured\n"
+    )
+    with pytest.raises(installer.ValidationError, match="command exited 7") as caught:
+        installer.run(
+            [
+                sys.executable,
+                "-c",
+                "import sys; print('out'); print('err', file=sys.stderr); sys.exit(7)",
+            ],
+            cwd=tmp_path,
+            env=os.environ,
+        )
+    assert "\nout\n\nerr\n" in str(caught.value)
+    with pytest.raises(installer.ValidationError, match="command failed"):
+        installer.run([str(tmp_path / "missing-command")], cwd=tmp_path, env=os.environ)
 
 
 @pytest.fixture

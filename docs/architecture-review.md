@@ -44,7 +44,7 @@ Zed는 원본 설정 파일을 읽을 수 없을 때 설치된 설정부터 삭�
 
 ### 4. [P1] Skill 설치 실패를 기록하다가 복구 기능까지 실패함
 
-상태: 해결 (2026-10-30). 설치 오류와 후속 상태 수집 오류를 분리해 원래 오류와 백업 위치가 실패 기록에 남는다. 손상된 owner와 lock JSON은 바이트로 기록하고, 복구 전 해당 바이트와 설치 파일이 그대로인지 확인한다. 손상된 lock은 설치 전 전체 바이트로 복원하며, 정상 lock은 기존처럼 선택한 항목만 복원한다. 읽을 수 없어 상태를 확인하지 못한 파일은 자동으로 덮어쓰지 않는다. [Installer 테스트](../scripts/tests/test_install_agent_skills.py) 51개가 통과했으며, owner와 lock 손상, 이후 변경 시 복구 거부, 첫 설치의 lock 제거, 기록 저장 실패 시 원래 오류 보존을 검증했다. 기록 디렉터리에 쓸 수 없는 경우 실패 기록 저장까지 보장하지는 못하며, 오류 메시지에 백업 위치를 남긴다. 5번의 자식 프로세스 timeout 문제는 별도 미해결 항목이다.
+상태: 해결 (2026-10-30). 설치 오류와 후속 상태 수집 오류를 분리해 원래 오류와 백업 위치가 실패 기록에 남는다. 손상된 owner와 lock JSON은 바이트로 기록하고, 복구 전 해당 바이트와 설치 파일이 그대로인지 확인한다. 손상된 lock은 설치 전 전체 바이트로 복원하며, 정상 lock은 기존처럼 선택한 항목만 복원한다. 읽을 수 없어 상태를 확인하지 못한 파일은 자동으로 덮어쓰지 않는다. [Installer 테스트](../scripts/tests/test_install_agent_skills.py) 51개가 통과했으며, owner와 lock 손상, 이후 변경 시 복구 거부, 첫 설치의 lock 제거, 기록 저장 실패 시 원래 오류 보존을 검증했다. 기록 디렉터리에 쓸 수 없는 경우 실패 기록 저장까지 보장하지는 못하며, 오류 메시지에 백업 위치를 남긴다. 자식 프로세스 timeout 수정은 5번에 기록한다.
 
 근거: [install-agent-skills.py](../scripts/install-agent-skills.py)의 701행부터 704행과 355행의 `validate_receipt`.
 
@@ -54,6 +54,8 @@ Zed는 원본 설정 파일을 읽을 수 없을 때 설치된 설정부터 삭�
 
 ### 5. [P1] Skill 설치 timeout 이후에도 자식 프로세스가 파일을 변경할 수 있음
 
+상태: 해결 (2026-10-30). CLI와 Git 명령을 별도 프로세스 그룹에서 실행하고, 300초 timeout이나 예외가 발생하면 그룹에 SIGKILL을 보낸 뒤 launcher의 종료를 최대 5초간 기다린다. 출력 pipe도 닫은 뒤 실패 상태를 수집하므로 launcher가 먼저 종료되거나 자식이 SIGTERM을 무시해도 같은 그룹의 프로세스가 계속 파일을 쓰지 못한다. [Installer 테스트](../scripts/tests/test_install_agent_skills.py) 58개가 통과했으며, 실제 합성 자식 프로세스에서 수정 전 timeout 이후 쓰기를 재현하고 수정 후 timeout, 중단, pipe 오류 뒤의 쓰기가 없는 것을 검증했다. 별도 session이나 process group으로 이탈하는 프로세스, 실제 npm timeout, Linux 실행은 검증 범위 밖이다.
+
 근거: [install-agent-skills.py](../scripts/install-agent-skills.py)의 89행.
 
 `subprocess.run(..., timeout=300)`은 직접 실행한 프로세스의 timeout을 관리하지만, CLI가 생성한 자식 프로세스 전체의 종료를 보장하지 않는다. 임시 launcher가 생성한 자식은 설치 실패가 보고된 뒤에도 파일을 썼다. 재현에서는 timeout만 짧게 바꾸고 실제 `run()` 함수를 사용했다.
@@ -61,6 +63,8 @@ Zed는 원본 설정 파일을 읽을 수 없을 때 설치된 설정부터 삭�
 복구용 상태를 기록하고 잠금을 해제한 뒤에도 이전 작업이 계속될 수 있다. 프로세스 그룹 전체를 종료하고 종료를 확인한 다음 실패 상태를 수집해야 한다. 실제 pinned npm CLI의 timeout은 발생시키지 않았다.
 
 ### 6. [P1] 오래 걸리는 세션 업로드가 살아 있는 작업자의 잠금을 잃음
+
+상태: 해결 (2026-10-30). 살아 있는 PID와 권한 때문에 확인할 수 없는 PID는 시간만으로 만료시키지 않는다. 잠금마다 소유권 token을 기록하고, 디렉터리 변경을 짧은 file lock으로 직렬화해 오래된 잠금을 회수하는 작업자끼리 새 잠금을 삭제하지 못하도록 했다. 원격 업로드는 전체 300초 deadline을 공유하고, timeout이면 로컬 전송 프로세스 그룹을 종료한 뒤 queue를 보존한다. [잠금과 전송 테스트](../modules/agent-session-record/tests/test_upload_worker.py)와 [세션 기록 테스트](../modules/agent-session-record/tests/test_agent_session_record.py)에서 살아 있는 오래된 잠금, 교체된 소유자의 잠금 보존, 동시 접근, 자식 프로세스 종료, timeout 뒤 재시도를 검증했다. 실제 SSH 장애와 Linux 실행은 검증하지 않았으며, 로컬 프로세스 종료가 이미 수행된 원격 쓰기를 되돌리지는 않는다.
 
 근거: [agent_session_upload_worker.py](../modules/agent-session-record/files/agent_session_upload_worker.py)의 190행, 187행, 882행.
 

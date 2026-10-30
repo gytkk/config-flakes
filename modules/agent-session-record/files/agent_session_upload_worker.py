@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime as dt
+import fcntl
 import hashlib
 import json
 import os
@@ -14,6 +15,7 @@ import re
 import secrets
 import shlex
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -33,6 +35,7 @@ from agent_session_provider import (
 )
 
 SCHEMA_VERSION = 2
+UPLOAD_TIMEOUT_SECONDS = 300
 REDACTION_POLICY_VERSION = "builtin-v1"
 PRIVACY_POLICY_VERSION = "builtin-pii-v1"
 RUN_ID_PATTERN = re.compile(r"^run_[0-9a-f]{32}$")
@@ -167,38 +170,57 @@ class Recorder:
     @contextlib.contextmanager
     def lock(self, path: Path) -> Iterator[None]:
         started = time.monotonic()
+        token = secrets.token_hex(16)
         while True:
-            try:
-                path.mkdir(mode=0o700)
-                (path / "pid").write_text(f"{os.getpid()}\n", encoding="utf-8")
-                (path / "created_epoch").write_text(
-                    f"{int(time.time())}\n", encoding="utf-8"
-                )
-                break
-            except FileExistsError:
-                if self._lock_is_stale(path):
-                    shutil.rmtree(path, ignore_errors=True)
-                    continue
-                if time.monotonic() - started >= 15:
-                    raise TimeoutError(f"timed out acquiring lock {path.name}")
-                time.sleep(0.1)
+            # Serialize directory changes so stale-lock contenders cannot remove a new owner.
+            with (self.lock_dir / ".guard").open("a") as guard:
+                fcntl.flock(guard, fcntl.LOCK_EX)
+                try:
+                    path.mkdir(mode=0o700)
+                except FileExistsError:
+                    if self._lock_is_stale(path):
+                        shutil.rmtree(path)
+                        continue
+                else:
+                    try:
+                        (path / "pid").write_text(f"{os.getpid()}\n", encoding="utf-8")
+                        (path / "created_epoch").write_text(
+                            f"{int(time.time())}\n", encoding="utf-8"
+                        )
+                        (path / "token").write_text(token, encoding="utf-8")
+                    except BaseException:
+                        shutil.rmtree(path)
+                        raise
+                    break
+            if time.monotonic() - started >= 15:
+                raise TimeoutError(f"timed out acquiring lock {path.name}")
+            time.sleep(0.1)
         try:
             yield
         finally:
-            shutil.rmtree(path, ignore_errors=True)
+            with (self.lock_dir / ".guard").open("a") as guard:
+                fcntl.flock(guard, fcntl.LOCK_EX)
+                try:
+                    current_token = (path / "token").read_text(encoding="utf-8")
+                except FileNotFoundError:
+                    current_token = None
+                if current_token == token:
+                    shutil.rmtree(path)
 
     def _lock_is_stale(self, path: Path) -> bool:
         try:
             owner = int((path / "pid").read_text(encoding="utf-8").strip())
         except (OSError, ValueError):
             owner = 0
-        if owner:
+        if owner > 0:
             try:
                 os.kill(owner, 0)
             except ProcessLookupError:
                 return True
             except PermissionError:
-                pass
+                return False
+            else:
+                return False
         try:
             created = int((path / "created_epoch").read_text(encoding="utf-8").strip())
         except (OSError, ValueError):
@@ -844,6 +866,7 @@ class Recorder:
         target_dir: Path,
         manifest: dict[str, Any],
     ) -> None:
+        deadline = time.monotonic() + UPLOAD_TIMEOUT_SECONDS
         remote = f"{self.remote_user}@{self.remote_host}"
         run_id = manifest["run_id"]
         fingerprint = manifest["transcript_fingerprint"]
@@ -860,9 +883,22 @@ class Recorder:
             "ConnectTimeout=10",
             remote,
             f"umask 077 && mkdir -p {quoted_dir} && chmod 0700 {quoted_dir}",
+            timeout=deadline - time.monotonic(),
         )
-        self.run_checked(self.rsync, "-az", transcript, f"{remote}:{transcript_temp}")
-        self.run_checked(self.rsync, "-az", meta_path, f"{remote}:{meta_temp}")
+        self.run_checked(
+            self.rsync,
+            "-az",
+            transcript,
+            f"{remote}:{transcript_temp}",
+            timeout=deadline - time.monotonic(),
+        )
+        self.run_checked(
+            self.rsync,
+            "-az",
+            meta_path,
+            f"{remote}:{meta_temp}",
+            timeout=deadline - time.monotonic(),
+        )
         command = (
             f"mv {shlex.quote(str(transcript_temp))} "
             f"{shlex.quote(str(transcript_target))} && "
@@ -876,17 +912,39 @@ class Recorder:
             "ConnectTimeout=10",
             remote,
             command,
+            timeout=deadline - time.monotonic(),
         )
 
     @staticmethod
-    def run_checked(*arguments: Any) -> None:
-        subprocess.run(
-            [str(argument) for argument in arguments],
-            check=True,
+    def run_checked(*arguments: Any, timeout: float) -> None:
+        command = [str(argument) for argument in arguments]
+        if timeout <= 0:
+            raise subprocess.TimeoutExpired(command, timeout)
+        process = subprocess.Popen(
+            command,
             stdin=subprocess.DEVNULL,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
+            start_new_session=True,
         )
+        try:
+            stdout, stderr = process.communicate(timeout=timeout)
+        finally:
+            try:
+                # rsync can leave an SSH child holding pipes after its launcher exits.
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait(timeout=5)
+            finally:
+                process.stdout.close()
+                process.stderr.close()
+        if process.returncode:
+            raise subprocess.CalledProcessError(
+                process.returncode, command, stdout, stderr
+            )
 
     def process_queued_item(self, item: Path) -> bool:
         manifest_path = item / "manifest.json"

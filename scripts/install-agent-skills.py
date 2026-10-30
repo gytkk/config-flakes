@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -90,16 +91,35 @@ def environment(home, state):
 
 def run(command, *, cwd, env):
     try:
-        result = subprocess.run(
-            command, cwd=cwd, env=env, text=True, capture_output=True, timeout=300
+        process = subprocess.Popen(
+            command,
+            cwd=cwd,
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
         )
+        try:
+            stdout, stderr = process.communicate(timeout=300)
+        finally:
+            try:
+                # Descendants may keep pipes open after the launcher exits.
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait(timeout=5)
+            finally:
+                process.stdout.close()
+                process.stderr.close()
     except (OSError, subprocess.TimeoutExpired) as error:
         raise ValidationError(f"command failed: {command[0]}: {error}") from error
-    if result.returncode:
+    if process.returncode:
         raise ValidationError(
-            f"command exited {result.returncode}: {' '.join(command)}\n{result.stdout}\n{result.stderr}"
+            f"command exited {process.returncode}: {' '.join(command)}\n{stdout}\n{stderr}"
         )
-    return result.stdout
+    return stdout
 
 
 def location(target, home):

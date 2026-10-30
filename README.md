@@ -166,11 +166,12 @@ For a remote machine, use `cf auth login --no-browser`. Automation can supply `C
 
 ### Agent Session Record Hooks
 
-- `modules/agent-session-record`는 `agent-session-record` CLI 하나를 설치한다. Claude의 `SessionEnd`, Codex의 `SessionStart`와 `Stop` hook은 `agent-session-record hook`을 사용한다. 전체 기록을 다시 처리할 때는 `agent-session-record replay <claude|codex>`를 실행한다. Home Manager가 실행 설정을 `~/.config/agent-session-record/config.json`에 생성한다.
+- [Agent session record 모듈](modules/agent-session-record/README.md)은 `agent-session-record` CLI 하나를 설치한다. Claude의 `SessionEnd`, Codex의 `SessionStart`와 `Stop` hook은 `agent-session-record hook`을 사용한다. 전체 기록을 다시 처리할 때는 `agent-session-record replay <claude|codex>`를 실행한다. Home Manager가 실행 설정을 `~/.config/agent-session-record/config.json`에 생성한다.
 - 직접 실행한 세션과 신원을 확인할 수 있는 subagent 세션에는 내용을 드러내지 않는 `run_id`를 부여한다. snapshot은 전송 전에 secret과 개인 정보를 가리고 로컬 private queue에 저장한다. 검사에 실패하거나 내용이 빈 snapshot도 보관하되 파생 지식에서는 제외한다.
 - 전송에 성공하면 `/home/gytkk/agent-sessions/<scope>/<provider>/<YYYY>/<MM>/<DD>/<run_id>.*`에 archive를 남기고, manifest와 receipt를 로컬 ledger에 기록한다. 상태 디렉터리는 권한 `0700`, queue와 archive 파일은 권한 `0600`을 사용한다.
 - 기본 scope는 `personal`이다. devsisters profile에서는 capture를 끄고, `pylv-denim`은 업로드 대상 `pylv-onyx`에 로컬 주소 `192.168.0.10`으로 접속한다.
 - hook과 전송 실패는 각각 `warnings.log`와 `debug.log`에 기록하며 Claude와 Codex의 실행을 막지 않는다.
+- 원격 업로드 단계는 전체 300초 제한 시간을 공유하며, timeout이면 로컬 전송 프로세스 그룹을 종료하고 snapshot을 queue에 남긴다. 살아 있는 작업자의 잠금은 경과 시간만으로 제거하지 않으며, 작업자는 자신이 생성한 잠금만 해제한다.
 
 ### Codex LSP MCP Implementation Plan
 

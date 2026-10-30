@@ -19,6 +19,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 FILES_DIR = (Path(__file__).resolve().parent / ".." / "files").resolve()
 SUBJECT = FILES_DIR / "agent_session_record.py"
@@ -27,6 +28,7 @@ UV = shutil.which("uv") or "uv"
 sys.path.insert(0, str(FILES_DIR))
 
 from agent_session_provider import CaptureContext, get_provider  # noqa: E402
+from agent_session_upload_worker import Recorder  # noqa: E402
 
 
 class AgentSessionRecordTest(unittest.TestCase):
@@ -653,6 +655,32 @@ raise SystemExit(1)
             .splitlines()
         }
         self.assertEqual(attempts, {"queued", "stored"})
+
+    def test_transport_timeout_retains_queue_for_retry(self) -> None:
+        transcript = self.fixtures / "timeout.jsonl"
+        self.write_jsonl(
+            transcript, {"type": "user", "timestamp": "2026-08-22T03:00:00Z"}
+        )
+        recorder = Recorder(
+            get_provider("claude"), self.environment(failed_transport=True)
+        )
+        with patch.object(
+            recorder, "run_checked", side_effect=subprocess.TimeoutExpired(["ssh"], 300)
+        ):
+            recorder.process_payload(
+                self.payload("timeout", "timeout-claude", transcript)
+            )
+        queued = list(recorder.queue_dir.iterdir())
+        self.assertEqual(len(queued), 1)
+        self.assertEqual(list(recorder.session_state_dir.iterdir()), [])
+        self.assertEqual(list(recorder.lock_dir.glob("*.lock")), [])
+        self.assertIn("timed out", recorder.warning_log.read_text())
+
+        recorder.local_short_circuit_host = recorder.current_host
+        self.assertTrue(recorder.process_queued_item(queued[0]))
+        self.assertEqual(list(recorder.queue_dir.iterdir()), [])
+        meta = json.loads(self.find_meta("timeout-claude").read_text())
+        self.assertEqual(meta["capture_receipt"]["status"], "stored")
 
     def test_stored_snapshots_append_to_scope_manifest_ledger(self) -> None:
         transcript = self.fixtures / "ledger.jsonl"
