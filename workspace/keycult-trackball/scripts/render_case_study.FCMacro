@@ -14,7 +14,7 @@ try:
         folder = out / str(selector)
         doc = App.openDocument(str(folder / 'case-study.FCStd'))
         colors = {'Plate': (.65, .69, .75), 'Basket': (.05, .55, .45), 'Ball': (.95, .35, .08),
-                  'ProposedOpenPCB': (.08, .34, .19), 'AllKeycapProxies': (.83, .85, .9),
+                  'CurrentPCB': (.08, .34, .19), 'AllKeycapProxies': (.83, .85, .9),
                   'SensorBoardProxy': (.55, .2, .7), 'ConnectorBoardProxy': (.15, .5, .22),
                   'FlangeFastenersProxy': (.8, .62, .22), 'HolderScrewHeadsProxy': (.8, .62, .22),
                   'ConnectorScrewHeadsProxy': (.8, .62, .22),
@@ -40,7 +40,7 @@ try:
         doc.CaseCutawayAssumption.ViewObject.Visibility = True
         doc.AllKeycapProxies.ViewObject.Visibility = False
         doc.Plate.ViewObject.Visibility = False
-        doc.ProposedOpenPCB.ViewObject.Visibility = False
+        doc.CurrentPCB.ViewObject.Visibility = False
         view.setCameraOrientation(App.Rotation(App.Vector(-.3, 1, 0), App.Vector(0, 0, 1),
                                                App.Vector(1, .3, .25), 'ZXY').Q)
         view.fitAll()
@@ -50,7 +50,7 @@ try:
         doc.CaseCutawayAssumption.ViewObject.Visibility = False
         doc.AllKeycapProxies.ViewObject.Visibility = True
         doc.Plate.ViewObject.Visibility = True
-        doc.ProposedOpenPCB.ViewObject.Visibility = True
+        doc.CurrentPCB.ViewObject.Visibility = True
         view.setCameraOrientation(overview)
         view.fitAll()
         doc.recompute()

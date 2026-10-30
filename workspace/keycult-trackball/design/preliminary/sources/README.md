@@ -42,6 +42,20 @@ The guide excerpt was used in the initial local investigation but is not redistr
 
 Checksums describe the bytes examined during the initial investigation. The source archives can be fetched and hash-checked using `uv run scripts/fetch_sources.py` from the repository root. Upstream terms are summarized in [alternatives-and-licenses.md](../../../docs/alternatives-and-licenses.md).
 
+## Local FreeCAD files
+
+Open `local/case-study/62/case-study.FCStd` for the preferred 62-key assembly with the assumed case. The directories below are relative to this document and excluded from Git. Generate them in plate, holder, then case order using the [reproduction procedure](../../../docs/reproduction.md#freecad-보강판-초안).
+
+| Directory | Files and purpose |
+| --- | --- |
+| `local/plate-study/62/` | `plate-62.FCStd` for the plate and carrier concept; `plate-62.step`, `carrier-62.step`, `plate-62-DRAFT.dxf`, `plan.svg` and `checks.json` |
+| `local/holder-study/62/` | `holder-study.FCStd` for the assumed holder support assembly; experimental STEP exports and `section.svg` |
+| `local/case-study/62/` | `case-study.FCStd` for the assembly with an assumed case; `assembly.png`, `cutaway.png` and `checks.json` |
+
+Each study also has a `65/` directory for comparison and a parent `review.json` report. Run `scripts/render_case_study.FCMacro` inside FreeCAD to save the case preview images and display settings. The saved assembly displays `CurrentPCB`, including the native rounded opening on the 62-key PCB. `ProposedOpenPCB` remains hidden as a separate historical comparison. The cutaway hides the keycaps, plate and PCB to expose the support assembly.
+
+These are review models, not fabrication files. Case walls, floor, registration and holder envelopes are assumptions. The case report retains the plate-to-assumed-wall overlap; a successful geometry check does not establish physical fit, optical alignment, strength or electrical readiness. Save manual CAD edits under a separate name before regenerating.
+
 ## Plate revision research for local FreeCAD adaptation
 
 Checked 2026-10-30. The [official download index](https://resources.keycult.com/downloads_plate_files.html) still links the [original No.1/60 ZIP](https://resources.keycult.com/plate_files/No160-Plate.zip) and [No.1/60 Rev.1 ZIP](https://resources.keycult.com/plate_files/No160-Rev1-Plates.zip). The index describes Rev.1 variants with leaf springs, without leaf springs and partial plates. The file hashes above identify the examined CAD; the index does not identify a newer NovelKeys-specific CAD revision. Personal modification and non-commercial restrictions remain applicable, so adapted FreeCAD documents and exports that reproduce upstream geometry belong under ignored `local/`.
