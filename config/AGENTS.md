@@ -14,7 +14,7 @@ The repository-wide instructions in [../AGENTS.md](../AGENTS.md) also apply. Thi
 - Prefer narrow, fast checks. Run time-consuming Nix evaluation commands such as `nix eval` and `nix flake check --no-build` only when they are required to validate the requested change or the user explicitly requests them. Skip them for documentation-only changes, simple edits, and checks unrelated to the changed behavior.
 - Skip Nix package build tests by default because they are expensive. Run `nix build`, `nix-build`, or `nix flake check` without `--no-build` only when the user explicitly requests a build or a concrete build-specific concern cannot be checked with formatting, static checks, targeted tests, or evaluation. A package change alone does not justify a build.
 - When changing the canonical theme pipeline or generated theme exports, leave a local git commit in a sensible rollbackable unit before finishing the work
-- Keep the root compatibility symlinks `modules`, `themes`, and `secrets` until all deployed and rollback-required generations and stored marketplace paths have migrated. Source relocation alone does not complete activation. See [checkout paths and migration](README.md#checkout-paths-and-migration).
+- Before applying or rolling back generations that use the former root configuration paths, read [checkout paths and migration](README.md#checkout-paths-and-migration).
 
 ### Documentation Guidelines
 
