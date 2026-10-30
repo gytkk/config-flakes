@@ -52,6 +52,18 @@ Connect ChatGPT to `https://mcp.openclaw.ai/mcp`, then use the Gateway sign-in f
 
 OpenClaw owns its instructions, skills, plugins, and session state independently of Codex, Claude Code, and Pi. The shared `agent-core`, `config/modules/agent-skills`, and `agent-session-record` integrations target the coding agents only. Manage OpenClaw skills through its own workspace and configuration.
 
+## Task routing in the monorepo
+
+Use `~/ws` as the project checkout and Git root. Read its root `AGENTS.md` first, then the target subtree instructions:
+
+- Former `nix-flakes` configuration edits belong in `~/ws/config/`. Read `config/AGENTS.md`; run flake commands from `~/ws`, not from `config/`. OpenClaw host integration belongs in `config/modules/openclaw/`.
+- Coding-agent shared rules, adapters, and skills belong in `~/ws/agent-core/`. Read `agent-core/README.md`; these sources target Codex, Claude Code, and Pi, not OpenClaw.
+- Keyboard assets belong in `~/ws/workspace/keyboards/`; trackball work belongs in `~/ws/workspace/keycult-trackball/` with its own `AGENTS.md`. Resolve other former repositories by inspecting the checkout rather than assuming a matching subtree.
+
+The OpenClaw workspace at `~/development/ws` is separate from the monorepo checkout. Its `AGENTS.md`, workspace skills, automation runbooks, and workspace skill validator are **not imported into this tree**. Project work now targets the paths above; this does not relocate the active OpenClaw workspace or make `agent-core/` authoritative for its instructions. Follow the runtime-provided workspace location until a separately authorized migration is verified. Keep personal memory, credentials, session data, and automation state outside tracked project files.
+
+A later OpenClaw workspace migration must first select and inspect the destination, preserve local-only context and ignore rules, then update workspace discovery, skill/resource paths, and automation commands under explicit authorization. Locate the workspace validator in that destination before editing migrated skills; there is no workspace skill validator in this checkout today. Audit active runbooks and installed jobs for old absolute paths, validate the configuration and skill discovery, and verify each affected workflow before retiring its old location. Preserve historical notes and vendor sources rather than rewriting them to look current. Moving files alone does not update running jobs or the current session context. No NixOS activation or live OpenClaw change is implied by project task routing.
+
 ## Removing the shared agent integration
 
 Existing hosts require a one-time configuration change before applying the new Home Manager generation. The module does not edit mutable `openclaw.json` or delete previously installed files.

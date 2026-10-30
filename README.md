@@ -14,6 +14,8 @@ This repository manages Home Manager and NixOS configuration alongside shared co
 | [scripts/](scripts) | Documentation path checks and agent skill installation |
 | [flake.nix](flake.nix), `flake.lock` | Nix inputs and entry point; outputs come from [config/outputs.nix](config/outputs.nix) |
 
+Project tasks use this checkout, including OpenClaw-initiated work. Former `nix-flakes` edits now target `config/`; keyboard assets and the trackball project live under `workspace/`. OpenClaw's independent workspace instructions, skills, and runbooks are not imported here; see [OpenClaw task routing](config/modules/openclaw/README.md#task-routing-in-the-monorepo) before migrating those resources.
+
 Runtime paths default to `~/ws`. Some installed settings link directly to files in this checkout, so its location matters after activation. Application settings belong in `config/modules/`; shared agent instructions and skills belong in `agent-core/`.
 
 Run configuration commands from the repository root, using an environment or host name from [the inventory](config/inventory.nix):
