@@ -73,6 +73,8 @@ keys=layout[variant]['keys']
 refs={key_id:i for i,key_id in enumerate([f'r{r}c{c}' for r in range(5) for c in range(15) if r in (0,4) or c not in (6,7,8)],1)}
 indexed_keys=[(refs[k['id']],k) for k in keys]
 keepout=[155,75,205,125] if args.keys==65 else [151.425,52.7,208.575,128.575]
+opening=layout[variant].get('pcb_opening')
+revision='F' if args.keys==62 else 'E'
 ROW_GPIO=[4,5,6,7,8]; COL_GPIO=[9,10,11,12,13,14,15,16,17,18,19,20,21,22,26]
 # Reserve hardware SPI0 GP0/1/2/3 before assigning the twenty matrix pins.
 gpio={0:'SENSOR_MISO_3V3',1:'SENSOR_CS_3V3',2:'SENSOR_SCLK_3V3',3:'SENSOR_MOSI_3V3'}
@@ -128,6 +130,11 @@ for i,net in enumerate(['SWCLK','SWDIO','RUN','GND','+3V3'],5):
 for i,net in enumerate(['SENSOR_MISO_3V3','SENSOR_CS_3V3','SENSOR_SCLK_3V3','SENSOR_MOSI_3V3','SENSOR_MOTION_3V3','SENSOR_RESET_3V3','GND','+3V3'],10):
     part(f'TP{i}','Connector:TestPoint',net,'TestPoint:TestPoint_Pad_D1.0mm',{1:net},(584.2+(i-10)*27.94,160.02),(211.5,76+(i-10)*2.5),mpn='PCB pad',status='3V3 MCU-side logical pads ONLY',note='NO sensor connector, NO 5V sensor supply, NO approved module connection; level translation pending #2')
 res('R8','10k',('+3V3','SENSOR_CS_3V3'),(609.6,116.84),(215,68.5))
+if args.keys==62:
+    part('J2','Connector_Generic_MountingPin:Conn_01x07_MountingPin','KEYBALL / 3V3 ASSUMED','Connector_JST:JST_GH_SM07B-GHS-TB_1x07-1MP_P1.25mm_Horizontal',{1:'SENSOR_SCLK_3V3',2:'SENSOR_CS_3V3',3:'GND',4:'+3V3',5:'GND',6:'SENSOR_MOSI_3V3',7:'SENSOR_MISO_3V3','MP':'GND'},(660.4,83.82),(215.2,110),mpn='JST SM07B-GHS-TB(LF)(SN)',status='draft cable interface; module revision and fit unverified',note='Host GH 1.25mm 7-pin; GHR-07V-S cable housing. Contact-number mapping to published Keyball46; sensor-end mating part TBD. 3V3 ONLY; retain module TPS73601/TXS0102; no motion/reset contacts; verify current and waveforms before powering')
+    for p in parts:
+        if p['ref'].startswith('TP') and int(p['ref'][2:])>=10:
+            p['note']='J2 exports SPI0/GND/3V3 under historical-module assumption; TP14/15 are spare motion/reset, not module contacts'
 for n,net in enumerate(['VBUS_FUSED','GND'],1):
     part(f'#FLG0{n}','power:PWR_FLAG','PWR_FLAG','',{1:net},(365.76+25.4*n,139.7),status='external USB supply assertion; not a fitted component')
 for i,k in indexed_keys:
@@ -173,10 +180,11 @@ for p in parts:
   p['pos']=local_caps[p['ref']];p['angle']=0
  if p['ref'] in ('R1','R2'):p['pos']=(114,67.5 if p['ref']=='R1' else 68.7)
  if p['ref'] in ('TP3','TP4'):p['pos']=(113.9 if p['ref']=='TP3' else 117.1,54.5)
+ if p['ref']=='J2':p['pos']=(136.5,111.3)
 
 # Embed the stock symbols so the native schematic is self-contained.
 rootuuid=uid('schematic')
-sch=[S('kicad_sch'),node('version',20250114),node('generator','eeschema'),node('uuid',rootuuid),node('paper','A1'),node('title_block',node('title',f'Keycult{args.keys} / electrical review draft'),node('date','2026-10-30'),node('rev','DRAFT-E'),node('comment',1,'C5-JSH / 7628 STACKUP ASSUMED - NOT FOR FABRICATION')),node('lib_symbols',*SYMS.values())]
+sch=[S('kicad_sch'),node('version',20250114),node('generator','eeschema'),node('uuid',rootuuid),node('paper','A1'),node('title_block',node('title',f'Keycult{args.keys} / electrical review draft'),node('date','2026-10-30'),node('rev','DRAFT-'+revision),node('comment',1,'C5-JSH / 7628 STACKUP ASSUMED - NOT FOR FABRICATION')),node('lib_symbols',*SYMS.values())]
 def effect(size=1.27,just=None,hide=False):
     a=node('effects',node('font',node('size',size,size)))
     if just:a.append(node('justify',S(just)))
@@ -221,11 +229,11 @@ for i,k in indexed_keys:
  sch.append(node('global_label','K_'+k['id'],node('shape',S('input')),node('at',round(x+12.7,4),round(y,4),0),effect(.9,'left'),node('uuid',uid('series-label'+str(i)))))
 for text,x,y,size in [
  ('1 / RP2040 + FLASH + BOOT + RESET',25.4,25.4,3),('2 / USB DAUGHTERBOARD + 3V3 POWER',292.1,25.4,3),
- ('3 / CLOCK + SENSOR MCU-SIDE ONLY',492.76,25.4,3),
- ('No module connector or 5V sensor connection. Verify revision and level translation before connection.',551.18,190.5,1.5),
+ ('3 / CLOCK + SENSOR '+('3V3 CABLE INTERFACE' if args.keys==62 else 'MCU-SIDE ONLY'),492.76,25.4,3),
+ ('J2: 3V3 ONLY. Published Keyball46 circuit assumed; module identity/current/timing NOT qualified.' if args.keys==62 else 'No module connector or 5V sensor connection. Verify revision and level translation before connection.',551.18,190.5,1.5),
  ('DECOUPLING: individual IOVDD / USB / ADC / DVDD pins; VREG 1uF input + output',25.4,195.58,1.5),
  ('4 / 5 ROW x 15 COLUMN MATRIX: COL -> switch -> diode ANODE -> CATHODE -> ROW (COL2ROW)',25.4,284.48,2.2),
- (f'{len(keys)} keys; Keycult{args.keys}. Bottom M1/M2: 1.5u each. Central reservation is NOT A HOLE.',25.4,294.64,1.5),
+ (f'{len(keys)} keys; Keycult{args.keys}. Bottom M1/M2: 1.5u each. '+('PCB opening 48x60 R1 assumed; holder fit UNVERIFIED.' if opening else 'Central reservation is NOT A HOLE.'),25.4,294.64,1.5),
  ('DB1: EXTERNAL C5-JSH assumed; CC 5.1k x2 / TPD4E05U06 ESD / PTC / SMF6.0A TVS.',292.1,35.56,1.2),
  ('J1: 1=protected USB power 2=D- 3=D+ 4=GND; 1:1 cable. Main-board F1 retained.',292.1,43.18,1.2),
  ('Shield joins GND on DB1. No active sustained-overvoltage disconnect. Mechanical fit provisional.',292.1,50.8,1.2)]:
@@ -264,6 +272,13 @@ for p in parts:
 W,H=285.0,94.6
 for a,b in [((180-W/2,100-H/2),(180+W/2,100-H/2)),((180+W/2,100-H/2),(180+W/2,100+H/2)),((180+W/2,100+H/2),(180-W/2,100+H/2)),((180-W/2,100+H/2),(180-W/2,100-H/2))]:
  s=pcb.PCB_SHAPE();s.SetShape(pcb.SHAPE_T_SEGMENT);s.SetStart(pt(*a));s.SetEnd(pt(*b));s.SetLayer(pcb.Edge_Cuts);s.SetWidth(mm(.05));board.Add(s)
+if opening:
+ x0,y0,x1,y1=opening['bounds_mm'];x0+=180;x1+=180;y0+=100;y1+=100;r=opening['corner_radius_mm']
+ for a,b in [((x0+r,y0),(x1-r,y0)),((x1,y0+r),(x1,y1-r)),((x1-r,y1),(x0+r,y1)),((x0,y1-r),(x0,y0+r))]:
+  s=pcb.PCB_SHAPE();s.SetShape(pcb.SHAPE_T_SEGMENT);s.SetStart(pt(*a));s.SetEnd(pt(*b));s.SetLayer(pcb.Edge_Cuts);s.SetWidth(mm(.05));board.Add(s)
+ for cx,cy,start in [(x1-r,y0+r,-90),(x1-r,y1-r,0),(x0+r,y1-r,90),(x0+r,y0+r,180)]:
+  points=[pt(cx+r*math.cos(math.radians(start+a)),cy+r*math.sin(math.radians(start+a))) for a in (0,45,90)]
+  s=pcb.PCB_SHAPE();s.SetShape(pcb.SHAPE_T_ARC);s.SetArcGeometry(*points);s.SetLayer(pcb.Edge_Cuts);s.SetWidth(mm(.05));board.Add(s)
 zone=pcb.ZONE(board);zone.SetIsRuleArea(True);zone.SetLayerSet(pcb.LSET.AllCuMask());zone.SetDoNotAllowTracks(True);zone.SetDoNotAllowVias(True);zone.SetDoNotAllowPads(True);zone.SetDoNotAllowZoneFills(True);zone.SetDoNotAllowFootprints(True)
 zone.Outline().NewOutline()
 left,top,right,bottom=keepout
@@ -288,6 +303,7 @@ for ref,f in fps.items():
   a=xy(p.GetPosition())
   if ref=='U1' and p.GetNumber()=='57':via('GND',a);continue
   dx,dy=ground_offsets.get(ref,(.72,0))
+  if ref=='J2' and p.GetNumber() in ('3','5'):dx,dy=0,1.4
   if ref=='C15':dx,dy=0,-.72
   if ref=='Y1':dx,dy=(.85 if p.GetNumber()=='2' else -1),0
   if ref.startswith('SW'):dx,dy=0,-1.1
@@ -334,7 +350,7 @@ for x,y in [(38,53.2),(322,53.2),(322,146.8),(38,146.8)]:g.Outline().Append(mm(x
 board.Add(g)
 # Local ground and support routing are performed by the detailed router.
 # Board notes are on fabrication/documentation layers, not over copper/silkscreen.
-for text0,xy0,size in [(f'DRAFT E / {len(keys)} KEYS - NOT FOR FABRICATION',(180,150),1.5),('RESERVED / NO CUTOUT',(180,100),1),('USB F.Cu 0.29/0.20mm; 7628 STACKUP STUDY / IMPEDANCE NOT QUALIFIED',(85,50),.8),('SENSOR 3V3 LOGIC ONLY / NO MODULE CONNECTOR',(98,98),.9)]:
+for text0,xy0,size in [(f'DRAFT {revision} / {len(keys)} KEYS - NOT FOR FABRICATION',(180,150),1.5),('OPENING 48x60 R1 / FIT UNVERIFIED' if opening else 'RESERVED / NO CUTOUT',(180,100),1),('USB F.Cu 0.29/0.20mm; 7628 STACKUP STUDY / IMPEDANCE NOT QUALIFIED',(85,50),.8),('J2: 3V3 KEYBALL ASSUMPTION / VERIFY MODULE' if args.keys==62 else 'SENSOR 3V3 LOGIC ONLY / NO MODULE CONNECTOR',(98,98),.9)]:
  t=pcb.PCB_TEXT(board);t.SetText(text0);t.SetPosition(pt(*xy0));t.SetTextSize(pt(size,size));t.SetTextThickness(mm(.15));t.SetLayer(pcb.Dwgs_User);board.Add(t)
 for i,k in indexed_keys:
  t=pcb.PCB_TEXT(board);t.SetText(k['id']);t.SetPosition(pt(180+k['x_mm'],100+k['y_mm']+8.2));t.SetTextSize(pt(.8,.8));t.SetTextThickness(mm(.12));t.SetLayer(pcb.F_SilkS);board.Add(t)

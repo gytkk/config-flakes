@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <export version="E">
   <design>
-    <source>/work/design/pcb/62/keycult62.kicad_sch</source>
-    <date>2026-10-30T02:33:31</date>
+    <source>/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/keycult62.kicad_sch</source>
+    <date>2026-10-30T19:03:04</date>
     <tool>Eeschema 10.0.7</tool>
     <textvar name="STATUS">DRAFT_NOT_FOR_FABRICATION</textvar>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
         <title>Keycult62 / electrical review draft</title>
         <company/>
-        <rev>DRAFT-E</rev>
+        <rev>DRAFT-F</rev>
         <date>2026-10-30</date>
         <source>keycult62.kicad_sch</source>
         <comment number="1" value="C5-JSH / 7628 STACKUP ASSUMED - NOT FOR FABRICATION"/>
@@ -1993,6 +1993,36 @@
             <pin num="2"/>
             <pin num="3"/>
             <pin num="4"/>
+            <pin num="MP"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J2">
+      <value>KEYBALL / 3V3 ASSUMED</value>
+      <footprint>Connector_JST:JST_GH_SM07B-GHS-TB_1x07-1MP_P1.25mm_Horizontal</footprint>
+      <fields>
+        <field name="Footprint">Connector_JST:JST_GH_SM07B-GHS-TB_1x07-1MP_P1.25mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector_Generic_MountingPin" part="Conn_01x07_MountingPin" description="Generic connectable mounting pin connector, single row, 01x07, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="Sheetname" value="keycult62"/>
+      <property name="Sheetfile" value="keycult62.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??-1MP*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ce8ffddd-1ca3-5bd4-bb70-76153624a490</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+            <pin num="4"/>
+            <pin num="5"/>
+            <pin num="6"/>
+            <pin num="7"/>
             <pin num="MP"/>
           </pins>
         </unit>
@@ -4290,6 +4320,29 @@
         <pin num="MP" name="MountPin" type="passive"/>
       </pins>
     </libpart>
+    <libpart lib="Connector_Generic_MountingPin" part="Conn_01x07_MountingPin">
+      <description>Generic connectable mounting pin connector, single row, 01x07, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <footprints>
+        <fp>Connector*:*_1x??-1MP*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x07_MountingPin</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Generic connectable mounting pin connector, single row, 01x07, script generated (kicad-library-utils/schlib/autogen/connector/)</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+        <pin num="5" name="Pin_5" type="passive"/>
+        <pin num="6" name="Pin_6" type="passive"/>
+        <pin num="7" name="Pin_7" type="passive"/>
+        <pin num="MP" name="MountPin" type="passive"/>
+      </pins>
+    </libpart>
     <libpart lib="Device" part="C">
       <description>Unpolarized capacitor</description>
       <footprints>
@@ -4567,6 +4620,7 @@
       <node ref="C7" pin="1" pintype="passive"/>
       <node ref="C8" pin="1" pintype="passive"/>
       <node ref="C9" pin="1" pintype="passive"/>
+      <node ref="J2" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
       <node ref="R3" pin="1" pintype="passive"/>
       <node ref="R5" pin="1" pintype="passive"/>
       <node ref="R8" pin="1" pintype="passive"/>
@@ -4713,6 +4767,9 @@
       <node ref="DB1" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
       <node ref="J1" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
       <node ref="J1" pin="MP" pinfunction="MountPin_MP" pintype="passive"/>
+      <node ref="J2" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
+      <node ref="J2" pin="5" pinfunction="Pin_5_5" pintype="passive"/>
+      <node ref="J2" pin="MP" pinfunction="MountPin_MP" pintype="passive"/>
       <node ref="SW67" pin="2" pinfunction="2_2" pintype="passive"/>
       <node ref="SW68" pin="2" pinfunction="2_2" pintype="passive"/>
       <node ref="TP16" pin="1" pinfunction="1_1" pintype="passive"/>
@@ -5087,15 +5144,18 @@
       <node ref="U1" pin="26" pinfunction="RUN_26" pintype="input"/>
     </net>
     <net code="94" name="SENSOR_CS_3V3" class="Default">
+      <node ref="J2" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="R8" pin="2" pintype="passive"/>
       <node ref="TP11" pin="1" pinfunction="1_1" pintype="passive"/>
       <node ref="U1" pin="3" pinfunction="GPIO1_3" pintype="bidirectional"/>
     </net>
     <net code="95" name="SENSOR_MISO_3V3" class="Default">
+      <node ref="J2" pin="7" pinfunction="Pin_7_7" pintype="passive"/>
       <node ref="TP10" pin="1" pinfunction="1_1" pintype="passive"/>
       <node ref="U1" pin="2" pinfunction="GPIO0_2" pintype="bidirectional"/>
     </net>
     <net code="96" name="SENSOR_MOSI_3V3" class="Default">
+      <node ref="J2" pin="6" pinfunction="Pin_6_6" pintype="passive"/>
       <node ref="TP13" pin="1" pinfunction="1_1" pintype="passive"/>
       <node ref="U1" pin="5" pinfunction="GPIO3_5" pintype="bidirectional"/>
     </net>
@@ -5108,6 +5168,7 @@
       <node ref="U1" pin="36" pinfunction="GPIO24_36" pintype="bidirectional"/>
     </net>
     <net code="99" name="SENSOR_SCLK_3V3" class="Default">
+      <node ref="J2" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
       <node ref="TP12" pin="1" pinfunction="1_1" pintype="passive"/>
       <node ref="U1" pin="4" pinfunction="GPIO2_4" pintype="bidirectional"/>
     </net>

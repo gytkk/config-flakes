@@ -74,7 +74,7 @@ ezdxf 1.4.3와 Shapely 2.1.2를 사용한다. 로컬 ZIP 및 내부 DXF의 고�
 
 ## FreeCAD 보강판 초안
 
-macOS에서 설치된 FreeCAD 1.1.4의 Python 3.11과 OpenCascade를 사용한다. `uv`는 기존에 사용하던 `ezdxf==1.4.3`을 별도 환경에 준비하며 FreeCAD 앱 자체를 수정하지 않는다. 저장소 루트에서 실행한다.
+macOS에서 설치된 FreeCAD 1.1.4의 Python 3.11과 OpenCascade를 사용한다. `uv`는 기존에 사용하던 `ezdxf==1.4.3`을 별도 환경에 준비하며 FreeCAD 앱 자체를 수정하지 않는다. 프로젝트 루트에서 실행한다.
 
 ```bash
 uv run scripts/fetch_sources.py
@@ -82,7 +82,7 @@ uv run scripts/verify_official_contour.py
 uv run --python /Applications/FreeCAD.app/Contents/Resources/bin/python scripts/build_plate.py
 ```
 
-설치 위치가 다르면 `FREECAD_ROOT`를 `Contents/Resources` 경로로 지정하고 `--python`도 해당 앱의 Python으로 바꾼다. Linux 실행 환경에서는 FreeCAD와 Python 바인딩 경로를 별도로 확인해야 하며 이 절차를 Linux에서 시험하지는 않았다. 생성된 FCStd는 FreeCAD 앱에서 열고 객체의 표시 여부, 색상과 투명도를 직접 조정한다. PNG가 필요하면 GUI에서 저장한다. 외부 Python에서 `FreeCADGui.showMainWindow()`를 호출하는 방식은 이 Mac에서 종료 시 비정상 종료가 발생하여 사용하지 않는다.
+설치 위치가 다르면 `FREECAD_ROOT`를 `Contents/Resources` 경로로 지정하고 `--python`도 해당 앱의 Python으로 바꾼다. Linux에서는 상위 저장소의 고정된 `config` flake 입력으로 준비한 FreeCAD 1.1.4와 Python 3.14.7의 모듈 로드를 확인했다. `FreeCAD`와 `Part`가 해당 Python에서 import되는 환경을 사용한다. 생성된 FCStd는 FreeCAD 앱에서 열고 객체의 표시 여부, 색상과 투명도를 직접 조정한다. PNG가 필요하면 GUI에서 저장한다. 외부 Python에서 `FreeCADGui.showMainWindow()`를 호출하는 방식은 이 Mac에서 종료 시 비정상 종료가 발생하여 사용하지 않는다.
 
 결과는 Git에서 제외되는 `design/preliminary/sources/local/plate-study/` 아래에 생성된다. `65/`와 `62/`는 각각 65키와 62키 결과를 저장한다. 각 디렉터리에 `plate-<keys>.FCStd`, `plate-<keys>.step`, `carrier-<keys>.step`, `plate-<keys>-DRAFT.dxf`, `plan.svg`, `checks.json`을 둔다. 재생성은 이 초안을 덮어쓰므로 수동 CAD 변경은 별도 이름으로 먼저 저장한다. 공개 저장소에는 생성 스크립트와 형상을 복제하지 않는 설명만 둔다.
 
@@ -97,7 +97,7 @@ uv run scripts/fetch_sources.py
 uv run --python /Applications/FreeCAD.app/Contents/Resources/bin/python scripts/build_holder_study.py
 ```
 
-생성기는 필요한 Keyball44 호스트 원본 ZIP이 없으면 고정 커밋에서 받아 SHA-256을 확인하고, 있으면 해시를 대조한다. DXF 단위 헤더의 불일치는 KiCad 장착점 7개와 대조해 기록한다. 현재 배열과 두 PCB의 stem 좌표, 사각 `Edge.Cuts`를 직접 읽으며 실행 중 입력 파일이 바뀌면 실패한다. 기존 보강판 도구의 공식 외곽 추출 함수를 사용하지만 기존 보강판 초안과 KiCad 파일은 덮어쓰지 않는다.
+생성기는 필요한 Keyball44 호스트 원본 ZIP이 없으면 고정 커밋에서 받아 SHA-256을 확인하고, 있으면 해시를 대조한다. DXF 단위 헤더의 불일치는 KiCad 장착점 7개와 대조해 기록한다. 현재 배열과 두 PCB의 stem 좌표 및 `Edge.Cuts`를 직접 읽으며 실행 중 입력 파일이 바뀌면 실패한다. 65키 `CurrentPCB`는 중앙이 막혀 있고 62키는 native 48 x 60mm, R1mm 개구를 반영한다. 날카로운 직각의 `ProposedOpenPCB`는 과거 비교용 형상으로 유지한다. 기존 보강판 도구의 공식 외곽 추출 함수를 사용하지만 기존 보강판 초안과 KiCad 파일은 덮어쓰지 않는다.
 
 Git에서 제외하는 `design/preliminary/sources/local/holder-study/65/`와 `62/`에 기본 시나리오의 `holder-study.FCStd`, `Basket-EXPERIMENT.step`, `Plate-EXPERIMENT.step`, `ProposedOpenPCB-EXPERIMENT.step`, `section.svg`를 생성한다. FCStd는 FreeCAD 앱에서 열어 검토하며 표시 설정과 PNG 저장은 GUI에서 직접 수행한다. 상위 `review.json`에는 높이와 외피 크기를 바꾼 18개 비교 결과, 입력 해시와 가정을 기록한다. 재생성은 이 실험 파일을 덮어쓰므로 수동 편집은 다른 이름으로 먼저 저장한다. FreeCAD의 `Assumptions` 속성은 기록용이며 형상을 구동하지 않는다. 가정 변경은 생성기에서 수행한다.
 
@@ -115,7 +115,9 @@ uv run --python /Applications/FreeCAD.app/Contents/Resources/bin/python scripts/
 
 결과는 Git에서 제외되는 `design/preliminary/sources/local/case-study/65/`와 `62/`의 `case-study.FCStd`, `checks.json` 및 상위 `review.json`이다. FreeCAD 앱에서 `scripts/render_case_study.FCMacro`를 열고 실행하면 두 FCStd의 표시 설정을 저장하고 각 폴더에 `assembly.png`와 `cutaway.png`를 만든다. 절개 그림은 브래킷과 나사를 볼 수 있도록 키캡, 보강판과 PCB를 숨기고 케이스의 왼쪽 절반만 표시한다. 매크로 실행 결과는 `preview-status.json`에 기록된다. 생성기와 매크로는 해당 결과를 덮어쓰므로 수동 편집은 별도 이름으로 저장한다.
 
-기본 화면은 중앙 개구를 가정한 `ProposedOpenPCB`를 표시한다. 현재 KiCad의 막힌 PCB를 보려면 이를 숨기고 `CurrentPCB`를 표시한다. `CaseShellAssumption`은 반투명 케이스이고, 이를 숨기고 `CaseCutawayAssumption`을 표시하면 왼쪽 절반만 남긴 케이스를 볼 수 있다. `CaseOverlapHighlights`는 가정한 케이스와 겹치는 부분이다. `CaseReferenceParameters`에는 출처와 가정, 객체별 검사 결과를 저장하며 속성을 편집해도 형상이 자동으로 바뀌지 않는다. 치수 변경은 생성기의 `ASSUMED`에 반영한다.
+2026-10-30 Linux Nix 환경에서 보강판, 홀더 및 케이스 생성과 파일 재열기는 통과했다. GUI 이미지 자동 렌더는 Qt offscreen 환경에서 `Could not initialize GLX`로 종료되어 확인하지 못했다. 이 경우 FCStd는 생성되어 있지만 PNG의 갱신을 보증하지 않으므로 OpenGL을 사용할 수 있는 FreeCAD 앱에서 매크로를 실행한다.
+
+`CurrentPCB`는 현재 native KiCad 형상을 나타내며 65키는 중앙이 막혀 있고 62키는 R1mm 내부 개구가 있다. `ProposedOpenPCB`는 과거 날카로운 직각 개구를 비교하기 위한 대안이므로 객체 표시를 바꿔 확인한다. `CaseShellAssumption`은 반투명 케이스이고, 이를 숨기고 `CaseCutawayAssumption`을 표시하면 왼쪽 절반만 남긴 케이스를 볼 수 있다. `CaseOverlapHighlights`는 가정한 케이스와 겹치는 부분이다. `CaseReferenceParameters`에는 출처와 가정, 객체별 검사 결과를 저장하며 속성을 편집해도 형상이 자동으로 바뀌지 않는다. 치수 변경은 생성기의 `ASSUMED`에 반영한다.
 
 ## KiCad 65키·62키 회로·PCB 초안
 

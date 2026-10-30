@@ -42,7 +42,8 @@ rear['name']='rear-clearance-15u-3u-62'
 rear['keys']=[k for k in rear['keys'] if not (k['row']==0 and k['group']=='center')]
 rear['key_count']=len(rear['keys'])
 rear['central_empty_cells_mm']={'width':F(3*U),'height':F(4*U),'xmin':F(-1.5*U),'ymin':F(-2.5*U),'xmax':F(1.5*U),'ymax':F(1.5*U)}
-rear['status']='mount/support study only; no cutout, larger ball or stiffness improvement specified'
+rear['status']='priority draft; PCB opening assumed; holder fit and stiffness unverified'
+rear['pcb_opening']={'bounds_mm':[-24,-35,24,25],'corner_radius_mm':1.0,'status':'design assumption; not measured holder clearance or fabrication approval'}
 metadata={'status':'preliminary; not fabrication-ready; exact case opening and z stack unmeasured','units':'mm','coordinate_system':{'origin':'center of keyfield and ball, home row between G and H','x':'right','y':'toward user/front/bottom row','z':'up from plate upper surface; z coordinates not yet assigned','case_alignment':'assumed concentric with exterior only for illustration; must register to physical plate datum'},'pitch_mm':U,'keycap_plan_assumption_mm':[CAP,CAP],'keycap_plan_width_formula':'18 + (width_u - 1) * 19.05 mm; height 18 mm','conservative_key_cell_mm':[U,U],'switch_cutout_proxy_mm':[SW,SW],'case_exterior_reference_mm':[294.3,111],'case_opening_mm':None,'plate_to_floor_mm':None,'official_plate_envelope_mm':[285.75,108.25,1.5],'trackball':{'center_mm':[0,0],'ball_diameter_mm':34,'ball_diameter_status':'primary source verified nominal','ball_center_height_above_plate_mm':None,'assembly_keepout_mm':[KEEP,KEEP],'assembly_keepout_status':'provisional planning reservation, not measured holder and not a plate/PCB cutout','holder_verified_envelope_mm':None,'sensor_board_outline_mm':[22,25],'sensor_board_outline_scope':'Keyball46 published 2022 Gerber; vertical installation','sensor_connector_envelope_mm':None},'preferred':a,'alternative':b}
 evidence=P/'sources/keyball-evidence.json'
 metadata['rear_clearance']=rear
@@ -80,9 +81,12 @@ def render(lay,filename):
         empty=lay['central_empty_cells_mm']
         parts+=[rect(empty['xmin'],empty['ymin'],empty['width'],U,'#ede9fe','#7c3aed','1 1').replace('<rect ', '<rect id="rear-extension" ', 1)]
         parts+=[rect(empty['xmin'],empty['ymin'],empty['width'],empty['height'],'none','#7c3aed','1 1').replace('<rect ', '<rect id="rear-clearance-grid" ', 1)]
-        parts+=[text(0,-40,'Mount / support study',2.8,'middle','#6d28d9'),text(0,-34,'+19.05 mm rear space',2.6,'middle','#6d28d9')]
+        parts+=[text(0,-43,'Mount / support study',2.8,'middle','#6d28d9'),text(0,-38,'+19.05 mm rear space',2.6,'middle','#6d28d9')]
     parts+=[line(-150,0,150,0,'#cbd5e1','1 2'),line(0,-58,0,58,'#cbd5e1','1 2')]
     parts+=[rect(-25,-25,50,50,'#fff7ed','#c2410c','1.4 1.2'),f'<circle cx="0" cy="0" r="17" fill="#bfdbfe" stroke="#1d4ed8" stroke-width=".45"/>',line(-2,0,2,0,'#1d4ed8'),line(0,-2,0,2,'#1d4ed8')]
+    if lay is rear:
+        x0,y0,x1,y1=lay['pcb_opening']['bounds_mm']
+        parts+=[f'<rect id="pcb-opening" x="{x0}" y="{y0}" width="{x1-x0}" height="{y1-y0}" rx="{lay["pcb_opening"]["corner_radius_mm"]}" fill="none" stroke="#be185d" stroke-width=".35" stroke-dasharray="2 1"/>']
     parts+=[text(0,-7,'BALL Ø34',3.4,'middle','#1d4ed8'),text(0,8,'(0, 0)',3.1,'middle','#1d4ed8'),text(0,21,'50 × 50 provisional',2.8,'middle','#9a3412')]
     for k in lay['keys']:
         x,y=k['x_mm'],k['y_mm'];fill='#f8fafc' if k['group']!='center' else '#e2e8f0'
@@ -90,7 +94,7 @@ def render(lay,filename):
         parts+=[rect(x-cap_width(k)/2,y-9,f'{cap_width(k):g}',18,fill,'#475569',radius=.8),rect(x-7,y-7,14,14,'none','#cbd5e1'),text(x,y+1.2,k['label'],3.1 if len(k['label'])>3 else 4,'middle'),text(x,y+6.6,f'{x:g},{y:g}',1.75,'middle','#64748b')]
     parts+=[dim(-147.15,147.15,-64,'294.30 exterior reference — NOT the usable opening'),dim(env['xmin'],env['xmin']+env['width'],64,f"{env['width']:.2f} nominal keyfield ({lay['total_width_u']} × 19.05)")]
     parts+=[dim(-lay['center_gap_u']*U/2,lay['center_gap_u']*U/2,74,f"{lay['center_gap_u']*U:.2f} central grid gap")]
-    note='Purple: 57.15 x 76.20 empty grid, NOT a cutout; stiffness and Z UNKNOWN.' if lay is rear else 'Caps: 18 x 18 (1u), 27.525 x 18 (1.5u); switches: 14 x 14. Opening and Z UNKNOWN.'
+    note='Pink: PCB opening DRAFT 48 x 60 R1. Purple: empty grid. Fit / Z unverified.' if lay is rear else 'Caps: 18 x 18 (1u), 27.525 x 18 (1.5u); switches: 14 x 14. Opening and Z UNKNOWN.'
     if lay is b:note='Keys: assumed 18 × 18 caps / 14 × 14 switch proxies. Inner opening and Z stack UNKNOWN.'
     parts+=[text(-157,84,'Green: 285.75 × 108.25 bounding reference ONLY — not the official contour.',3),text(-157,90,'Orange: reserved assembly box, NOT a verified holder outline or cutout.',3,'start','#9a3412'),text(-157,96,note,3)]
     parts+=['</g></svg>'];s='\n'.join(parts);ET.fromstring(s);(P/filename).write_text(s+'\n');return s

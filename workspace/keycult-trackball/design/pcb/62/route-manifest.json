@@ -5,12 +5,12 @@
   "jar_sha256": "d7fd0f63f52e6d74b0fad6715f87ca9f0ffd7109d66b2a584638000270592ecf",
   "java": "21",
   "stop_passes": 40,
-  "note": "v2.0.1 -mp alone does not bound BatchAutorouter; router.stop_pass_no is explicitly supplied. No cloud routing; usage analytics disabled. SES preserves the base route; scripts/usb_routing.py replaces connector-side USB copper and adds the DRAFT E ground changes after import.",
+  "note": "v2.0.1 -mp alone does not bound BatchAutorouter; router.stop_pass_no is explicitly supplied. No cloud routing; usage analytics disabled. SES preserves the base route; scripts/usb_routing.py replaces connector-side USB copper and adds the DRAFT E ground changes after import. The saved base route includes local manual repairs: COL11 uses In2.Cu at the bottom edge, ROW1 bypasses the central keepout, and QSPI clock/power/MOSI escapes preserve clearance. Fresh seed generation, saved-SES replay and strict KiCad validation completed with zero ERC/DRC violations, unconnected items and parity issues.",
   "input_sha256": {
-    "design/pcb/62/circuit.json": "5e9125dbf7a1e1dd975cf6974be440a79bf85a93ee02ddc2479fce3080e5d0a3",
-    "design/preliminary/layout.json": "3f4018e8de87bd8a0751f4fc7513168f342ea2b2bf9f17dca7712dbb5974984b",
-    "scripts/build_pcb.py": "d8ba8532db1a4e0be53e3eaf574f84ebc6d797fcf5582701b0af78b6a46bba38",
+    "design/pcb/62/circuit.json": "8642e008975cfeb4e09fd3860757e61a0299ec0b0c1a32ceebec2a7da07995a1",
+    "design/preliminary/layout.json": "588a0343bbc0b660defa6cf3a57b82ed148675d07a9c1473565f9973b84864e1",
+    "scripts/build_pcb.py": "6eba8e98141d93f25bdf7b1df4883445d230b78ad9d0e5fe781ccf749f5c4d3b",
     "scripts/usb_routing.py": "2ed59310d5f43c371a0a0a48498daaf08731d277315cf32c09c3bf7f6b90923e"
   },
-  "ses_sha256": "bedd07934d332eff7f7ea7234479fd81f7c649db20d4f4eaef1273957af1e6ff"
+  "ses_sha256": "dad3c9ab7c3da4a1d23944a5d7eff7f94646a91dc8109e14f3dfa13ecfb89f1a"
 }

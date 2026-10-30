@@ -3,14 +3,14 @@
   "source_facts": "../sources.md#electrical-desk-review-sources",
   "input_sha256": {
     "design/pcb/circuit.json": "fee5bb35da8644f555e54ebbcc4267ac9a7dde32f38eaa2e17ca45cfead9b210",
-    "design/pcb/keycult65.kicad_pcb": "042fb9c0ffadcc64075eb3ea00b2566a0603a3253e0f25b4f91be77d560c431e",
-    "design/pcb/62/circuit.json": "5e9125dbf7a1e1dd975cf6974be440a79bf85a93ee02ddc2479fce3080e5d0a3",
-    "design/pcb/62/keycult62.kicad_pcb": "6b02c66e45482cae42c10bbf6917c0fd90f8ddbd6fb896914e18484b729f0625"
+    "design/pcb/keycult65.kicad_pcb": "154c4862a9ef7d32c85f5e66877a8064ea4612f099753829adf15bd001995e53",
+    "design/pcb/62/circuit.json": "8642e008975cfeb4e09fd3860757e61a0299ec0b0c1a32ceebec2a7da07995a1",
+    "design/pcb/62/keycult62.kicad_pcb": "7433793fca05d014049d450d2130544e944f69434926bb623427b81e832451cf"
   },
   "assumptions": {
     "power": "150mA total 3V3 planning allocation; MCU 80mA and other loads 5mA are engineering allowances, not measured maxima. Flash 25mA requires cited operating conditions and read clock <=104MHz. LDO ground-current reserve 1mA is assumed.",
     "thermal": "VBUS 5.5V, no upstream drop credited; thetaJA 184C/W is datasheet No Heatsink reference, not measured board thermal resistance. 125C is a planning ceiling, not a guaranteed device limit.",
-    "capacitance": "Main-board capacitor nominal sums only; not effective capacitance or an inrush model. External board, sensor and cable capacitance, DC bias/tolerance, regulator startup and active load are not modeled.",
+    "capacitance": "Main-board capacitor nominal sums and any separately identified external-module values are not effective capacitance or an inrush model. External daughterboard and cable capacitance, DC bias/tolerance, regulator startup and active load are not modeled; downstream capacitance is not added directly to USB input capacitance.",
     "drop": "4.4V at daughterboard USB receptacle with 151mA is a low-voltage stress scenario, not permission to draw high-power current from a low-power port. Fuse R1max sum 1.03ohm is reference-temperature data, not a hot-resistance bound. Other loop resistance includes internal wire, contacts, PCB supply/ground and vias; external USB cable drop is already represented by receptacle voltage. 3.5V is a nominal3.3V plus0.2V dropout screening threshold, not proof of regulated output across tolerances.",
     "usb": "Segment sums include any branches and exclude pad traversal, via barrels, DB1 and cables. Nearest GND via distance alone does not qualify a return path. DRAFT E uses the 7628 candidate stackup and F.Cu pair over In1.Cu. Microstrip estimates omit solder mask, etch, finite plane edges, coplanar copper, tolerances and transitions; they do not qualify the actual route or its B.Cu escapes."
   },
@@ -181,6 +181,9 @@
         "+3V3": 2.9,
         "+1V1": 1.2
       },
+      "sensor": {
+        "status": "MCU-side logical pads only; no module power or connector implemented"
+      },
       "usb": {
         "USB_DM": {
           "segment_sum_mm": 151.4028,
@@ -305,6 +308,75 @@
         "+3V3": 2.9,
         "+1V1": 1.2
       },
+      "sensor": {
+        "status": "assumed published Keyball circuit powered from +3V3; hardware revision and operation unverified",
+        "source_facts": "../sources.md#keyball-sensor-interface-evidence",
+        "connector": "J2",
+        "contact_nets": {
+          "1": "SENSOR_SCLK_3V3",
+          "2": "SENSOR_CS_3V3",
+          "3": "GND",
+          "4": "+3V3",
+          "5": "GND",
+          "6": "SENSOR_MOSI_3V3",
+          "7": "SENSOR_MISO_3V3",
+          "MP": "GND"
+        },
+        "steady_load_scenarios": [
+          {
+            "sensor_allocation_ma": 40,
+            "host_allocation_ma": 110,
+            "total_3v3_allocation_ma": 150,
+            "input_before_daughterboard_leakage_ma": 151,
+            "thermal_at_50c": {
+              "load_ma": 150,
+              "ambient_c": 50,
+              "loss_w": 0.3355,
+              "estimated_junction_c": 111.73
+            }
+          },
+          {
+            "sensor_allocation_ma": 50,
+            "host_allocation_ma": 110,
+            "total_3v3_allocation_ma": 160,
+            "input_before_daughterboard_leakage_ma": 161,
+            "thermal_at_50c": {
+              "load_ma": 160,
+              "ambient_c": 50,
+              "loss_w": 0.3575,
+              "estimated_junction_c": 115.78
+            }
+          },
+          {
+            "sensor_allocation_ma": 70,
+            "host_allocation_ma": 110,
+            "total_3v3_allocation_ma": 180,
+            "input_before_daughterboard_leakage_ma": 181,
+            "thermal_at_50c": {
+              "load_ma": 180,
+              "ambient_c": 50,
+              "loss_w": 0.4015,
+              "estimated_junction_c": 123.88
+            }
+          }
+        ],
+        "steady_load_limitations": "Module allowances are engineering scenarios, not guaranteed maxima. PMW3360 RUN4 37mA is typical; module regulator/translator current and operating conditions need verification. Input includes the assumed 1mA host LDO ground reserve.",
+        "startup_current_screen": {
+          "pmw_vdd_supply_ramp_max_ma": 70,
+          "pmw_vddio_supply_ramp_max_ma": 60,
+          "conservative_pmw_ramp_sum_ma": 130,
+          "host_allocation_ma": 110,
+          "host_plus_pmw_ramp_ma": 240,
+          "limitations": "Conservative addition of separate PMW supply-ramp limits, not a measured simultaneous current or continuous load. Excludes module regulator/translator overhead, capacitor charging and inrush; not a bound on total USB startup current or a steady thermal scenario."
+        },
+        "external_module_nominal_capacitance_uf": {
+          "connector_input_bulk": 10,
+          "connector_input_bypass": 0.1,
+          "regulated_downstream_bulk": 20,
+          "regulated_downstream_bypass": 0.3,
+          "limitations": "Historical schematic nominal values, not measured effective capacitance. Downstream includes the module and sensor regulators; do not add these values directly as USB input capacitance. Regulator startup, voltage conversion, tolerance/DC bias and active loads require an inrush model or measurement."
+        }
+      },
       "usb": {
         "USB_DM": {
           "segment_sum_mm": 151.4028,
@@ -424,7 +496,7 @@
     }
   },
   "unresolved": [
-    "Sensor supply/logic and maximum current",
+    "Actual sensor hardware revision, loaded logic levels, maximum current and startup under the assumed +3V3 interface",
     "Firmware current before configuration and during suspend",
     "Loaded LDO ground current and actual board/case thermal resistance",
     "Hot PTC and cable/connector loop resistance",

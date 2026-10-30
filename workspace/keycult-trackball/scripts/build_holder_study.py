@@ -13,7 +13,7 @@ import ezdxf
 from ezdxf import bbox, disassemble
 import sexpdata as sx
 
-from build_plate import App, Part, ROOT, V, feature, rect, sha, source_blank
+from build_plate import App, Part, ROOT, V, feature, pcb_report, pcb_shape, rect, sha, source_blank
 
 OUT = ROOT / "design/preliminary/sources/local/holder-study"
 UP = ROOT / "design/preliminary/sources/upstream/keyball-holder-review"
@@ -88,8 +88,9 @@ def host_interface():
                 orientation="Host +X becomes layout -Y; host +Y becomes layout +X", archive_sha256=INPUTS)
 
 
-def pcb_inputs(selector, keys):
-    path = ROOT / "design/pcb" / ("62" if selector == 62 else "") / f"keycult{selector}.kicad_pcb"
+def pcb_inputs(selector, variant):
+    path, report = pcb_report(selector, variant)
+    keys = variant['keys']
     data = path.read_bytes()
     tree = sx.loads(data.decode())
     stems = []
@@ -107,14 +108,9 @@ def pcb_inputs(selector, keys):
     errors = [min(math.dist((k['x_mm'], k['y_mm']), p) for p in stems) for k in keys]
     if len(stems) != len(keys) or max(errors) > 1e-5 or len(set(stems)) != len(stems):
         raise ValueError("Native PCB stems and layout do not agree")
-    edges = [e for e in tree if tag(e).startswith("gr_") and child(e, "layer") and child(e, "layer")[1] == "Edge.Cuts"]
-    if len(edges) != 4 or any(tag(e) != "gr_line" for e in edges):
-        raise ValueError("Revisit board-envelope model: native Edge.Cuts is no longer four straight edges")
-    pts = [tuple(child(e, "start")[1:3]) for e in edges] + [tuple(child(e, "end")[1:3]) for e in edges]
-    xs, ys = sorted(set(p[0] for p in pts)), sorted(set(p[1] for p in pts))
-    if len(xs) != 2 or len(ys) != 2 or len(set(pts)) != 4:
-        raise ValueError("Native board envelope is not rectangular")
-    return path, hashlib.sha256(data).hexdigest(), (xs[0]-180, ys[0]-100, xs[1]-180, ys[1]-100), max(errors)
+    if hashlib.sha256(data).hexdigest() != report['artifact_sha256'][path.name]:
+        raise ValueError('PCB changed after native contour validation')
+    return path, hashlib.sha256(data).hexdigest(), report, max(errors)
 
 
 def box(x, y, z, w, d, h):
@@ -184,7 +180,7 @@ def holder_envelope(interface, seat_z, diameter):
     return Part.makeCylinder(diameter/2, height, V(0, 0, seat_z)).fuse(box(cx-13, -33+s['access_to_ball_y'], seat_z, 26, 17, height))
 
 
-def section_svg(folder, shapes, seat_z):
+def section_svg(folder, shapes, seat_z, pcb_opening):
     plane = Part.Face(Part.makePolygon([V(0, -50, -30), V(0, 40, -30), V(0, 40, 40), V(0, -50, 40), V(0, -50, -30)]))
     paths = []
     for name, color in [('CurrentPCB', '#ef4444'), ('Plate', '#475569'), ('Basket', '#0f766e'),
@@ -207,13 +203,14 @@ def section_svg(folder, shapes, seat_z):
 <path d="M-48,{floor} L43,{floor}" stroke="#a21caf" stroke-width=".2" stroke-dasharray="1 1"/>
 <text x="-48" y="{floor+4}">Required floor below Z=-{floor:g} for assumed seat/fasteners + 1mm margin</text>
 <text x="-48" y="{floor+8}">Actual case floor and remaining hardware are NOT modeled</text>
-<text x="-48" y="37">Red: CURRENT uncut PCB. Comparison model uses a 48 x 60mm opening.</text>
+<text x="-48" y="37">Red: CURRENT {'rounded-opening' if pcb_opening else 'uncut'} PCB. Comparison: sharp-corner 48 x 60mm opening.</text>
 <text x="-48" y="41">Left = rear (-Y). Holder seat Z={seat_z:g}; ball-center/seat offset assumed 20mm.</text>
 </g></svg>''')
 
 
-def run_variant(selector, keys, face, blank, interface):
-    path, digest, bounds, stem_error = pcb_inputs(selector, keys)
+def run_variant(selector, variant, face, blank, interface):
+    path, digest, pcb_validation, stem_error = pcb_inputs(selector, variant)
+    keys = variant['keys']
     key_count = len(keys)
     near = [k for k in keys if abs(k['x_mm']) < 50 and abs(k['y_mm']) < 60]
     cap_faces = [rect(k['x_mm']-(18+(k.get('width_u', 1)-1)*19.05)/2, k['y_mm']-9,
@@ -221,9 +218,8 @@ def run_variant(selector, keys, face, blank, interface):
     caps = Part.makeCompound([f.extrude(V(0, 0, 10)) for f in cap_faces])
     switches = Part.makeCompound([box(k['x_mm']-7, k['y_mm']-7, -9, 14, 14, 14) for k in near])
     switch_cuts = Part.makeCompound([box(k['x_mm']-7, k['y_mm']-7, -1.5, 14, 14, 1.5) for k in keys])
-    x0, y0, x1, y1 = bounds
     s = ASSUMPTIONS
-    board = box(x0, y0, s['pcb_top']-s['pcb_thickness'], x1-x0, y1-y0, s['pcb_thickness'])
+    board = pcb_shape(pcb_validation, s['pcb_top'], s['pcb_thickness'])
     cases = []
     for seat_z in (-8., -12., -16.):
         g = geometry(interface, seat_z, 44.)
@@ -250,6 +246,7 @@ def run_variant(selector, keys, face, blank, interface):
                        ball_tip_z_mm=seat_z+s['seat_to_ball_center']+s['ball_radius'],
                        required_floor_depth_with_assumed_fasteners_and_1mm_gap_mm=-min(g['HolderScrewHeadsProxy'].BoundBox.ZMin, g['FlangeFastenersProxy'].BoundBox.ZMin)+s['floor_margin'],
                        current_pcb_intersections_mm3=clash, proposed_open_pcb_intersections_mm3=open_clash,
+                       holder_envelope_vs_current_pcb_mm3=envelope.common(board).Volume,
                        holder_envelope_vs_open_pcb_mm3=envelope.common(opened).Volume,
                        holder_envelope_vs_plate_mm3=envelope.common(plate).Volume,
                        holder_envelope_vs_basket_mm3=envelope.common(g['Basket']).Volume,
@@ -270,6 +267,8 @@ def run_variant(selector, keys, face, blank, interface):
                 'holder_envelope_vs_open_pcb_mm3', 'holder_envelope_vs_plate_mm3', 'holder_envelope_vs_basket_mm3',
                 'basket_vs_switch_proxies_mm3', 'holder_envelope_vs_keycaps_mm3', 'holder_envelope_vs_switches_mm3',
                 'ball_vs_basket_mm3', 'basket_vs_plate_mm3', 'connector_screw_heads_vs_basket_mm3', 'flange_fasteners_vs_basket_mm3', 'flange_fasteners_vs_plate_mm3', 'driver_vs_basket_mm3', 'window_vs_switch_openings_mm3')) and interface_face > 0 and abs(support_area-interface_face) < 1e-5
+            row['conditional_checks_pcb_basis'] = 'Sharp-corner comparison opening; not the native rounded opening or a fit approval'
+            row['current_pcb_proxy_checks_pass'] = row['conditional_proxy_checks_pass'] and all(v < 1e-6 for v in clash.values()) and row['holder_envelope_vs_current_pcb_mm3'] < 1e-6
             cases.append(row)
             if seat_z == s['seat_z'] and diameter == s['holder_diameter']:
                 folder = OUT / str(selector)
@@ -282,11 +281,11 @@ def run_variant(selector, keys, face, blank, interface):
                 for name in ('Basket', 'Ball', 'ConnectorBoardProxy', 'SensorBoardProxy', 'HolderScrewHeadsProxy', 'ConnectorScrewHeadsProxy', 'FlangeFastenersProxy', 'DriverAccessProxy', 'HolderEnvelopeAssumption'):
                     feature(doc, name, g[name], 'ASSUMED test geometry; actual holder and sensor mating geometry unavailable')
                 for name, shape, note in [('Plate', plate, 'Official outer contour; experimental window and fastener cuts'),
-                    ('CurrentPCB', board, 'Native XY boundary; Z=-5 and 1.6mm thickness assumed; uncut'),
-                    ('ProposedOpenPCB', opened, 'Comparison ONLY; opening is not applied in KiCad'),
+                    ('CurrentPCB', board, 'Validated native XY boundary and opening; Z=-5 and 1.6mm thickness assumed'),
+                    ('ProposedOpenPCB', opened, 'Comparison ONLY; sharp-corner 48x60mm tool, distinct from the native rounded opening'),
                     ('KeycapProxies', caps, 'Current XY widths; Z=5..15 assumed'),
                     ('SwitchBodyProxies', switches, '14mm squares at Z=-9..5; no actual clips/sockets model'),
-                    ('CurrentPCBClash', board.common(g['Basket'].fuse(g['Ball']).fuse(envelope)), 'Known collision with current uncut PCB')]:
+                    ('CurrentPCBClash', board.common(g['Basket'].fuse(g['Ball']).fuse(envelope)), 'Calculated intersection against current native PCB')]:
                     feature(doc, name, shape, note)
                 for name, shape in [('Basket', g['Basket']), ('Plate', plate), ('ProposedOpenPCB', opened)]:
                     valid(shape, name)
@@ -301,11 +300,11 @@ def run_variant(selector, keys, face, blank, interface):
                 reopened = App.openDocument(str(folder / 'holder-study.FCStd'))
                 valid(reopened.getObject('Basket').Shape, 'FCStd readback')
                 App.closeDocument(reopened.Name)
-                section_svg(folder, {**g, 'Plate': plate, 'CurrentPCB': board}, seat_z)
+                section_svg(folder, {**g, 'Plate': plate, 'CurrentPCB': board}, seat_z, pcb_validation.get('pcb_opening'))
         print(f'Completed {key_count} keys, seat Z {seat_z}', flush=True)
     if sha(path) != digest:
         raise ValueError('PCB changed during experiment; rerun with stable inputs')
-    return dict(selector=selector, key_count=key_count, pcb_sha256=digest, native_stem_error_mm=stem_error, cases=cases)
+    return dict(selector=selector, key_count=key_count, pcb_sha256=digest, pcb_opening=pcb_validation.get('pcb_opening'), native_stem_error_mm=stem_error, cases=cases)
 
 
 def main():
@@ -315,7 +314,7 @@ def main():
     layout = json.loads(layout_path.read_text())
     interface = host_interface()
     face, blank, _ = source_blank()
-    variants = [run_variant(n, layout[key]['keys'], face, blank, interface) for n, key in ((65, 'preferred'), (62, 'rear_clearance'))]
+    variants = [run_variant(n, layout[key], face, blank, interface) for n, key in ((65, 'preferred'), (62, 'rear_clearance'))]
     if sha(layout_path) != layout_digest:
         raise ValueError('Layout changed during experiment; rerun with stable inputs')
     report = dict(status='Conditional CAD experiment, not manufacturing or actual-holder fit approval',

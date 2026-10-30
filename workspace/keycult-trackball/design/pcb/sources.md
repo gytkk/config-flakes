@@ -52,7 +52,13 @@ SHA-256 pins for the bytes examined:
 | `PMW3360DM-T2QU.pdf` | `54a2d7ab27885ac4f13e100ec43a6ac4cd0ff0bcef42e775fa98cff02b6fa567` |
 | `rp2040-datasheet.pdf` | `be56fbb75ba0ae9e26558a73c93ac3e75c2ad4e6878d3b6703de2a76d886ea8c` |
 
-The [candidate connection and release gates](README.md#sensor-interface-remains-unresolved) are circuit-level inferences from these sources. They do not authorize wiring an unidentified module or claim a tested 3.3V Keyball assembly.
+The [implemented draft assumption and release gates](README.md#sensor-interface-remains-unresolved) are circuit-level inferences from these sources, authorized for 62-key CAD implementation on 2026-10-30. They do not authorize wiring an unidentified module or claim a tested 3.3V Keyball assembly.
+
+### Host harness connector
+
+The 62-key host-side J2 uses JST `SM07B-GHS-TB(LF)(SN)`, a 7-contact side-entry GH header with 1.25mm pitch, and `GHR-07V-S` cable housing. [JST's GH datasheet](https://www.jst-mfg.com/product/pdf/eng/eGH.pdf), pages 2-3, identifies the series, side-entry header and mating housing; the stock footprint cites the same source. The selected KiCad stock footprint is `Connector_JST:JST_GH_SM07B-GHS-TB_1x07-1MP_P1.25mm_Horizontal`; no manufacturer CAD is redistributed. This is an independently selected host harness interface, not evidence that the unknown sensor uses JST GH. Identify the sensor-end connector and verify contact numbering before assembly.
+
+The PDF downloaded on 2026-10-30 is stored only in the ignored upstream directory as `keyball-sensor-review/JST-GH.pdf`, SHA-256 `b1dcb317b6b9a4fbbedd2dbf42c64c95306a252d23de8933b85fcf161240b722`. The URL is mutable; the hash identifies the examined bytes.
 
 ## USB daughterboard evidence
 
@@ -92,6 +98,7 @@ Downloaded schematic originals are ignored under `../preliminary/sources/upstrea
 ## Maintained tools and stock libraries
 
 - DRAFT E was regenerated and validated on 2026-10-30 with official `kicad/kicad:10.0.7`, Linux amd64, Python 3.13.5 and its stock symbol/footprint libraries. The image is pinned by manifest digest `sha256:3224d1bf143185ecc1bd3a1082a36f37f0f4e59d707983a16515a845e3737fc6`; the [Docker procedure](../../docs/reproduction.md#docker에서-kicad-검증) records the runtime dependencies. This image has no 3D model package. The following Nix versions record the earlier environment.
+- DRAFT F uses **kicad-small 10.0.7** and Python 3.14.7 from the parent repository's pinned `config` flake nixpkgs input. FreeCAD 1.1.4 regenerated the plate, holder and case studies and passed their solid, interference-report and file-readback checks. `kicad-small` omits stock 3D model packages; these checks are not full 3D assembly qualification. The persistent pylv-denim configuration selects `pkgs.kicad`, and its installed CLI reports 10.0.7.
 - **KiCad 10.0.7** GUI/CLI and its installed Python `pcbnew` binding, Python 3.14.7.
   Native ERC, DRC, zone refill, schematic parity, XML netlist, PDF/SVG exports and
   Specctra transfer are performed by KiCad, not fabricated report text.

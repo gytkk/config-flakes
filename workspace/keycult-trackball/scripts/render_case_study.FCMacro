@@ -1,4 +1,5 @@
 """Run inside the FreeCAD app to save case-study views and display settings."""
+import hashlib
 import json
 from pathlib import Path
 
@@ -10,9 +11,16 @@ out = root / 'design/preliminary/sources/local/case-study'
 status = {'status': 'running'}
 (out / 'preview-status.json').write_text(json.dumps(status))
 try:
+    layout = json.loads((root / 'design/preliminary/layout.json').read_text())
     for selector in (65, 62):
         folder = out / str(selector)
         doc = App.openDocument(str(folder / 'case-study.FCStd'))
+        checks = json.loads((folder / 'checks.json').read_text())
+        opening = layout['rear_clearance' if selector == 62 else 'preferred'].get('pcb_opening')
+        pcb = root / 'design/pcb' / ('62' if selector == 62 else '') / f'keycult{selector}.kicad_pcb'
+        if (checks.get('pcb_opening') != opening or json.loads(doc.CaseReferenceParameters.NativePCBOpening) != opening
+                or hashlib.sha256(pcb.read_bytes()).hexdigest() != checks['pcb_sha256']):
+            raise ValueError('Case study native PCB geometry is stale; rebuild before rendering')
         colors = {'Plate': (.65, .69, .75), 'Basket': (.05, .55, .45), 'Ball': (.95, .35, .08),
                   'CurrentPCB': (.08, .34, .19), 'AllKeycapProxies': (.83, .85, .9),
                   'SensorBoardProxy': (.55, .2, .7), 'ConnectorBoardProxy': (.15, .5, .22),

@@ -94,9 +94,13 @@ def main():
     reports = []
     for selector, key in ((65, 'preferred'), (62, 'rear_clearance')):
         pcb = ROOT / 'design/pcb' / ('62' if selector == 62 else '') / f'keycult{selector}.kicad_pcb'
-        expected = next(v['pcb_sha256'] for v in holder_report['variants'] if v['selector'] == selector)
+        holder_variant = next(v for v in holder_report['variants'] if v['selector'] == selector)
+        expected = holder_variant['pcb_sha256']
         if sha(pcb) != expected:
             raise ValueError(f'Holder study PCB is stale: {pcb}')
+        opening = layout[key].get('pcb_opening')
+        if holder_variant.get('pcb_opening') != opening:
+            raise ValueError('Holder study native PCB opening is stale; rebuild the holder study first')
         source = LOCAL / f'holder-study/{selector}/holder-study.FCStd'
         source_hash = sha(source)
         folder = OUT / str(selector)
@@ -108,6 +112,7 @@ def main():
         metadata.addProperty('App::PropertyString', 'Source').Source = SOURCE
         metadata.addProperty('App::PropertyString', 'ExteriorMM').ExteriorMM = json.dumps(EXTERIOR)
         metadata.addProperty('App::PropertyString', 'AssumptionsMM').AssumptionsMM = json.dumps(ASSUMED)
+        metadata.addProperty('App::PropertyString', 'NativePCBOpening').NativePCBOpening = json.dumps(opening)
         metadata.addProperty('App::PropertyString', 'Registration').Registration = (
             'Plate-local X right, Y front, Z up. Case top midpoint aligned to XY=0, rim Z=5 assumed. '
             'Exterior heights define an illustrative wedge, not a verified typing angle or plate datum.')
@@ -141,7 +146,9 @@ def main():
                       source_fcstd_sha256=source_hash, layout_sha256=layout_digest, pcb_sha256=expected,
                       source=SOURCE, checked='2026-10-30', exterior_mm=EXTERIOR,
                       assumptions_mm=ASSUMED, calculated=calculated, parts=results,
-                      pcb_note='CurrentPCB and ProposedOpenPCB are alternatives; no KiCad cutout applied',
+                      pcb_opening=opening,
+                      pcb_note=('CurrentPCB has the validated native rounded opening; ProposedOpenPCB is a sharp-corner comparison'
+                                if opening else 'CurrentPCB is uncut; ProposedOpenPCB is a sharp-corner comparison only'),
                       omitted=metadata.Warning)
         metadata.addProperty('App::PropertyString', 'ResultsJSON').ResultsJSON = json.dumps(results)
         doc.recompute()

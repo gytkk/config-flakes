@@ -35,11 +35,11 @@
   "structural_errors": [],
   "native_export_readback": {
     "exports/back.svg": {
-      "bytes": 340463,
+      "bytes": 339439,
       "viewBox": "0.0000 0.0000 284.9880 94.5896"
     },
     "exports/front.svg": {
-      "bytes": 294968,
+      "bytes": 293816,
       "viewBox": "0.0000 0.0000 284.9880 94.5896"
     },
     "exports/ground.svg": {
@@ -98,8 +98,8 @@
       "json",
       "--severity-all",
       "-o",
-      "/work/design/pcb/reports/erc.json",
-      "/work/design/pcb/keycult65.kicad_sch"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/reports/erc.json",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/keycult65.kicad_sch"
     ],
     [
       "kicad-cli",
@@ -109,8 +109,8 @@
       "--format",
       "kicadxml",
       "-o",
-      "/work/design/pcb/reports/netlist.xml",
-      "/work/design/pcb/keycult65.kicad_sch"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/reports/netlist.xml",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/keycult65.kicad_sch"
     ],
     [
       "kicad-cli",
@@ -123,8 +123,8 @@
       "json",
       "--severity-all",
       "-o",
-      "/work/design/pcb/reports/drc.json",
-      "/work/design/pcb/keycult65.kicad_pcb"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/reports/drc.json",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/keycult65.kicad_pcb"
     ],
     [
       "kicad-cli",
@@ -133,8 +133,8 @@
       "pdf",
       "--exclude-pdf-property-popups",
       "-o",
-      "/work/design/pcb/exports/schematic.pdf",
-      "/work/design/pcb/keycult65.kicad_sch"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/exports/schematic.pdf",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/keycult65.kicad_sch"
     ],
     [
       "kicad-cli",
@@ -142,8 +142,8 @@
       "export",
       "svg",
       "-o",
-      "/work/design/pcb/exports/schematic/",
-      "/work/design/pcb/keycult65.kicad_sch"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/exports/schematic/",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/keycult65.kicad_sch"
     ],
     [
       "kicad-cli",
@@ -156,8 +156,8 @@
       "--fit-page-to-board",
       "--exclude-drawing-sheet",
       "-o",
-      "/work/design/pcb/exports/front.svg",
-      "/work/design/pcb/keycult65.kicad_pcb"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/exports/front.svg",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/keycult65.kicad_pcb"
     ],
     [
       "kicad-cli",
@@ -170,8 +170,8 @@
       "--fit-page-to-board",
       "--exclude-drawing-sheet",
       "-o",
-      "/work/design/pcb/exports/back.svg",
-      "/work/design/pcb/keycult65.kicad_pcb"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/exports/back.svg",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/keycult65.kicad_pcb"
     ],
     [
       "kicad-cli",
@@ -184,8 +184,8 @@
       "--fit-page-to-board",
       "--exclude-drawing-sheet",
       "-o",
-      "/work/design/pcb/exports/ground.svg",
-      "/work/design/pcb/keycult65.kicad_pcb"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/exports/ground.svg",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/keycult65.kicad_pcb"
     ],
     [
       "kicad-cli",
@@ -198,14 +198,14 @@
       "--scale",
       "0",
       "-o",
-      "/work/design/pcb/exports/board-layers.pdf",
-      "/work/design/pcb/keycult65.kicad_pcb"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/exports/board-layers.pdf",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/keycult65.kicad_pcb"
     ]
   ],
   "artifact_sha256": {
     "keycult65.kicad_pro": "dd46b552019e1a91b048092bcdfb2f40d2e6ee545924e1663842a51a60c0c36d",
     "keycult65.kicad_sch": "a6a603cda8023df91cf6a4a01eaea1860f43489c110dc3b57bd525e83fb3f869",
-    "keycult65.kicad_pcb": "042fb9c0ffadcc64075eb3ea00b2566a0603a3253e0f25b4f91be77d560c431e"
+    "keycult65.kicad_pcb": "154c4862a9ef7d32c85f5e66877a8064ea4612f099753829adf15bd001995e53"
   },
   "usb_reference_review": {
     "f_cu_width_mm": 0.29,
@@ -221,5 +221,7 @@
   "ground_layer_tracks_by_net": {
     "COL12": 3,
     "+3V3": 3
-  }
+  },
+  "pcb_opening": null,
+  "sensor_connector_pinout": null
 }

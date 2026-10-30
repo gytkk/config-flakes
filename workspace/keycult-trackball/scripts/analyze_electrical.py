@@ -36,6 +36,44 @@ def thermal(load_ma, ambient_c):
             "loss_w": round(loss_w, 4), "estimated_junction_c": round(ambient_c + 184 * loss_w, 2)}
 
 
+def sensor_review(parts):
+    if "J2" not in parts:
+        return {"status": "MCU-side logical pads only; no module power or connector implemented"}
+    expected = {"1": "SENSOR_SCLK_3V3", "2": "SENSOR_CS_3V3", "3": "GND", "4": "+3V3",
+                "5": "GND", "6": "SENSOR_MOSI_3V3", "7": "SENSOR_MISO_3V3", "MP": "GND"}
+    if parts["J2"]["nets"] != expected:
+        raise ValueError("J2 sensor contact map changed; expected +3V3 power and 3.3V SPI")
+    return {
+        "status": "assumed published Keyball circuit powered from +3V3; hardware revision and operation unverified",
+        "source_facts": "../sources.md#keyball-sensor-interface-evidence",
+        "connector": "J2",
+        "contact_nets": expected,
+        "steady_load_scenarios": [
+            {"sensor_allocation_ma": sensor_ma, "host_allocation_ma": 110,
+             "total_3v3_allocation_ma": 110 + sensor_ma,
+             "input_before_daughterboard_leakage_ma": 111 + sensor_ma,
+             "thermal_at_50c": thermal(110 + sensor_ma, 50)}
+            for sensor_ma in (40, 50, 70)
+        ],
+        "steady_load_limitations": "Module allowances are engineering scenarios, not guaranteed maxima. PMW3360 RUN4 37mA is typical; module regulator/translator current and operating conditions need verification. Input includes the assumed 1mA host LDO ground reserve.",
+        "startup_current_screen": {
+            "pmw_vdd_supply_ramp_max_ma": 70,
+            "pmw_vddio_supply_ramp_max_ma": 60,
+            "conservative_pmw_ramp_sum_ma": 130,
+            "host_allocation_ma": 110,
+            "host_plus_pmw_ramp_ma": 240,
+            "limitations": "Conservative addition of separate PMW supply-ramp limits, not a measured simultaneous current or continuous load. Excludes module regulator/translator overhead, capacitor charging and inrush; not a bound on total USB startup current or a steady thermal scenario."
+        },
+        "external_module_nominal_capacitance_uf": {
+            "connector_input_bulk": 10,
+            "connector_input_bypass": 0.1,
+            "regulated_downstream_bulk": 20,
+            "regulated_downstream_bypass": 0.3,
+            "limitations": "Historical schematic nominal values, not measured effective capacitance. Downstream includes the module and sensor regulators; do not add these values directly as USB input capacitance. Regulator startup, voltage conversion, tolerance/DC bias and active loads require an inrush model or measurement."
+        }
+    }
+
+
 def usb_geometry(board):
     nets = ("USB_DM", "USB_DP", "USB_DM_MCU", "USB_DP_MCU")
     lengths = {net: defaultdict(float) for net in nets}
@@ -87,6 +125,7 @@ def main():
                     capacitance[rail] += {"1uF": 1.0, "100nF": 0.1}[part["value"]]
         variants[str(keys)] = {"explicit_stackup": field(field(board, "setup"), "stackup") is not None,
                                "main_board_nominal_rail_capacitance_uf": {rail: round(c, 3) for rail, c in capacitance.items()},
+                               "sensor": sensor_review(parts),
                                "usb": usb_geometry(board)}
         for path in (circuit_path, board_path):
             hashes[str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -120,7 +159,7 @@ def main():
         "assumptions": {
             "power": "150mA total 3V3 planning allocation; MCU 80mA and other loads 5mA are engineering allowances, not measured maxima. Flash 25mA requires cited operating conditions and read clock <=104MHz. LDO ground-current reserve 1mA is assumed.",
             "thermal": "VBUS 5.5V, no upstream drop credited; thetaJA 184C/W is datasheet No Heatsink reference, not measured board thermal resistance. 125C is a planning ceiling, not a guaranteed device limit.",
-            "capacitance": "Main-board capacitor nominal sums only; not effective capacitance or an inrush model. External board, sensor and cable capacitance, DC bias/tolerance, regulator startup and active load are not modeled.",
+            "capacitance": "Main-board capacitor nominal sums and any separately identified external-module values are not effective capacitance or an inrush model. External daughterboard and cable capacitance, DC bias/tolerance, regulator startup and active load are not modeled; downstream capacitance is not added directly to USB input capacitance.",
             "drop": "4.4V at daughterboard USB receptacle with 151mA is a low-voltage stress scenario, not permission to draw high-power current from a low-power port. Fuse R1max sum 1.03ohm is reference-temperature data, not a hot-resistance bound. Other loop resistance includes internal wire, contacts, PCB supply/ground and vias; external USB cable drop is already represented by receptacle voltage. 3.5V is a nominal3.3V plus0.2V dropout screening threshold, not proof of regulated output across tolerances.",
             "usb": "Segment sums include any branches and exclude pad traversal, via barrels, DB1 and cables. Nearest GND via distance alone does not qualify a return path. DRAFT E uses the 7628 candidate stackup and F.Cu pair over In1.Cu. Microstrip estimates omit solder mask, etch, finite plane edges, coplanar copper, tolerances and transitions; they do not qualify the actual route or its B.Cu escapes."
         },
@@ -132,7 +171,7 @@ def main():
         "voltage_drop_scenarios": drops,
         "stackup_candidates": candidates,
         "variants": variants,
-        "unresolved": ["Sensor supply/logic and maximum current", "Firmware current before configuration and during suspend",
+        "unresolved": ["Actual sensor hardware revision, loaded logic levels, maximum current and startup under the assumed +3V3 interface", "Firmware current before configuration and during suspend",
                        "Loaded LDO ground current and actual board/case thermal resistance", "Hot PTC and cable/connector loop resistance",
                        "Inrush waveform including capacitance behind regulators", "Fabricator-approved impedance geometry and finite reference-plane/transition effects",
                        "USB cable/connector/ESD/via discontinuities and measured full-speed signal quality"]

@@ -1087,7 +1087,7 @@
       "side": "B",
       "mpn": "PCB pad",
       "status": "3V3 MCU-side logical pads ONLY",
-      "note": "NO sensor connector, NO 5V sensor supply, NO approved module connection; level translation pending #2",
+      "note": "J2 exports SPI0/GND/3V3 under historical-module assumption; TP14/15 are spare motion/reset, not module contacts",
       "uuid": "0505eeeb-03c1-5720-91c8-849b996be8f6"
     },
     {
@@ -1110,7 +1110,7 @@
       "side": "B",
       "mpn": "PCB pad",
       "status": "3V3 MCU-side logical pads ONLY",
-      "note": "NO sensor connector, NO 5V sensor supply, NO approved module connection; level translation pending #2",
+      "note": "J2 exports SPI0/GND/3V3 under historical-module assumption; TP14/15 are spare motion/reset, not module contacts",
       "uuid": "739bd8d1-dc0d-50e3-bf1e-0c22832b7566"
     },
     {
@@ -1133,7 +1133,7 @@
       "side": "B",
       "mpn": "PCB pad",
       "status": "3V3 MCU-side logical pads ONLY",
-      "note": "NO sensor connector, NO 5V sensor supply, NO approved module connection; level translation pending #2",
+      "note": "J2 exports SPI0/GND/3V3 under historical-module assumption; TP14/15 are spare motion/reset, not module contacts",
       "uuid": "cf54aa08-c2b8-5b41-ab77-ad839b12b7e0"
     },
     {
@@ -1156,7 +1156,7 @@
       "side": "B",
       "mpn": "PCB pad",
       "status": "3V3 MCU-side logical pads ONLY",
-      "note": "NO sensor connector, NO 5V sensor supply, NO approved module connection; level translation pending #2",
+      "note": "J2 exports SPI0/GND/3V3 under historical-module assumption; TP14/15 are spare motion/reset, not module contacts",
       "uuid": "2bd3fd0b-e2cc-5bfa-bcaa-f73d78396d1b"
     },
     {
@@ -1179,7 +1179,7 @@
       "side": "B",
       "mpn": "PCB pad",
       "status": "3V3 MCU-side logical pads ONLY",
-      "note": "NO sensor connector, NO 5V sensor supply, NO approved module connection; level translation pending #2",
+      "note": "J2 exports SPI0/GND/3V3 under historical-module assumption; TP14/15 are spare motion/reset, not module contacts",
       "uuid": "1001347d-4983-56c0-b43e-60290dd6b806"
     },
     {
@@ -1202,7 +1202,7 @@
       "side": "B",
       "mpn": "PCB pad",
       "status": "3V3 MCU-side logical pads ONLY",
-      "note": "NO sensor connector, NO 5V sensor supply, NO approved module connection; level translation pending #2",
+      "note": "J2 exports SPI0/GND/3V3 under historical-module assumption; TP14/15 are spare motion/reset, not module contacts",
       "uuid": "c2794710-5433-5cb5-b6e2-9f24c67088ee"
     },
     {
@@ -1225,7 +1225,7 @@
       "side": "B",
       "mpn": "PCB pad",
       "status": "3V3 MCU-side logical pads ONLY",
-      "note": "NO sensor connector, NO 5V sensor supply, NO approved module connection; level translation pending #2",
+      "note": "J2 exports SPI0/GND/3V3 under historical-module assumption; TP14/15 are spare motion/reset, not module contacts",
       "uuid": "9decb295-2cd4-580e-910a-0c0c3d437511"
     },
     {
@@ -1248,7 +1248,7 @@
       "side": "B",
       "mpn": "PCB pad",
       "status": "3V3 MCU-side logical pads ONLY",
-      "note": "NO sensor connector, NO 5V sensor supply, NO approved module connection; level translation pending #2",
+      "note": "J2 exports SPI0/GND/3V3 under historical-module assumption; TP14/15 are spare motion/reset, not module contacts",
       "uuid": "2eaabcde-cba6-53cd-8129-bef2215fcb26"
     },
     {
@@ -1274,6 +1274,36 @@
       "status": "provisional sourcing",
       "note": "value fixed; manufacturer not selected",
       "uuid": "07226844-bf91-579f-9ad9-83e6c698af9a"
+    },
+    {
+      "ref": "J2",
+      "lib": "Connector_Generic_MountingPin:Conn_01x07_MountingPin",
+      "value": "KEYBALL / 3V3 ASSUMED",
+      "fp": "Connector_JST:JST_GH_SM07B-GHS-TB_1x07-1MP_P1.25mm_Horizontal",
+      "nets": {
+        "1": "SENSOR_SCLK_3V3",
+        "2": "SENSOR_CS_3V3",
+        "3": "GND",
+        "4": "+3V3",
+        "5": "GND",
+        "6": "SENSOR_MOSI_3V3",
+        "7": "SENSOR_MISO_3V3",
+        "MP": "GND"
+      },
+      "sch": [
+        660.4,
+        83.82
+      ],
+      "pos": [
+        136.5,
+        111.3
+      ],
+      "angle": 0,
+      "side": "B",
+      "mpn": "JST SM07B-GHS-TB(LF)(SN)",
+      "status": "draft cable interface; module revision and fit unverified",
+      "note": "Host GH 1.25mm 7-pin; GHR-07V-S cable housing. Contact-number mapping to published Keyball46; sensor-end mating part TBD. 3V3 ONLY; retain module TPS73601/TXS0102; no motion/reset contacts; verify current and waveforms before powering",
+      "uuid": "ce8ffddd-1ca3-5bd4-bb70-76153624a490"
     },
     {
       "ref": "#FLG01",

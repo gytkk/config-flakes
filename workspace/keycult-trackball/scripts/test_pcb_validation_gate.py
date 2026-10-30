@@ -14,7 +14,7 @@ from shapely.geometry import box, Point
 
 SOURCE = Path(__file__).with_name("validate_pcb.py")
 GATE = compile(ast.Module(body=[ast.parse(SOURCE.read_text()).body[-1]], type_ignores=[]), str(SOURCE), "exec")
-VARIANT_CODE = compile(ast.Module(body=[node for node in ast.parse(SOURCE.read_text()).body if (isinstance(node, ast.FunctionDef) and node.name in {'indexed_keys', 'circuit_net_matches', 'reservation_matches', 'usb_connector_matches', 'usb_uncovered_area'}) or (isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == 'VARIANTS' for target in node.targets))], type_ignores=[]), str(SOURCE), "exec")
+VARIANT_CODE = compile(ast.Module(body=[node for node in ast.parse(SOURCE.read_text()).body if (isinstance(node, ast.FunctionDef) and node.name in {'indexed_keys', 'circuit_net_matches', 'reservation_matches', 'usb_connector_matches', 'usb_uncovered_area', 'sensor_connector_matches', 'outline_matches'}) or (isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == 'VARIANTS' for target in node.targets))], type_ignores=[]), str(SOURCE), "exec")
 
 class DraftGateTests(unittest.TestCase):
     def result(self, draft=True, errs=None, viol=None, unconn=None):
@@ -68,6 +68,34 @@ class VariantTests(unittest.TestCase):
         self.assertAlmostEqual(x2 - x1, 57.15)
         self.assertEqual(y1, 52.7)
         self.assertAlmostEqual(y2, 100 + 28.575)
+
+    def test_sensor_supply_and_numbering_are_independent_of_usb(self):
+        matches = self.namespace['sensor_connector_matches']
+        pins = {'1':'SENSOR_SCLK_3V3','2':'SENSOR_CS_3V3','3':'GND','4':'+3V3','5':'GND','6':'SENSOR_MOSI_3V3','7':'SENSOR_MISO_3V3','MP':'GND'}
+        self.assertTrue(matches(pins))
+        for bad in ({**pins,'4':'VBUS_FUSED'}, {**pins,'6':pins['7'],'7':pins['6']}, {**pins,'MP':'+3V3'}):
+            self.assertFalse(matches(bad))
+
+    def test_native_opening_rejects_missing_shifted_or_square_edges(self):
+        import re
+        native = (SOURCE.parents[1] / 'design/pcb/62/keycult62.kicad_pcb').read_text()
+        # Native records can be compact or formatted; each edge ends at its UUID.
+        records = re.findall(r'\(gr_(line|arc)\s+(.*?)\(uuid\s+"[^"]+"\)\s*\)', native, re.S)
+        edges = []
+        for kind, record in records:
+            if '(layer "Edge.Cuts")' not in record:
+                continue
+            edge = {}
+            for key in ('start','end','mid'):
+                match = re.search(r'\('+key+r'\s+([-\d.]+)\s+([-\d.]+)\)',record)
+                if match:edge[key] = tuple(map(float,match.groups()))
+            edges.append(edge)
+        matches = self.namespace['outline_matches']
+        self.assertTrue(matches(edges,62))
+        self.assertFalse(matches(edges,65))
+        self.assertFalse(matches(edges[:-1],62))
+        self.assertFalse(matches([{**e,'start':(e['start'][0]+.1,e['start'][1])} for e in edges],62))
+        self.assertFalse(matches([{k:v for k,v in e.items() if k!='mid'} for e in edges],62))
 
     def test_no_connect_requires_own_single_pad_net(self):
         matches = self.namespace['circuit_net_matches']

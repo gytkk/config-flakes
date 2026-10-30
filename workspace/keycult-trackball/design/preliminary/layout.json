@@ -2447,7 +2447,17 @@
         "height_u": 1
       }
     ],
-    "status": "mount/support study only; no cutout, larger ball or stiffness improvement specified"
+    "status": "priority draft; PCB opening assumed; holder fit and stiffness unverified",
+    "pcb_opening": {
+      "bounds_mm": [
+        -24,
+        -35,
+        24,
+        25
+      ],
+      "corner_radius_mm": 1.0,
+      "status": "design assumption; not measured holder clearance or fabrication approval"
+    }
   },
   "plate_visualization": "generic rectangular bounding envelope; not the official contour or case opening"
 }

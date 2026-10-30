@@ -44,6 +44,49 @@ def rect(x, y, w, h, z=0):
     return Part.Face(Part.makePolygon([V(x,y,z), V(x+w,y,z), V(x+w,y+h,z), V(x,y+h,z), V(x,y,z)]))
 
 
+def pcb_report(count, variant):
+    directory = ROOT / 'design/pcb' / ('62' if count == 62 else '')
+    path = directory / f'keycult{count}.kicad_pcb'
+    report = json.loads((directory / 'reports/validation.json').read_text())
+    if sha(path) != report['artifact_sha256'][path.name]:
+        raise ValueError('PCB has changed since native validation; rerun validate_pcb.py')
+    if (report['key_count'] != count or report['layout_variant'] != ('preferred' if count == 65 else 'rear_clearance')
+            or report['structural_errors'] or report.get('pcb_opening') != variant.get('pcb_opening')):
+        raise ValueError('Validated PCB geometry differs from layout; rerun validate_pcb.py')
+    return path, report
+
+
+def pcb_shape(report, top_z, thickness):
+    xmin, ymin, xmax, ymax = report['envelope_bounds_mm']
+    z = top_z-thickness
+    board = Part.makeBox(xmax-xmin, ymax-ymin, thickness, V(xmin-180, ymin-100, z))
+    opening = report.get('pcb_opening')
+    if opening:
+        x0, y0, x1, y1 = opening['bounds_mm']
+        radius = opening['corner_radius_mm']
+        w, h = x1-x0, y1-y0
+        if not all(math.isfinite(v) for v in (x0, y0, x1, y1, radius)) or not 0 < 2*radius < min(w, h):
+            raise ValueError('Invalid rounded PCB opening dimensions')
+        tool = Part.makeBox(w-2*radius, h, thickness, V(x0+radius, y0, z)).fuse(
+            Part.makeBox(w, h-2*radius, thickness, V(x0, y0+radius, z)))
+        for x in (x0+radius, x1-radius):
+            for y in (y0+radius, y1-radius):
+                tool = tool.fuse(Part.makeCylinder(radius, thickness, V(x, y, z)))
+        tool = tool.removeSplitter()
+        expected_volume = (w*h-(4-math.pi)*radius**2)*thickness
+        if not tool.isValid() or len(tool.Solids) != 1 or abs(tool.Volume-expected_volume) > 1e-5:
+            raise ValueError('Rounded PCB opening reconstruction failed')
+        opened = board.cut(tool).removeSplitter()
+        if abs(board.Volume-opened.Volume-expected_volume) > 1e-5:
+            raise ValueError('PCB opening is not fully inside the native envelope')
+        board = opened
+        assert not board.isInside(V((x0+x1)/2, (y0+y1)/2, z+thickness/2), 1e-7, True), 'PCB opening center is filled'
+        assert board.isInside(V(x0+radius/10, y0+radius/10, z+thickness/2), 1e-7, True), 'Rounded PCB corner was removed'
+    if not board.isValid() or len(board.Solids) != 1 or board.Volume <= 0:
+        raise ValueError('Expected one valid PCB reference solid')
+    return board
+
+
 def feature(doc, name, shape, note):
     obj = doc.addObject("Part::Feature", name)
     obj.Label = name
@@ -112,7 +155,7 @@ def cap_width(key):
     return 18 + (key['width_u'] - 1) * 19.05
 
 
-def svg(face, carrier_face, keys, count, path):
+def svg(face, carrier_face, keys, count, path, pcb_opening):
     s = STUDY
     paths = ' '.join(wire_path(w) for w in face.Wires)
     frame = ' '.join(wire_path(w) for w in carrier_face.Wires)
@@ -126,7 +169,7 @@ def svg(face, carrier_face, keys, count, path):
 <circle cx="0" cy="0" r="{s['ball_radius']:g}" fill="#fdba74" fill-opacity=".6" stroke="#ea580c" stroke-width=".3"/>
 <g font-family="sans-serif" font-size="3"><text x="-155" y="66">Orange: {2*s['ball_radius']:g}mm ball projection. Teal: proposed carrier, not a Keyball holder.</text>
 <text x="-155" y="72">Plate opening D{s['opening_diameter']:g} / carrier {s['carrier_width']:g}x{s['carrier_width']:g}x{s['carrier_thickness']:g} / 4x D{s['mount_hole_diameter']:g} on {s['mount_pitch']:g}mm square: study assumptions.</text>
-<text x="-155" y="78">PCB is still uncut. Ball center Z={s['ball_center_z']:g}; PCB top Z={s['pcb_top_z']:g} assumed. See interference report.</text></g></svg>''')
+<text x="-155" y="78">PCB: {'native rounded central opening' if pcb_opening else 'uncut'}. Ball center Z={s['ball_center_z']:g}; PCB top Z={s['pcb_top_z']:g} assumed. See interference report.</text></g></svg>''')
 
 
 def build(count, layout, face, blank, donor):
@@ -136,10 +179,7 @@ def build(count, layout, face, blank, donor):
     keys = layout[variant]['keys']
     key_count = len(keys)
     directory = ROOT / 'design/pcb' / ('62' if count == 62 else '')
-    report = json.loads((directory/'reports/validation.json').read_text())
-    pcb = directory/f'keycult{count}.kicad_pcb'
-    if sha(pcb) != report['artifact_sha256'][pcb.name]:
-        raise ValueError("PCB has changed since native coordinate validation; rerun validate_pcb.py")
+    pcb, report = pcb_report(count, layout[variant])
     coordinates = json.loads((directory/'reports/switch-coordinates.json').read_text())
     actual = {k['id']:[k['actual_stem_mm'][0]-180,k['actual_stem_mm'][1]-100] for k in coordinates}
     if set(actual) != {k['id'] for k in keys} or any(math.dist(actual[k['id']],[k['x_mm'],k['y_mm']]) > 1e-5 for k in keys):
@@ -171,18 +211,16 @@ def build(count, layout, face, blank, donor):
         carrier = carrier.cut(Part.Face(Part.Wire([Part.makeCircle(s['mount_hole_diameter']/2,V(x,y,0))])))
     carrier = carrier.removeSplitter()
     adapter = feature(doc,'CarrierConcept',carrier.extrude(V(0,0,s['carrier_thickness'])),'Own mounting concept: M2 clearance holes; no verified holder or sensor interface. Rear shelf only on Keycult62.')
-    xmin,ymin,xmax,ymax = report['envelope_bounds_mm']
-    board = Part.makeBox(xmax-xmin,ymax-ymin,s['pcb_thickness'],V(xmin-180,ymin-100,s['pcb_top_z']-s['pcb_thickness']))
-    board_obj = feature(doc,'CurrentPCBEnvelope',board,'Actual XY envelope; top Z assumed in Study; no central cutout in native PCB')
+    board = pcb_shape(report, s['pcb_top_z'], s['pcb_thickness'])
+    board_obj = feature(doc,'CurrentPCBEnvelope',board,'Validated native XY envelope and opening; top Z and thickness assumed in Study')
     ball = Part.makeSphere(s['ball_radius'],V(0,0,s['ball_center_z']))
     ball_obj = feature(doc,'BallAtIllustrativeZ8',ball,'Illustration, not the supported position in an actual holder')
     raised = feature(doc,'BallAtAlternativeZ13',Part.makeSphere(s['ball_radius'],V(0,0,s['alternative_ball_center_z'])),'Alternative height only; holder clearance unverified')
-    proposal = feature(doc,'UnappliedPCBOpeningTool',Part.makeCylinder(radius,s['pcb_thickness'],V(0,0,s['pcb_top_z']-s['pcb_thickness'])),'Proposed mechanical opening, NOT applied to KiCad and NOT approved holder opening')
+    proposal = feature(doc,'UnappliedPCBOpeningTool',Part.makeCylinder(radius,s['pcb_thickness'],V(0,0,s['pcb_top_z']-s['pcb_thickness'])),'Circular study tool, distinct from any native rounded opening; not an approved holder opening')
     caps = feature(doc,'KeycapPlanProxies',Part.makeCompound([rect(k['x_mm']-cap_width(k)/2,k['y_mm']-9,cap_width(k),18,5).extrude(V(0,0,5)) for k in keys]),'Width 18+(width_u-1)*19.05mm, height 18mm; Z=5..10 illustrative, no switch travel or real keycap height model')
     pcb_clash = ball.common(board).Volume
-    # A clash is the expected finding of this scenario, not a pass hidden by removal.
     expected_clash = pcb_clash > 0
-    feature(doc,'BallPCBInterference',ball.common(board),'Known conflict in current uncut PCB at the illustrative ball height')
+    feature(doc,'BallPCBInterference',ball.common(board),'Calculated intersection with current native PCB at the illustrative ball height')
     for obj in (plate,adapter):
         if not obj.Shape.isValid() or len(obj.Shape.Solids)!=1:
             raise ValueError(f'{count}: {obj.Name} must remain one valid solid')
@@ -207,7 +245,7 @@ def build(count, layout, face, blank, donor):
     if not reread.isValid() or abs(reread.Volume-plate.Shape.Volume)>1e-4:
         raise ValueError('STEP roundtrip mismatch')
     write_dxf(plate_face,folder/f'plate-{count}-DRAFT.dxf')
-    svg(plate_face,carrier,keys,key_count,folder/'plan.svg')
+    svg(plate_face,carrier,keys,key_count,folder/'plan.svg',report.get('pcb_opening'))
     measurements = dict(keys=key_count,plate_valid=True,plate_solids=len(plate.Shape.Solids),
         exact_outer_wire_preserved_area_error_mm2=perimeter_error,switch_coordinate_max_error_mm=max(math.dist(actual[k['id']],[k['x_mm'],k['y_mm']]) for k in keys),
         switch_openings=key_count,central_openings=1,carrier_mount_holes=4,
@@ -216,7 +254,7 @@ def build(count, layout, face, blank, donor):
         ball_pcb_interference_mm3=pcb_clash,expected_ball_pcb_conflict=expected_clash,
         ball_plate_interference_mm3=ball.common(plate.Shape).Volume,
         alternative_z13_ball_to_pcb_gap_mm=raised.Shape.distToShape(board)[0],
-        pcb_native_sha256=sha(pcb),pcb_modified=False,
+        pcb_native_sha256=sha(pcb),pcb_modified=False,pcb_opening=report.get('pcb_opening'),
         step_roundtrip_volume_error_mm3=abs(reread.Volume-plate.Shape.Volume))
     (folder/'checks.json').write_text(json.dumps(measurements,indent=2)+'\n')
     App.closeDocument(doc.Name)
@@ -232,12 +270,12 @@ def main():
     layout = json.loads((ROOT/'design/preliminary/layout.json').read_text())
     face,blank,donor = source_blank()
     results = [build(count,layout,face,blank,donor) for count in (65,62)]
-    report = dict(status='mechanical study only; known PCB interference, no fit or manufacturing approval',
+    report = dict(status='mechanical study only; current native PCB geometry, no fit or manufacturing approval',
                   freecad=App.Version(),parameters=STUDY,source_step_sha256=STEP_SHA,
                   transform='x=STEP.x-142.875; y=STEP.z-47.625; z=STEP.y. PCB x-180,y-100. Physical datum unverified.',
                   dxf_curve_deflection_mm=.01,results=results,
-                  unresolved=['Case revision and registration','Switch clip opening/tolerance and plate material',
-                              'Actual holder/sensor CAD and fastening interface','PCB opening or acceptable raised assembly',
+                  unresolved=['Case revision and registration','Switch clip opening/tolerance and aluminum alloy/thickness',
+                              'Actual holder/sensor CAD and fastening interface','Actual-holder fit of PCB opening or raised assembly',
                               'Floor clearance, screws, component heights, wiring and assembly access','Plate/carrier stiffness and optical alignment under load'])
     (LOCAL/'review.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))

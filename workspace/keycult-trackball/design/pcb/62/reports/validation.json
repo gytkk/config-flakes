@@ -26,28 +26,28 @@
   ],
   "switch_count": 62,
   "diode_count": 62,
-  "footprint_count": 174,
+  "footprint_count": 175,
   "net_count": 116,
-  "track_segment_count": 1602,
-  "via_count": 204,
-  "signal_tracks_on_ground_layer": 3,
+  "track_segment_count": 1282,
+  "via_count": 188,
+  "signal_tracks_on_ground_layer": 0,
   "keepout_intersections": [],
   "structural_errors": [],
   "native_export_readback": {
     "exports/back.svg": {
-      "bytes": 344288,
+      "bytes": 336520,
       "viewBox": "0.0000 0.0000 284.9880 94.5896"
     },
     "exports/front.svg": {
-      "bytes": 286541,
+      "bytes": 283090,
       "viewBox": "0.0000 0.0000 284.9880 94.5896"
     },
     "exports/ground.svg": {
-      "bytes": 542436,
+      "bytes": 533269,
       "viewBox": "0.0000 0.0000 284.9880 94.5896"
     },
     "exports/schematic/keycult62.svg": {
-      "bytes": 2908779,
+      "bytes": 2976547,
       "viewBox": "0.0000 0.0000 840.9940 594.0044"
     },
     "exports/schematic.pdf": {
@@ -98,8 +98,8 @@
       "json",
       "--severity-all",
       "-o",
-      "/work/design/pcb/62/reports/erc.json",
-      "/work/design/pcb/62/keycult62.kicad_sch"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/reports/erc.json",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/keycult62.kicad_sch"
     ],
     [
       "kicad-cli",
@@ -109,8 +109,8 @@
       "--format",
       "kicadxml",
       "-o",
-      "/work/design/pcb/62/reports/netlist.xml",
-      "/work/design/pcb/62/keycult62.kicad_sch"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/reports/netlist.xml",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/keycult62.kicad_sch"
     ],
     [
       "kicad-cli",
@@ -123,8 +123,8 @@
       "json",
       "--severity-all",
       "-o",
-      "/work/design/pcb/62/reports/drc.json",
-      "/work/design/pcb/62/keycult62.kicad_pcb"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/reports/drc.json",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/keycult62.kicad_pcb"
     ],
     [
       "kicad-cli",
@@ -133,8 +133,8 @@
       "pdf",
       "--exclude-pdf-property-popups",
       "-o",
-      "/work/design/pcb/62/exports/schematic.pdf",
-      "/work/design/pcb/62/keycult62.kicad_sch"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/exports/schematic.pdf",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/keycult62.kicad_sch"
     ],
     [
       "kicad-cli",
@@ -142,8 +142,8 @@
       "export",
       "svg",
       "-o",
-      "/work/design/pcb/62/exports/schematic/",
-      "/work/design/pcb/62/keycult62.kicad_sch"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/exports/schematic/",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/keycult62.kicad_sch"
     ],
     [
       "kicad-cli",
@@ -156,8 +156,8 @@
       "--fit-page-to-board",
       "--exclude-drawing-sheet",
       "-o",
-      "/work/design/pcb/62/exports/front.svg",
-      "/work/design/pcb/62/keycult62.kicad_pcb"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/exports/front.svg",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/keycult62.kicad_pcb"
     ],
     [
       "kicad-cli",
@@ -170,8 +170,8 @@
       "--fit-page-to-board",
       "--exclude-drawing-sheet",
       "-o",
-      "/work/design/pcb/62/exports/back.svg",
-      "/work/design/pcb/62/keycult62.kicad_pcb"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/exports/back.svg",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/keycult62.kicad_pcb"
     ],
     [
       "kicad-cli",
@@ -184,8 +184,8 @@
       "--fit-page-to-board",
       "--exclude-drawing-sheet",
       "-o",
-      "/work/design/pcb/62/exports/ground.svg",
-      "/work/design/pcb/62/keycult62.kicad_pcb"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/exports/ground.svg",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/keycult62.kicad_pcb"
     ],
     [
       "kicad-cli",
@@ -198,14 +198,14 @@
       "--scale",
       "0",
       "-o",
-      "/work/design/pcb/62/exports/board-layers.pdf",
-      "/work/design/pcb/62/keycult62.kicad_pcb"
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/exports/board-layers.pdf",
+      "/home/gytkk/ws/workspace/keycult-trackball/design/pcb/62/keycult62.kicad_pcb"
     ]
   ],
   "artifact_sha256": {
     "keycult62.kicad_pro": "1777de780dac702d509f434fef68f0f6280efa6d7621feddbdec4600f1a251b8",
-    "keycult62.kicad_sch": "ec88717799e90a42800fdd1fbf8ef399adf7a7addbf812e33be1163669d529a7",
-    "keycult62.kicad_pcb": "6b02c66e45482cae42c10bbf6917c0fd90f8ddbd6fb896914e18484b729f0625"
+    "keycult62.kicad_sch": "135cf6515dc5b746045b2bbb161ae79570a078b63a4c6bcfc5d917fe0d6747cd",
+    "keycult62.kicad_pcb": "7433793fca05d014049d450d2130544e944f69434926bb623427b81e832451cf"
   },
   "usb_reference_review": {
     "f_cu_width_mm": 0.29,
@@ -218,8 +218,25 @@
     "maximum_signal_via_to_ground_via_mm": 2.294073,
     "note": "Saved refilled In1 polygons, make_valid for KiCad touching contours. Projection only; .51mm disks exclude signal-via antipads. 3mm stitching rule is a project study condition, not USB compliance. Finite plane edges, transitions and actual impedance still require qualification."
   },
-  "ground_layer_tracks_by_net": {
-    "COL12": 3,
-    "+3V3": 3
+  "ground_layer_tracks_by_net": {},
+  "pcb_opening": {
+    "bounds_mm": [
+      -24,
+      -35,
+      24,
+      25
+    ],
+    "corner_radius_mm": 1.0,
+    "status": "design assumption; not measured holder clearance or fabrication approval"
+  },
+  "sensor_connector_pinout": {
+    "1": "SENSOR_SCLK_3V3",
+    "2": "SENSOR_CS_3V3",
+    "3": "GND",
+    "4": "+3V3",
+    "5": "GND",
+    "6": "SENSOR_MOSI_3V3",
+    "7": "SENSOR_MISO_3V3",
+    "MP": "GND"
   }
 }

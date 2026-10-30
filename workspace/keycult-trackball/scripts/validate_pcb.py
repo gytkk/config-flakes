@@ -31,6 +31,20 @@ def reservation_matches(shape,reservation):
  return shape.is_valid and shape.hausdorff_distance(reservation)<=1e-5 and shape.symmetric_difference(reservation).area<1e-3
 def usb_connector_matches(pad_nets):
  return pad_nets=={'1':'VBUS_USB','2':'USB_DM','3':'USB_DP','4':'GND','MP':'GND'}
+def sensor_connector_matches(pad_nets):
+ return pad_nets=={'1':'SENSOR_SCLK_3V3','2':'SENSOR_CS_3V3','3':'GND','4':'+3V3','5':'GND','6':'SENSOR_MOSI_3V3','7':'SENSOR_MISO_3V3','MP':'GND'}
+def outline_matches(edges,keys):
+ # Compare exact lines and arc midpoints: a notch, missing edge or wrong corner must fail.
+ outer=[((37.5,52.7),(322.5,52.7)),((322.5,52.7),(322.5,147.3)),((322.5,147.3),(37.5,147.3)),((37.5,147.3),(37.5,52.7))]
+ expected=[{'start':a,'end':b} for a,b in outer]
+ if keys==62:
+  expected.extend({'start':a,'end':b} for a,b in [((157,65),(203,65)),((204,66),(204,124)),((203,125),(157,125)),((156,124),(156,66))])
+  d=2**-.5
+  expected.extend({'start':a,'mid':m,'end':b} for a,m,b in [((203,65),(203+d,66-d),(204,66)),((204,124),(203+d,124+d),(203,125)),((157,125),(157-d,124+d),(156,124)),((156,66),(157-d,66-d),(157,65))])
+ def normalized(edge):
+  ends=sorted(tuple(round(v,5) for v in edge[k]) for k in ('start','end'))
+  return tuple(ends)+(tuple(round(v,5) for v in edge['mid']) if 'mid' in edge else (),)
+ return sorted(map(normalized,edges))==sorted(map(normalized,expected))
 def usb_uncovered_area(trace_area,reference,transition_exclusions):
  return trace_area.difference(reference).difference(transition_exclusions).area
 ROOT=Path(__file__).resolve().parents[1]
@@ -57,6 +71,11 @@ check(len(external)==1 and external[0]['value']=='UDB C5-JSH / EXTERNAL' and not
 check('DB1' not in fps,'External daughterboard must not be placed on the main PCB')
 check(set(fps)==set(expectedparts),'Schematic/PCB footprint reference set differs')
 check('J1' in fps,'Missing UDB cable connector')
+check(('J2' in fps)==(args.keys==62),'Sensor J2 must be present only on the 62-key draft')
+if 'J2' in fps:
+ j=fps['J2']
+ check(sensor_connector_matches({p.GetNumber():p.GetNetname() for p in j.Pads()}),'J2 differs from the 3V3 Keyball contact map')
+ check(j.GetFPID().GetLibItemName()=='JST_GH_SM07B-GHS-TB_1x07-1MP_P1.25mm_Horizontal' and j.GetLayer()==pcb.B_Cu,'Wrong J2 footprint or side')
 if 'J1' in fps:
  j=fps['J1']
  check(usb_connector_matches({p.GetNumber():p.GetNetname() for p in j.Pads()}),'J1 differs from the UDB contact pinout')
@@ -138,9 +157,19 @@ for z in zones:
    g=Polygon(chain(filled.COutline(j)),[chain(filled.CHole(j,h)) for h in range(filled.HoleCount(j))])
    if g.intersection(fill_keepout).area>1e-8:bad.append('filled-copper:'+z.GetNetname())
 check(not bad,'Component/copper intersects central reservation: '+str(sorted(set(bad))))
-# A rectangular envelope only: no inner Edge.Cuts and no inherited tray mounting holes.
+# Read the actual contour, independently of the generator's dimension metadata.
 edges=[x for x in b.GetDrawings() if x.GetLayer()==pcb.Edge_Cuts]
-check(len(edges)==4,'Working envelope must have four edges, no invented central cutout')
+edge_geometry=[]
+for e in edges:
+ check(e.GetShape() in (pcb.SHAPE_T_SEGMENT,pcb.SHAPE_T_ARC),'Unexpected Edge.Cuts primitive')
+ record={'start':xy(e.GetStart()),'end':xy(e.GetEnd())}
+ if e.GetShape()==pcb.SHAPE_T_ARC:record['mid']=xy(e.GetArcMid())
+ edge_geometry.append(record)
+check(outline_matches(edge_geometry,args.keys),'Board outline or 48x60 R1 inner opening differs from draft')
+opening=layout[variant].get('pcb_opening')
+check((opening is not None)==(args.keys==62),'Opening metadata missing or on wrong variant')
+if opening:
+ check(opening['bounds_mm']==[-24,-35,24,25] and opening['corner_radius_mm']==1,'Opening metadata differs from native contour requirement')
 epts=[xy(p) for e in edges for p in [e.GetStart(),e.GetEnd()]]
 bounds=[min(p[0] for p in epts),min(p[1] for p in epts),max(p[0] for p in epts),max(p[1] for p in epts)]
 check(all(abs(a-z)<.00001 for a,z in zip(bounds,[37.5,52.7,322.5,147.3])),'GH60 scalar envelope bounds differ from 285.0 x 94.6 mm')
@@ -187,6 +216,8 @@ check(len(usb_vias)==8 and all(d<=3 for d in via_ground_distances),'USB transiti
 summary={'status':('validation failed' if errs or viol or (not args.draft and unconn) else 'reviewable draft; NOT manufacturing approval'),'key_count':len(keys),'layout_variant':variant,'keepout_mm':circuit['keepout_mm'],'kicad_version':pcb.GetBuildVersion(),'erc_count':len(eitems),'erc_by_type':dict(Counter(v['type'] for v in eitems)),'drc_count':len(viol),'drc_by_type':dict(Counter(v['type'] for v in viol)),'drc_by_severity':dict(Counter(v['severity'] for v in viol)),'unconnected_item_count':len(unconn),'unconnected_nets':sorted({i['description'].split('[')[1].split(']')[0] for v in unconn for i in v['items'] if '[' in i['description']}),'schematic_parity_count':len(parity),'independent_netlist_mismatch_count':len(netdiff),'envelope_bounds_mm':bounds,'switch_count':len(set(fps)&switch_refs),'diode_count':len(set(fps)&diode_refs),'footprint_count':len(fps),'net_count':len(list(b.GetNetInfo().NetsByNetcode()))-1,'track_segment_count':sum(not isinstance(t,pcb.PCB_VIA) for t in b.GetTracks()),'via_count':sum(isinstance(t,pcb.PCB_VIA) for t in b.GetTracks()),'signal_tracks_on_ground_layer':sum(t.GetLayer()==pcb.In1_Cu and t.GetNetname() not in ('GND','+3V3','+1V1') for t in b.GetTracks() if not isinstance(t,pcb.PCB_VIA)),'keepout_intersections':sorted(set(bad)),'structural_errors':errs,'native_export_readback':readback,'commands':commands,'artifact_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in [D/(NAME+ext) for ext in ['.kicad_pro','.kicad_sch','.kicad_pcb']]}}
 summary['usb_reference_review']={'f_cu_width_mm':.29,'minimum_f_cu_pair_edge_gap_mm':round(pair_gap,6),'uncovered_projection_mm2':uncovered,'transition_exclusion_radius_mm':.51,'maximum_signal_via_to_ground_via_mm':round(max(via_ground_distances,default=0),6),'note':'Saved refilled In1 polygons, make_valid for KiCad touching contours. Projection only; .51mm disks exclude signal-via antipads. 3mm stitching rule is a project study condition, not USB compliance. Finite plane edges, transitions and actual impedance still require qualification.'}
 summary['ground_layer_tracks_by_net']=dict(Counter(t.GetNetname() for t in b.GetTracks() if not isinstance(t,pcb.PCB_VIA) and t.GetLayer()==pcb.In1_Cu))
+summary['pcb_opening']=opening
+summary['sensor_connector_pinout']={p.GetNumber():p.GetNetname() for p in fps['J2'].Pads()} if 'J2' in fps else None
 (R/'validation.json').write_text(json.dumps(summary,indent=2,ensure_ascii=False)+'\n');(R/'switch-coordinates.json').write_text(json.dumps(coord,indent=2)+'\n')
 print(json.dumps({k:v for k,v in summary.items() if k not in ['commands','native_export_readback','artifact_sha256']},indent=2))
 if errs or viol or (not args.draft and unconn):raise SystemExit(1)

@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 
 import sexpdata
 
-from analyze_electrical import microstrip_ohms, thermal, usb_geometry
+from analyze_electrical import microstrip_ohms, sensor_review, thermal, usb_geometry
 from usb_routing import apply_usb_route
 
 
@@ -38,6 +38,36 @@ class ElectricalReviewTests(unittest.TestCase):
         self.assertEqual(thermal(150, 50)["estimated_junction_c"], 111.73)
         self.assertGreater(thermal(200, 50)["estimated_junction_c"], 125)
         self.assertEqual(thermal(150, 60)["estimated_junction_c"] - thermal(150, 50)["estimated_junction_c"], 10)
+
+    def test_sensor_loads_keep_startup_and_downstream_capacitance_separate(self):
+        parts = {"J2": {"nets": {"1": "SENSOR_SCLK_3V3", "2": "SENSOR_CS_3V3", "3": "GND",
+                                  "4": "+3V3", "5": "GND", "6": "SENSOR_MOSI_3V3", "7": "SENSOR_MISO_3V3", "MP": "GND"}}}
+        report = sensor_review(parts)
+        scenarios = report["steady_load_scenarios"]
+        self.assertEqual([row["total_3v3_allocation_ma"] for row in scenarios], [150, 160, 180])
+        self.assertEqual([row["input_before_daughterboard_leakage_ma"] for row in scenarios], [151, 161, 181])
+        self.assertEqual([row["thermal_at_50c"]["estimated_junction_c"] for row in scenarios], [111.73, 115.78, 123.88])
+        startup = report["startup_current_screen"]
+        self.assertEqual(startup["conservative_pmw_ramp_sum_ma"], 130)
+        self.assertEqual(startup["host_plus_pmw_ramp_ma"], 240)
+        caps = report["external_module_nominal_capacitance_uf"]
+        self.assertEqual(caps["connector_input_bulk"], 10)
+        self.assertEqual(caps["regulated_downstream_bulk"], 20)
+
+    def test_sensor_connector_rejects_5v_power_and_swapped_spi(self):
+        for contact, wrong_net in (("4", "VBUS_FUSED"), ("4", "GND"),
+                                   ("3", "+3V3"), ("7", "SENSOR_MOSI_3V3"), ("MP", "+3V3")):
+            with self.subTest(contact=contact, wrong_net=wrong_net):
+                nets = {"1": "SENSOR_SCLK_3V3", "2": "SENSOR_CS_3V3", "3": "GND", "4": "+3V3",
+                        "5": "GND", "6": "SENSOR_MOSI_3V3", "7": "SENSOR_MISO_3V3", "MP": "GND"}
+                nets[contact] = wrong_net
+                with self.assertRaisesRegex(ValueError, "J2 sensor contact map changed"):
+                    sensor_review({"J2": {"nets": nets}})
+
+    def test_logical_pad_variant_does_not_claim_sensor_power_integration(self):
+        report = sensor_review({})
+        self.assertIn("no module power or connector", report["status"])
+        self.assertNotIn("steady_load_scenarios", report)
 
     def test_microstrip_candidate_and_invalid_dimensions(self):
         self.assertAlmostEqual(microstrip_ohms(0.29, 0.2, 0.2104, 0.035, 4.4), 90.34, places=2)

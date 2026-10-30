@@ -1,13 +1,13 @@
 # Keycult65 and Keycult62 KiCad designs
 
-**DRAFT E, not for fabrication or assembly.** Both variants use the same RP2040 circuit and stable key references. Open the corresponding project in **KiCad 10.0.7**. The schematic and PCB are native editable CAD.
+**65-key DRAFT E and 62-key DRAFT F, not for fabrication or assembly.** Both variants use the same RP2040 circuit and stable key references. DRAFT F adds an assumed rounded central opening and host-side sensor harness connector J2. Open the corresponding project in **KiCad 10.0.7**. The schematic and PCB are native editable CAD.
 
 | Variant | Project | Schematic | PCB | Validation |
 | --- | --- | --- | --- | --- |
 | 65 keys | [keycult65.kicad_pro](keycult65.kicad_pro) | [Schematic](keycult65.kicad_sch) | [PCB](keycult65.kicad_pcb) | [Report](reports/validation.json) |
 | 62 keys | [keycult62.kicad_pro](62/keycult62.kicad_pro) | [Schematic](62/keycult62.kicad_sch) | [PCB](62/keycult62.kicad_pcb) | [Report](62/reports/validation.json) |
 
-Both variants pass strict validation after regeneration and saved-route replay: zero ERC violations, DRC violations, unconnected items and schematic/PCB mismatches. The reports contain the counts and CAD hashes. Static electrical checks do not establish powered operation or case fit. The user-approved design assumption is an unmodified external UDB C5-JSH, represented by DB1 in the schematic and assembly BOM, with no footprint on the main PCB. J1 implements its 1:1 cable interface. The sensor interface remains logical pads pending hardware identification.
+Both variants pass strict native validation with zero ERC findings, DRC findings, unconnected items, schematic parity errors and independent netlist mismatches. The 62-key result follows fresh seed generation and saved SES replay, including local matrix, QSPI and power escape repairs recorded in its route manifest. The reports bind these results to the CAD hashes. Static electrical checks do not establish powered operation or case fit. The user-approved design assumption is an unmodified external UDB C5-JSH, represented by DB1 in the schematic and assembly BOM, with no footprint on the main PCB. J1 implements its 1:1 cable interface. The 62-key sensor interface uses the explicit draft assumption below; the actual module remains unidentified.
 
 ## Review entry points
 
@@ -88,7 +88,7 @@ The J1-side segment-sum difference is 5.9693mm. These are measured routing prope
 
 Strict validation refills zones and checks the full-width projection of every F.Cu USB segment against the saved In1.Cu GND polygons. Both variants have zero uncovered area outside explicit 0.51mm-radius disks around USB transition vias. Those disks exclude signal-via antipads, not unrelated voids elsewhere on the route. The measured minimum F.Cu pair edge gap is 0.2mm. The layer PDF supports inspection of the J1 escape, margin pair, test pads, resistor transitions and ground fill. These geometric checks do not qualify finite plane edges, transitions or cable discontinuities.
 
-DRAFT E uses a regenerated base route for the current 1.5u M1/M2 coordinates. After SES import, `scripts/usb_routing.py` applies the connector-side USB recipe and ground changes. Validation uses official KiCad 10.0.7 in a local Docker container. The route manifest includes this script's hash. Native schematic parity, external DB1 netlist, coordinates and central reservations are checked again. Both variants have fresh native PDF/SVG exports and validation reports.
+DRAFT E uses a regenerated base route for the current 1.5u M1/M2 coordinates; the 62-key DRAFT F base route also includes J2. After SES import, `scripts/usb_routing.py` applies the connector-side USB recipe and ground changes. Current validation uses KiCad 10.0.7 from the parent repository's pinned Nix input. The route manifest includes the USB script's hash. Native schematic parity, external DB1 netlist, coordinates and central reservations are checked again. Both variants have native PDF/SVG exports and validation reports.
 
 DB1 is the unmodified [C5-JSH at revision `2b6c52aa2de6f9f60ca99c6250e4bdf01e8f4eea`](https://github.com/Unified-Daughterboard/UDB-C-JSH/blob/2b6c52aa2de6f9f60ca99c6250e4bdf01e8f4eea/UDB.kicad_sch), adopted as a design assumption on 2026-10-30. Its USB-C connector, two 5.1k CC pull-downs, TPD4E05U06DQAR data-line ESD array, ASMD1206-150 PTC and SMF6.0A TVS stay on the external daughterboard. Its shield joins signal ground on that board; no extra shield wire, CC resistors or duplicate ESD/TVS array is added to the main PCB. This assumption is not a measurement of the factory Keycult board.
 
@@ -104,9 +104,9 @@ The 2026-10-30 [calculated report](reports/electrical-review.json) records condi
 
 ### Power allocation
 
-Use **150mA total on +3V3 as a provisional planning envelope**. Allocate 80mA to RP2040, 25mA to flash and 5mA to other board loads, leaving **40mA for a future 3.3V sensor**. The MCU and miscellaneous numbers are engineering allowances, not guaranteed maxima. Flash current depends on frequency and output loading; the 25mA allowance requires checking the cited conditions and a read clock no greater than 104MHz. A 5V Keyball module cannot be assessed using the 40mA rail allowance directly. Its supply, regulators and level translation remain unresolved.
+Allocate a provisional 110mA on +3V3 to the host: 80mA for RP2040, 25mA for flash and 5mA for other board loads. Compare sensor allocations of 40/50/70mA, giving 150/160/180mA total and modeled junction temperatures of 111.73/115.78/123.88 C at 50 C ambient under the assumptions below. These are engineering scenarios, not guaranteed component maxima or measured module current. Flash's 25mA allowance requires checking the cited frequency/loading conditions and a read clock no greater than 104MHz. A module fed from 5V needs a separate power-path assessment.
 
-The model reserves another 1mA for LDO ground current, giving 151mA input before external-board leakage. This is an assumption; AP2112's 80uA maximum is a no-load specification. The configured USB power declaration must cover the final whole-device load. The 110mA main-board allocation does not demonstrate compliance with the 100mA pre-configuration limit. Startup and the 2.5mA suspend limit need separate firmware budgets; no power-switching or suspend implementation is claimed here.
+The model reserves another 1mA for LDO ground current, giving 151/161/181mA input before external-board leakage for the three sensor scenarios. This is an assumption; AP2112's 80uA maximum is a no-load specification. The configured USB power declaration must cover the final whole-device load. The 110mA main-board allocation does not demonstrate compliance with the 100mA pre-configuration limit. Startup and the 2.5mA suspend limit need separate firmware budgets; no power-switching or suspend implementation is claimed here.
 
 Heat screening assumes 5.5V input, nominal 3.3V output, no upstream voltage drop, 1mA LDO ground current, 50 C local ambient and the datasheet's 184 C/W junction-to-ambient resistance. This resistance is a reference condition, not a measurement of this PCB or the closed case.
 
@@ -114,10 +114,12 @@ Heat screening assumes 5.5V input, nominal 3.3V output, no upstream voltage drop
 | --- | --- | --- |
 | 100mA | 0.2255W | 91.5 C |
 | 150mA | 0.3355W | 111.7 C |
+| 160mA | 0.3575W | 115.8 C |
+| 180mA | 0.4015W | 123.9 C |
 | 200mA | 0.4455W | 132.0 C |
 | 300mA | 0.6655W | 172.5 C |
 
-Values beyond device limits indicate unsuitable modeled operating points, not predictions of continued operation. A chosen 125 C planning ceiling permits approximately 183mA under these assumptions, so 150mA retains some modeled margin. At 60 C ambient the 150mA estimate is 121.7 C. Higher final load or temperature requires reconsidering the regulator and layout. The 500mA-hold fuse and 600mA regulator labels are not an available continuous power budget.
+Values beyond device limits indicate unsuitable modeled operating points, not predictions of continued operation. A chosen 125 C planning ceiling permits approximately 183mA under these assumptions; the 180mA scenario has little modeled margin. At 60 C ambient the 150mA estimate is 121.7 C and the 180mA estimate is 133.9 C. Higher final load or temperature requires reconsidering the regulator and layout. The 500mA-hold fuse and 600mA regulator labels are not an available continuous power budget.
 
 The two PTC reference-temperature R1max values sum to 1.03ohm. At 151mA, adding 0.5/1.0/2.0ohm for the remaining internal supply/return path gives drops of 0.231/0.307/0.458V. From an assumed 4.4V at the daughterboard receptacle, the LDO sees approximately 4.169/4.093/3.942V. This is a low-voltage stress scenario, not permission to draw 151mA from a low-power port. External USB cable drop is already represented by receptacle voltage; hot PTC resistance is not bounded by the reference values. Nominal 3.3V plus 0.2V dropout is only a screening threshold. Actual regulation must satisfy the RP2040 USB_VDD minimum of 3.135V and flash supply maximum of 3.6V, among the other component conditions.
 
@@ -142,7 +144,9 @@ The remaining electrical work includes fabricator review and firmware startup/su
 
 ## Sensor interface remains unresolved
 
-**TP10-TP17 remain MCU-side logical/test pads; the CAD has no sensor connector or approved module connection.** The 2026-10-30 [pinned circuit review](sources.md#keyball-sensor-interface-evidence) establishes a conditional design for the published Keyball46 module. It does not identify the user's hardware or qualify a current production module. The 62-key layout is the priority for subsequent integration.
+**62-key DRAFT F implements a user-approved circuit assumption, not powered-assembly approval.** J2 is a host-side JST GH 7-contact, 1.25mm-pitch harness header: `SM07B-GHS-TB(LF)(SN)`, stock footprint `Connector_JST:JST_GH_SM07B-GHS-TB_1x07-1MP_P1.25mm_Horizontal`, B.Cu, proposed origin `(136.5,111.3)mm`, rotation 0 degrees. Its cable housing is `GHR-07V-S`; the sensor-end connector remains unidentified. This does not claim that J2 mates directly with the sensor PCB. TP10-TP17 remain test access, while 65-key DRAFT E retains test pads without J2. The [pinned circuit review](sources.md#keyball-sensor-interface-evidence) covers the historical Keyball46 TPS73601/TXS0102 circuit and does not identify the user's module.
+
+J2 contacts are 1=SCLK/GP2, 2=CS/GP1, 3=GND, 4=+3V3, 5=GND, 6=MOSI/GP3, 7=MISO/GP0; MP anchors connect to GND. These numbers define the host harness. Confirm both cable ends and the actual module before assembly. GP23/TP14 motion and GP24/TP15 reset are retained as test access and are not exported on J2.
 
 The published sensor board's J1, distinct from this project's USB J1, has the following contact numbers. They are schematic numbers, not an assumed left-to-right order viewed from either mating face.
 
@@ -158,16 +162,16 @@ The published sensor board's J1, distinct from this project's USB J1, has the fo
 
 The published circuit uses TPS73601 to generate approximately 1.9V for PMW3360 VDD and VDDIO and the A sides of two TXS0102 translators. Their B sides share the connector supply. **A module powered at the published 5V therefore exposes a 5V host-facing MISO and cannot connect directly to RP2040.** A 3.3V host output is also below TXS0102's specified B-side high threshold when B is powered at 5V. The sensor IC's ability to use 3.3V VDDIO does not change this module's 1.9V wiring.
 
-The smallest candidate for this exact circuit is to feed sensor contact 4 from the host +3V3 rail, retaining the module's regulator and translators, and connect the four SPI signals and both grounds as above. TPS736's 1.7-5.5V input range and TXS0102's A=1.65-3.6V, B=2.3-5.5V ranges permit the resulting 1.9V/3.3V rails. This is an inference from component limits, not a vendor-approved 3.3V operating mode or a released wiring instruction. No separate translator or 5V feed is selected. Physical connector pitch, orientation, mounting height and mating part still require the identified module and mechanical support design; the schematic's generic 7-pin symbol does not specify them.
+The implemented assumption for this exact historical circuit feeds sensor contact 4 from host +3V3, retaining the module's regulator and translators and connecting the four SPI signals and both grounds as above. TPS736's 1.7-5.5V input range and TXS0102's A=1.65-3.6V, B=2.3-5.5V ranges permit the resulting 1.9V/3.3V rails. This is an inference from component limits, not a vendor-approved 3.3V operating mode or a released wiring instruction. No separate translator or 5V feed is selected. Sensor-side connector pitch, orientation, mounting height and mating part still require hardware identification and mechanical review.
 
-Before implementing this candidate in the generator and CAD:
+Before powered assembly or fabrication release:
 
 - Identify the actual PCB revision, parts, contact numbering and rail connections, including the 1.9V regulator feedback network. A different circuit requires a new electrical review. Do not apply this map to an unidentified sensor.
 - Recalculate +3V3 and USB budgets, LDO heating and startup/suspend behavior. PMW3360's 37mA RUN4 figure is typical, not a maximum; it nearly consumes the provisional 40mA sensor allowance before module losses. Its separate supply-ramp limits are 70mA on VDD and 60mA on VDDIO, excluding capacitor charging; they are not a measured simultaneous module input current. The published board adds nominal 10uF at its input and two 10uF downstream capacitors. Check effective capacitance, ramp timing, regulator dropout and the actual shared 1.9V load before approving the power path.
 - Verify loaded DC levels and SPI waveforms with the intended cable. TXS0102's input-low limit is 0.15V; RP2040's 0.4V rated-load output-low bound alone does not prove this margin. Check the PMW-to-TXS side too. TXS0102 includes 10k pull-ups and edge accelerators; cable/connector capacitance, reflections and extra pulls affect operation. Keep the connection short with an adjacent ground return and disable unnecessary RP2040 pulls. A nominal 2MHz clock alone does not establish timing margin.
 - Keep GP23 / TP14 motion and GP24 / TP15 reset disconnected from this module. Its 7-pin interface exports neither signal; the published firmware polls motion and resets through SPI. Use SPI mode 3 with SCLK no greater than 2MHz, GP2/GP3/GP0 and GPIO CS GP1. Pin the chosen QMK revision and check its driver names, actual SPI divider, reset/SROM timing and sensor identification before claiming a working port. The existing example is only a pin-map aid.
 
-After those gates, add the identified connector and power route to the generator, BOM and interface validation, regenerate the 62-key CAD and run ERC/DRC and parity checks. Bench acceptance includes the approximately 1.9V sensor rails, safe host-side levels, startup/reconnect, sensor product ID and SROM, motion and USB suspend. None of these powered checks has been performed. J1's USB routing remains electrically documented, with case and cable fit provisional.
+The generator, BOM and interface validation record the assumed host connector and power route; regenerate the 62-key CAD and inspect native ERC/DRC and parity reports after changes. Bench acceptance includes approximately 1.9V sensor rails, safe host-side levels, startup/reconnect, sensor product ID and SROM, motion and USB suspend. None of these powered checks has been performed. The 70mA VDD and 60mA VDDIO supply-ramp limits may be summed only as a transient screening scenario; they exclude capacitor charging and are not a continuous module allowance. J1's USB routing remains electrically documented, with case and cable fit provisional.
 
 ## Geometry and construction assumptions
 
@@ -179,7 +183,7 @@ After those gates, add the identified connector and power route to the generator
 - The **285.0 × 94.6mm** working rectangle uses only scalar dimensions measured
   from the pinned GH60 PCB. It does **not** copy GH60's rounded corners/holes,
   any Keycult contour, or the 285.75×108.25mm plate reference rectangle.
-- The 65-key all-copper-layer rule area is the centred **50 x 50mm** reservation. The 62-key rule area extends across the nominal empty key band, clipped at the board edge: PCB x=151.425..208.575mm, y=52.7..128.575mm, **57.15 x 75.875mm**. Both prohibit footprints, pads, tracks, vias and copper fill. Neither is an Edge.Cuts opening or a measured holder outline. This larger electrical reservation preserves future placement flexibility; mounting and any eventual cutout still require measurements.
+- The 65-key all-copper-layer rule area is the centred **50 x 50mm** reservation. The 62-key rule area extends across the nominal empty key band, clipped at the board edge: PCB x=151.425..208.575mm, y=52.7..128.575mm, **57.15 x 75.875mm**. Both prohibit footprints, pads, tracks, vias and copper fill. The 62-key board separately has a **48 x 60mm, R1mm** rounded internal Edge.Cuts opening at PCB x=156..204mm, y=65..125mm, or layout x=-24..24mm, y=-35..25mm. This is an explicit design assumption, not a measured holder outline. The 65-key board has no internal opening. Holder passage, remaining-board support and fabrication suitability still need review.
 - Four copper layers: F.Cu and B.Cu plus In2.Cu carry most signals. In1.Cu carries the GND reference pour outside the reserved centre, with short local +3V3 and COL12 routes beside the MCU. These routes stay away from the USB pair and the filled ground remains connected. Pad/via antipads and the central reservation still require return-path review; this is not an
   impedance-qualified stackup. Bottom SMT electronics coexist
   with top MX switch bodies, with actual drill/courtyard checks. Board thickness
@@ -229,7 +233,7 @@ without `--draft` returns nonzero for *any* DRC finding or unconnected item.
 
 ## Independent layout review findings
 
-- The original draft had 57 unconnected items across 27 nets. Both revised variants complete the internal circuit and matrix routing, with zero unconnected items after rebuilding and replaying their saved copper.
+- The original draft had 57 unconnected items across 27 nets. DRAFT E completed the internal circuit and matrix routing; read each current report for the results after subsequent changes, including DRAFT F's added J2.
 - The original C13/C14 placement was 16.60/17.52mm from the MCU supply pads; these capacitors and the core decouplers have been repositioned beside their actual rotated supply pins.
 - F1's MF-PSMF050X-2 candidate requires an 0805 land pattern; the original 1206 footprint has been corrected.
 - USB impedance and return paths still require review against a selected stackup and the actual daughterboard/cable before bring-up. Connectivity alone is not signal-integrity qualification.
@@ -241,7 +245,7 @@ without `--draft` returns nonzero for *any* DRC finding or unconnected item.
 ## Release gates still open
 
 Issues #1–#6 remain the mechanical/interface/bring-up gate. No Gerber fabrication
-release, production BOM, final sensor connector, module-level translator, firmware
+release, production BOM, identified sensor-end connector, qualified module-level translator, firmware
 build, USB/keyboard/sensor bench test or assembly-fit approval is supplied.
 Read the exact outstanding electrical/route counts in each variant's `reports/validation.json`;
 a zero ERC or a matching netlist is not a manufacturing-ready assertion.
