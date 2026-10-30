@@ -1,0 +1,24 @@
+{
+  "rt_cd": "0",
+  "msg_cd": "MCA00000",
+  "msg1": "정상처리 되었습니다.",
+  "output1": [
+    {
+      "ovrs_pdno": "TSLA",
+      "ovrs_item_name": "TESLA INC",
+      "ovrs_excg_cd": "NASD",
+      "tr_crcy_cd": "USD",
+      "ovrs_cblc_qty": "2",
+      "pchs_avg_pric": "220.25",
+      "now_pric2": "240.00",
+      "frcr_evlu_pfls_amt": "39.50"
+    }
+  ],
+  "output2": {
+    "frcr_pchs_amt1": "967.00",
+    "ovrs_stck_evlu_amt": "1074.75",
+    "ovrs_tot_pfls": "107.75"
+  },
+  "ctx_area_fk200": "",
+  "ctx_area_nk200": ""
+}

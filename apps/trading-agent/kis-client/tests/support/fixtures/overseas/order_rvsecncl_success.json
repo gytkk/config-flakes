@@ -1,0 +1,10 @@
+{
+  "rt_cd": "0",
+  "msg_cd": "APBK0013",
+  "msg1": "order accepted",
+  "output": {
+    "krx_fwdg_ord_orgno": "91252",
+    "odno": "0000116060",
+    "ord_tmd": "145601"
+  }
+}

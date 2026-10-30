@@ -1,0 +1,58 @@
+# Write-enabled KIS live configuration for `trade-engine run --submit-orders`.
+# Do not put app keys, secrets, or real account keys in shared config.
+# Live account scope is derived from KIS_ACCOUNT_KEY, or from [kis].account_key
+# in a private untracked operator config.
+read_only = false
+watchlist = ["005930", "000660"]
+
+[market]
+kind = "domestic_stock"
+
+[storage]
+main_db_path = ".local/state/trade-engine/live-submit-orders-main.sqlite3"
+
+[runtime]
+market_tick_seconds = 30
+off_hours_market_tick_seconds = 1800
+max_tick_runtime_seconds = 240
+
+[kis]
+environment = "live"
+token_cache_path = ".local/state/trade-engine/kis-live-token.json"
+
+[strategy]
+id = "hold-only"
+
+[universe_discovery]
+provider = "command"
+command = "sh"
+args = ["trade-engine/scripts/codex-universe"]
+timeout_seconds = 600
+refresh_seconds = 10800
+auto_refresh = true
+
+[advisor]
+provider = "command"
+command = "sh"
+args = ["trade-engine/scripts/codex-advisor"]
+timeout_seconds = 180
+recent_price_count = 16
+candidate_limit = 10
+min_command_interval_seconds = 900
+price_change_threshold_bps = 100
+
+[sizing]
+enabled = true
+target_account_fraction = "0.40"
+
+[exit_policy]
+enabled = true
+stop_loss_pct = "0.08"
+take_profit_pct = "0.15"
+
+[risk]
+enable_live_trading = true
+max_order_notional = "10000000"
+max_position_notional = "10000000"
+max_daily_loss = "1000000"
+max_daily_order_count = 100

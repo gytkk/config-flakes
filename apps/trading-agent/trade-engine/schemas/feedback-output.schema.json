@@ -1,0 +1,68 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "summary": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string" },
+          "detail": { "type": "string" },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["title", "detail", "evidence_refs"]
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "suggested_followups": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "policy_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "scope": { "type": "string" },
+          "proposal": { "type": "string" },
+          "requires_approval": { "type": "boolean" },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["scope", "proposal", "requires_approval", "evidence_refs"]
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ref": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "required": ["ref", "description"]
+      }
+    }
+  },
+  "required": [
+    "summary",
+    "findings",
+    "risks",
+    "suggested_followups",
+    "policy_candidates",
+    "evidence"
+  ]
+}

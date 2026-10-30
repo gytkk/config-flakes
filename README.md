@@ -11,6 +11,7 @@ This repository manages Home Manager and NixOS configuration alongside shared co
 | [config/themes/](config/themes/README.md) | Shared theme definitions, templates, and generated exports |
 | [config/secrets/](config/secrets) | Agenix-encrypted secrets and recipient rules |
 | [agent-core/](agent-core/README.md) | Shared agent rules, adapters, skills, and renderer |
+| [apps/trading-agent/](apps/trading-agent/README.md) | Rust trading agent, broker clients, and execution runtime |
 | [scripts/](scripts) | Documentation path checks and agent skill installation |
 | [flake.nix](flake.nix), `flake.lock` | Nix inputs and entry point; outputs come from [config/outputs.nix](config/outputs.nix) |
 

@@ -1,0 +1,36 @@
+{
+  "rt_cd": "0",
+  "msg_cd": "MCA00000",
+  "msg1": "ok",
+  "ctx_area_fk": "",
+  "ctx_area_nk": "",
+  "output": [
+    {
+      "prdt_type_cd": "512",
+      "tr_natn_cd": "840",
+      "natn_eng_abrv_cd": "US",
+      "tr_mket_cd": "01",
+      "tr_mket_name": "NASDAQ",
+      "acpl_sttl_dt": "20260428",
+      "dmst_sttl_dt": "20260429"
+    },
+    {
+      "prdt_type_cd": "512",
+      "tr_natn_cd": "840",
+      "natn_eng_abrv_cd": "US",
+      "tr_mket_cd": "02",
+      "tr_mket_name": "New York Stock Exchange",
+      "acpl_sttl_dt": "20260428",
+      "dmst_sttl_dt": "20260429"
+    },
+    {
+      "prdt_type_cd": "512",
+      "tr_natn_cd": "840",
+      "natn_eng_abrv_cd": "US",
+      "tr_mket_cd": "05",
+      "tr_mket_name": "AMEX",
+      "acpl_sttl_dt": "20260428",
+      "dmst_sttl_dt": "20260429"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+[workspace]
+members = ["kis-client", "toss-client", "trade-engine"]
+resolver = "3"

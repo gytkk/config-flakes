@@ -1,0 +1,61 @@
+# Read-only Toss Open API configuration for `trade-engine doctor` and
+# `trade-engine run --dry-run`.
+# Do not put Toss client credentials or account identifiers in shared config.
+
+read_only = true
+watchlist = ["005930", "000660"]
+
+[broker]
+provider = "toss"
+
+[market]
+kind = "domestic_stock"
+
+[storage]
+main_db_path = ".local/state/trade-engine/toss-dry-run-main.sqlite3"
+
+[runtime]
+market_tick_seconds = 30
+off_hours_market_tick_seconds = 900
+max_tick_runtime_seconds = 240
+
+[toss]
+client_id_env = "TOSS_CLIENT_ID"
+client_secret_env = "TOSS_CLIENT_SECRET"
+account_seq_env = "TOSS_ACCOUNT_SEQ"
+
+[strategy]
+id = "sma-crossover-v1"
+short_window = 5
+long_window = 20
+
+[universe_discovery]
+provider = "command"
+command = "sh"
+args = ["trade-engine/scripts/codex-universe"]
+refresh_seconds = 10800
+auto_refresh = true
+
+[advisor]
+provider = "command"
+command = "sh"
+args = ["trade-engine/scripts/codex-advisor"]
+timeout_seconds = 180
+candidate_limit = 8
+min_command_interval_seconds = 600
+price_change_threshold_bps = 75
+
+[sizing]
+enabled = true
+
+[exit_policy]
+enabled = true
+stop_loss_pct = "0.05"
+take_profit_pct = "0.10"
+
+[risk]
+enable_live_trading = false
+max_order_notional = "1000000"
+max_position_notional = "5000000"
+max_daily_loss = "1000000"
+max_daily_order_count = 3

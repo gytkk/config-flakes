@@ -1,0 +1,28 @@
+# Rust build outputs
+/target/
+.worktrees/
+
+# Local environment and secrets
+.env
+.env.*
+.envrc
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local databases and runtime state
+.local/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+.DS_Store

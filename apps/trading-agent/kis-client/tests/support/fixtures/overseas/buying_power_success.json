@@ -1,0 +1,18 @@
+{
+  "rt_cd": "0",
+  "msg_cd": "MCA00000",
+  "msg1": "정상처리 되었습니다.",
+  "output": {
+    "tr_crcy_cd": "USD",
+    "ord_psbl_frcr_amt": "1000.00",
+    "sll_ruse_psbl_amt": "25.00",
+    "ovrs_ord_psbl_amt": "950.00",
+    "max_ord_psbl_qty": "4",
+    "echm_af_ord_psbl_amt": "0",
+    "echm_af_ord_psbl_qty": "0",
+    "ord_psbl_qty": "4",
+    "exrt": "1350.25",
+    "frcr_ord_psbl_amt1": "950.00",
+    "ovrs_max_ord_psbl_qty": "4"
+  }
+}

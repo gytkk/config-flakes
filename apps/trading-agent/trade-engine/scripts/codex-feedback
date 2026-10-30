@@ -1,0 +1,45 @@
+#!/bin/sh
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+TRADE_ENGINE_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+REPO_DIR=$(CDPATH= cd -- "$TRADE_ENGINE_DIR/.." && pwd)
+SCHEMA_PATH="$TRADE_ENGINE_DIR/schemas/feedback-output.schema.json"
+
+REQUEST_FILE=$(mktemp)
+PROMPT_FILE=$(mktemp)
+OUTPUT_FILE=$(mktemp)
+cleanup() {
+  rm -f "$REQUEST_FILE" "$PROMPT_FILE" "$OUTPUT_FILE"
+}
+trap cleanup EXIT
+
+cat > "$REQUEST_FILE"
+
+cat > "$PROMPT_FILE" <<'EOF'
+You are a read-only trading runtime review assistant.
+
+Rules:
+- Summarize and diagnose only the supplied audit context.
+- Do not submit, cancel, amend, or recommend blind broker writes.
+- Do not ask for secrets, credentials, tokens, hashkeys, API keys, or full account keys.
+- Treat account suffixes as the only account identifiers.
+- Cite supplied evidence_refs for concrete claims.
+- Mark missing or insufficient evidence explicitly in risks.
+- Policy candidates are unapplied review ideas only and require explicit approval later.
+- Return only JSON matching the provided schema.
+
+Feedback request JSON follows:
+EOF
+cat "$REQUEST_FILE" >> "$PROMPT_FILE"
+
+codex exec \
+  --cd "$REPO_DIR" \
+  --ephemeral \
+  --sandbox read-only \
+  --color never \
+  --output-schema "$SCHEMA_PATH" \
+  --output-last-message "$OUTPUT_FILE" \
+  - < "$PROMPT_FILE" >/dev/null
+
+cat "$OUTPUT_FILE"
