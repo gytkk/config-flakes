@@ -142,12 +142,32 @@ The remaining electrical work includes fabricator review and firmware startup/su
 
 ## Sensor interface remains unresolved
 
-**TP10–TP17 are MCU-side 3.3V logical/test pads only.** They are not the Keyball
-7-pin connector. There is no 5V sensor feed, no sensor connector and no approved
-5V module-to-RP2040 path. Exact module revision, supply, signal levels and the
-appropriate translator/interface remain open in issue #2. Do not wire these
-pads straight to an unverified sensor. Reset/motion are reserved, not mandatory
-PMW3360 connections. The sensor connector is not finalized; J1's electrical routing is complete but its case and cable fit is provisional.
+**TP10-TP17 remain MCU-side logical/test pads; the CAD has no sensor connector or approved module connection.** The 2026-10-30 [pinned circuit review](sources.md#keyball-sensor-interface-evidence) establishes a conditional design for the published Keyball46 module. It does not identify the user's hardware or qualify a current production module. The 62-key layout is the priority for subsequent integration.
+
+The published sensor board's J1, distinct from this project's USB J1, has the following contact numbers. They are schematic numbers, not an assumed left-to-right order viewed from either mating face.
+
+| Published sensor J1 contact | Signal | Existing host allocation |
+| --- | --- | --- |
+| 1 | SCLK_5 | GP2 / TP12, SPI0 SCLK |
+| 2 | NCS_5 | GP1 / TP11, GPIO chip select |
+| 3 | GND | TP16 / GND |
+| 4 | Supply labelled 5V upstream | Conditional +3V3 feed, TP17 identifies the existing rail |
+| 5 | GND | Same GND as contact 3 |
+| 6 | MOSI_5 | GP3 / TP13, SPI0 TX |
+| 7 | MISO_5 | GP0 / TP10, SPI0 RX |
+
+The published circuit uses TPS73601 to generate approximately 1.9V for PMW3360 VDD and VDDIO and the A sides of two TXS0102 translators. Their B sides share the connector supply. **A module powered at the published 5V therefore exposes a 5V host-facing MISO and cannot connect directly to RP2040.** A 3.3V host output is also below TXS0102's specified B-side high threshold when B is powered at 5V. The sensor IC's ability to use 3.3V VDDIO does not change this module's 1.9V wiring.
+
+The smallest candidate for this exact circuit is to feed sensor contact 4 from the host +3V3 rail, retaining the module's regulator and translators, and connect the four SPI signals and both grounds as above. TPS736's 1.7-5.5V input range and TXS0102's A=1.65-3.6V, B=2.3-5.5V ranges permit the resulting 1.9V/3.3V rails. This is an inference from component limits, not a vendor-approved 3.3V operating mode or a released wiring instruction. No separate translator or 5V feed is selected. Physical connector pitch, orientation, mounting height and mating part still require the identified module and mechanical support design; the schematic's generic 7-pin symbol does not specify them.
+
+Before implementing this candidate in the generator and CAD:
+
+- Identify the actual PCB revision, parts, contact numbering and rail connections, including the 1.9V regulator feedback network. A different circuit requires a new electrical review. Do not apply this map to an unidentified sensor.
+- Recalculate +3V3 and USB budgets, LDO heating and startup/suspend behavior. PMW3360's 37mA RUN4 figure is typical, not a maximum; it nearly consumes the provisional 40mA sensor allowance before module losses. Its separate supply-ramp limits are 70mA on VDD and 60mA on VDDIO, excluding capacitor charging; they are not a measured simultaneous module input current. The published board adds nominal 10uF at its input and two 10uF downstream capacitors. Check effective capacitance, ramp timing, regulator dropout and the actual shared 1.9V load before approving the power path.
+- Verify loaded DC levels and SPI waveforms with the intended cable. TXS0102's input-low limit is 0.15V; RP2040's 0.4V rated-load output-low bound alone does not prove this margin. Check the PMW-to-TXS side too. TXS0102 includes 10k pull-ups and edge accelerators; cable/connector capacitance, reflections and extra pulls affect operation. Keep the connection short with an adjacent ground return and disable unnecessary RP2040 pulls. A nominal 2MHz clock alone does not establish timing margin.
+- Keep GP23 / TP14 motion and GP24 / TP15 reset disconnected from this module. Its 7-pin interface exports neither signal; the published firmware polls motion and resets through SPI. Use SPI mode 3 with SCLK no greater than 2MHz, GP2/GP3/GP0 and GPIO CS GP1. Pin the chosen QMK revision and check its driver names, actual SPI divider, reset/SROM timing and sensor identification before claiming a working port. The existing example is only a pin-map aid.
+
+After those gates, add the identified connector and power route to the generator, BOM and interface validation, regenerate the 62-key CAD and run ERC/DRC and parity checks. Bench acceptance includes the approximately 1.9V sensor rails, safe host-side levels, startup/reconnect, sensor product ID and SROM, motion and USB suspend. None of these powered checks has been performed. J1's USB routing remains electrically documented, with case and cable fit provisional.
 
 ## Geometry and construction assumptions
 

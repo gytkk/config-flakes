@@ -30,6 +30,30 @@ Original GH60 downloads are only in ignored `../preliminary/sources/upstream/gh6
 - [QMK RP2040](https://docs.qmk.fm/platformdev_rp2040), [pointing-device driver](https://docs.qmk.fm/features/pointing_device#pmw-3360-and-pmw-3389-sensor): pin-map reference, not a copied firmware or claimed build result.
 - Keyball published interface evidence and restrictions remain in the existing [design document](../preliminary/design.md) and [license comparison](../../docs/alternatives-and-licenses.md). The old Keyball46 connector is **not asserted as the actual sensor's pin order**.
 
+## Keyball sensor interface evidence
+
+Checked 2026-10-30. These sources establish a conditional interface to one published circuit, not the identity of the user's module. Downloads remain under ignored `../preliminary/sources/upstream/keyball-interface/`; rendered schematic and text extracts remain under ignored `../preliminary/sources/local/keyball-interface/`. No upstream schematic image, source code or datasheet is redistributed. Keyball repository and individual firmware license distinctions follow the [existing license record](../../docs/alternatives-and-licenses.md).
+
+- [Keyball46 sensor circuit PDF](https://github.com/Yowkees/keyball/blob/e1d1948e6e60a83f6b3566a209326508200d64ce/keyball46/ball_design_data/Trackball_circuit.pdf), commit `e1d1948e6e60a83f6b3566a209326508200d64ce`, Git blob `fdd737731af84d98b1b22f4244567c169290f245`. Visual tracing of the raster PDF gives J1 contacts 1=SCLK_5, 2=NCS_5, 3=GND, 4=5V, 5=GND, 6=MOSI_5, 7=MISO_5. U1 is TPS73601DBV, with R1=37.4k and R2=63.4k feedback. The labelled 1.9V rail supplies U4 PMW3360 VDD/VDDIO and U2/U3 TXS0102DCU VCCA. Their VCCB uses the connector supply. MOTION is NC and NRESET has a local pull-up. This does not establish physical connector pitch or a production revision.
+- [Keyball PMW3360 firmware](https://github.com/Yowkees/keyball/blob/e1d1948e6e60a83f6b3566a209326508200d64ce/qmk_firmware/keyboards/keyball/drivers/pmw3360/pmw3360.c), same commit, Git blob `997b34940a12696e33a0dcfe3e68b19b65ded60c`: SPI mode 3, nominal 2MHz, polled motion, register-based reset, sensor ID check and SROM upload. Its fallback divider is not a guarantee of the clock in a new RP2040 port.
+- [TI TXS0102, SCES640L, January 2026](https://www.ti.com/lit/ds/symlink/txs0102.pdf), sections 5.3, 7.3 and 8.4: VCCA=1.65-3.6V, VCCB=2.3-5.5V with VCCA <= VCCB; B input high >= VCCB-0.4V and input low <= 0.15V. Internal pull-ups and edge accelerators make load capacitance and reflections relevant. The 1.9V/3.3V rail combination is permitted; signal margin still needs checking.
+- [TI TPS736, SBVS038X, May 2025](https://www.ti.com/lit/ds/symlink/tps736.pdf), sections 5.3, 5.6 and 7.2.2: 1.7-5.5V input; 0.2V maximum dropout at 400mA; adjustable feedback and startup depend on the external network and load. Nominal 3.3V input leaves ample static headroom for 1.9V, without qualifying startup or the host regulator's load.
+- [PixArt PMW3360DM-T2QU datasheet v1.30, 2016-04-06, manufacturer-authored PDF hosted by distributor EPS Global](https://www.epsglobal.com/Media-Library/EPSGlobal/Products/files/pixart/PMW3360DM-T2QU.pdf?ext=.pdf), sections 2.2-2.4, pp. 14-16: VDD=1.8-2.1V; VDDIO=1.8-3.6V and >= VDD; SCLK <= 2MHz. RUN4 is 37mA typical. Supply-ramp maxima are separately 70mA VDD and 60mA VDDIO, excluding capacitor charge. The [manufacturer product page](https://www.pixart.com/products-detail/10/PMW3360DM-T2QU) returned HTTP 403 during this review; the examined PDF is the identified historical revision, not a claimed current manufacturer download.
+- [RP2040 datasheet, build 3184e62-clean, 2025-02-20](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf), sections 1.4.3 and 5.5.3: GP0/GP2/GP3 support SPI0 RX/SCLK/TX; GP1 may drive CS as GPIO. Absolute GPIO voltage is limited to IOVDD+0.5V; rated-load VOL=0.4V does not itself prove TXS0102's 0.15V input-low requirement.
+
+SHA-256 pins for the bytes examined:
+
+| Local input name | SHA-256 |
+| --- | --- |
+| `Trackball_circuit.pdf` | `3816f3dda43801f001c94bb8c272886010be8ba5fc9f410e93a13c813ea8f799` |
+| `pmw3360.c` | `bc2c56116922f101f673a6e417e7940ec83b00602b7508b254bf33188ba723f6` |
+| `txs0102.pdf` | `75397ef71b07af6e47b81441a502a224c59b6ac359083d71516465f0c885eaf7` |
+| `tps736.pdf` | `6cf8ac9cdf78f1849826526d8e48db630f7fd5c0990039afb941a272d7ee00c1` |
+| `PMW3360DM-T2QU.pdf` | `54a2d7ab27885ac4f13e100ec43a6ac4cd0ff0bcef42e775fa98cff02b6fa567` |
+| `rp2040-datasheet.pdf` | `be56fbb75ba0ae9e26558a73c93ac3e75c2ad4e6878d3b6703de2a76d886ea8c` |
+
+The [candidate connection and release gates](README.md#sensor-interface-remains-unresolved) are circuit-level inferences from these sources. They do not authorize wiring an unidentified module or claim a tested 3.3V Keyball assembly.
+
 ## USB daughterboard evidence
 
 Checked 2026-10-29. These sources establish an electrical design target, not the identity or measured fit of the user's installed daughterboard.
