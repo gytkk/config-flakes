@@ -103,6 +103,20 @@ Git에서 제외하는 `design/preliminary/sources/local/holder-study/65/`와 `6
 
 생성기는 브래킷 단일 솔리드, 공식 보강판 외곽 보존, 플랜지 접촉면, 구성품별 현재/개구 PCB 간섭, 키 영역 및 체결부 간섭, STEP/FCStd 재열기를 검사한다. 볼과 센서의 실제 광학 간격, 케이스 공간 및 강성은 이 검사에 포함되지 않는다. 나사산과 실제 커넥터 결합 형상을 모델링하지 않았으므로 단순 형상 사이 간섭이 없어도 체결·조립이 검증된 것은 아니다.
 
+## 케이스 참조 형상을 포함한 FreeCAD 검토
+
+`scripts/build_case_study.py`는 기존 홀더 검토 FCStd를 읽어 케이스 참조 형상을 추가한 사본을 만든다. 입력 홀더 검토의 배열과 PCB 해시가 현재 파일과 일치해야 한다. 원본 홀더 FCStd와 KiCad는 변경하지 않으며, 기존 입력 객체의 부피 보존과 저장한 FCStd 재열기를 검사한다. 외장 치수의 출처, 내부 치수와 정렬 가정, 해석 범위는 [케이스 참조 모델](../design/preliminary/design.md#케이스-참조-모델)을 따른다.
+
+프로젝트 루트에서 실행한다.
+
+```bash
+uv run --python /Applications/FreeCAD.app/Contents/Resources/bin/python scripts/build_case_study.py
+```
+
+결과는 Git에서 제외되는 `design/preliminary/sources/local/case-study/65/`와 `62/`의 `case-study.FCStd`, `checks.json` 및 상위 `review.json`이다. FreeCAD 앱에서 `scripts/render_case_study.FCMacro`를 열고 실행하면 두 FCStd의 표시 설정을 저장하고 각 폴더에 `assembly.png`와 `cutaway.png`를 만든다. 절개 그림은 브래킷과 나사를 볼 수 있도록 키캡, 보강판과 PCB를 숨기고 케이스의 왼쪽 절반만 표시한다. 매크로 실행 결과는 `preview-status.json`에 기록된다. 생성기와 매크로는 해당 결과를 덮어쓰므로 수동 편집은 별도 이름으로 저장한다.
+
+기본 화면은 중앙 개구를 가정한 `ProposedOpenPCB`를 표시한다. 현재 KiCad의 막힌 PCB를 보려면 이를 숨기고 `CurrentPCB`를 표시한다. `CaseShellAssumption`은 반투명 케이스이고, 이를 숨기고 `CaseCutawayAssumption`을 표시하면 왼쪽 절반만 남긴 케이스를 볼 수 있다. `CaseOverlapHighlights`는 가정한 케이스와 겹치는 부분이다. `CaseReferenceParameters`에는 출처와 가정, 객체별 검사 결과를 저장하며 속성을 편집해도 형상이 자동으로 바뀌지 않는다. 치수 변경은 생성기의 `ASSUMED`에 반영한다.
+
 ## KiCad 65키·62키 회로·PCB 초안
 
 [PCB 재현 안내](../design/pcb/README.md#reproduction)를 별도로 따른다. 키 배열을 변경하면 예비 도면 생성기와 PNG/PDF 렌더를 먼저 실행한다. Python은 설치된 KiCad 10.0.7의 `pcbnew` 바인딩과 버전이 일치해야 한다. 기존 Nix 환경은 Python 3.14, 아래 공식 Docker 환경은 Python 3.13을 사용한다. 65키 원본은 `design/pcb/keycult65.*`, 62키 원본은 `design/pcb/62/keycult62.*`이며, 각 디렉터리에 BOM·핀맵·배선과 `reports/`, `exports/`를 둔다.

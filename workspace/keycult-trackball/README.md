@@ -8,6 +8,8 @@ Keycult No.1/60에 트랙볼을 결합하기 위한 PCB와 보강판(플레이�
 
 [로컬 FreeCAD 보강판 초안](design/preliminary/design.md#로컬-freecad-보강판-초안)은 공식 NoLeaf 외곽에 65키·62키 좌표를 적용해 재생성하고 중앙 개구와 네 점으로 고정하는 프레임을 검토합니다. 편집용 FCStd와 STEP/DXF는 원본 사용 조건에 따라 로컬에만 생성합니다. 설명용 볼 높이에서 현재 PCB와 간섭하므로 제조용 도면은 아니며, 홀더·센서의 실제 고정부와 PCB 개구 또는 볼 높이를 추가로 결정해야 합니다. [FreeCAD 실행 및 재현 절차](docs/reproduction.md#freecad-보강판-초안)를 따릅니다.
 
+[케이스를 포함한 FreeCAD 참조 모델](design/preliminary/design.md#케이스-참조-모델)은 기존 홀더 검토 사본에 공개 외장 치수와 가정한 내부 형상을 추가합니다. 65키와 62키의 반투명 전체 보기, 절개 보기와 객체별 간섭 결과를 로컬에 생성하며 [실행 방법](docs/reproduction.md#케이스-참조-형상을-포함한-freecad-검토)을 따릅니다. 실제 케이스 내부와 보강판 정렬은 실측하지 않았으므로 참조 모델의 간섭 결과를 실물 조립 판정으로 사용하지 않습니다.
+
 ![추천 65키 배치](design/preliminary/layout.png)
 
 ## 현재 검토 중인 배치
