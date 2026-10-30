@@ -68,6 +68,68 @@ class GhosttyGeneratorTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "opacity from 0 to 1"):
                 ghostty_theme_conf(ctx, root)
 
+    def test_palette_override_template_resolves_color_references(self) -> None:
+        ctx = theme_context(load_yaml(ROOT / "core" / "one-half-light.yaml"))
+        source = (ROOT / "overrides" / "ghostty" / "TEMPLATE.yaml").read_text()
+        source = source.replace("theme-id", "one-half-light").replace(
+            "variant: dark", "variant: light"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "templates").symlink_to(
+                ROOT / "templates", target_is_directory=True
+            )
+            overrides = root / "overrides" / "ghostty"
+            overrides.mkdir(parents=True)
+            path = overrides / "one-half-light.yaml"
+            for entry, expected in (
+                ("0={roles.ansi.black}", f"0={ctx['roles']['ansi']['black']}"),
+                ("0={palette.blue}", f"0={ctx['palette']['blue']}"),
+                ("0=#123456", "0=#123456"),
+                (
+                    "15={roles.ansi.brightWhite}",
+                    f"15={ctx['roles']['ansi']['brightWhite']}",
+                ),
+            ):
+                with self.subTest(entry=entry):
+                    path.write_text(
+                        source.replace(
+                            "palette_0_entry", f"palette_{entry.split('=')[0]}_entry"
+                        ).replace("0={roles.ansi.black}", entry)
+                    )
+                    conf = ghostty_theme_conf(ctx, root)
+                    self.assertIn(f"palette = {expected}\n", conf)
+                    self.assertIn(
+                        f"cursor-color = {ctx['roles']['ui']['cursor']}\n", conf
+                    )
+                    self.assertNotIn("{roles.", conf)
+                    self.assertNotIn("{palette.", conf)
+
+    def test_palette_override_rejects_malformed_entries_and_missing_references(
+        self,
+    ) -> None:
+        ctx = theme_context(load_yaml(ROOT / "core" / "one-half-light.yaml"))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "templates").symlink_to(
+                ROOT / "templates", target_is_directory=True
+            )
+            overrides = root / "overrides" / "ghostty"
+            overrides.mkdir(parents=True)
+            path = overrides / "one-half-light.yaml"
+            for entry, error in (
+                ("0=not-a-color", RuntimeError),
+                ("16=#123456", RuntimeError),
+                ("0={roles.ansi.missing}", KeyError),
+                ("0={palette.missing}", KeyError),
+            ):
+                with self.subTest(entry=entry):
+                    path.write_text(
+                        f'version: 1\nmeta:\n  app: ghostty\n  theme: one-half-light\n  variant: light\nslots:\n  palette_0_entry: "{entry}"\n'
+                    )
+                    with self.assertRaises(error):
+                        ghostty_theme_conf(ctx, root)
+
 
 if __name__ == "__main__":
     unittest.main()

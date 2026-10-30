@@ -577,18 +577,45 @@ def load_pi_template(root: Path) -> dict[str, Any]:
     return load_json(template_path)
 
 
-def load_zellij_override(root: Path, theme_id: str) -> dict[str, Any] | None:
+def load_zellij_override(root: Path, theme_id: str, variant: str) -> dict[str, Any] | None:
+    from validate_overrides import validate_zellij_override
+
     path = root / "overrides" / "zellij" / f"{theme_id}.yaml"
     if not path.exists():
         return None
-    return load_yaml(path)
+    template = load_zellij_template(root)
+    allowed_components = {section["component"] for section in template["sections"]}
+    allowed_attrs = {
+        attr
+        for section in template["sections"]
+        if section["component"] != "multiplayer_user_colors"
+        for attr in section["attrs"]
+    }
+    validator = Validator()
+    validate_zellij_override(validator, path, allowed_components, allowed_attrs)
+    if validator.errors:
+        raise RuntimeError("\n".join(validator.errors))
+    override = load_yaml(path)
+    if (override["meta"]["theme"], override["meta"]["variant"]) != (theme_id, variant):
+        raise RuntimeError(f"{path}: metadata does not match the canonical theme")
+    return override
 
 
-def load_nvim_override(root: Path, theme_id: str) -> dict[str, Any] | None:
+def load_nvim_override(root: Path, theme_id: str, variant: str) -> dict[str, Any] | None:
+    from validate_overrides import validate_nvim_override
+
     path = root / "overrides" / "nvim" / f"{theme_id}.yaml"
     if not path.exists():
         return None
-    return load_yaml(path)
+    allowed_attrs = set(load_nvim_template(root)["highlight_schema"]["allowed_keys"])
+    validator = Validator()
+    validate_nvim_override(validator, path, allowed_attrs)
+    if validator.errors:
+        raise RuntimeError("\n".join(validator.errors))
+    override = load_yaml(path)
+    if (override["meta"]["theme"], override["meta"]["variant"]) != (theme_id, variant):
+        raise RuntimeError(f"{path}: metadata does not match the canonical theme")
+    return override
 
 
 def load_ghostty_override(root: Path, theme_id: str) -> dict[str, Any] | None:
@@ -678,7 +705,7 @@ def nvim_lua(ctx: dict[str, Any], root: Path) -> str:
     is_light = background == "light"
     nvim_template = load_nvim_template(root)
     nvim_plugin_template = load_nvim_plugin_template(root)
-    nvim_override = load_nvim_override(root, meta["id"])
+    nvim_override = load_nvim_override(root, meta["id"], meta["variant"])
 
     palette_table = {
         "bg": r["ui"]["bg"],
@@ -842,7 +869,11 @@ def apply_ghostty_override_slots(
 
     out = dict(slots)
     for key, value in slot_overrides.items():
-        rendered = resolve_context_value(value, ctx)
+        if key.startswith("palette_"):
+            index, color = value.split("=", 1)
+            rendered = f"{index}={resolve_context_value(color, ctx)}"
+        else:
+            rendered = resolve_context_value(value, ctx)
         if not isinstance(rendered, str):
             raise RuntimeError(f"ghostty override slot {key!r} must resolve to a string")
         out[key] = rendered
@@ -1561,7 +1592,7 @@ def zellij_theme_kdl(ctx: dict[str, Any], root: Path) -> str:
     template = load_zellij_template(root)
     slots = build_zellij_slots(ctx)
     theme_id = ctx["meta"]["id"]
-    override = load_zellij_override(root, theme_id)
+    override = load_zellij_override(root, theme_id, ctx["meta"]["variant"])
     sections = [
         {
             "component": section["component"],

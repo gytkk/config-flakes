@@ -113,6 +113,66 @@ class GenerateTest(unittest.TestCase):
             [str(Path("themes/exports") / path) for path in expected],
         )
 
+    def test_nvim_and_zellij_reject_invalid_overrides_before_writing(self) -> None:
+        for app, body, invalid in (
+            (
+                "nvim",
+                'groups:\n  Normal:\n    fg: "{roles.ui.fg}"\nlinks:\n',
+                (
+                    (
+                        'fg: "{roles.ui.fg}"',
+                        'made_up_attribute: "true"',
+                        "unsupported attr",
+                    ),
+                    ('fg: "{roles.ui.fg}"', "fg: 123", "supported override scalar"),
+                ),
+            ),
+            (
+                "zellij",
+                'components:\n  text_selected:\n    base: "{roles.ui.fg}"\nplayers:\n',
+                (
+                    (
+                        "text_selected:",
+                        "made_up_component:",
+                        "supported zellij component",
+                    ),
+                    ("base:", "made_up_attribute:", "unsupported attr"),
+                    (
+                        '"{roles.ui.fg}"',
+                        '"invalid-color"',
+                        "hex, palette ref, or role ref",
+                    ),
+                    (
+                        "players:",
+                        'players:\n  player_11: "#123456"',
+                        "invalid player key",
+                    ),
+                ),
+            ),
+        ):
+            source = f"version: 1\nmeta:\n  app: {app}\n  theme: ayu-mirage\n  variant: dark\n{body}"
+            path = self.root / "overrides" / app / "ayu-mirage.yaml"
+            for old, new, error in (
+                *invalid,
+                (f"app: {app}", "app: ghostty", "meta.app"),
+                (
+                    "theme: ayu-mirage",
+                    "theme: another-theme",
+                    "metadata does not match",
+                ),
+                ("variant: dark", "variant: light", "metadata does not match"),
+            ):
+                with self.subTest(app=app, invalid=new):
+                    before = self.seed_old_exports()
+                    path.write_text(source.replace(old, new))
+                    result = self.run_generator("one-half-light", "ayu-mirage")
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertIn(str(path), result.stderr)
+                    self.assertIn(error, result.stderr)
+                    self.assertEqual(result.stdout, "")
+                    self.assertEqual(self.export_snapshot(), before)
+            path.unlink()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -556,6 +556,10 @@ Adapter templates and schema helpers:
 
 ## Resolution Rules
 
+Neovim and Zellij override loaders run their existing schema validators before returning an override. They require `meta.theme` and `meta.variant` to match the canonical theme. Unsupported highlight attributes, component names, and player keys fail generation before any export is written.
+
+Ghostty palette overrides use indexed entries such as `palette_0_entry: "0={roles.ansi.black}"`. The generator preserves the index and resolves the color after `=` as a palette reference, role reference, or literal hex color. Other Ghostty slots retain their existing whole-value resolution.
+
 Zed overrides patch native `style` colors, merge `syntax` highlight attributes, and merge indexed `players.player_n` colors. Colors accept six-digit hex, eight-digit hex with alpha, or canonical palette/role references. See `overrides/zed/TEMPLATE.yaml` for the authoring shape. The generator validates keys, values, and theme metadata before applying patches, then validates the complete export against the vendored Zed schema.
 
 Vira Graphene's Neovim and Zed overrides follow the Graphene definition in the [official Vira Theme 2026.9.4 package](https://open-vsx.org/api/vira/vsc-vira-theme/2026.9.4). They preserve the original cyan keywords and punctuation, pink booleans, teal UI accents, and subdued line numbers where the apps expose corresponding highlights. Neovim uses slightly brighter comments, `#676767`, for readability; Zed retains the original comment color. Zed uses the original translucent gray selection, `#47474780`. Neovim's Visual highlight cannot blend its background, so it uses the brighter gray `#545454` to keep selections distinct from the editor background. Language-specific scope differences remain between VS Code, Neovim, and Zed.

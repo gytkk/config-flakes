@@ -92,6 +92,8 @@ Metadata 탐색을 streaming으로 바꾸고, 파일별 실패를 격리하며, 
 
 ### 9. [P2] 테마 생성기의 입력 검증이 앱마다 다름
 
+상태: 해결 (2026-10-30). Neovim과 Zellij loader가 기존 override validator를 호출하고, canonical theme의 ID와 variant가 일치하는지 확인한 뒤 반환한다. [생성기 회귀 테스트](../themes/test_generate.py)에서 잘못된 속성, component, player, app, theme, variant를 거부하고 모든 기존 export를 보존하는 것을 확인했다. Headless Neovim에서 기존 6개 테마를 모두 로드했다. Zellij 실행 파일은 없어 실제 앱 로드는 검증하지 않았다.
+
 근거: [generate.py](../themes/generate.py)의 580행과 587행.
 
 Zellij와 Neovim override loader는 YAML을 바로 반환하지만 다른 loader는 validator를 호출한다. 잘못된 Neovim highlight 속성 `made_up_attribute`는 validator에서는 거부됐지만 생성은 성공했고, headless Neovim에서 `invalid key` 오류가 발생했다. 해당 경로에서는 override의 theme 및 variant와 canonical theme의 일치 여부도 확인하지 않는다.
@@ -99,6 +101,8 @@ Zellij와 Neovim override loader는 YAML을 바로 반환하지만 다른 loader
 기존 validator와 theme identity 검사를 각 loader의 반환 조건으로 만들어야 한다. Exporter 전체를 다시 설계할 필요는 없다. 현재 저장된 테마들은 기존 검사에 통과했고, 실패는 지원하는 override 작성 경로에서 재현했다.
 
 ### 10. [P2] 제공된 Ghostty override 템플릿이 잘못된 설정을 생성함
+
+상태: 해결 (2026-10-30). Ghostty palette 항목의 index와 색상을 분리하고 색상 부분만 기존 resolver로 해석한다. [Ghostty 회귀 테스트](../themes/test_ghostty_generator.py)에서 제공된 템플릿의 role 참조, palette 참조, 직접 지정한 hex 색상과 index 보존을 검증했다. 존재하지 않는 참조는 생성에 실패한다. 실제 Ghostty의 `+validate-config`에서도 템플릿으로 생성한 설정을 검증했다. 관련 테마 테스트 29개와 canonical, override, template 검사가 통과했고, 전체 export 54개를 재생성한 결과 기존 내용과 동일했다.
 
 근거: [Ghostty override 템플릿](../themes/overrides/ghostty/TEMPLATE.yaml)의 10행과 [generate.py](../themes/generate.py)의 845행.
 
