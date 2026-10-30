@@ -52,7 +52,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 |-----|---------|
 | agent-browser | 0.41.0 |
 | cf | 1.0.0-beta.21 |
-| claude-code | 2.1.312 |
+| claude-code | 2.1.314 |
 | codex | 0.166.0 |
 | codexbar | 0.82.0 |
 | databricks-cli | 1.19.0 |
