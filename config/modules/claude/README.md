@@ -16,7 +16,7 @@ Each Home Manager activation runs the official plannotator installer with `--min
 
 ### settings.json
 
-`~/.claude/settings.json` uses an out-of-store symlink to [files/settings.json](files/settings.json) in every profile. Changes saved to user settings from Claude Code update that tracked file directly. Project and project-local settings remain scoped to their projects. Home Manager temporarily uses a writable copy during plugin installation and updates, then restores the symlink so those activation operations do not rewrite the shared settings.
+`~/.claude/settings.json` uses an out-of-store symlink to [files/settings.json](files/settings.json) in every profile. Changes saved to user settings from Claude Code update that tracked file directly. Project and project-local settings remain scoped to their projects. Home Manager temporarily uses a writable copy during marketplace registration and plugin installation and updates, then restores the symlink so those activation operations do not rewrite the shared settings.
 
 - **Model**: Inherits the Claude Code default (no `model` pin)
 - **Theme**: `light-ansi` uses the terminal's ANSI palette on a light background
@@ -71,7 +71,7 @@ The shared [Agent skills activation](../agent-skills/README.md) installs or upda
 
 ### Marketplaces
 
-All remote marketplaces listed below set `autoUpdate: true`, including third-party marketplaces. `FORCE_AUTOUPDATE_PLUGINS=1` allows plugin updates while the Nix package disables Claude Code's own updater. The local `gytkk` marketplace uses the checkout. See [Claude Code's auto-update rules](https://code.claude.com/docs/en/plugins/loading#which-marketplaces-and-plugins-auto-update).
+All remote marketplaces listed below set `autoUpdate: true`, including third-party marketplaces. `FORCE_AUTOUPDATE_PLUGINS=1` allows plugin updates while the Nix package disables Claude Code's own updater. Activation registers the local `gytkk` marketplace from the configured checkout path in each host's `~/.claude/plugins/known_marketplaces.json`; the shared settings omit that host-specific path. Manually adding a local marketplace through Claude Code still writes its path to the shared settings. See [Claude Code's auto-update rules](https://code.claude.com/docs/en/plugins/loading#which-marketplaces-and-plugins-auto-update).
 
 The `devsisters` base profile enables `modules.claude.mumu.enable`, which registers `devsisters/mumu` and installs and enables `mumu@mumu`. Other profiles leave this option disabled. With mumu enabled, the installed `claude` launcher passes a generated file containing only the mumu entries through [`--settings`](https://code.claude.com/docs/en/settings#change-a-setting-for-one-session). The shared user settings remain writable through the checkout symlink. The command-line mumu settings override user and project settings, so disabling mumu in Claude Code does not override the launcher; change `modules.claude.mumu.enable` and apply Home Manager instead. Launching the underlying Nix package directly bypasses this profile overlay. Disabling the option stops managing mumu installation but does not uninstall an existing plugin or remove its cached marketplace.
 

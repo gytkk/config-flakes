@@ -176,30 +176,38 @@ let
 
     '';
 
-  mkPluginsSetup = plugins: ''
-    # Temporarily run plugin install/update against a copy so activation
-    # does not mutate the repository-backed settings symlink.
-    SETTINGS_FILE="$HOME/.claude/settings.json"
-    SETTINGS_LINK_TARGET=""
-    if [ -L "$SETTINGS_FILE" ]; then
-      SETTINGS_LINK_TARGET=$(${pkgs.coreutils}/bin/readlink -f "$SETTINGS_FILE")
-      ${pkgs.coreutils}/bin/cp --remove-destination "$SETTINGS_LINK_TARGET" "$SETTINGS_FILE"
-      ${pkgs.coreutils}/bin/chmod u+w "$SETTINGS_FILE"
-      log "Temporarily made settings.json writable for plugin operations"
-    fi
+  mkPluginsSetup =
+    {
+      marketplaces,
+      localMarketplaces,
+      plugins,
+    }:
+    ''
+      # Temporarily run marketplace/plugin operations against a copy so activation
+      # does not mutate the repository-backed settings symlink.
+      SETTINGS_FILE="$HOME/.claude/settings.json"
+      SETTINGS_LINK_TARGET=""
+      if [ -L "$SETTINGS_FILE" ]; then
+        SETTINGS_LINK_TARGET=$(${pkgs.coreutils}/bin/readlink -f "$SETTINGS_FILE")
+        ${pkgs.coreutils}/bin/cp --remove-destination "$SETTINGS_LINK_TARGET" "$SETTINGS_FILE"
+        ${pkgs.coreutils}/bin/chmod u+w "$SETTINGS_FILE"
+        log "Temporarily made settings.json writable for plugin operations"
+      fi
 
-    if ! run ${pkgs.python3}/bin/python ${./plugin-updates.py} \
-      --claude ${claude} \
-      --plugins ${pkgs.writeText "claude-plugins.json" (builtins.toJSON plugins)} \
-      >> "$SETUP_LOG" 2>&1; then
-      log "Plugin update checks failed; retry on the next switch"
-    fi
+      ${mkMarketplacesSetup { inherit marketplaces localMarketplaces; }}
 
-    if [ -n "$SETTINGS_LINK_TARGET" ]; then
-      ${pkgs.coreutils}/bin/ln -sf "$SETTINGS_LINK_TARGET" "$SETTINGS_FILE"
-      log "Restored settings.json symlink"
-    fi
-  '';
+      if ! run ${pkgs.python3}/bin/python ${./plugin-updates.py} \
+        --claude ${claude} \
+        --plugins ${pkgs.writeText "claude-plugins.json" (builtins.toJSON plugins)} \
+        >> "$SETUP_LOG" 2>&1; then
+        log "Plugin update checks failed; retry on the next switch"
+      fi
+
+      if [ -n "$SETTINGS_LINK_TARGET" ]; then
+        ${pkgs.coreutils}/bin/ln -sf "$SETTINGS_LINK_TARGET" "$SETTINGS_FILE"
+        log "Restored settings.json symlink"
+      fi
+    '';
 
   mkMcpSetup =
     { mcpCommands, removedMcpServers }:
@@ -247,8 +255,7 @@ let
         log "  Run 'claude auth login' to re-authenticate, then retry 'home-manager switch'."
       else
 
-      ${mkMarketplacesSetup { inherit marketplaces localMarketplaces; }}
-      ${mkPluginsSetup plugins}
+      ${mkPluginsSetup { inherit marketplaces localMarketplaces plugins; }}
       ${mkMcpSetup { inherit mcpCommands removedMcpServers; }}
 
       fi # end auth check

@@ -181,12 +181,6 @@
         "source": "github",
         "repo": "devsisters/ark"
       }
-    },
-    "gytkk": {
-      "source": {
-        "source": "directory",
-        "path": "/Users/gyutak/ws/config/modules/claude/marketplace"
-      }
     }
   },
   "otelHeadersHelper": "~/.local/bin/claude-otel-headers",
