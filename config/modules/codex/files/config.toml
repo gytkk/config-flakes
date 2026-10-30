@@ -8,6 +8,8 @@ suppress_unstable_features_warning = true
 web_search = "live"
 personality = "pragmatic"
 
+tool_timeout_sec = 300
+
 [agents]
 default_subagent_model = "gpt-6-luna"
 default_subagent_reasoning_effort = "medium"
