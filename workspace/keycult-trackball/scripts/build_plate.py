@@ -265,20 +265,154 @@ def build(count, layout, face, blank, donor):
     return measurements
 
 
+def build_printable_prototype(layout, face, blank):
+    from build_printable_holder import S, geometry, check, valid, rounded_box
+
+    folder = LOCAL.parent / 'prototype-62'
+    folder.mkdir(parents=True, exist_ok=True)
+    keys = layout['rear_clearance']['keys']
+    pcb, pcb_validation = pcb_report(62, layout['rear_clearance'])
+    coordinates_path = pcb.parent/'reports/switch-coordinates.json'
+    coordinates = json.loads(coordinates_path.read_text())
+    actual = {k['id']: [k['actual_stem_mm'][0]-180, k['actual_stem_mm'][1]-100] for k in coordinates}
+    assert set(actual) == {k['id'] for k in keys}, 'Prototype and native PCB switch IDs differ'
+    stem_error = max(math.dist(actual[k['id']], [k['x_mm'], k['y_mm']]) for k in keys)
+    assert stem_error < 1e-5, 'Prototype openings differ from native PCB switch stems'
+    holder_report = json.loads((ROOT/'design/printable-holder/checks.json').read_text())
+    layout_path = ROOT/'design/preliminary/layout.json'
+    if holder_report['pcb_sha256'] != sha(pcb) or holder_report['layout_sha256'] != sha(layout_path) or holder_report['settings_mm'] != S:
+        raise ValueError('Printable holder inputs are stale; rebuild the holder first')
+    parts, references = geometry()
+    verified = check(parts, references)
+    t = S['plate_thickness']
+    cutters = [rect(k['x_mm']-7, k['y_mm']-7, 14, 14).extrude(V(0, 0, -t)) for k in keys]
+    cutters += [rounded_box((-18, -18, 18, 18), 3, -t, t),
+                rounded_box((-28, -47, 28, -28), 1, -t, t)]
+    cutters += [Part.makeCylinder(1.15, t, V(x, y, -t)) for x in (-21, 21) for y in (-21, 21)]
+    plate = blank.cut(Part.makeCompound(cutters)).removeSplitter()
+    valid(plate, 'Current 62-key prototype plate')
+    top = max((f for f in plate.Faces if abs(f.CenterOfMass.z) < 1e-6 and f.normalAt(0, 0).z > .99), key=lambda f: f.Area)
+    restored = Part.Face(top.OuterWire)
+    outline_error = restored.cut(face).Area+face.cut(restored).Area
+    assert outline_error < 1e-5 and len(top.Wires) == 69, 'Prototype perimeter or aperture count changed'
+    assert all(c.cut(blank).Volume < 1e-6 for c in cutters), 'Prototype cutter outside official perimeter'
+    mounted = {n: p for n, p in parts.items() if n != 'SeatCoupon'}
+    plate_overlaps = {n: p.common(plate).Volume for n, p in (mounted | references).items() if n != 'CandidatePlate'}
+    assert all(v < 1e-6 for v in plate_overlaps.values()), plate_overlaps
+    doc = App.newDocument('Current62PrototypeAssembly')
+    metadata = doc.addObject('App::FeaturePython', 'PrototypeAssumptions')
+    metadata.addProperty('App::PropertyString', 'Warning').Warning = ('LOCAL PERSONAL STUDY. Official historical perimeter, not registered to the owned case. '
+        'Sensor board, component bodies, switch/keycap Z, material and tolerances unmeasured. Not a manufacturing or case-fit approval.')
+    metadata.addProperty('App::PropertyString', 'ParametersJSON').ParametersJSON = json.dumps(S)
+    metadata.addProperty('App::PropertyString', 'PCB_SHA256').PCB_SHA256 = sha(pcb)
+    plate_obj = feature(doc, 'Plate', plate, 'Exact pinned NoLeaf outer wire; 62 square 14mm switches, 36x36 R3 window, four D2.3 holes at +/-21mm, rear electronics access x+/-28 y-47..-28 R1; nominal aluminum thickness 1.5mm')
+    objects = [plate_obj]
+    for name, shape in (mounted | references).items():
+        if name == 'CandidatePlate':
+            continue
+        obj = feature(doc, name, shape, 'Independent printable part' if name in mounted else 'Nominal purchase-part or native PCB envelope reference; not actual component CAD')
+        objects.append(obj)
+    for name, shapes in (
+        ('KeycapProxies', [rect(k['x_mm']-cap_width(k)/2, k['y_mm']-9, cap_width(k), 18, 5).extrude(V(0, 0, 10)) for k in keys]),
+        ('SwitchProxies', [rect(k['x_mm']-7.8, k['y_mm']-7.8, 15.6, 15.6, -9).extrude(V(0, 0, 14)) for k in keys])):
+        feature(doc, name, Part.makeCompound(shapes), 'Unmeasured rectangular envelope at current XY key stems; not component models')
+    model_checks, omitted_models, native_model_check = [], [], None
+    component_shapes = {}
+    model_manifest = LOCAL.parent/'pcb-62/component-models.json'
+    if model_manifest.exists():
+        models = json.loads(model_manifest.read_text())
+        assert models['source_pcb_sha256'] == sha(pcb), 'Component model placements are stale'
+        native = None
+        if models.get('native_step'):
+            source = models['native_step']
+            assert source['source_pcb_sha256'] == sha(pcb) and sha(Path(source['path'])) == source['sha256'], 'Native six-component STEP is stale'
+            native = Part.read(source['path'])
+            assert native.isValid() and len(native.Solids) == 7, 'Expected bare PCB and six component solids'
+            transform = App.Matrix()
+            transform.A22, transform.A14, transform.A24 = -1, -180, -100
+            # KiCad's STEP exporter offsets component models 0.0012mm above the nominal mounting plane.
+            transform.A34 = S['pcb_top_z']-S['pcb_thickness']-.0012
+            native = native.transformGeometry(transform)
+            native_model_check = dict(sha256=source['sha256'], model_origin_epsilon_normalized_mm=.0012)
+        for component in models['parts']:
+            # shortcut: this stock switch STEP exits FreeCAD's loader; retry after the upstream/importer defect is resolved.
+            if component['footprint'] == 'SW_SPST_TL3342':
+                omitted_models.append(component['ref']+': stock STEP loader exits interpreter with status 1')
+                continue
+            assert component['side'] == 'top', 'Shallow prototype components must be on the top side'
+            for model in component['models']:
+                path = Path(model['local_step'])
+                assert sha(path) == model['sha256'], 'Stock component STEP hash changed'
+                assert model['offset_xyz'] == [0., 0., 0.] and model['rotation_xyz'] == [0., 0., 0.] and model['scale_xyz'] == [1., 1., 1.], 'Unsupported model transform'
+                shape = Part.read(str(path))
+                assert shape.isValid() and shape.Volume > 0, 'Invalid stock component STEP'
+                angle = math.radians(component['pcb_rotation_deg'])
+                matrix = App.Matrix()
+                matrix.A11, matrix.A12 = math.cos(angle), -math.sin(angle)
+                matrix.A21, matrix.A22 = -math.sin(angle), -math.cos(angle)
+                matrix.A14, matrix.A24 = component['pcb_origin_xy_mm'][0]-180, component['pcb_origin_xy_mm'][1]-100
+                matrix.A34 = S['pcb_top_z']
+                placed = shape.transformGeometry(matrix)
+                assert placed.isValid(), 'Invalid transformed component STEP'
+                native_difference = placed.cut(native).Volume if native is not None else None
+                assert native_difference is None or native_difference < 1e-5, (component['ref'], 'Standalone model transform differs from native KiCad STEP', native_difference)
+                overlap = {n: placed.common(p).Volume for n, p in dict(Plate=plate,
+                    Switches=doc.getObject('SwitchProxies').Shape, Keycaps=doc.getObject('KeycapProxies').Shape, **mounted, **component_shapes).items()}
+                assert all(v < 1e-6 for v in overlap.values()), (component['ref'], overlap)
+                component_shapes['PCB_'+component['ref']] = placed
+                b = placed.BoundBox
+                model_checks.append(dict(ref=component['ref'], source_sha256=model['sha256'],
+                    bounds_mm=[b.XMin, b.YMin, b.ZMin, b.XMax, b.YMax, b.ZMax],
+                    switch_proxy_minimum_gap_mm=placed.distToShape(doc.getObject('SwitchProxies').Shape)[0],
+                    native_missing_volume_mm3=native_difference, overlaps_mm3=overlap))
+                objects.append(feature(doc, 'PCB_'+component['ref'], placed, 'Pinned stock component STEP at native footprint origin; unmeasured supplied component; model Y inverted to layout Y'))
+    else:
+        omitted_models.append('Native component placement manifest unavailable')
+    doc.recompute()
+    fcstd, step = folder/'prototype-62.FCStd', folder/'prototype-62.step'
+    doc.saveAs(str(fcstd))
+    Part.export(objects, str(step))
+    reread = Part.read(str(step))
+    assert reread.isValid() and len(reread.Solids) == sum(len(o.Shape.Solids) for o in objects)
+    expected_volume = sum(o.Shape.Volume for o in objects)
+    assert math.isclose(reread.Volume, expected_volume, rel_tol=1e-6, abs_tol=1e-3)
+    Part.export([plate_obj], str(folder/'plate-62-PROTOTYPE.step'))
+    write_dxf(top, folder/'plate-62-PROTOTYPE.dxf')
+    paths = ' '.join(wire_path(w) for w in top.Wires)
+    (folder/'plan.svg').write_text('<svg xmlns="http://www.w3.org/2000/svg" width="330mm" height="150mm" viewBox="-165 -75 330 150">'
+        '<rect x="-165" y="-75" width="330" height="150" fill="white"/>'
+        '<text x="-155" y="-63" font-family="sans-serif" font-size="4">62-key shallow prototype / 36x36 R3 / 4x D2.3 on 42 square / LOCAL PERSONAL STUDY</text>'
+        f'<path d="{paths}" fill="#d5dce3" fill-rule="evenodd" stroke="#334155" stroke-width=".2"/>'
+        '<circle cx="0" cy="0" r="17" fill="#fdba74" fill-opacity=".7"/>'
+        '<text x="-155" y="67" font-family="sans-serif" font-size="3">Nominal 1.5mm aluminum. Owned case revision, switch clip fit and stiffness unverified.</text></svg>')
+    App.closeDocument(doc.Name)
+    reopened = App.openDocument(str(fcstd))
+    valid(reopened.getObject('Plate').Shape, 'Current assembly FCStd plate')
+    for name in mounted:
+        valid(reopened.getObject(name).Shape, 'Current assembly FCStd '+name)
+    App.closeDocument(reopened.Name)
+    assert sha(pcb) == verified['pcb_sha256'] and sha(layout_path) == verified['layout_sha256'], 'PCB or layout changed during assembly generation'
+    result = dict(status='digital_prototype_nominal_geometry_checked_not_case_or_hardware_qualified',
+        official_outer_wire_area_error_mm2=outline_error, source_step_sha256=STEP_SHA,
+        dxf_curve_deflection_mm=.01,
+        pcb_sha256=sha(pcb), pcb_opening=pcb_validation['pcb_opening'], layout_sha256=verified['layout_sha256'],
+        switch_coordinates_sha256=sha(coordinates_path), switch_coordinate_max_error_mm=stem_error,
+        switch_openings=62, switch_opening_mm=14., plate_thickness_mm=t, window_bounds_mm=[-18., -18., 18., 18.], window_corner_radius_mm=3.,
+        rear_electronics_relief_bounds_mm=[-28., -47., 28., -28.], rear_electronics_relief_corner_radius_mm=1.,
+        mount_pitch_mm=42., mount_hole_diameter_mm=2.3, max_plate_overlap_mm3=max(plate_overlaps.values()),
+        step_volume_relative_error=abs(reread.Volume-expected_volume)/expected_volume,
+        holder_checks=verified, stock_component_models=model_checks, omitted_component_models=omitted_models,
+        native_six_component_step_check=native_model_check,
+        omitted='Other PCB component bodies, actual supplied component dimensions, case, real sensor lens and connector, and switch/keycap profiles')
+    (folder/'checks.json').write_text(json.dumps(result, indent=2)+'\n')
+    return result
+
+
 def main():
-    LOCAL.mkdir(parents=True,exist_ok=True)
     layout = json.loads((ROOT/'design/preliminary/layout.json').read_text())
-    face,blank,donor = source_blank()
-    results = [build(count,layout,face,blank,donor) for count in (65,62)]
-    report = dict(status='mechanical study only; current native PCB geometry, no fit or manufacturing approval',
-                  freecad=App.Version(),parameters=STUDY,source_step_sha256=STEP_SHA,
-                  transform='x=STEP.x-142.875; y=STEP.z-47.625; z=STEP.y. PCB x-180,y-100. Physical datum unverified.',
-                  dxf_curve_deflection_mm=.01,results=results,
-                  unresolved=['Case revision and registration','Switch clip opening/tolerance and aluminum alloy/thickness',
-                              'Actual holder/sensor CAD and fastening interface','Actual-holder fit of PCB opening or raised assembly',
-                              'Floor clearance, screws, component heights, wiring and assembly access','Plate/carrier stiffness and optical alignment under load'])
-    (LOCAL/'review.json').write_text(json.dumps(report,indent=2)+'\n')
-    print(json.dumps(report,indent=2))
+    face,blank,_ = source_blank()
+    prototype = build_printable_prototype(layout, face, blank)
+    print(json.dumps(dict(output=str(LOCAL.parent/'prototype-62'), freecad=App.Version(), checks=prototype), indent=2))
 
 
 if __name__ == '__main__':

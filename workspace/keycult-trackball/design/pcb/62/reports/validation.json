@@ -3,10 +3,10 @@
   "key_count": 62,
   "layout_variant": "rear_clearance",
   "keepout_mm": [
-    151.425,
-    52.7,
-    208.575,
-    128.575
+    155.75,
+    75.75,
+    204.25,
+    124.25
   ],
   "kicad_version": "10.0.7",
   "erc_count": 0,
@@ -28,26 +28,26 @@
   "diode_count": 62,
   "footprint_count": 175,
   "net_count": 116,
-  "track_segment_count": 1282,
-  "via_count": 188,
-  "signal_tracks_on_ground_layer": 0,
+  "track_segment_count": 1427,
+  "via_count": 134,
+  "signal_tracks_on_ground_layer": 47,
   "keepout_intersections": [],
   "structural_errors": [],
   "native_export_readback": {
     "exports/back.svg": {
-      "bytes": 343352,
+      "bytes": 141172,
       "viewBox": "0.0000 0.0000 284.9880 94.5896"
     },
     "exports/front.svg": {
-      "bytes": 289666,
+      "bytes": 453767,
       "viewBox": "0.0000 0.0000 284.9880 94.5896"
     },
     "exports/ground.svg": {
-      "bytes": 539845,
+      "bytes": 512090,
       "viewBox": "0.0000 0.0000 284.9880 94.5896"
     },
     "exports/schematic/keycult62.svg": {
-      "bytes": 2988598,
+      "bytes": 2987922,
       "viewBox": "0.0000 0.0000 840.9940 594.0044"
     },
     "exports/schematic.pdf": {
@@ -203,22 +203,46 @@
     ]
   ],
   "artifact_sha256": {
-    "keycult62.kicad_pro": "1777de780dac702d509f434fef68f0f6280efa6d7621feddbdec4600f1a251b8",
-    "keycult62.kicad_sch": "e699e5c39bbe1a9f0e0dea3bd8b78dca3b4230380f435518da8b80196db86dc8",
-    "keycult62.kicad_pcb": "8785daba7e68f02488666a53c1bb77802100e2ba992c3bb1ec94064c720a4f18"
+    "keycult62.kicad_pro": "2b20c57deb113362daf1b45de61f18596a51cdda1c89f936e760dce83feeddda",
+    "keycult62.kicad_sch": "f7041b110c4ba0092d1b3681960b2b48d57621bb778f337f3ef8875f6e2e7204",
+    "keycult62.kicad_pcb": "dfeb4f7eca49de9a1d1e51e501512b7e0ce1a46c36417f386eec7891ebb9063c"
   },
   "usb_reference_review": {
-    "f_cu_width_mm": 0.29,
-    "minimum_f_cu_pair_edge_gap_mm": 0.2,
+    "f_cu_widths_mm": [
+      0.15,
+      0.29
+    ],
+    "minimum_f_cu_pair_edge_gap_mm": 0.29,
     "uncovered_projection_mm2": {
       "USB_DM": 0.0,
       "USB_DP": 0.0
     },
     "transition_exclusion_radius_mm": 0.51,
-    "maximum_signal_via_to_ground_via_mm": 2.294073,
-    "note": "Saved refilled In1 polygons, make_valid for KiCad touching contours. Projection only; .51mm disks exclude signal-via antipads. 3mm stitching rule is a project study condition, not USB compliance. Finite plane edges, transitions and actual impedance still require qualification."
+    "maximum_signal_via_to_ground_via_mm": 2.059126,
+    "note": "Saved refilled In1 polygons, make_valid for KiCad touching contours. Projection only; .51mm disks exclude signal-via antipads. 3mm stitching rule is a project study condition, not USB compliance. Finite plane edges, transitions and actual impedance still require qualification. DRAFT H has a local .15mm D+ resistor escape and USB test-pad branches; the uniform .29mm impedance estimate does not apply to these discontinuities."
   },
-  "ground_layer_tracks_by_net": {},
+  "shallow_assembly": {
+    "assumed_stack_mm": {
+      "ball_center_z": 23.5,
+      "pcb_top_z": -5.0,
+      "pcb_thickness": 1.6,
+      "maximum_below_pcb": 0.82,
+      "assumed_floor_z": -7.42
+    },
+    "bottom_populated_components": [],
+    "status": "All populated components top-side. Not a whole-assembly floor pass: stock switch leads/plastic posts, solder and insulation must be trimmed/measured to <=0.82mm below PCB. J2 needs the prototype plate relief; actual mating and cable path remain physical checks."
+  },
+  "ground_layer_tracks_by_net": {
+    "+3V3": 6,
+    "ROW1": 8,
+    "ROW2": 10,
+    "ROW3": 7,
+    "ROW4": 4,
+    "SENSOR_MOSI_3V3": 7,
+    "COL12": 3,
+    "SENSOR_RESET_3V3": 3,
+    "COL14": 5
+  },
   "pcb_opening": {
     "bounds_mm": [
       -24,
@@ -238,5 +262,62 @@
     "6": "SENSOR_MOSI_3V3",
     "7": "SENSOR_MISO_3V3",
     "MP": "GND"
+  },
+  "stackup_review": {
+    "status": "Unqualified JLC04161H-7628 candidate; fabricator approval required",
+    "top_to_bottom": [
+      {
+        "name": "F.Cu",
+        "type": "copper",
+        "thickness_mm": 0.035,
+        "material": null,
+        "epsilon_r": null
+      },
+      {
+        "name": "dielectric 1",
+        "type": "prepreg",
+        "thickness_mm": 0.2104,
+        "material": "7628",
+        "epsilon_r": 4.4
+      },
+      {
+        "name": "In1.Cu",
+        "type": "copper",
+        "thickness_mm": 0.0152,
+        "material": null,
+        "epsilon_r": null
+      },
+      {
+        "name": "dielectric 2",
+        "type": "core",
+        "thickness_mm": 1.065,
+        "material": "FR4",
+        "epsilon_r": 4.6
+      },
+      {
+        "name": "In2.Cu",
+        "type": "copper",
+        "thickness_mm": 0.0152,
+        "material": null,
+        "epsilon_r": null
+      },
+      {
+        "name": "dielectric 3",
+        "type": "prepreg",
+        "thickness_mm": 0.2104,
+        "material": "7628",
+        "epsilon_r": 4.4
+      },
+      {
+        "name": "B.Cu",
+        "type": "copper",
+        "thickness_mm": 0.035,
+        "material": null,
+        "epsilon_r": null
+      }
+    ],
+    "nominal_board_thickness_mm": 1.6,
+    "copper_and_dielectric_sum_mm": 1.5862,
+    "mask_and_finish": "Solder mask construction and finish unspecified. Copper/dielectric sum is 1.5862mm; nominal board thickness is 1.6mm. Do not infer the 0.0138mm difference as an approved mask allowance."
   }
 }

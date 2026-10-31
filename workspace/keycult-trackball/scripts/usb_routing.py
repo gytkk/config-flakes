@@ -24,6 +24,10 @@ def apply_usb_route(path):
     """Replace only connector-side USB tracks/vias and this module's GND vias."""
     path = Path(path)
     board = sx.loads(path.read_text())
+    if any(child(x,'layer')==node('layer','F.Cu') and any(len(p)>2 and str(p[0])=='property' and p[1:3]==['Reference','J1'] for p in x if isinstance(p,list)) for x in board if isinstance(x,list) and x and str(x[0])=='footprint'):
+        set_candidate_stackup(board)
+        path.write_text(sx.dumps(board)+'\n')
+        return
     def uid(label):
         return str(uuid.uuid5(uuid.NAMESPACE_URL, "keycult-ball/usb-route-e/" + label))
     ground_points = [(38.5, 113.2), (113.4, 55.7), (118.5, 54.7)]
@@ -96,6 +100,11 @@ def apply_usb_route(path):
                           node("hatch", sx.Symbol("edge"), .5), node("connect_pads", sx.Symbol("yes"), node("clearance", .2)),
                           node("min_thickness", .15), node("fill", sx.Symbol("yes"), node("thermal_gap", .5), node("thermal_bridge_width", .5)),
                           node("polygon", node("pts", *[node("xy", *p) for p in [(left,top),(right,top),(right,bottom),(left,bottom)]]))))
+    set_candidate_stackup(board)
+    path.write_text(sx.dumps(board) + "\n")
+
+
+def set_candidate_stackup(board):
     setup = child(board, "setup")
     old = child(setup, "stackup")
     if old:
@@ -115,7 +124,6 @@ def apply_usb_route(path):
             layer += [node("material", material), node("epsilon_r", er)]
         layers.append(layer)
     setup.append(node("stackup", *layers))
-    path.write_text(sx.dumps(board) + "\n")
 
 
 if __name__ == "__main__":

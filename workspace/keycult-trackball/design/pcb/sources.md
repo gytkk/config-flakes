@@ -5,6 +5,14 @@ scalar working-envelope reference. **No Keycult restricted CAD, contour, STEP,
 DXF, mounting-tab geometry, sensor Gerber or third-party original PCB is bundled.**
 Original GH60 downloads are only in ignored `../preliminary/sources/upstream/gh60/`.
 
+## Shallow DRAFT H sources
+
+The 2026-10-31 shallow redesign retains the component and interface choices below while placing all populated SMT on top. The [JST SH/SR manufacturer drawing](https://www.jst.com/wp-content/uploads/2021/03/eSR_SZ-new.pdf) specifies the 2.9mm J1 body; the installed stock model extends to 2.96mm. The [JST GH manufacturer drawing](https://www.jst-mfg.com/product/pdf/eng/eGH.pdf) describes the J2 side-entry family; its installed stock model extends to 4.245mm above the mounting plane. These are source/model dimensions, not measurements of supplied parts.
+
+The [Cherry MX manufacturer sheet, page 2](https://www.maltron.com/uploads/6/1/2/5/61250099/mx1a_11nn_data_sheet.pdf) gives a 3.30mm lead length below the seating face. Subtracting the nominal 1.60mm PCB gives 1.70mm lead protrusion, which exceeds the user's assumed 0.82mm underside clearance. Trimming and inspection must cover metal leads, plastic posts and solder; neither socket reference dimensions nor top-side relocation certify those tips.
+
+Pinned `kicad-packages3d` revision `dd37eac8d2` provides stock models for U1/U2/U3/J1/J2/Y1. Native KiCad 10.0.7 exports those six successfully to local STEP. Adding `SW_SPST_TL3342` triggers SIGSEGV, and that stock STEP also fails independent FreeCAD import. Restricting the component filter is the reproducible workaround; no dimensions or replacement bodies are invented. Stock model copies and their assembly STEP stay in ignored `../preliminary/sources/local/pcb-62/`.
+
 ## GH60 scalar working envelope
 
 - Author/project: komar007, GH60.

@@ -10,8 +10,8 @@
 <rect x="-142.875" y="-47.625" width="285.75" height="95.25" rx="0" fill="none" stroke="#94a3b8" stroke-width=".25" stroke-dasharray="1 1"/>
 <rect id="rear-extension" x="-28.575" y="-47.625" width="57.15" height="19.05" rx="0" fill="#ede9fe" stroke="#7c3aed" stroke-width=".25" stroke-dasharray="1 1"/>
 <rect id="rear-clearance-grid" x="-28.575" y="-47.625" width="57.15" height="76.2" rx="0" fill="none" stroke="#7c3aed" stroke-width=".25" stroke-dasharray="1 1"/>
-<text x="0" y="-43" font-size="2.8" text-anchor="middle" fill="#6d28d9">Mount / support study</text>
-<text x="0" y="-38" font-size="2.6" text-anchor="middle" fill="#6d28d9">+19.05 mm rear space</text>
+<text x="0" y="-43" font-size="2.8" text-anchor="middle" fill="#6d28d9">Top-side electronics</text>
+<text x="0" y="-38" font-size="2.6" text-anchor="middle" fill="#6d28d9">Rear plate relief required</text>
 <path d="M-150,0 L150,0" fill="none" stroke="#cbd5e1" stroke-width=".22" stroke-dasharray="1 2"/>
 <path d="M0,-58 L0,58" fill="none" stroke="#cbd5e1" stroke-width=".22" stroke-dasharray="1 2"/>
 <rect x="-25" y="-25" width="50" height="50" rx="0" fill="#fff7ed" stroke="#c2410c" stroke-width=".25" stroke-dasharray="1.4 1.2"/>
@@ -275,5 +275,5 @@
 <path d="M-28.575000000000003,74 L28.575000000000003,74" fill="none" stroke="#64748b" stroke-width=".22"/><path d="M-28.575000000000003,73 L-28.575000000000003,75" fill="none" stroke="#64748b" stroke-width=".22"/><path d="M28.575000000000003,73 L28.575000000000003,75" fill="none" stroke="#64748b" stroke-width=".22"/><text x="0.0" y="72.5" font-size="3" text-anchor="middle" fill="#172033">57.15 central grid gap</text>
 <text x="-157" y="84" font-size="3" text-anchor="start" fill="#172033">Green: 285.75 × 108.25 bounding reference ONLY — not the official contour.</text>
 <text x="-157" y="90" font-size="3" text-anchor="start" fill="#9a3412">Orange: reserved assembly box, NOT a verified holder outline or cutout.</text>
-<text x="-157" y="96" font-size="3" text-anchor="start" fill="#172033">Pink: PCB opening DRAFT 48 x 48 R1. Under-ball sensor / rollers. Fit / Z unverified.</text>
+<text x="-157" y="96" font-size="3" text-anchor="start" fill="#172033">Pink: PCB opening 48 x 48 R1. Ball center Z23.5; limit 0.82 below PCB (assumed).</text>
 </g></svg>

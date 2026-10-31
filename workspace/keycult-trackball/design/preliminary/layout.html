@@ -295,8 +295,8 @@
 <rect x="-142.875" y="-47.625" width="285.75" height="95.25" rx="0" fill="none" stroke="#94a3b8" stroke-width=".25" stroke-dasharray="1 1"/>
 <rect id="rear-extension" x="-28.575" y="-47.625" width="57.15" height="19.05" rx="0" fill="#ede9fe" stroke="#7c3aed" stroke-width=".25" stroke-dasharray="1 1"/>
 <rect id="rear-clearance-grid" x="-28.575" y="-47.625" width="57.15" height="76.2" rx="0" fill="none" stroke="#7c3aed" stroke-width=".25" stroke-dasharray="1 1"/>
-<text x="0" y="-43" font-size="2.8" text-anchor="middle" fill="#6d28d9">Mount / support study</text>
-<text x="0" y="-38" font-size="2.6" text-anchor="middle" fill="#6d28d9">+19.05 mm rear space</text>
+<text x="0" y="-43" font-size="2.8" text-anchor="middle" fill="#6d28d9">Top-side electronics</text>
+<text x="0" y="-38" font-size="2.6" text-anchor="middle" fill="#6d28d9">Rear plate relief required</text>
 <path d="M-150,0 L150,0" fill="none" stroke="#cbd5e1" stroke-width=".22" stroke-dasharray="1 2"/>
 <path d="M0,-58 L0,58" fill="none" stroke="#cbd5e1" stroke-width=".22" stroke-dasharray="1 2"/>
 <rect x="-25" y="-25" width="50" height="50" rx="0" fill="#fff7ed" stroke="#c2410c" stroke-width=".25" stroke-dasharray="1.4 1.2"/>
@@ -560,7 +560,7 @@
 <path d="M-28.575000000000003,74 L28.575000000000003,74" fill="none" stroke="#64748b" stroke-width=".22"/><path d="M-28.575000000000003,73 L-28.575000000000003,75" fill="none" stroke="#64748b" stroke-width=".22"/><path d="M28.575000000000003,73 L28.575000000000003,75" fill="none" stroke="#64748b" stroke-width=".22"/><text x="0.0" y="72.5" font-size="3" text-anchor="middle" fill="#172033">57.15 central grid gap</text>
 <text x="-157" y="84" font-size="3" text-anchor="start" fill="#172033">Green: 285.75 × 108.25 bounding reference ONLY — not the official contour.</text>
 <text x="-157" y="90" font-size="3" text-anchor="start" fill="#9a3412">Orange: reserved assembly box, NOT a verified holder outline or cutout.</text>
-<text x="-157" y="96" font-size="3" text-anchor="start" fill="#172033">Pink: PCB opening DRAFT 48 x 48 R1. Under-ball sensor / rollers. Fit / Z unverified.</text>
+<text x="-157" y="96" font-size="3" text-anchor="start" fill="#172033">Pink: PCB opening 48 x 48 R1. Ball center Z23.5; limit 0.82 below PCB (assumed).</text>
 </g></svg><p>상단 중앙 Vol- / Mute / Vol+를 제거하고 뒤쪽 19.05mm를 장착 구조 검토에 사용합니다. 볼은 지름 34mm, 중심 (0, 0)을 유지합니다. 보라색 영역은 가공 구멍이 아니며 보강판 재료를 남긴 지지 구조도 검토합니다. 강성과 수직 공간은 미검증입니다.</p><p><a href="rear-clearance.svg">SVG</a> · <a href="rear-clearance.png">PNG</a> · <a href="rear-clearance-print.pdf">62키 1:1 A3 PDF</a></p></details><details><summary>대안: 14u / 중앙 2u / 64키 — 홀더 적합성 미승인</summary><svg xmlns="http://www.w3.org/2000/svg" width="330mm" height="190mm" viewBox="-165 -88 330 190" role="img">
 <title>Preliminary Keycult No.1/60 + Keyball ortholinear layout</title>
 <desc>Millimetre-scale engineering illustration. Unknown case opening and vertical assembly depth. Not fabrication CAD.</desc>
@@ -842,26 +842,26 @@
 <text x="-157" y="84" font-size="3" text-anchor="start" fill="#172033">Green: 285.75 × 108.25 bounding reference ONLY — not the official contour.</text>
 <text x="-157" y="90" font-size="3" text-anchor="start" fill="#9a3412">Orange: reserved assembly box, NOT a verified holder outline or cutout.</text>
 <text x="-157" y="96" font-size="3" text-anchor="start" fill="#172033">Keys: assumed 18 × 18 caps / 14 × 14 switch proxies. Inner opening and Z stack UNKNOWN.</text>
-</g></svg><p>볼만 보면 가능하지만 50mm 조립 예약 영역과 키캡이 겹칩니다. 실물 홀더·PCB·커넥터의 높이별 외곽 검증 전에는 채택하지 않습니다.</p></details><div class="panel section"><svg xmlns="http://www.w3.org/2000/svg" width="170mm" height="90mm" viewBox="-55 -40 170 90">
+</g></svg><p>볼만 보면 가능하지만 50mm 조립 예약 영역과 키캡이 겹칩니다. 실물 홀더·PCB·커넥터의 높이별 외곽 검증 전에는 채택하지 않습니다.</p></details><div class="panel section"><svg xmlns="http://www.w3.org/2000/svg" width="170mm" height="100mm" viewBox="-55 -55 170 100">
 <g font-family="Arial,sans-serif">
-<rect x="-55" y="-40" width="170" height="90" fill="white"/>
-<text x="-50" y="-32" font-size="4">62-KEY DRAFT G / Y-Z SECTION / PROTOTYPE</text>
-<path d="M-50,0 H-18 M18,0 H100" fill="none" stroke="#0f766e" stroke-width="1.5"/>
+<rect x="-55" y="-55" width="170" height="100" fill="white"/>
+<text x="-50" y="-47" font-size="4">62-KEY DRAFT H / SHALLOW PROTOTYPE</text>
+<path d="M-50,0 H-47 M-28,0 H-18 M18,0 H100" fill="none" stroke="#0f766e" stroke-width="1.5"/>
 <path d="M-50,5 H-24 V6.6 H-50 M24,5 H100 V6.6 H24" fill="#86a884" stroke="#547452" stroke-width=".2"/>
-<circle cx="0" cy="-8" r="17" fill="#bfdbfe" stroke="#1d4ed8" stroke-width=".3"/>
-<circle cx="14.849" cy="6.849" r="4" fill="#d8bc76" stroke="#7e652a" stroke-width=".3"/>
-<circle cx="14.849" cy="6.849" r="1.5" fill="white" stroke="#7e652a" stroke-width=".2"/>
-<path d="M-22,12 V14 H-12 M12,14 H22 V12 M-22,17 V19 H-10 M10,19 H22 V17" fill="none" stroke="#168a83" stroke-width=".7"/>
-<rect x="-12.5" y="15.4" width="25" height="1.6" fill="#6b9d70" stroke="#325533" stroke-width=".2"/>
-<path d="M-5.5,11.4 H5.5 M0,9 V15.4" fill="none" stroke="#c2410c" stroke-dasharray="1 1" stroke-width=".3"/>
-<path d="M-50,31 H100" fill="none" stroke="#64748b" stroke-width=".3" stroke-dasharray="2 1"/>
+<circle cx="0" cy="-23.5" r="17" fill="#bfdbfe" stroke="#1d4ed8" stroke-width=".3"/>
+<circle cx="14.849" cy="-8.651" r="4" fill="#d8bc76" stroke="#7e652a" stroke-width=".3"/>
+<circle cx="14.849" cy="-8.651" r="1.5" fill="white" stroke="#7e652a" stroke-width=".2"/>
+<path d="M-22,-3.5 V-1.5 H-12 M12,-1.5 H22 V-3.5 M-18,3 V5 H-10 M10,5 H18 V3" fill="none" stroke="#168a83" stroke-width=".7"/>
+<rect x="-12.5" y="1.4" width="25" height="1.6" fill="#6b9d70" stroke="#325533" stroke-width=".2"/>
+<path d="M-5.5,-4.1 H5.5 M0,-6.5 V1.4" fill="none" stroke="#c2410c" stroke-dasharray="1 1" stroke-width=".3"/>
+<path d="M-50,7.42 H100" fill="none" stroke="#b91c1c" stroke-width=".3" stroke-dasharray="2 1"/>
 <g font-size="3">
-<text x="36" y="-23">ball top = +25; center = +8 assumed</text>
-<text x="36" y="-13">three tangential-axis rollers (one shown)</text>
-<text x="36" y="-3">plate top Z=0; candidate opening D36</text>
-<text x="36" y="12">ball bottom Z=-9; main PCB top -5</text>
-<text x="36" y="21">horizontal sensor PCB / rigid lower carrier</text>
-<text x="36" y="29">floor Z=-D UNKNOWN; print bottom -19</text>
-<text x="-50" y="42">PMW3360 module and lens datum unmeasured; spacers set sensor height.</text>
-<text x="-50" y="47">Schematic only. Case, fasteners, optics and manufacturing fit are NOT qualified.</text>
+<text x="36" y="-36">ball top +40.5; center +23.5; bottom +6.5</text>
+<text x="36" y="-25">sensor adjusts upward only: 0..1.5</text>
+<text x="36" y="-14">plate top Z0; opening 36 x 36 R3</text>
+<text x="36" y="-5">main PCB top -5; bottom -6.6</text>
+<text x="36" y="17">red: assumed floor -7.42, NOT measured</text>
+<text x="36" y="24">sensor screw bottom -7; nominal gap 0.42</text>
+<text x="-50" y="35">Shallow target: at most 0.82 below PCB. Sensor components/cable unmeasured.</text>
+<text x="-50" y="41">Lens datum, raised-ball ergonomics, case fit and deflection need physical tests.</text>
 </g></g></svg></div></main></body></html>

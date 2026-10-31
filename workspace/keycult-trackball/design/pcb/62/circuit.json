@@ -69,11 +69,11 @@
         106.68
       ],
       "pos": [
-        103.8,
+        180.0,
         69.8
       ],
       "angle": 90,
-      "side": "B",
+      "side": "F",
       "mpn": "RP2040",
       "status": "provisional sourcing",
       "note": "Direct mounted QFN; exposed pad to GND; unused GP25/27/28/29 NC",
@@ -99,11 +99,11 @@
         83.82
       ],
       "pos": [
-        121.8,
+        162.0,
         68.5
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "W25Q16JVSSIQ",
       "status": "provisional sourcing",
       "note": "208 mil SOIC, NOT 150mil package; QMK RP2040 flash boot stage must match",
@@ -126,11 +126,11 @@
         73.66
       ],
       "pos": [
-        80.8,
+        203.0,
         68
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "AP2112K-3.3TRG1",
       "status": "provisional sourcing",
       "note": "600mA part rating is NOT USB budget; 5V->3V3 thermal/load budget unresolved",
@@ -153,11 +153,11 @@
         91.44
       ],
       "pos": [
-        40.599999999999994,
-        112
+        153,
+        64
       ],
       "angle": 90,
-      "side": "B",
+      "side": "F",
       "mpn": "JST SM04B-SRSS-TB(LF)(SN)",
       "status": "C5-JSH interface selected; mechanical fit provisional",
       "note": "1 protected USB power, 2 D-, 3 D+, 4 GND; 1:1 JST-SH cable of suitable length. External DB1 supplies CC/ESD/PTC/TVS; VBUS_USB is after its PTC and before main-board F1",
@@ -245,8 +245,8 @@
         111.76
       ],
       "pos": [
-        113.9,
-        54.5
+        161,
+        61
       ],
       "angle": 0,
       "side": "B",
@@ -268,8 +268,8 @@
         111.76
       ],
       "pos": [
-        117.1,
-        54.5
+        167,
+        60
       ],
       "angle": 0,
       "side": "B",
@@ -292,11 +292,11 @@
         139.7
       ],
       "pos": [
-        71.8,
-        68
+        203,
+        56
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "Bourns MF-PSMF050X-2",
       "status": "provisional sourcing",
       "note": "Retained local main-board PTC after C5-JSH PTC; total drop, load/inrush and trip coordination need verification; not a USB current entitlement",
@@ -316,11 +316,11 @@
         139.7
       ],
       "pos": [
-        76.8,
-        68.5
+        207,
+        69
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify",
@@ -340,11 +340,11 @@
         139.7
       ],
       "pos": [
-        85.3,
+        198.5,
         72.5
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify",
@@ -364,11 +364,11 @@
         213.36
       ],
       "pos": [
-        108.6,
+        175.20000000000002,
         73.5
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; IOVDD1",
@@ -388,11 +388,11 @@
         213.36
       ],
       "pos": [
-        102.8,
+        181.0,
         74.6
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; IOVDD10",
@@ -412,11 +412,11 @@
         213.36
       ],
       "pos": [
-        98.1,
+        185.70000000000002,
         67.7
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; IOVDD22",
@@ -436,11 +436,11 @@
         213.36
       ],
       "pos": [
-        102.8,
+        181.0,
         64.8
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; IOVDD33",
@@ -460,11 +460,11 @@
         213.36
       ],
       "pos": [
-        106.4,
+        177.4,
         64.8
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; IOVDD42",
@@ -484,11 +484,11 @@
         213.36
       ],
       "pos": [
-        111.5,
+        172.3,
         69.8
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; IOVDD49",
@@ -508,11 +508,11 @@
         213.36
       ],
       "pos": [
-        108.7,
+        175.10000000000002,
         65.6
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; ADC_AVDD43",
@@ -532,11 +532,11 @@
         213.36
       ],
       "pos": [
-        109.4,
+        174.4,
         69.8
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; USB_VDD48",
@@ -556,11 +556,11 @@
         213.36
       ],
       "pos": [
-        98.1,
+        185.70000000000002,
         69.0
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; DVDD23",
@@ -580,11 +580,11 @@
         213.36
       ],
       "pos": [
-        109.4,
+        174.4,
         71.0
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; DVDD50",
@@ -604,11 +604,11 @@
         213.36
       ],
       "pos": [
-        109.4,
+        174.4,
         67.4
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; VREG_VIN44",
@@ -628,11 +628,11 @@
         213.36
       ],
       "pos": [
-        110.0,
+        173.8,
         68.6
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; VREG_VOUT45",
@@ -652,11 +652,11 @@
         213.36
       ],
       "pos": [
-        128.3,
+        155.5,
         73.2
       ],
       "angle": 90,
-      "side": "B",
+      "side": "F",
       "mpn": "TBD X7R 10V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify; QSPI flash VCC",
@@ -676,11 +676,11 @@
         73.66
       ],
       "pos": [
-        114,
+        169.8,
         67.5
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD 0402 1% 50V",
       "status": "provisional sourcing",
       "note": "value fixed; manufacturer not selected",
@@ -700,11 +700,11 @@
         73.66
       ],
       "pos": [
-        114,
+        169.8,
         68.7
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD 0402 1% 50V",
       "status": "provisional sourcing",
       "note": "value fixed; manufacturer not selected",
@@ -724,11 +724,11 @@
         116.84
       ],
       "pos": [
-        121.8,
+        162.0,
         73.6
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD 0402 1% 50V",
       "status": "provisional sourcing",
       "note": "value fixed; manufacturer not selected",
@@ -748,11 +748,11 @@
         139.7
       ],
       "pos": [
-        130.8,
+        153.0,
         73.3
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD 0402 1% 50V",
       "status": "provisional sourcing",
       "note": "value fixed; manufacturer not selected",
@@ -772,11 +772,11 @@
         139.7
       ],
       "pos": [
-        85.8,
+        198.0,
         65.8
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD 0402 1% 50V",
       "status": "provisional sourcing",
       "note": "value fixed; manufacturer not selected",
@@ -796,11 +796,11 @@
         73.66
       ],
       "pos": [
-        97.99999999999999,
+        185.8,
         70.8
       ],
       "angle": 90,
-      "side": "B",
+      "side": "F",
       "mpn": "TBD 0402 1% 50V",
       "status": "provisional sourcing",
       "note": "value fixed; manufacturer not selected",
@@ -820,11 +820,11 @@
         139.7
       ],
       "pos": [
-        115.3,
+        168.5,
         73.7
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD 0402 1% 50V",
       "status": "provisional sourcing",
       "note": "value fixed; manufacturer not selected",
@@ -846,11 +846,11 @@
         73.66
       ],
       "pos": [
-        94.8,
+        189.0,
         68.5
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "ABM8-272-T3",
       "status": "provisional sourcing",
       "note": "Confirm ESR/drive/startup on assembled board",
@@ -870,11 +870,11 @@
         116.84
       ],
       "pos": [
-        92.7,
+        191.10000000000002,
         72
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD C0G 50V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify",
@@ -894,11 +894,11 @@
         116.84
       ],
       "pos": [
-        94.8,
+        189.0,
         72
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD C0G 50V",
       "status": "provisional sourcing",
       "note": "voltage rating >=10V; capacitance under DC bias to verify",
@@ -918,14 +918,14 @@
         170.18
       ],
       "pos": [
-        132.3,
-        68.5
+        156,
+        57
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "E-Switch TL3342F160QG",
       "status": "provisional sourcing",
-      "note": "Backside service access and switch height not mechanically verified",
+      "note": "Top-side service access through rear plate relief; actuator height and assembled tool access require inspection",
       "uuid": "6b4d2dc7-ca4f-52eb-9ba6-85b503852296"
     },
     {
@@ -942,14 +942,14 @@
         170.18
       ],
       "pos": [
-        51.8,
-        68.5
+        165,
+        57
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "E-Switch TL3342F160QG",
       "status": "provisional sourcing",
-      "note": "Backside service access and switch height not mechanically verified",
+      "note": "Top-side service access through rear plate relief; actuator height and assembled tool access require inspection",
       "uuid": "dcdb4d60-f101-59e0-ba19-22fbb6904032"
     },
     {
@@ -1265,11 +1265,11 @@
         116.84
       ],
       "pos": [
-        144.8,
-        71.5
+        186,
+        57
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "TBD 0402 1% 50V",
       "status": "provisional sourcing",
       "note": "value fixed; manufacturer not selected",
@@ -1295,11 +1295,11 @@
         83.82
       ],
       "pos": [
-        136.5,
-        111.3
+        177,
+        58
       ],
-      "angle": 0,
-      "side": "B",
+      "angle": 180,
+      "side": "F",
       "mpn": "JST SM07B-GHS-TB(LF)(SN)",
       "status": "horizontal under-ball module prototype; revision and fit unverified",
       "note": "Host GH 1.25mm 7-pin; GHR-07V-S cable housing. Contact-number mapping to published Keyball46; sensor-end mating part TBD. 3V3 ONLY; retain module TPS73601/TXS0102; no motion/reset contacts; verify current and waveforms before powering",
@@ -1366,7 +1366,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "3f0efbfb-c827-5360-8365-2927f94fdc6e"
     },
     {
@@ -1384,10 +1384,10 @@
       ],
       "pos": [
         42.650000000000006,
-        68.5
+        70.8
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r0c0",
@@ -1414,7 +1414,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "bc66d65c-4c2b-5d0e-b701-57b85a3fcd3c"
     },
     {
@@ -1432,10 +1432,10 @@
       ],
       "pos": [
         61.7,
-        68.5
+        70.8
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r0c1",
@@ -1462,7 +1462,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "ba317fe1-54a7-55fa-9e3f-89ec6f83a181"
     },
     {
@@ -1479,11 +1479,11 @@
         325.12
       ],
       "pos": [
-        76.8,
-        73
+        80.75,
+        70.8
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r0c2",
@@ -1510,7 +1510,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "23f8a7ce-8b20-5bc2-85d2-ba474ca9862f"
     },
     {
@@ -1527,11 +1527,11 @@
         325.12
       ],
       "pos": [
-        95.8,
-        58
+        99.8,
+        70.8
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r0c3",
@@ -1558,7 +1558,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "156b3a32-cd92-58b9-9762-3ea67e952943"
     },
     {
@@ -1575,11 +1575,11 @@
         325.12
       ],
       "pos": [
-        134.8,
-        73
+        118.85,
+        70.8
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r0c4",
@@ -1606,7 +1606,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "6f4ce281-3e9a-5617-8e6d-8eccaf9efbf8"
     },
     {
@@ -1623,11 +1623,11 @@
         325.12
       ],
       "pos": [
-        139.8,
-        73.4
+        137.9,
+        70.8
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r0c5",
@@ -1654,7 +1654,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "e2c72f87-74a5-59b1-b38f-dd5a4afb40e3"
     },
     {
@@ -1672,10 +1672,10 @@
       ],
       "pos": [
         214.1,
-        68.5
+        70.8
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r0c9",
@@ -1702,7 +1702,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "de2ac47b-c517-5534-8b32-7fffe29267da"
     },
     {
@@ -1720,10 +1720,10 @@
       ],
       "pos": [
         233.15,
-        68.5
+        70.8
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r0c10",
@@ -1750,7 +1750,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "1311ccf9-ad63-52a8-9f10-e3f1c6d1d355"
     },
     {
@@ -1768,10 +1768,10 @@
       ],
       "pos": [
         252.2,
-        68.5
+        70.8
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r0c11",
@@ -1798,7 +1798,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "8e652c3b-1f27-5deb-9dd1-1ef124bee000"
     },
     {
@@ -1816,10 +1816,10 @@
       ],
       "pos": [
         271.25,
-        68.5
+        70.8
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r0c12",
@@ -1846,7 +1846,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "3d229527-9cf0-5d16-af08-6a46acdcc225"
     },
     {
@@ -1864,10 +1864,10 @@
       ],
       "pos": [
         290.3,
-        68.5
+        70.8
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r0c13",
@@ -1894,7 +1894,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "19876fab-bb22-5749-8a3d-fe88412c899b"
     },
     {
@@ -1912,10 +1912,10 @@
       ],
       "pos": [
         309.35,
-        68.5
+        70.8
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r0c14",
@@ -1942,7 +1942,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "e8cef4a7-af02-556d-a533-940ca583df02"
     },
     {
@@ -1960,10 +1960,10 @@
       ],
       "pos": [
         42.650000000000006,
-        87.55
+        89.85000000000001
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r1c0",
@@ -1990,7 +1990,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "b9fc6805-317f-5cde-a3bd-7564b15d2eb9"
     },
     {
@@ -2008,10 +2008,10 @@
       ],
       "pos": [
         61.7,
-        87.55
+        89.85000000000001
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r1c1",
@@ -2038,7 +2038,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "54c8113f-efd3-5848-9870-ee034a76597f"
     },
     {
@@ -2056,10 +2056,10 @@
       ],
       "pos": [
         80.75,
-        87.55
+        89.85000000000001
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r1c2",
@@ -2086,7 +2086,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "4aec1f36-fe5e-5ca0-a5b4-9baed3914ad6"
     },
     {
@@ -2104,10 +2104,10 @@
       ],
       "pos": [
         99.8,
-        87.55
+        89.85000000000001
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r1c3",
@@ -2134,7 +2134,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "de780690-ec2a-590e-918a-77d906efe04b"
     },
     {
@@ -2152,10 +2152,10 @@
       ],
       "pos": [
         118.85,
-        87.55
+        89.85000000000001
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r1c4",
@@ -2182,7 +2182,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "2af8a094-34a9-520e-a8ac-8a1b5993a3a9"
     },
     {
@@ -2200,10 +2200,10 @@
       ],
       "pos": [
         137.9,
-        87.55
+        89.85000000000001
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r1c5",
@@ -2230,7 +2230,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "322ebbd5-a67b-5f29-bb4c-4d610323e537"
     },
     {
@@ -2248,10 +2248,10 @@
       ],
       "pos": [
         214.1,
-        87.55
+        89.85000000000001
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r1c9",
@@ -2278,7 +2278,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "12b2b9e0-fb90-5cce-bc93-bc18769d3dba"
     },
     {
@@ -2296,10 +2296,10 @@
       ],
       "pos": [
         233.15,
-        87.55
+        89.85000000000001
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r1c10",
@@ -2326,7 +2326,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "328fad76-87a5-5db3-a5d5-e464ab10b8a7"
     },
     {
@@ -2344,10 +2344,10 @@
       ],
       "pos": [
         252.2,
-        87.55
+        89.85000000000001
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r1c11",
@@ -2374,7 +2374,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "1066916f-34a4-5d80-a4ec-5fbdd8cec983"
     },
     {
@@ -2392,10 +2392,10 @@
       ],
       "pos": [
         271.25,
-        87.55
+        89.85000000000001
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r1c12",
@@ -2422,7 +2422,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "0f5220bb-723e-52a9-982a-13ddd3e4133f"
     },
     {
@@ -2440,10 +2440,10 @@
       ],
       "pos": [
         290.3,
-        87.55
+        89.85000000000001
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r1c13",
@@ -2470,7 +2470,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "40142760-02ee-5d10-949b-0753b06bfe27"
     },
     {
@@ -2488,10 +2488,10 @@
       ],
       "pos": [
         309.35,
-        87.55
+        89.85000000000001
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r1c14",
@@ -2518,7 +2518,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "ad011ee2-2431-5e5d-ba92-d247cf3d5500"
     },
     {
@@ -2536,10 +2536,10 @@
       ],
       "pos": [
         42.650000000000006,
-        106.6
+        108.9
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r2c0",
@@ -2566,7 +2566,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "6e63d434-4357-5fdc-a1c9-ee1d717708f6"
     },
     {
@@ -2584,10 +2584,10 @@
       ],
       "pos": [
         61.7,
-        106.6
+        108.9
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r2c1",
@@ -2614,7 +2614,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "b5ee75f5-d3ec-5068-9819-a6f2fee13ff5"
     },
     {
@@ -2632,10 +2632,10 @@
       ],
       "pos": [
         80.75,
-        106.6
+        108.9
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r2c2",
@@ -2662,7 +2662,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "d90d43d8-b2d9-57c7-8fda-3ed86c20fed2"
     },
     {
@@ -2680,10 +2680,10 @@
       ],
       "pos": [
         99.8,
-        106.6
+        108.9
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r2c3",
@@ -2710,7 +2710,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "9f03aa3a-e056-58e0-bc83-e60bd612f6ce"
     },
     {
@@ -2728,10 +2728,10 @@
       ],
       "pos": [
         118.85,
-        106.6
+        108.9
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r2c4",
@@ -2758,7 +2758,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "d56a6456-5723-5e4b-be6c-4b3f6c8f20a6"
     },
     {
@@ -2776,10 +2776,10 @@
       ],
       "pos": [
         137.9,
-        106.6
+        108.9
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r2c5",
@@ -2806,7 +2806,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "52e72a01-9981-5e01-a726-aa9aeee0467c"
     },
     {
@@ -2824,10 +2824,10 @@
       ],
       "pos": [
         214.1,
-        106.6
+        108.9
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r2c9",
@@ -2854,7 +2854,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "572174cd-b028-5f14-9b6b-83ae130eaeb0"
     },
     {
@@ -2872,10 +2872,10 @@
       ],
       "pos": [
         233.15,
-        106.6
+        108.9
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r2c10",
@@ -2902,7 +2902,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "3b7cb512-1fe1-5c7a-b61b-a1122726ae93"
     },
     {
@@ -2920,10 +2920,10 @@
       ],
       "pos": [
         252.2,
-        106.6
+        108.9
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r2c11",
@@ -2950,7 +2950,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "8ebf7d98-d122-5f90-8e08-531cba8ede46"
     },
     {
@@ -2968,10 +2968,10 @@
       ],
       "pos": [
         271.25,
-        106.6
+        108.9
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r2c12",
@@ -2998,7 +2998,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "2da636ba-5a18-553e-8ae1-2d912fed7071"
     },
     {
@@ -3016,10 +3016,10 @@
       ],
       "pos": [
         290.3,
-        106.6
+        108.9
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r2c13",
@@ -3046,7 +3046,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "38af39ac-70d4-5c6d-b621-0e65ad9c1d4a"
     },
     {
@@ -3064,10 +3064,10 @@
       ],
       "pos": [
         309.35,
-        106.6
+        108.9
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r2c14",
@@ -3094,7 +3094,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "103f366c-68ab-5899-ad6a-559c52d3ccc9"
     },
     {
@@ -3112,10 +3112,10 @@
       ],
       "pos": [
         42.650000000000006,
-        125.64999999999999
+        127.95
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r3c0",
@@ -3142,7 +3142,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "b7b1be2d-1d8d-594b-ba12-fbbc61f6243d"
     },
     {
@@ -3160,10 +3160,10 @@
       ],
       "pos": [
         61.7,
-        125.64999999999999
+        127.95
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r3c1",
@@ -3190,7 +3190,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "dea32e9a-785c-5f93-87fa-d5bf62a80f51"
     },
     {
@@ -3208,10 +3208,10 @@
       ],
       "pos": [
         80.75,
-        125.64999999999999
+        127.95
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r3c2",
@@ -3238,7 +3238,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "3b9bd700-d924-53bc-83f4-0cd1634ab49e"
     },
     {
@@ -3256,10 +3256,10 @@
       ],
       "pos": [
         99.8,
-        125.64999999999999
+        127.95
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r3c3",
@@ -3286,7 +3286,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "1afcb6ee-3f5f-56bc-9249-c00016f9a0f8"
     },
     {
@@ -3304,10 +3304,10 @@
       ],
       "pos": [
         118.85,
-        125.64999999999999
+        127.95
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r3c4",
@@ -3334,7 +3334,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "a7e6a2f6-5e45-5abe-bae9-7e060d57e638"
     },
     {
@@ -3352,10 +3352,10 @@
       ],
       "pos": [
         137.9,
-        125.64999999999999
+        127.95
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r3c5",
@@ -3382,7 +3382,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "a08d9fed-42d9-5cd6-9234-1d08d6d0e066"
     },
     {
@@ -3400,10 +3400,10 @@
       ],
       "pos": [
         214.1,
-        125.64999999999999
+        127.95
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r3c9",
@@ -3430,7 +3430,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "13f74fc1-adf8-5ffd-b167-8d325bddfb9f"
     },
     {
@@ -3448,10 +3448,10 @@
       ],
       "pos": [
         233.15,
-        125.64999999999999
+        127.95
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r3c10",
@@ -3478,7 +3478,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "2094612f-1aa0-5822-8f97-b3dca8652d8a"
     },
     {
@@ -3496,10 +3496,10 @@
       ],
       "pos": [
         252.2,
-        125.64999999999999
+        127.95
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r3c11",
@@ -3526,7 +3526,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "a4adb5ff-cc2a-5922-9f0b-4623e0a2137c"
     },
     {
@@ -3544,10 +3544,10 @@
       ],
       "pos": [
         271.25,
-        125.64999999999999
+        127.95
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r3c12",
@@ -3574,7 +3574,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "ef97c022-bced-5d37-abaa-a5143f754c6c"
     },
     {
@@ -3592,10 +3592,10 @@
       ],
       "pos": [
         290.3,
-        125.64999999999999
+        127.95
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r3c13",
@@ -3622,7 +3622,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "ee4292ce-a2f7-5382-9b9c-b9b0be111150"
     },
     {
@@ -3640,10 +3640,10 @@
       ],
       "pos": [
         309.35,
-        125.64999999999999
+        127.95
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r3c14",
@@ -3670,7 +3670,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "bcdc1e47-00a9-53bc-accf-b719c3299e43"
     },
     {
@@ -3687,11 +3687,11 @@
         508.0
       ],
       "pos": [
-        42.650000000000006,
-        144.7
+        50.650000000000006,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c0",
@@ -3718,7 +3718,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "a23ecf1e-c123-56e8-9e1c-3e6d23df3e25"
     },
     {
@@ -3735,11 +3735,11 @@
         508.0
       ],
       "pos": [
-        61.7,
-        144.7
+        69.7,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c1",
@@ -3766,7 +3766,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "fa533ad7-ac64-5411-8666-908282c7eecf"
     },
     {
@@ -3783,11 +3783,11 @@
         508.0
       ],
       "pos": [
-        80.75,
-        144.7
+        88.75,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c2",
@@ -3814,7 +3814,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "2e07c55d-b3da-59f0-902f-e6384fcd7740"
     },
     {
@@ -3831,11 +3831,11 @@
         508.0
       ],
       "pos": [
-        99.8,
-        144.7
+        107.8,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c3",
@@ -3862,7 +3862,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "97c23bc3-c476-5453-8d1a-2f13d84b367c"
     },
     {
@@ -3879,11 +3879,11 @@
         508.0
       ],
       "pos": [
-        118.85,
-        144.7
+        126.85,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c4",
@@ -3910,7 +3910,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "419a830d-7f8b-5c9a-a10d-81e0866011ab"
     },
     {
@@ -3927,11 +3927,11 @@
         508.0
       ],
       "pos": [
-        137.9,
-        144.7
+        145.9,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c5",
@@ -3958,7 +3958,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "53682119-9a24-50b7-8759-a164af1453ee"
     },
     {
@@ -3975,11 +3975,11 @@
         508.0
       ],
       "pos": [
-        161.7125,
-        144.7
+        169.7125,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c6",
@@ -4006,7 +4006,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "66970ba0-3a54-5552-898c-ced4a31d48ad"
     },
     {
@@ -4023,11 +4023,11 @@
         508.0
       ],
       "pos": [
-        190.2875,
-        144.7
+        198.2875,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c8",
@@ -4054,7 +4054,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "45d603aa-f886-5be8-bc1e-7281a77a8695"
     },
     {
@@ -4071,11 +4071,11 @@
         508.0
       ],
       "pos": [
-        214.1,
-        144.7
+        222.1,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c9",
@@ -4102,7 +4102,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "234d5adb-64e6-5872-a469-f86b92bbb468"
     },
     {
@@ -4119,11 +4119,11 @@
         508.0
       ],
       "pos": [
-        233.15,
-        144.7
+        241.15,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c10",
@@ -4150,7 +4150,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "acd0ab02-be59-5c8f-97dd-94968e9cc05f"
     },
     {
@@ -4167,11 +4167,11 @@
         508.0
       ],
       "pos": [
-        252.2,
-        144.7
+        260.2,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c11",
@@ -4198,7 +4198,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "b8aa5ab4-104a-5b43-8c71-925a0e0f3ee0"
     },
     {
@@ -4215,11 +4215,11 @@
         508.0
       ],
       "pos": [
-        271.25,
-        144.7
+        279.25,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c12",
@@ -4246,7 +4246,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "4c9e3bb6-94ad-5914-82e8-1717ed6cd9df"
     },
     {
@@ -4263,11 +4263,11 @@
         508.0
       ],
       "pos": [
-        290.3,
-        144.7
+        298.3,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c13",
@@ -4294,7 +4294,7 @@
       "side": "F",
       "mpn": "Cherry MX PCB-mount solder; exact variant TBD",
       "status": "provisional sourcing",
-      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm",
+      "note": "Stock footprint origin is pin1, NOT stem; stem offset (-2.54,+5.08)mm; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit",
       "uuid": "e342654d-bddb-566d-ac23-ca77295e37e0"
     },
     {
@@ -4311,11 +4311,11 @@
         508.0
       ],
       "pos": [
-        309.35,
-        144.7
+        317.35,
+        129.2
       ],
       "angle": 0,
-      "side": "B",
+      "side": "F",
       "mpn": "1N4148W",
       "status": "provisional sourcing",
       "note": "Cathode pad1 to row; QMK COL2ROW; r4c14",
@@ -4383,10 +4383,10 @@
     94.6
   ],
   "keepout_mm": [
-    151.425,
-    52.7,
-    208.575,
-    128.575
+    155.75,
+    75.75,
+    204.25,
+    124.25
   ],
   "key_count": 62,
   "layout_variant": "rear_clearance"

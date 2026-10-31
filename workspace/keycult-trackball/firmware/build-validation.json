@@ -1,0 +1,31 @@
+{
+  "qmk_revision": "75a037d2f0f9c54bad8e2f68ae82134559c92f22",
+  "qmk_release": "0.29.0",
+  "submodules": [
+    " 8bd61b804303f1614d574546c2dd735eeabb09f5 lib/chibios (8bd61b80)",
+    " 3ac181e4ca5cafddaf8b472baa1d09c2b24c77b6 lib/chibios-contrib (3ac181e)",
+    " d0c5cac430cc955b65efa0e899748853d9a80928 lib/pico-sdk (heads/qmk-master)",
+    " c2e3b4e10d281e7f0f694d3ecbd9f320977288cc lib/printf (heads/qmk-master)"
+  ],
+  "compiler": "arm-none-eabi-gcc (Arm GNU Toolchain 13.3.Rel1 (Build arm-13.24)) 13.3.1 20240614",
+  "source_sha256": {
+    "config.h": "9753574221b2a827224706ee18569b8d1a70c4c186a7ef36b9b227267ec9bbfa",
+    "keyboard.json": "7e160610126250fd76ee2f3bdbea83d95f5b65fe8340ff8186b57238da2aa033",
+    "keymaps/default/keymap.c": "0530aac3c651be6e4579f0a0c9a6c4429f6277675e6c2ad9b7426269a30cc735",
+    "mcuconf.h": "b935fc48307a0afed880b848d98566b88f348d43eea41acd10b626ce504bfea9",
+    "rules.mk": "299e7c576fafdbb7d29ff294ca2a57f8914ffa6b14b4bd5dfdf068588ce2bcce"
+  },
+  "input_sha256": {
+    "design/pcb/62/circuit.json": "eec990e233e4834c401046a3e2600720730eca4f0d4db6a79f7048a4760d5a6c",
+    "design/pcb/62/gpio-map.csv": "7e42ef2b735482baa0eca236a165e696d7eaea9756b531e0d152a0d3d079d4b7",
+    "design/preliminary/layout.json": "1d006ea20f990536af30bc44701af0e87fa2ed9dca6739750f2df82695142341",
+    "scripts/build_firmware.py": "b934775cba913d2bd5895f1d490e4b56f58b5105d7310e70ff2a2fc51d1ccab2"
+  },
+  "uf2": {
+    "bytes": 61952,
+    "blocks": 121,
+    "sha256": "108d96fb4b0b061c9fbe9ca1a3eef8d3774bdbcc116a2c650fe7e753ff5123df"
+  },
+  "hardware_tested": false,
+  "srom_uploaded": false
+}

@@ -95,6 +95,22 @@ class ElectricalReviewTests(unittest.TestCase):
             self.assertNotIn('"In2.Cu") (net "USB_DM")', first)
 
 
+    def test_top_connector_preserves_short_route_and_only_sets_stackup(self):
+        original = sexpdata.loads('''(kicad_pcb (setup)
+          (footprint "JST" (layer "F.Cu") (property "Reference" "J1"))
+          (segment (start 152 64) (end 155 64) (width .29) (layer "F.Cu") (net "USB_DM"))
+          (via (at 151 64) (net "GND")))''')
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / 'board.kicad_pcb'
+            path.write_text(sexpdata.dumps(original))
+            apply_usb_route(path)
+            first = path.read_text()
+            board = sexpdata.loads(first)
+            self.assertEqual(board[2:], original[2:])
+            self.assertEqual(str(board[1][1][0]), 'stackup')
+            apply_usb_route(path)
+            self.assertEqual(path.read_text(), first)
+
     def test_usb_stitches_replace_imported_uuids_without_removing_other_vias(self):
         stitches = [sexpdata.loads(f'''(via (at {x} {y}) (size .6) (drill .3)
           (layers "F.Cu" "B.Cu") (net "GND") (uuid "imported-{i}"))''')

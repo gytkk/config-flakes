@@ -1,0 +1,172 @@
+{
+  "status": "PROTOTYPE CAM FOR REVIEW; NOT APPROVED FOR ORDER OR POWERED ASSEMBLY",
+  "key_count": 62,
+  "kicad_version": "10.0.7",
+  "source_sha256": {
+    "design/pcb/62/keycult62.kicad_pro": "2b20c57deb113362daf1b45de61f18596a51cdda1c89f936e760dce83feeddda",
+    "design/pcb/62/keycult62.kicad_sch": "f7041b110c4ba0092d1b3681960b2b48d57621bb778f337f3ef8875f6e2e7204",
+    "design/pcb/62/keycult62.kicad_pcb": "dfeb4f7eca49de9a1d1e51e501512b7e0ce1a46c36417f386eec7891ebb9063c",
+    "design/pcb/62/bom.csv": "58a2ec6afadbc6e885555151a91005a96509ffb21a6d8c2dce5863ba1363c3a5",
+    "design/pcb/62/circuit.json": "eec990e233e4834c401046a3e2600720730eca4f0d4db6a79f7048a4760d5a6c",
+    "design/pcb/62/controller-seed.json": "d40c471b755436ab0b0415c57084f422ad5dac29c9019b603d40dc5e5ce5c8d5",
+    "design/pcb/62/route-manifest.json": "ffb0ab473408c9556787720cea1eb9975a0199111880a39117176c414de54dc0",
+    "design/pcb/62/reports/validation.json": "4d7eb0e80979b43e365b2861fa218c26544dd7fa67508f4a544494e26277eb31",
+    "scripts/validate_pcb.py": "92f07ee764e3307e13938ddbf32cc0540916d68d2c53e28df94ce2c70e1a31d7"
+  },
+  "checks": {
+    "erc": 0,
+    "drc": 0,
+    "unconnected": 0,
+    "parity": 0,
+    "drill_hits": {
+      "PTH": 258,
+      "NPTH": 186
+    },
+    "all_positions": 158,
+    "top_smt_positions": 96
+  },
+  "stackup": {
+    "status": "Unqualified JLC04161H-7628 candidate; fabricator approval required",
+    "top_to_bottom": [
+      {
+        "name": "F.Cu",
+        "type": "copper",
+        "thickness_mm": 0.035,
+        "material": null,
+        "epsilon_r": null
+      },
+      {
+        "name": "dielectric 1",
+        "type": "prepreg",
+        "thickness_mm": 0.2104,
+        "material": "7628",
+        "epsilon_r": 4.4
+      },
+      {
+        "name": "In1.Cu",
+        "type": "copper",
+        "thickness_mm": 0.0152,
+        "material": null,
+        "epsilon_r": null
+      },
+      {
+        "name": "dielectric 2",
+        "type": "core",
+        "thickness_mm": 1.065,
+        "material": "FR4",
+        "epsilon_r": 4.6
+      },
+      {
+        "name": "In2.Cu",
+        "type": "copper",
+        "thickness_mm": 0.0152,
+        "material": null,
+        "epsilon_r": null
+      },
+      {
+        "name": "dielectric 3",
+        "type": "prepreg",
+        "thickness_mm": 0.2104,
+        "material": "7628",
+        "epsilon_r": 4.4
+      },
+      {
+        "name": "B.Cu",
+        "type": "copper",
+        "thickness_mm": 0.035,
+        "material": null,
+        "epsilon_r": null
+      }
+    ],
+    "nominal_board_thickness_mm": 1.6,
+    "copper_and_dielectric_sum_mm": 1.5862,
+    "mask_and_finish": "Solder mask construction and finish unspecified. Copper/dielectric sum is 1.5862mm; nominal board thickness is 1.6mm. Do not infer the 0.0138mm difference as an approved mask allowance."
+  },
+  "coordinates": "Absolute KiCad origin; Gerber/drill/placement mm. Position CSV has +X right, +Y up (negative PCB Y), bottom X is NOT mirrored. Rotations are native KiCad; assembler must approve transforms. Switch positions use pin-1 anchors, not stems.",
+  "assembly": "BOM candidates remain provisional. TP rows are copper features. DB1 is an external assembly, absent from placement. All-position CSV includes THT switches; top-SMT CSV excludes THT switches and test pads. Every populated SMT component is top-side.",
+  "open_gates": [
+    "Actual module identity, sensor-end connector and conditional +3V3 harness verification",
+    "All solder joints and switch metal/plastic tips must be trimmed and measured <=0.82mm below the PCB; standard untrimmed MX leads exceed this. Insulate from conductive case. Case depth, plate relief and cable clearances remain to be measured",
+    "Fabricator-approved stackup, finish, solder mask and controlled-impedance geometry",
+    "QFN exposed-pad via/paste, via tenting/filling and assembler rotation review",
+    "Final passive procurement, capacitor derating and crystal startup",
+    "USB inrush/startup/suspend, regulator heat, SPI levels and USB waveform bench tests"
+  ],
+  "commands": [
+    [
+      "kicad-cli",
+      "pcb",
+      "export",
+      "gerbers",
+      "--layers",
+      "F.Cu,In1.Cu,In2.Cu,B.Cu,F.Mask,B.Mask,F.SilkS,B.SilkS,F.Paste,B.Paste,Edge.Cuts",
+      "--subtract-soldermask",
+      "--output",
+      "CAM_OUTPUT/",
+      "PROJECT_ROOT/design/pcb/62/keycult62.kicad_pcb"
+    ],
+    [
+      "kicad-cli",
+      "pcb",
+      "export",
+      "drill",
+      "--format",
+      "excellon",
+      "--excellon-units",
+      "mm",
+      "--excellon-separate-th",
+      "--generate-map",
+      "--map-format",
+      "pdf",
+      "--generate-report",
+      "--output",
+      "CAM_OUTPUT/",
+      "PROJECT_ROOT/design/pcb/62/keycult62.kicad_pcb"
+    ],
+    [
+      "kicad-cli",
+      "pcb",
+      "export",
+      "pos",
+      "--format",
+      "csv",
+      "--units",
+      "mm",
+      "--side",
+      "both",
+      "--exclude-dnp",
+      "--output",
+      "CAM_OUTPUT/keycult62-all-positions.csv",
+      "PROJECT_ROOT/design/pcb/62/keycult62.kicad_pcb"
+    ]
+  ],
+  "files_sha256": {
+    "keycult62-B_Cu.gbl": "dbe5fa34c86976b68bd712d2909e3b4c7804b8dcd1253092cc83d819bf8cda6b",
+    "keycult62-B_Mask.gbs": "a996db8c4c2b92262fb756481946ae3e8c0fe6b469ea15ad3139de825d1e561a",
+    "keycult62-B_Paste.gbp": "9a28ef4f77721f2d0ac01a596fbbf0c965af0f22076c5fff1e7508c1eaff3bcb",
+    "keycult62-B_Silkscreen.gbo": "d7f47e518e9db84cf52676ba910b2e67e60c5a08cbfd7946738f88dcfab3fba8",
+    "keycult62-Edge_Cuts.gm1": "5f4660ade69261face1f596c788d8f6d55be319f2d7cfeb3ce5b9d2e4324d28c",
+    "keycult62-F_Cu.gtl": "ee5eaebc917e84f89ca397de9f9c09ea9967f0bae37485d53fa934671a225c6c",
+    "keycult62-F_Mask.gts": "5991d469c3cd94604d2131a86588c40d0fcd2ca1019f4753835ea897e9ccb02a",
+    "keycult62-F_Paste.gtp": "2f76524fb578db724405e643ccae1aaa6b744af553d1f20801dc0c41bb9c19e0",
+    "keycult62-F_Silkscreen.gto": "9bf8f87a2f35b27361030517c3886a1092da0da0fd37da5df547b9a159c5ffb6",
+    "keycult62-In1_Cu.g1": "b7185d3e6ce53149cdf9effbd43400f6db7faa736ad71a004747ad430057bd69",
+    "keycult62-In2_Cu.g2": "5b64d0c50390403e1f22ae5bb451c8e33eca50d1c98a617739be2fafe2320661",
+    "keycult62-NPTH-drl_map.pdf": "0d2cb5bbe8d391807e8407a5099877eb9b9af7f047de68827d46f154515fb9c9",
+    "keycult62-NPTH.drl": "cceacc64426d4be67683306d5a58b27335a5053f0aa063d8c99d8b33bf188b57",
+    "keycult62-PTH-drl_map.pdf": "663fe4af0131215556a6597dcf63b22c3d4d5c0da76935bd06798844688d4555",
+    "keycult62-PTH.drl": "48dad9df03e0f371ce68da3741cd4edaa1a08493f0376d72e05387ed7290aebb",
+    "keycult62-all-positions.csv": "460f3c1807d4dba63f78ea935ded17d4007233c9b5c5cbe4fbe7b1de88531bff",
+    "keycult62-bom.csv": "58a2ec6afadbc6e885555151a91005a96509ffb21a6d8c2dce5863ba1363c3a5",
+    "keycult62-drill.rpt": "25024af8a06f9f03414ab847e705eb3876d05704ccc5804fd771c4368e7fc501",
+    "keycult62-job.gbrjob": "f62100f197bfdfa3dadeeaba55483515a0ea47d044999fdc05bc5844e59e79dc",
+    "keycult62-top-smt-positions.csv": "0cb4fd307442b5c0c36cac400b16e40c8d103bb9da9554614dae7baf2935bce1"
+  },
+  "procurement_specs": {
+    "resistors": "0402, stated resistance, 1% tolerance, >=50V; manufacturer/series not selected",
+    "capacitors": "Stated capacitance and footprint; >=10V X7R for nF/uF, >=50V C0G for pF; verify effective capacitance under DC bias",
+    "switches": "62 PCB-mount Cherry MX compatible solder switches, not hot-swap; exact variant remains user choice",
+    "external_parts": "External C5-JSH assembly and contact-number 1:1 JST-SH cable; JST GH GHR-07V-S host sensor housing, sensor-end connector unidentified",
+    "status": "Generic minimum procurement candidates, not approved manufacturer part numbers or assembly substitutions"
+  }
+}

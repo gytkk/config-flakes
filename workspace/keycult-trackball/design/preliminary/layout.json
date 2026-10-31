@@ -2449,7 +2449,7 @@
         "height_u": 1
       }
     ],
-    "status": "priority cocot-inspired roller draft; horizontal under-ball sensor; fit and stiffness unverified",
+    "status": "DRAFT H shallow cocot-inspired roller prototype; raised ball and sensor; fit and stiffness unverified",
     "pcb_opening": {
       "bounds_mm": [
         -24,
@@ -2459,7 +2459,21 @@
       ],
       "corner_radius_mm": 1.0,
       "status": "cocot-inspired independent holder design assumption; not fabrication approval"
-    }
+    },
+    "pcb_keepout_mm": [
+      -24.25,
+      -24.25,
+      24.25,
+      24.25
+    ],
+    "prototype_stack_mm": {
+      "ball_center_z": 23.5,
+      "pcb_top_z": -5.0,
+      "pcb_thickness": 1.6,
+      "maximum_below_pcb": 0.82,
+      "assumed_floor_z": -7.42
+    },
+    "prototype_stack_basis": "User-requested shallow clearance; 3305-0 nominal 2.67mm length minus .25mm flange and 1.6mm PCB. Not a case measurement or socket-fit approval."
   },
   "plate_visualization": "generic rectangular bounding envelope; not the official contour or case opening"
 }

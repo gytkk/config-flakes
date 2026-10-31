@@ -8,6 +8,7 @@ This deliberately small project generator is not a general CAD/routing engine.
 Native CAD is editable; regeneration overwrites the seed. See design/pcb/README.md.
 """
 from pathlib import Path
+from collections import Counter
 import argparse, copy, csv, json, math, os, sys, uuid, subprocess
 import xml.etree.ElementTree as ET
 import sexpdata as sx
@@ -72,9 +73,9 @@ keys=layout[variant]['keys']
 # Keep original switch/diode references when a matrix cell is removed.
 refs={key_id:i for i,key_id in enumerate([f'r{r}c{c}' for r in range(5) for c in range(15) if r in (0,4) or c not in (6,7,8)],1)}
 indexed_keys=[(refs[k['id']],k) for k in keys]
-keepout=[155,75,205,125] if args.keys==65 else [151.425,52.7,208.575,128.575]
+keepout=[155,75,205,125] if args.keys==65 else [v+offset for v,offset in zip(layout[variant]['pcb_keepout_mm'],[180,100,180,100])]
 opening=layout[variant].get('pcb_opening')
-revision='G' if args.keys==62 else 'E'
+revision='H' if args.keys==62 else 'E'
 ROW_GPIO=[4,5,6,7,8]; COL_GPIO=[9,10,11,12,13,14,15,16,17,18,19,20,21,22,26]
 # Reserve hardware SPI0 GP0/1/2/3 before assigning the twenty matrix pins.
 gpio={0:'SENSOR_MISO_3V3',1:'SENSOR_CS_3V3',2:'SENSOR_SCLK_3V3',3:'SENSOR_MOSI_3V3'}
@@ -182,6 +183,25 @@ for p in parts:
  if p['ref'] in ('TP3','TP4'):p['pos']=(113.9 if p['ref']=='TP3' else 117.1,54.5)
  if p['ref']=='J2':p['pos']=(136.5,111.3)
 
+if args.keys==62:
+ shallow={'J1':(153,64),'J2':(177,58),'F1':(203,56),'C1':(207,69),'SW67':(156,57),'SW68':(165,57),'R8':(186,57)}
+ for p in parts:
+  if p['ref'].startswith('SW') and int(p['ref'][2:])<=66:p['note']+='; trim/inspect all solder, metal and plastic tips to <=0.82mm below 1.6mm PCB; standard untrimmed MX leads exceed this limit'
+  if p['ref'] in ('TP3','TP4'):
+   p['pos']=(161,61) if p['ref']=='TP3' else (167,60)
+  if not p['fp'] or p['ref'].startswith('TP') or (p['ref'].startswith('SW') and int(p['ref'][2:])<=66):continue
+  p['side']='F'
+  if p['ref'].startswith('D'):
+   k=next(k for i,k in indexed_keys if p['ref']==f'D{i}')
+   p['pos']=(180+k['x_mm']+(4 if k['row']==4 else -4),100+k['y_mm']+(-8.9 if k['row']==4 else 8.9))
+   p['angle']=0
+  else:
+   p['pos']=shallow.get(p['ref'],(283.8-p['pos'][0],p['pos'][1]))
+   p['angle']=(180-p['angle'])%360
+  if p['ref']=='J2':p['angle']=180
+  if p['ref']=='C1':p['angle']=0
+  if p['ref'] in ('SW67','SW68'):p['note']='Top-side service access through rear plate relief; actuator height and assembled tool access require inspection'
+
 # Embed the stock symbols so the native schematic is self-contained.
 rootuuid=uid('schematic')
 sch=[S('kicad_sch'),node('version',20250114),node('generator','eeschema'),node('uuid',rootuuid),node('paper','A1'),node('title_block',node('title',f'Keycult{args.keys} / electrical review draft'),node('date','2026-10-30'),node('rev','DRAFT-'+revision),node('comment',1,'C5-JSH / 7628 STACKUP ASSUMED - NOT FOR FABRICATION')),node('lib_symbols',*SYMS.values())]
@@ -287,63 +307,94 @@ board.Add(zone)
 
 def xy(p):return (pcb.ToMM(p.x),pcb.ToMM(p.y))
 def pad(ref,n):return next(p for p in fps[ref].Pads() if p.GetNumber()==str(n))
-def track(net,points,layer=pcb.F_Cu,width=.25):
+def track(net,points,layer=pcb.F_Cu,width=.25,locked=False):
  for a,b in zip(points,points[1:]):
   if math.dist(a,b)<.00001:continue
-  t=pcb.PCB_TRACK(board);t.SetStart(pt(*a));t.SetEnd(pt(*b));t.SetWidth(mm(width));t.SetLayer(layer);t.SetNet(nets[net]);board.Add(t)
-def via(net,xy0):
- v=pcb.PCB_VIA(board);v.SetPosition(pt(*xy0));v.SetWidth(mm(.6));v.SetDrill(mm(.3));v.SetViaType(pcb.VIATYPE_THROUGH);v.SetLayerPair(pcb.F_Cu,pcb.B_Cu);v.SetNet(nets[net]);board.Add(v)
-# Explicit ground fan-out connects bottom SMT pads to the inner reference plane.
-ground_offsets={'C10':(.42,.5),'C12':(.82,.1),'C11':(.42,.6),'C16':(0,.8),'U1':(-.9625,0),
- 'U2':(-.9,0),'U3':(-.8,0),'TP2':(1.1,0),'Y1':(0,.9)}
-for ref,f in fps.items():
- for p in f.Pads():
-  if p.GetNetname()!='GND':continue
-  if ref=='J1' and p.GetNumber()=='MP':continue  # USB overlay ground patch connects both mounting pads.
-  a=xy(p.GetPosition())
-  if ref=='U1' and p.GetNumber()=='57':via('GND',a);continue
-  dx,dy=ground_offsets.get(ref,(.72,0))
-  if ref=='J2' and p.GetNumber() in ('3','5'):dx,dy=0,1.4
-  if ref=='C15':dx,dy=0,-.72
-  if ref=='Y1':dx,dy=(.85 if p.GetNumber()=='2' else -1),0
-  if ref.startswith('SW'):dx,dy=0,-1.1
-  b=(a[0]+dx,a[1]+dy);track('GND',[a,b],pcb.B_Cu,.15 if ref=='U1' else .25);via('GND',b)
-# Connector-side USB is applied by usb_routing.py after native serialization.
-track('USB_DM_MCU',[xy(pad('U1',46).GetPosition()),(107.8,68.4),(108.2,68),(111.8,68),(112.3,67.5),xy(pad('R1',1).GetPosition())],pcb.B_Cu,.15)
-track('USB_DP_MCU',[xy(pad('U1',47).GetPosition()),(107.8,68.8),(108.2,69.2),(112.99,69.2),xy(pad('R2',1).GetPosition())],pcb.B_Cu,.15)
-track('SWCLK',[xy(pad('U1',24).GetPosition()),(99.65,68.8),(99.4,68.55)],pcb.B_Cu,.15)
-via('SWCLK',(99.4,68.55))
-# Inner-side escape avoids the crowded USB/decoupler corridor outside these QFN pads.
-track('SWDIO',[xy(pad('U1',25).GetPosition()),(101.4,68.4)],pcb.B_Cu,.15)
-via('SWDIO',(101.4,68.4))
-track('+1V1',[xy(pad('U1',45).GetPosition()),(106.2,68)],pcb.B_Cu,.15)
-via('+1V1',(106.2,68))
-track('+1V1',[xy(pad('C14',1).GetPosition()),(108.8,68.6)],pcb.B_Cu,.15)
-via('+1V1',(108.8,68.6))
-track('+1V1',[(106.2,68),(108.2,68),(108.8,68.6)],pcb.F_Cu,.25)
-track('+3V3',[xy(pad('U1',44).GetPosition()),(107.95,67.6),(108.15,67.4),xy(pad('C13',1).GetPosition())],pcb.B_Cu,.15)
-# All switch-diode series links, row buses and per-column trunks are real copper.
-rowends={}; colends={}
-for i,k in indexed_keys:
- x,y=180+k['x_mm'],100+k['y_mm'];r,c=k['row'],k['column'];kn='K_'+k['id']
- if r==0 and c in range(1,6):continue
- a=xy(pad(f'SW{i}',2).GetPosition());b=xy(pad(f'D{i}',2).GetPosition()); cath=xy(pad(f'D{i}',1).GetPosition())
- track(kn,[a,(a[0],y+3.5),(b[0],y+3.5),b],pcb.B_Cu)
- via(f'ROW{r}',(cath[0],y+7.8));track(f'ROW{r}',[cath,(cath[0],y+7.8)],pcb.B_Cu)
- rowends.setdefault(r,[]).append((cath[0],y+7.8))
- a=xy(pad(f'SW{i}',1).GetPosition());branch=(x+7,y-5.08)
- track(f'COL{c}',[a,branch],pcb.B_Cu);colends.setdefault(c,[]).append(branch)
-for r,pts in rowends.items():
- pts.sort()
- for a,b in zip(pts,pts[1:]):
-  if (r==0 and a[0]<145) or (top<a[1]<bottom and a[0]<left and b[0]>right):
-   pass # Detailed router bridges the protected centre on available layers.
-  else:track(f'ROW{r}',[a,b])
-for c,pts in colends.items():
- pts.sort(key=lambda a:a[1])
- if c in (6,7,8):
-  pass # Central columns need detours around the keepout; detailed router owns them.
- else:track(f'COL{c}',pts,pcb.B_Cu)
+  t=pcb.PCB_TRACK(board);t.SetStart(pt(*a));t.SetEnd(pt(*b));t.SetWidth(mm(width));t.SetLayer(layer);t.SetNet(nets[net]);t.SetLocked(locked);board.Add(t)
+def via(net,xy0,size=.6,drill=.3,locked=False):
+ v=pcb.PCB_VIA(board);v.SetPosition(pt(*xy0));v.SetWidth(mm(size));v.SetDrill(mm(drill));v.SetViaType(pcb.VIATYPE_THROUGH);v.SetLayerPair(pcb.F_Cu,pcb.B_Cu);v.SetNet(nets[net]);v.SetLocked(locked);board.Add(v)
+if args.keys==65:
+ # Explicit ground fan-out connects bottom SMT pads to the inner reference plane.
+ ground_offsets={'C10':(.42,.5),'C12':(.82,.1),'C11':(.42,.6),'C16':(0,.8),'U1':(-.9625,0),
+  'U2':(-.9,0),'U3':(-.8,0),'TP2':(1.1,0),'Y1':(0,.9)}
+ for ref,f in fps.items():
+  for p in f.Pads():
+   if p.GetNetname()!='GND':continue
+   if ref=='J1' and p.GetNumber()=='MP':continue  # USB overlay ground patch connects both mounting pads.
+   a=xy(p.GetPosition())
+   if ref=='U1' and p.GetNumber()=='57':via('GND',a);continue
+   dx,dy=ground_offsets.get(ref,(.72,0))
+   if ref=='J2' and p.GetNumber() in ('3','5'):dx,dy=0,1.4
+   if ref=='C15':dx,dy=0,-.72
+   if ref=='Y1':dx,dy=(.85 if p.GetNumber()=='2' else -1),0
+   if ref.startswith('SW'):dx,dy=0,-1.1
+   b=(a[0]+dx,a[1]+dy);track('GND',[a,b],pcb.B_Cu,.15 if ref=='U1' else .25);via('GND',b)
+ # Connector-side USB is applied by usb_routing.py after native serialization.
+ track('USB_DM_MCU',[xy(pad('U1',46).GetPosition()),(107.8,68.4),(108.2,68),(111.8,68),(112.3,67.5),xy(pad('R1',1).GetPosition())],pcb.B_Cu,.15)
+ track('USB_DP_MCU',[xy(pad('U1',47).GetPosition()),(107.8,68.8),(108.2,69.2),(112.99,69.2),xy(pad('R2',1).GetPosition())],pcb.B_Cu,.15)
+ track('SWCLK',[xy(pad('U1',24).GetPosition()),(99.65,68.8),(99.4,68.55)],pcb.B_Cu,.15)
+ via('SWCLK',(99.4,68.55))
+ # Inner-side escape avoids the crowded USB/decoupler corridor outside these QFN pads.
+ track('SWDIO',[xy(pad('U1',25).GetPosition()),(101.4,68.4)],pcb.B_Cu,.15)
+ via('SWDIO',(101.4,68.4))
+ track('+1V1',[xy(pad('U1',45).GetPosition()),(106.2,68)],pcb.B_Cu,.15)
+ via('+1V1',(106.2,68))
+ track('+1V1',[xy(pad('C14',1).GetPosition()),(108.8,68.6)],pcb.B_Cu,.15)
+ via('+1V1',(108.8,68.6))
+ track('+1V1',[(106.2,68),(108.2,68),(108.8,68.6)],pcb.F_Cu,.25)
+ track('+3V3',[xy(pad('U1',44).GetPosition()),(107.95,67.6),(108.15,67.4),xy(pad('C13',1).GetPosition())],pcb.B_Cu,.15)
+ # All switch-diode series links, row buses and per-column trunks are real copper.
+ rowends={}; colends={}
+ for i,k in indexed_keys:
+  x,y=180+k['x_mm'],100+k['y_mm'];r,c=k['row'],k['column'];kn='K_'+k['id']
+  if r==0 and c in range(1,6):continue
+  a=xy(pad(f'SW{i}',2).GetPosition());b=xy(pad(f'D{i}',2).GetPosition()); cath=xy(pad(f'D{i}',1).GetPosition())
+  track(kn,[a,(a[0],y+3.5),(b[0],y+3.5),b],pcb.B_Cu)
+  via(f'ROW{r}',(cath[0],y+7.8));track(f'ROW{r}',[cath,(cath[0],y+7.8)],pcb.B_Cu)
+  rowends.setdefault(r,[]).append((cath[0],y+7.8))
+  a=xy(pad(f'SW{i}',1).GetPosition());branch=(x+7,y-5.08)
+  track(f'COL{c}',[a,branch],pcb.B_Cu);colends.setdefault(c,[]).append(branch)
+ for r,pts in rowends.items():
+  pts.sort()
+  for a,b in zip(pts,pts[1:]):
+   if (r==0 and a[0]<145) or (top<a[1]<bottom and a[0]<left and b[0]>right):
+    pass # Detailed router bridges the protected centre on available layers.
+   else:track(f'ROW{r}',[a,b])
+ for c,pts in colends.items():
+  pts.sort(key=lambda a:a[1])
+  if c in (6,7,8):
+   pass # Central columns need detours around the keepout; detailed router owns them.
+  else:track(f'COL{c}',pts,pcb.B_Cu)
+else:
+ for f in fps.values():
+  if f.GetReference() in {'U1','U2','Y1',*(f'C{i}' for i in range(3,18))}:continue
+  for p in f.Pads():
+   if p.GetNetname()!='GND':continue
+   a=xy(p.GetPosition())
+   ref=f.GetReference()
+   # Keep the verified return vias while moving J1 clear of the switch housing.
+   if ref=='J1':
+    b=(a[0]-1,a[1]);track('GND',[a,b],pcb.F_Cu,.25,locked=True);via('GND',b);continue
+   dx,dy={'C1':(.925,0),'U3':(.8,0)}.get(ref,((.72,0) if ref.startswith('TP') else (-.72,0)))
+   if f.GetReference()=='J2':dx,dy=(0,.8) if p.GetNumber() in ('3','5') else (0,0)
+   b=(a[0]+dx,a[1]+dy);track('GND',[a,b],f.GetLayer(),.15);via('GND',b)
+ track('VBUS_USB',[xy(pad('J1',1).GetPosition()),(150,65.5)],pcb.F_Cu,.4,locked=True)
+ track('USB_DM',[xy(pad('J1',2).GetPosition()),(167.29,64.5),(169.29,66.5),(169.29,67.5)],pcb.F_Cu,.29)
+ track('USB_DP',[xy(pad('J1',3).GetPosition()),(167.497107,63.5),(169.8,65.802893)],pcb.F_Cu,.29)
+ track('USB_DP',[(169.8,65.802893),(169.8,68.7),(169.29,68.7)],pcb.F_Cu,.15)
+ track('USB_DM',[(161,64.5),(161,61)],pcb.B_Cu,.29);via('USB_DM',(161,64.5))
+ track('USB_DP',[(167,63.5),(167,60)],pcb.F_Cu,.29);via('USB_DP',(167,60))
+ for point in [(161.8,65.3),(168.8,61)]:via('GND',point)
+ track('GND',[xy(pad('U2',4).GetPosition()),(164,66.595),(162.705,65.3),(161.8,65.3)],pcb.F_Cu,.15)
+ j2_ground=min((xy(p.GetPosition()) for p in fps['J2'].Pads() if p.GetNumber()=='MP'),key=lambda p:p[0])
+ track('GND',[j2_ground,(j2_ground[0],59),(168.8,61)],pcb.F_Cu,.15)
+ controller_seed=json.loads((OUT/'controller-seed.json').read_text())['records']
+ for record in controller_seed:
+  if record['kind']=='segment':track(record['net'],[record['start'],record['end']],{'F.Cu':pcb.F_Cu,'B.Cu':pcb.B_Cu,'In1.Cu':pcb.In1_Cu,'In2.Cu':pcb.In2_Cu}[record['layer']],record['width'],locked=True)
+  elif record['kind']=='via':via(record['net'],record['at'],record['size'],record['drill'],locked=True)
+  else:raise ValueError('Unknown controller seed record kind: '+repr(record['kind']))
+ for item in board.GetTracks():
+  if item.GetNetname() in ('USB_DM','USB_DP') or all(153<=pcb.ToMM(q.x)<=193 and 61.5<=pcb.ToMM(q.y)<=75.5 for q in (item.GetStart(),item.GetEnd())):item.SetLocked(True)
 # Signal ground reference: continuous inner plane outside the centre reservation.
 g=pcb.ZONE(board);g.SetLayer(pcb.In1_Cu);g.SetNet(nets['GND']);g.SetLocalClearance(mm(.2));g.SetPadConnection(pcb.ZONE_CONNECTION_FULL);g.Outline().NewOutline()
 for x,y in [(38,53.2),(322,53.2),(322,146.8),(38,146.8)]:g.Outline().Append(mm(x),mm(y))
@@ -358,6 +409,18 @@ board.SetFileName(str(OUT/(NAME+'.kicad_pcb')))
 pcb.SaveBoard(str(OUT/(NAME+'.kicad_pcb')),board)
 from usb_routing import apply_usb_route
 apply_usb_route(OUT/(NAME+'.kicad_pcb'))
+if args.keys==62:
+ def point_key(point):return tuple(round(value,4) for value in point)
+ def record_key(record):
+  if record['kind']=='via':return ('via',record['net'],round(record['size'],4),round(record['drill'],4),point_key(record['at']))
+  return ('segment',record['net'],record['layer'],round(record['width'],4),tuple(sorted((point_key(record['start']),point_key(record['end'])))))
+ checked=pcb.LoadBoard(str(OUT/(NAME+'.kicad_pcb')));actual=[]
+ for item in checked.GetTracks():
+  if not item.IsLocked():continue
+  if isinstance(item,pcb.PCB_VIA):actual.append(('via',item.GetNetname(),round(pcb.ToMM(item.GetWidth(pcb.F_Cu)),4),round(pcb.ToMM(item.GetDrillValue()),4),point_key(xy(item.GetPosition()))))
+  else:actual.append(('segment',item.GetNetname(),checked.GetLayerName(item.GetLayer()),round(pcb.ToMM(item.GetWidth()),4),tuple(sorted((point_key(xy(item.GetStart())),point_key(xy(item.GetEnd())))))))
+ missing=Counter(map(record_key,controller_seed))-Counter(actual)
+ if missing:raise RuntimeError('Native PCB lost locked controller seed geometry: '+repr(missing))
 # Explicit review rules: not a claim about a selected fabricator's process or stackup.
 pro={'meta':{'filename':NAME+'.kicad_pro','version':1},'board':{'design_settings':{'rules':{'min_clearance':.15,'min_track_width':.15,'min_via_diameter':.55,'min_through_hole_diameter':.3,'min_hole_clearance':.25,'min_copper_edge_clearance':.25},'rule_severities':{}}},'net_settings':{'classes':[{'name':'Default','clearance':.15,'track_width':.25,'via_diameter':.6,'via_drill':.3,'diff_pair_width':.2,'diff_pair_gap':.15,'diff_pair_via_gap':.25}], 'meta':{'version':4}},'erc':{'erc_exclusions':[],'rule_severities':{}},'schematic':{'drawing':{}},'text_variables':{'STATUS':'DRAFT_NOT_FOR_FABRICATION'}}
 pro['net_settings']['classes'].append({'name':'USB','clearance':.15,'track_width':.29,'via_diameter':.6,'via_drill':.3,'diff_pair_width':.29,'diff_pair_gap':.2,'diff_pair_via_gap':.2})
@@ -369,7 +432,9 @@ pro['net_settings']['netclass_patterns']=[{'netclass':'USB','pattern':net} for n
 with (OUT/'bom.csv').open('w') as f:
  w=csv.writer(f,lineterminator='\n');w.writerow(['Reference','Value','Manufacturer part / candidate','Footprint','Assembly','Status','Notes'])
  for p in parts:
-  if p['fp'] or p['ref']=='DB1':w.writerow([p['ref'],p['value'],p['mpn'],p['fp'],'External assembly' if p['ref']=='DB1' else ('THT solder' if p['side']=='F' else 'Bottom SMT'),p['status'],p['note']])
+  assembly='External assembly' if p['ref']=='DB1' else ('THT solder' if p['side']=='F' else 'Bottom SMT')
+  if args.keys==62:assembly='External assembly' if p['ref']=='DB1' else ('PCB feature; do not populate' if p['ref'].startswith('TP') else ('THT solder' if p['ref'].startswith('SW') and int(p['ref'][2:])<=66 else 'Top SMT'))
+  if p['fp'] or p['ref']=='DB1':w.writerow([p['ref'],p['value'],p['mpn'],p['fp'],assembly,p['status'],p['note']])
 with (OUT/'gpio-map.csv').open('w') as f:
  w=csv.writer(f,lineterminator='\n');w.writerow(['key_id','label','switch','diode','matrix_row','matrix_col','row_gpio','column_gpio','x_mm','y_mm','diode_direction'])
  for i,k in indexed_keys:w.writerow([k['id'],k['label'],f'SW{i}',f'D{i}',k['row'],k['column'],f'GP{ROW_GPIO[k["row"]]}',f'GP{COL_GPIO[k["column"]]}',k['x_mm'],k['y_mm'],'COL2ROW'])

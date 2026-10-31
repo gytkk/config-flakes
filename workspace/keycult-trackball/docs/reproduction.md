@@ -79,14 +79,15 @@ macOS에서 설치된 FreeCAD 1.1.4의 Python 3.11과 OpenCascade를 사용한�
 ```bash
 uv run scripts/fetch_sources.py
 uv run scripts/verify_official_contour.py
+uv run --python /Applications/FreeCAD.app/Contents/Resources/bin/python scripts/build_printable_holder.py
 uv run --python /Applications/FreeCAD.app/Contents/Resources/bin/python scripts/build_plate.py
 ```
 
 설치 위치가 다르면 `FREECAD_ROOT`를 `Contents/Resources` 경로로 지정하고 `--python`도 해당 앱의 Python으로 바꾼다. Linux에서는 상위 저장소의 고정된 `config` flake 입력으로 준비한 FreeCAD 1.1.4와 Python 3.14.7의 모듈 로드를 확인했다. `FreeCAD`와 `Part`가 해당 Python에서 import되는 환경을 사용한다. 생성된 FCStd는 FreeCAD 앱에서 열고 객체의 표시 여부, 색상과 투명도를 직접 조정한다. PNG가 필요하면 GUI에서 저장한다. 외부 Python에서 `FreeCADGui.showMainWindow()`를 호출하는 방식은 이 Mac에서 종료 시 비정상 종료가 발생하여 사용하지 않는다.
 
-결과는 Git에서 제외되는 `design/preliminary/sources/local/plate-study/` 아래에 생성된다. `65/`와 `62/`는 각각 65키와 62키 결과를 저장한다. 각 디렉터리에 `plate-<keys>.FCStd`, `plate-<keys>.step`, `carrier-<keys>.step`, `plate-<keys>-DRAFT.dxf`, `plan.svg`, `checks.json`을 둔다. 재생성은 이 초안을 덮어쓰므로 수동 CAD 변경은 별도 이름으로 먼저 저장한다. 공개 저장소에는 생성 스크립트와 형상을 복제하지 않는 설명만 둔다.
+현재 `scripts/build_plate.py`는 `design/preliminary/sources/local/prototype-62/`에 얕은 62키 시제품만 생성한다. 먼저 현재 PCB 검증과 `scripts/build_printable_holder.py`를 실행해야 한다. 아래에서 설명하는 `plate-study/65/`, `plate-study/62/`와 `review.json`은 과거 깊은 구조의 검토 기록이며 기본 명령으로 다시 만들지 않는다. 해당 CAD를 현재 출력 홀더와 혼용하지 않는다.
 
-배열 원본은 기존 `design/preliminary/build_artifacts.py`이고, 새 기구 검토 치수는 `scripts/build_plate.py`의 `STUDY`다. FCStd의 `Study` 속성은 사용한 값을 기록한 것으로 형상을 자동 구동하지 않는다. `Plate`는 원본 외곽의 판과 검토용 절삭 객체를 연결한 Boolean cut이며, 재현 가능한 치수 변경은 생성기에 반영한다. 생성 검사는 원본 해시, PCB 좌표 및 CAD 해시, 단일 솔리드, 구멍 수, 외곽 보존, STEP/FCStd/DXF 재열기를 확인한다. `review.json`의 PCB-볼 간섭은 알려진 미해결 항목이며, 스크립트 성공을 실물 조립 통과로 해석하지 않는다.
+배열과 얕은 높이 가정의 원본은 `design/preliminary/build_artifacts.py`다. 현재 홀더 치수는 `scripts/build_printable_holder.py`의 `S`, 보강판 창과 조립은 `scripts/build_plate.py`에서 관리하고 상호 입력을 검사한다. FCStd 속성은 입력 기록이며 수정하면 형상이 자동 갱신되는 매개변수가 아니다. 검사는 원본 해시, PCB와 홀더 해시, 단일 솔리드, 원본 외곽 보존, STEP/FCStd/DXF 재열기와 명목 간섭을 포함한다. 현재 결과의 파일 목록은 아래 출력용 홀더 절차를 따른다.
 
 ## 홀더 받침 CAD 실험
 
@@ -97,7 +98,7 @@ uv run scripts/fetch_sources.py
 uv run --python /Applications/FreeCAD.app/Contents/Resources/bin/python scripts/build_holder_study.py
 ```
 
-생성기는 필요한 Keyball44 호스트 원본 ZIP이 없으면 고정 커밋에서 받아 SHA-256을 확인하고, 있으면 해시를 대조한다. DXF 단위 헤더의 불일치는 KiCad 장착점 7개와 대조해 기록한다. 현재 배열과 두 PCB의 stem 좌표 및 `Edge.Cuts`를 직접 읽으며 실행 중 입력 파일이 바뀌면 실패한다. 65키 `CurrentPCB`는 중앙이 막혀 있고 62키는 native 48 x 60mm, R1mm 개구를 반영한다. 날카로운 직각의 `ProposedOpenPCB`는 과거 비교용 형상으로 유지한다. 기존 보강판 도구의 공식 외곽 추출 함수를 사용하지만 기존 보강판 초안과 KiCad 파일은 덮어쓰지 않는다.
+생성기는 필요한 Keyball44 호스트 원본 ZIP이 없으면 고정 커밋에서 받아 SHA-256을 확인하고, 있으면 해시를 대조한다. DXF 단위 헤더의 불일치는 KiCad 장착점 7개와 대조해 기록한다. 현재 배열과 두 PCB의 stem 좌표 및 `Edge.Cuts`를 직접 읽으며 실행 중 입력 파일이 바뀌면 실패한다. 65키 `CurrentPCB`는 중앙이 막혀 있고 62키는 실행 시 읽은 native 48 x 48mm R1 개구를 반영한다. 이 실험의 깊은 홀더는 현재 얕은 시제품의 검증 대상으로 사용하지 않는다. 날카로운 직각의 `ProposedOpenPCB`는 과거 비교용 형상으로 유지한다. 기존 보강판 도구의 공식 외곽 추출 함수를 사용하지만 기존 보강판 초안과 KiCad 파일은 덮어쓰지 않는다.
 
 Git에서 제외하는 `design/preliminary/sources/local/holder-study/65/`와 `62/`에 기본 시나리오의 `holder-study.FCStd`, `Basket-EXPERIMENT.step`, `Plate-EXPERIMENT.step`, `ProposedOpenPCB-EXPERIMENT.step`, `section.svg`를 생성한다. FCStd는 FreeCAD 앱에서 열어 검토하며 표시 설정과 PNG 저장은 GUI에서 직접 수행한다. 상위 `review.json`에는 높이와 외피 크기를 바꾼 18개 비교 결과, 입력 해시와 가정을 기록한다. 재생성은 이 실험 파일을 덮어쓰므로 수동 편집은 다른 이름으로 먼저 저장한다. FreeCAD의 `Assumptions` 속성은 기록용이며 형상을 구동하지 않는다. 가정 변경은 생성기에서 수행한다.
 
@@ -135,10 +136,14 @@ Linux에서는 `FREECAD_ROOT`를 FreeCAD 설치 경로로 지정하고 `uv run -
 trackball_repo=$(git rev-parse --show-toplevel)
 export FREECAD_ROOT=$(nix build --no-link --print-out-paths --impure --expr "let f = builtins.getFlake \"$trackball_repo\"; p = import f.inputs.config.inputs.nixpkgs { system = builtins.currentSystem; }; in p.freecad")
 trackball_python=$(nix eval --raw --impure --expr "let f = builtins.getFlake \"$trackball_repo\"; p = import f.inputs.config.inputs.nixpkgs { system = builtins.currentSystem; }; in p.python3.interpreter")
+trackball_cxx=$(nix eval --raw --impure --expr "let f = builtins.getFlake \"$trackball_repo\"; p = import f.inputs.config.inputs.nixpkgs { system = builtins.currentSystem; }; in p.stdenv.cc.cc.lib.outPath")
+export LD_LIBRARY_PATH="$trackball_cxx/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 uv run --no-project --python "$trackball_python" scripts/build_printable_holder.py
 ```
 
-실행 결과는 `design/printable-holder/`의 FCStd, STEP, 부품별 STL, SVG 미리보기, 검사 JSON과 ZIP이다. 재생성은 해당 생성 결과를 덮어쓰므로 수동 수정본은 다른 이름으로 저장한다. FreeCAD 속성은 기록용이며 치수는 생성기에서 바꾼다. 검사 범위는 홀더 안내에 기록한다. 홀더만 수정하면 예비 배치 재생성은 필요 없지만, PCB 개구나 예비 단면을 바꾸면 `build_artifacts.py`, PCB 재생성 및 검증, `scripts/render.py`도 실행한다. 현재 DRAFT G는 48 x 48mm R1 개구와 하부 수평 센서 단면을 사용하며 기존 로컬 보강판과 순정 홀더 실험은 과거 비교용이다. SVG는 생성된 솔리드의 삼각형 면을 투영한 검토 그림이며 광학 시뮬레이션이 아니다.
+Linux의 보강판 생성은 ezdxf와 NumPy도 불러온다. `libstdc++.so.6`를 찾지 못하는 오류를 방지하도록 위 명령은 같은 고정 Nix 입력의 C++ runtime을 지정한다. 시스템 설정이나 lockfile은 변경하지 않는다.
+
+실행 결과는 `design/printable-holder/`의 FCStd, STEP, 부품별 STL, SVG, 검사 JSON과 ZIP이다. DRAFT H는 볼 중심 Z=23.5mm와 PCB 아래 돌출 한도 0.82mm를 사용하며 센서 높이는 위로만 조절한다. 생성기는 현재 CAD를 덮어쓰므로 수동 편집을 별도 이름으로 저장한다. `build_printable_holder.py` 이후 같은 FreeCAD 환경에서 `uv run --no-project --python "$trackball_python" scripts/build_plate.py`를 실행하면 공식 NoLeaf 외곽을 유지한 `design/preliminary/sources/local/prototype-62/`의 `plate-62-PROTOTYPE.step`, `plate-62-PROTOTYPE.dxf`, `prototype-62.FCStd`, `prototype-62.step`, `plan.svg`와 `checks.json`을 만든다. Linux 변수는 위 명령에서 설정하며 macOS는 해당 앱 Python을 사용한다. 이 파일은 개인 사용을 위한 로컬 산출물이며 Git에 포함하지 않는다. 기존 깊은 홀더와 케이스 실험은 비교 자료로만 유지한다. PCB 배치 또는 예비 단면을 바꾸면 예비 도면 생성, PCB 생성 및 배선과 검증, 렌더, 홀더 및 보강판 생성 순서로 현재 해시와 검사 결과를 맞춘다.
 
 ## KiCad 65키·62키 회로·PCB 초안
 
@@ -155,9 +160,9 @@ uv run --python "$(command -v python3)" scripts/route_pcb.py --keys 62 --import-
 uv run --python "$(command -v python3)" scripts/validate_pcb.py --keys 62
 ```
 
-각 SES는 현재 키 좌표에 맞춰 다시 생성한 기본 배선을 저장한다. `scripts/usb_routing.py`는 seed 생성과 SES 가져오기 이후 J1 측 USB 배선을 교체하고 DRAFT E의 접지 비아·접지면 및 후보 stackup을 적용한다. `route-manifest.json`은 회로, 배열, 생성기와 이 스크립트의 해시를 검사하므로 입력을 변경하면 기존 배선을 그대로 가져올 수 없다. 회로나 배열을 변경하면 `--import-saved` 대신 `--route`로 다시 배선하고 전체 결과를 검토한다.
+각 SES는 현재 키 좌표에 맞춰 다시 생성한 기본 배선을 저장한다. 62키의 `design/pcb/62/controller-seed.json`은 검증된 65키 배선을 변환한 MCU 주변 구리와 독립적으로 추가한 외곽 연결을 구분해 기록하며, 생성기가 SES를 읽기 전에 적용한다. 고정 구리는 SES에 포함되지 않으므로 두 입력을 함께 보존한다. `scripts/usb_routing.py`는 65키에서 J1 측 USB 배선과 접지를 적용하고, 62키 DRAFT H에서는 윗면 J1의 짧은 배선을 보존한다. 두 버전 모두 후보 stackup을 적용한다. `route-manifest.json`은 회로, 배열, 생성기, USB와 배선 정리 스크립트 및 62키 고정 구리의 해시를 검사한다. 회로나 배열을 변경하면 `--import-saved` 대신 `--route`로 다시 배선하고 전체 결과를 검토한다. 배선 정리는 KiCad가 보고한 T자 분기의 남는 끝부분을 분리한 뒤 제거하며, net별 미연결이 증가하면 직전 보드를 복원하고 실패한다.
 
-검증은 기본적으로 미배선이나 DRC 위반이 있으면 실패한다. `--draft`는 미배선만 허용하고 실제 수를 보고하는 검토 모드이며, 기하 DRC 위반은 그대로 실패한다. 새로 채운 In1.Cu 접지면이 F.Cu USB 배선 아래를 덮는지 검사하며, 신호 비아 중심 반경 0.51mm는 접지면의 절연 간격(antipad) 때문에 별도로 제외한다. 선폭 0.29mm, 최소 간격 0.2mm와 신호 비아에서 접지 비아까지 3mm 이내라는 설계 조건도 검사한다. 이 수치는 프로젝트의 배선 검토 조건이며 USB 적합성 판정 기준이 아니다. 검사 상태는 [65키 보고서](../design/pcb/reports/validation.json)와 [62키 보고서](../design/pcb/62/reports/validation.json)를 기준으로 하며 제조 승인으로 해석하지 않는다. KiCad 없이 실행하는 검사 회귀 테스트는 `uv run scripts/test_pcb_validation_gate.py`다.
+검증은 기본적으로 미배선이나 DRC 위반이 있으면 실패한다. `--draft`는 미배선만 허용하고 실제 수를 보고하는 검토 모드이며, 기하 DRC 위반은 그대로 실패한다. 새로 채운 In1.Cu 접지면이 F.Cu USB 배선 아래를 덮는지 검사하며, 신호 비아 중심 반경 0.51mm는 접지면의 절연 간격(antipad) 때문에 별도로 제외한다. 기본 선폭 0.29mm, 최소 간격 0.2mm와 신호 비아에서 접지 비아까지 3mm 이내라는 설계 조건도 검사한다. 62키 DRAFT H의 저항 패드 부근에는 0.15mm 배선이 있으며 균일 선폭의 임피던스 계산을 적용하지 않는다. 이 수치는 프로젝트의 배선 검토 조건이며 USB 적합성 판정 기준이 아니다. 검사 상태는 [65키 보고서](../design/pcb/reports/validation.json)와 [62키 보고서](../design/pcb/62/reports/validation.json)를 기준으로 하며 제조 승인으로 해석하지 않는다. KiCad 없이 실행하는 검사 회귀 테스트는 `uv run scripts/test_pcb_validation_gate.py`다.
 
 ### 전원과 USB의 실물 없는 검토
 
@@ -194,4 +199,6 @@ docker run --rm --platform linux/amd64 --entrypoint /bin/sh \
   '
 ```
 
-62키는 위 실행 명령의 `--keys 65` 세 곳을 `--keys 62`로 바꾼다. `--no-project --active`는 미리 설치한 가상 환경과 시스템 KiCad 바인딩을 함께 사용하기 위한 옵션이다. USB 배선 및 배선 정리 하위 스크립트는 자체 메타데이터에 따라 `uv` 캐시를 만들 수 있으므로 첫 실행에는 네트워크가 필요하다. DRAFT E의 두 버전은 이 환경에서 생성하고 ERC/DRC와 연결 일치를 검사했다.
+62키는 위 실행 명령의 `--keys 65` 세 곳을 `--keys 62`로 바꾼다. `--no-project --active`는 미리 설치한 가상 환경과 시스템 KiCad 바인딩을 함께 사용하기 위한 옵션이다. USB 배선 및 배선 정리 하위 스크립트는 자체 메타데이터에 따라 `uv` 캐시를 만들 수 있으므로 첫 실행에는 네트워크가 필요하다. 과거 DRAFT E는 이 환경에서 검사했으며 현재 DRAFT H는 호스트의 KiCad 10.0.7에서 검사한다.
+
+62키 제작 검토 파일은 [PCB 안내](../design/pcb/README.md#shallow-62-key-prototype)의 strict 검증 및 CAM 내보내기 명령으로 생성한다. QMK 소스, 고정 toolchain, UF2 및 대응 소스 묶음의 재현은 [펌웨어 안내](../firmware/README.md#build-and-check)를 따른다.

@@ -16,11 +16,13 @@ ROOT=Path(__file__).resolve().parents[1];D=ROOT/'design/pcb';CACHE=ROOT/'.cache/
 JAR_SHA='d7fd0f63f52e6d74b0fad6715f87ca9f0ffd7109d66b2a584638000270592ecf'
 URL='https://github.com/freerouting/freerouting/releases/download/v2.0.1/freerouting-2.0.1.jar'
 parser=argparse.ArgumentParser();g=parser.add_mutually_exclusive_group(required=True);g.add_argument('--import-saved',action='store_true');g.add_argument('--route',action='store_true');parser.add_argument('--java');parser.add_argument('--passes',type=int,default=40);parser.add_argument('--keys',type=int,choices=(65,62),default=65);parser.add_argument('--capture',type=Path,help='Capture an already-completed local SES instead of launching router (requires --route)');args=parser.parse_args()
+if args.capture and not args.route:parser.error('--capture requires --route')
 if args.keys==62:D=D/'62'
 CACHE=CACHE/str(args.keys);CACHE.mkdir(parents=True,exist_ok=True)
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 fp=D/f'keycult{args.keys}.kicad_pcb';saved=D/'initial-route.ses';manifest=D/'route-manifest.json'
-identity={str(p.relative_to(ROOT)):sha(p) for p in [D/'circuit.json',ROOT/'design/preliminary/layout.json',ROOT/'scripts/build_pcb.py',ROOT/'scripts/usb_routing.py']}
+identity={str(p.relative_to(ROOT)):sha(p) for p in [D/'circuit.json',ROOT/'design/preliminary/layout.json',ROOT/'scripts/build_pcb.py',ROOT/'scripts/usb_routing.py',ROOT/'scripts/cleanup_pcb_routes.py']}
+if args.keys==62:identity[str((D/'controller-seed.json').relative_to(ROOT))]=sha(D/'controller-seed.json')
 if args.import_saved:
  m=json.loads(manifest.read_text());assert m['input_sha256']==identity,'Circuit/layout changed: saved route cannot be reused';assert sha(saved)==m['ses_sha256'],'SES checksum mismatch'
 else:
@@ -45,10 +47,12 @@ else:
    print(f'Freerouting returned an empty SES (attempt {attempt+1}/3); retrying its CLI export race.',flush=True)
   else:raise RuntimeError('Freerouting produced no SES after three attempts; saved route was not replaced')
  # Preserve board data, not the local checkout's absolute path in the SES header.
- content=source.read_text()
+ source_sha=sha(source);content=source.read_text()
  if not content.lstrip().startswith('(session'):raise RuntimeError(f'Invalid SES from {source}; saved route was not replaced')
  content='\n'.join(line.rstrip() for line in content.replace(str(ROOT),'PROJECT_ROOT').splitlines())+'\n';saved.write_text(content)
  m={'tool':'Freerouting','version':'2.0.1','jar_url':URL,'jar_sha256':JAR_SHA,'java':'21','stop_passes':args.passes,'note':'v2.0.1 -mp alone does not bound BatchAutorouter; router.stop_pass_no is explicitly supplied. No cloud routing; usage analytics disabled. SES preserves the base route; scripts/usb_routing.py replaces connector-side USB copper and adds the DRAFT E ground changes after import.','input_sha256':identity,'ses_sha256':sha(saved)}
+ if args.keys==62:m['note']='v2.0.1 router.stop_pass_no is explicitly supplied; no cloud routing or usage analytics. DRAFT H preserves the short top-side J1 USB seed/SES tracks; usb_routing.py applies only the candidate stackup. All populated SMT is top-side; switch lead/plastic and solder trimming still requires physical verification.'
+ if args.capture:m.update(stop_passes=None,capture={'source_ses_sha256':source_sha,'router_launched':False,'note':'Existing completed SES captured; the original routing pass count is not inferred.'})
  manifest.write_text(json.dumps(m,indent=2)+'\n')
 b=pcb.LoadBoard(str(fp));assert pcb.ImportSpecctraSES(b,str(saved)),'KiCad SES import failed'
 # Drawing-only label placement fix: reserve board-edge silkscreen clearance.

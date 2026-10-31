@@ -136,6 +136,11 @@ assert not {'Vol-', 'Mute', 'Vol+'} & {k['label'] for k in remaining.values()}
 assert layout['trackball']['ball_diameter_mm'] == 34 and layout['trackball']['center_mm'] == [0, 0]
 assert layout['trackball']['assembly_keepout_mm'] == [50, 50], 'The measured holder size is still unknown'
 assert rear['central_empty_cells_mm'] == {'width': 57.15, 'height': 76.2, 'xmin': -28.575, 'ymin': -47.625, 'xmax': 28.575, 'ymax': 28.575}
+assert rear['pcb_keepout_mm'] == [-24.25, -24.25, 24.25, 24.25]
+stack = rear['prototype_stack_mm']
+close(stack['maximum_below_pcb'], 2.67-.25-stack['pcb_thickness'], '3305-0 nominal depth reference')
+close(stack['assumed_floor_z'], stack['pcb_top_z']-stack['pcb_thickness']-stack['maximum_below_pcb'], 'assumed shallow floor')
+close(stack['ball_center_z'], 23.5, 'raised prototype ball center')
 empty_grid = box(-28.575, -47.625, 28.575, 28.575)
 assert polygon.covers(empty_grid), 'Empty grid exceeds the rectangular reference'
 assert all(not empty_grid.intersects(box(k['x_mm']-cap_half(k), k['y_mm']-9, k['x_mm']+cap_half(k), k['y_mm']+9)) for k in remaining.values()), 'A keycap occupies the reserved grid'

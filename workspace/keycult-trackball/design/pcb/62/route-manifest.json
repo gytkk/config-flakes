@@ -4,13 +4,20 @@
   "jar_url": "https://github.com/freerouting/freerouting/releases/download/v2.0.1/freerouting-2.0.1.jar",
   "jar_sha256": "d7fd0f63f52e6d74b0fad6715f87ca9f0ffd7109d66b2a584638000270592ecf",
   "java": "21",
-  "stop_passes": 40,
-  "note": "v2.0.1 -mp alone does not bound BatchAutorouter; router.stop_pass_no is explicitly supplied. No cloud routing; usage analytics disabled. SES preserves the base route; scripts/usb_routing.py replaces connector-side USB copper and adds the DRAFT E ground changes after import. The saved base route includes local manual repairs: COL11 uses In2.Cu at the bottom edge, ROW1 bypasses the central keepout, and QSPI clock/power/MOSI escapes preserve clearance. DRAFT G recaptures this byte-identical SES after independently comparing unchanged electrical topology and footprint placements, then freshly rebuilding the 48x48 R1 opening seed and replaying it with strict KiCad validation. All 1470 native segment/via records remain identical apart from UUIDs; ERC/DRC, unconnected, parity and independent netlist mismatch counts are zero.",
+  "stop_passes": null,
+  "note": "v2.0.1 router.stop_pass_no is explicitly supplied; no cloud routing or usage analytics. DRAFT H preserves the short top-side J1 USB seed/SES tracks; usb_routing.py applies only the candidate stackup. All populated SMT is top-side; switch lead/plastic and solder trimming still requires physical verification.",
   "input_sha256": {
-    "design/pcb/62/circuit.json": "0c39bae147cd8b06ff45ad52027cde1ec8061be215f68f81cae45d1c8c1588a9",
-    "design/preliminary/layout.json": "7f252b70b5648bdb1df70284f14f0213ee7eb9953f75e0fb5875125c4548c385",
-    "scripts/build_pcb.py": "aa08b31b27c6f06dbe04af49f020b19033e1e43183227a7980b852da13a4a307",
-    "scripts/usb_routing.py": "2ed59310d5f43c371a0a0a48498daaf08731d277315cf32c09c3bf7f6b90923e"
+    "design/pcb/62/circuit.json": "eec990e233e4834c401046a3e2600720730eca4f0d4db6a79f7048a4760d5a6c",
+    "design/preliminary/layout.json": "1d006ea20f990536af30bc44701af0e87fa2ed9dca6739750f2df82695142341",
+    "scripts/build_pcb.py": "4c4f80ae8e75b857a1da029ecf87cd073e6e1d42363441e2686081cf0effa7b2",
+    "scripts/usb_routing.py": "98142cec3eb4d16a463c2729608790b4e2ddbc2044ed4cac1839fcff49066b16",
+    "scripts/cleanup_pcb_routes.py": "15fbf759e520b4a087ed67e641618314326775671878ea4d67c5607d03c5ca12",
+    "design/pcb/62/controller-seed.json": "d40c471b755436ab0b0415c57084f422ad5dac29c9019b603d40dc5e5ce5c8d5"
   },
-  "ses_sha256": "dad3c9ab7c3da4a1d23944a5d7eff7f94646a91dc8109e14f3dfa13ecfb89f1a"
+  "ses_sha256": "be885b6f8aaff319ec738de0f8fe709eed9003d0fd28347e62fa6d7a090749cc",
+  "capture": {
+    "source_ses_sha256": "be885b6f8aaff319ec738de0f8fe709eed9003d0fd28347e62fa6d7a090749cc",
+    "router_launched": false,
+    "note": "Existing completed SES captured; the original routing pass count is not inferred."
+  }
 }

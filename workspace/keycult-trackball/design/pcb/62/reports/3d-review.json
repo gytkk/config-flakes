@@ -1,0 +1,56 @@
+{
+  "status": "Partial nominal component-model review; not physical assembly approval",
+  "kicad_version": "10.0.7",
+  "source_pcb_sha256": "dfeb4f7eca49de9a1d1e51e501512b7e0ce1a46c36417f386eec7891ebb9063c",
+  "stock_model_revision": "dd37eac8d2",
+  "native_exports": {
+    "keycult62-electronics-six.step": {
+      "path": "design/preliminary/sources/local/pcb-62/keycult62-electronics-six.step",
+      "sha256": "dd233ba9da4ce9b1d54039bbd69e3b6f5e0cfc9acb3a2c78b809b19dbc529ee5"
+    },
+    "keycult62-board-only.step": {
+      "path": "design/preliminary/sources/local/pcb-62/keycult62-board-only.step",
+      "sha256": "d46842103a195131a883c957ac8914a6e7bca3c981b3ee8a798b3dc535e340be"
+    }
+  },
+  "verified_model_refs": [
+    "U1",
+    "U2",
+    "U3",
+    "J1",
+    "J2",
+    "Y1"
+  ],
+  "stock_model_top_height_mm": {
+    "U1": 0.9,
+    "U2": 2.16,
+    "U3": 1.55,
+    "J1": 2.96,
+    "J2": 4.245,
+    "Y1": 0.64
+  },
+  "model_import_failure": {
+    "refs": [
+      "SW67",
+      "SW68"
+    ],
+    "model": "SW_SPST_TL3342",
+    "observed": "Including this stock model causes native STEP export SIGSEGV; independent FreeCAD import also fails. The six-component filter succeeds."
+  },
+  "coordinate_note": "Model heights are above each mounting plane; native STEP includes the board. Independent assembly checks must register native axes and the KiCad model-origin epsilon explicitly. These are library shapes, not measured supplied components.",
+  "omitted_bodies": [
+    "Matrix switches, diodes and passives",
+    "Service switches SW67/SW68",
+    "Sensor module, harness, USB daughterboard and cable",
+    "Keycult case and actual mounting hardware"
+  ],
+  "physical_gates": [
+    "All populated components are top-side, but switch metal/plastic tips, solder and insulation still require a measured <=0.82mm underside envelope",
+    "J2 needs the prototype rear plate relief; mating and cable/tool access remain to be checked",
+    "PCB nominal thickness, actual case cavity, optical spacing and thermal/USB/SPI performance need hardware verification"
+  ],
+  "commands": [
+    "kicad-cli pcb export step --force --component-filter U1,U2,U3,J1,J2,Y1 --output design/preliminary/sources/local/pcb-62/keycult62-electronics-six.step design/pcb/62/keycult62.kicad_pcb",
+    "kicad-cli pcb export step --force --board-only --output design/preliminary/sources/local/pcb-62/keycult62-board-only.step design/pcb/62/keycult62.kicad_pcb"
+  ]
+}

@@ -5,12 +5,14 @@
   "jar_sha256": "d7fd0f63f52e6d74b0fad6715f87ca9f0ffd7109d66b2a584638000270592ecf",
   "java": "21",
   "stop_passes": 40,
-  "note": "v2.0.1 -mp alone does not bound BatchAutorouter; router.stop_pass_no is explicitly supplied. No cloud routing; usage analytics disabled. SES preserves the base route; scripts/usb_routing.py replaces connector-side USB copper and adds the DRAFT E ground changes after import.",
+  "note": "Freerouting 2.0.1 stop_pass_no is explicitly bounded; no cloud routing or analytics. Saved DRAFT E SES is replayed with the 65-key USB overlay. After the DRAFT H shared-source and T-junction cleanup changes, isolated fresh generation, saved-SES replay and strict native checks passed with zero ERC/DRC/unconnected/parity findings. All 180 footprint/pad geometries, 1589 copper records and 73 drawings match the delivered 65-key native snapshot exactly, independent of UUIDs. The 65-key CAD, exports and validation reports were preserved.",
   "input_sha256": {
     "design/pcb/circuit.json": "fee5bb35da8644f555e54ebbcc4267ac9a7dde32f38eaa2e17ca45cfead9b210",
-    "design/preliminary/layout.json": "7f252b70b5648bdb1df70284f14f0213ee7eb9953f75e0fb5875125c4548c385",
-    "scripts/build_pcb.py": "aa08b31b27c6f06dbe04af49f020b19033e1e43183227a7980b852da13a4a307",
-    "scripts/usb_routing.py": "2ed59310d5f43c371a0a0a48498daaf08731d277315cf32c09c3bf7f6b90923e"
+    "design/preliminary/layout.json": "1d006ea20f990536af30bc44701af0e87fa2ed9dca6739750f2df82695142341",
+    "scripts/build_pcb.py": "4c4f80ae8e75b857a1da029ecf87cd073e6e1d42363441e2686081cf0effa7b2",
+    "scripts/usb_routing.py": "98142cec3eb4d16a463c2729608790b4e2ddbc2044ed4cac1839fcff49066b16",
+    "scripts/cleanup_pcb_routes.py": "15fbf759e520b4a087ed67e641618314326775671878ea4d67c5607d03c5ca12"
   },
-  "ses_sha256": "f7a6ff0a6e6d566569958e8eb8c49505c2a2a76d4061bbdc4231a7c86879cd2a"
+  "ses_sha256": "f7a6ff0a6e6d566569958e8eb8c49505c2a2a76d4061bbdc4231a7c86879cd2a",
+  "preservation_verification": "Final DRAFT H shared-source replay (including cleanup) passed strict ERC/DRC/unconnected/parity zero; all 180 footprint/pad geometries and 1589 copper records exactly match the unchanged 65-key native PCB. Only input hashes are refreshed."
 }
