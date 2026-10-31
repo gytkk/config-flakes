@@ -261,6 +261,8 @@ config의 `watchlist`이며, `--symbols 005930,000660`처럼 좁힐 수 있습�
 cargo run -p trade-engine -- backtest --config configs/trade-engine.live-dry-run.toml --from 2026-01-01 --to 2026-03-31
 ```
 
+Advisor, universe discovery, feedback의 command provider는 stdin 전달부터 프로세스 종료와 stdout/stderr 수집까지 하나의 timeout을 적용합니다. 입출력은 동시에 처리하고 설정된 크기까지만 메모리에 보관합니다. Timeout이나 호출 취소 시 자식 프로세스를 종료하며, Unix에서는 같은 프로세스 그룹의 자손도 정리합니다. 입력을 먼저 닫은 command는 종료 상태와 출력 검증으로 결과를 판단합니다.
+
 ### Feedback and review CLI
 
 `trade-engine status` prints a read-only Main DB and runtime audit summary.
