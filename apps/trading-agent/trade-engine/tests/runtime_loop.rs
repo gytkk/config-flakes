@@ -50,6 +50,42 @@ fn runtime_config_uses_requested_tick_defaults() {
 }
 
 #[tokio::test]
+async fn output_failure_finalizes_run_and_preserves_original_error() {
+    struct FailingSink;
+    impl RuntimeOutputSink for FailingSink {
+        fn write(&mut self, _: &str) -> Result<(), trade_engine::error::TradeEngineError> {
+            Err(trade_engine::error::TradeEngineError::runtime(
+                "injected sink failure",
+            ))
+        }
+    }
+    let temporary = tempdir().expect("temporary directory");
+    let path = temporary.path().join("main.db");
+    let store = BlockingMainDb::open(&path).expect("open database");
+    let error = run_dry_run_loop_with_output(
+        &MockTradingGateway::new(),
+        &store,
+        &DryRunRunContext::new("5678", BrokerEnvironment::Paper),
+        &[],
+        DryRunRuntimeSettings::new(RuntimeConfig::default(), StrategyConfig::default()),
+        RuntimeLoopControl {
+            market_hours: RuntimeMarketHours::Regular,
+            max_market_ticks: Some(1),
+        },
+        RuntimeLoopOutputOptions {
+            shutdown: RuntimeShutdownToken::new(),
+            output_sink: &mut FailingSink,
+        },
+    )
+    .await
+    .expect_err("output must fail");
+    assert!(
+        matches!(error, trade_engine::error::TradeEngineError::Runtime { message } if message == "injected sink failure")
+    );
+    assert_eq!(runtime_run_statuses(&path), vec!["failed"]);
+}
+
+#[tokio::test]
 async fn dry_run_loop_runs_market_tick_and_disabled_advisor_once() {
     let tempdir = tempdir().expect("tempdir");
     let db_path = tempdir.path().join("main.db");
@@ -2376,4 +2412,101 @@ fn last_runtime_tick_status(path: &Path) -> String {
             |row| row.get(0),
         )
         .expect("started tick row")
+}
+
+struct MarketSessionFailureGateway {
+    inner: MockTradingGateway,
+}
+#[async_trait]
+impl TradingGateway for MarketSessionFailureGateway {
+    async fn ping(&self) -> Result<BrokerHealth, BrokerError> {
+        self.inner.ping().await
+    }
+
+    async fn get_account_snapshot(&self) -> Result<AccountSnapshot, BrokerError> {
+        self.inner.get_account_snapshot().await
+    }
+
+    async fn get_cash_balance(&self) -> Result<CashBalance, BrokerError> {
+        self.inner.get_cash_balance().await
+    }
+
+    async fn get_positions(&self) -> Result<Vec<Position>, BrokerError> {
+        self.inner.get_positions().await
+    }
+
+    async fn get_quote(&self, symbol: &Symbol) -> Result<Quote, BrokerError> {
+        self.inner.get_quote(symbol).await
+    }
+
+    async fn get_market_session(&self, trading_day: &str) -> Result<MarketSession, BrokerError> {
+        Err(BrokerError::Temporary {
+            message: format!("injected market session failure: {trading_day}"),
+        })
+    }
+
+    async fn get_buying_power(&self, symbol: Option<&Symbol>) -> Result<BuyingPower, BrokerError> {
+        self.inner.get_buying_power(symbol).await
+    }
+
+    async fn list_open_orders(&self) -> Result<Vec<OrderStatus>, BrokerError> {
+        self.inner.list_open_orders().await
+    }
+
+    async fn list_fills(&self, day: TradingDay) -> Result<Vec<Fill>, BrokerError> {
+        self.inner.list_fills(day).await
+    }
+
+    async fn place_order(&self, order: CreateOrderRequest) -> Result<OrderSubmission, BrokerError> {
+        self.inner.place_order(order).await
+    }
+
+    async fn cancel_order(&self, request: CancelOrderRequest) -> Result<CancelResult, BrokerError> {
+        self.inner.cancel_order(request).await
+    }
+
+    async fn amend_order(&self, request: AmendOrderRequest) -> Result<AmendResult, BrokerError> {
+        self.inner.amend_order(request).await
+    }
+}
+
+#[tokio::test]
+async fn market_session_failure_finalizes_run_even_if_failure_audit_fails() {
+    for reject_finalization in [false, true] {
+        let temporary = tempdir().expect("temporary directory");
+        let path = temporary.path().join("main.db");
+        let store = BlockingMainDb::open(&path).expect("open database");
+        if reject_finalization {
+            Connection::open(&path).unwrap().execute_batch(
+                "CREATE TRIGGER reject_run_finish BEFORE UPDATE ON runtime_runs BEGIN SELECT RAISE(FAIL, 'injected audit failure'); END;"
+            ).unwrap();
+        }
+        let gateway = MarketSessionFailureGateway {
+            inner: MockTradingGateway::new(),
+        };
+        let error = run_dry_run_loop(
+            &gateway,
+            &store,
+            &DryRunRunContext::new("5678", BrokerEnvironment::Paper),
+            &[],
+            DryRunRuntimeSettings::new(RuntimeConfig::default(), StrategyConfig::default()),
+            RuntimeLoopControl {
+                market_hours: RuntimeMarketHours::Regular,
+                max_market_ticks: Some(1),
+            },
+        )
+        .await
+        .expect_err("session must fail");
+        assert!(
+            matches!(error, trade_engine::error::TradeEngineError::Gateway { source: BrokerError::Temporary { message }, .. } if message.starts_with("injected market session failure"))
+        );
+        assert_eq!(
+            runtime_run_statuses(&path),
+            vec![if reject_finalization {
+                "started"
+            } else {
+                "failed"
+            }]
+        );
+    }
 }
