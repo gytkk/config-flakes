@@ -1,0 +1,36 @@
+name: Trading Agent CI
+
+on:
+  pull_request:
+    paths:
+      - 'apps/trading-agent/**'
+      - '.github/workflows/trading-agent-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/trading-agent/**'
+      - '.github/workflows/trading-agent-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trading-agent-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/trading-agent
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Rust
+        run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy && rustup default 1.94.0
+      - run: cargo check --locked --workspace --no-default-features
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets --all-features -- -D warnings
+      - run: cargo test --locked --all-features
+      - run: cargo doc --locked --no-deps --all-features
