@@ -1,3 +1,4 @@
+use crate::runtime::stream_runtime_loop_with_execution_and_shutdown;
 use std::io::{self, Write};
 use std::str::FromStr;
 
@@ -26,9 +27,9 @@ use crate::market::MarketProfile;
 use crate::runtime::{
     DryRunRunContext, DryRunRuntimeSettings, RuntimeLoopControl, RuntimeLoopExecutionOptions,
     RuntimeLoopOutputOptions, RuntimeMarketHours, RuntimeMode, RuntimeOutputSink,
-    RuntimeShutdownToken, UniverseRefreshContext, run_dry_run_loop_with_output,
-    run_dry_run_loop_with_shutdown, run_dry_run_tick, run_runtime_loop_with_execution_and_shutdown,
-    run_runtime_tick_with_execution,
+    RuntimeShutdownToken, UniverseRefreshContext, run_dry_run_loop_with_shutdown, run_dry_run_tick,
+    run_runtime_loop_with_execution_and_shutdown, run_runtime_tick_with_execution,
+    stream_dry_run_loop_with_output,
 };
 use crate::stdout::{ColorMode, StdoutRenderOptions, render_stdout_chunk};
 use crate::storage::{
@@ -333,7 +334,7 @@ async fn run_command(
                 watchlist.clone(),
                 shutdown.clone(),
             );
-            let runtime_output = run_dry_run_loop_with_output(
+            let runtime_output = stream_dry_run_loop_with_output(
                 bundle.gateway.as_ref(),
                 &db,
                 &run_context,
@@ -623,7 +624,7 @@ async fn submit_orders_command(
                 watchlist.clone(),
                 shutdown.clone(),
             );
-            let runtime_output = run_runtime_loop_with_execution_and_shutdown(
+            let runtime_output = stream_runtime_loop_with_execution_and_shutdown(
                 &bundle.gateway,
                 &db,
                 &run_context,

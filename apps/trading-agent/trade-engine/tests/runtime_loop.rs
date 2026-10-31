@@ -169,6 +169,67 @@ async fn dry_run_loop_streams_output_chunks_as_they_are_rendered() {
 }
 
 #[tokio::test]
+async fn streaming_loop_does_not_collect_output() {
+    let tempdir = tempdir().expect("tempdir");
+    let db_path = tempdir.path().join("main.db");
+    let store = BlockingMainDb::open(&db_path).expect("open db");
+    let gateway = MockTradingGateway::new()
+        .with_cash(Decimal::new(1_000_000, 0))
+        .with_quote(Quote {
+            symbol: Symbol::new("005930").expect("valid symbol"),
+            full_name: None,
+            last_price: Decimal::new(73_000, 0),
+        });
+    let mut output_sink = CollectingOutputSink::default();
+
+    let output = trade_engine::runtime::stream_dry_run_loop_with_output(
+        &gateway,
+        &store,
+        &DryRunRunContext::new("5678", BrokerEnvironment::Paper),
+        &[Symbol::new("005930").expect("valid symbol")],
+        DryRunRuntimeSettings::new(RuntimeConfig::default(), StrategyConfig::default()),
+        RuntimeLoopControl {
+            market_hours: RuntimeMarketHours::Regular,
+            max_market_ticks: Some(1),
+        },
+        RuntimeLoopOutputOptions {
+            shutdown: RuntimeShutdownToken::new(),
+            output_sink: &mut output_sink,
+        },
+    )
+    .await
+    .expect("streamed dry-run loop");
+
+    assert!(output.is_empty());
+    assert!(
+        output_sink
+            .chunks
+            .first()
+            .expect("first streamed chunk")
+            .contains("Dry-run loop\n  status: started")
+    );
+    assert!(
+        output_sink
+            .chunks
+            .iter()
+            .any(|chunk| chunk.contains("Market tick #1\n  status: started"))
+    );
+    assert!(
+        output_sink
+            .chunks
+            .iter()
+            .any(|chunk| chunk.contains("Tick advisory #1"))
+    );
+    assert!(
+        output_sink
+            .chunks
+            .last()
+            .expect("last streamed chunk")
+            .contains("reason: max_market_ticks")
+    );
+}
+
+#[tokio::test]
 async fn dry_run_loop_runs_command_advisor_and_records_audit() {
     let tempdir = tempdir().expect("tempdir");
     let db_path = tempdir.path().join("main.db");

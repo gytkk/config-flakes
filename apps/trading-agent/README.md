@@ -369,6 +369,8 @@ config, main DB migration, unresolved broker command journal, broker ping,
 advisory audit을 남기며, write 의도는 market-closed risk gate로 차단합니다.
 KIS rate limit 같은 retryable gateway read 실패는 해당 tick을 `snapshot_failed`로
 감사한 뒤 다음 tick에서 자동 재시도합니다.
+CLI의 연속 실행은 출력 chunk를 즉시 전달하고 전체 로그를 메모리에 누적하지 않습니다. 기존 라이브러리 수집 API는 전체 문자열 반환을 유지하며, `stream_dry_run_loop_with_output`과 `stream_runtime_loop_with_execution_and_shutdown`은 빈 문자열을 반환합니다.
+
 각 tick 출력의 `Positions` 섹션은 보유 수량, 평균가, 현재가, 미실현 수익률을 표시합니다.
 보유 포지션은 watchlist 밖에 있어도 이 표시와 audit snapshot을 위해 별도 quote를 조회합니다.
 Ctrl-C로 종료하면 현재 tick 경계에서 run을 `interrupted`로 기록합니다.

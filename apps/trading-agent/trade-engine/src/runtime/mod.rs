@@ -814,6 +814,41 @@ where
     .await
 }
 
+/// Stream chunks without retaining the complete runtime log. Returns an empty string.
+pub async fn stream_dry_run_loop_with_output<G, S>(
+    gateway: &G,
+    store: &S,
+    run_context: &DryRunRunContext,
+    watchlist: &[Symbol],
+    settings: DryRunRuntimeSettings,
+    control: RuntimeLoopControl,
+    output: RuntimeLoopOutputOptions<'_>,
+) -> Result<String, TradeEngineError>
+where
+    G: TradingGateway + ?Sized,
+    S: DryRunAuditStore,
+{
+    let RuntimeLoopOutputOptions {
+        shutdown,
+        output_sink,
+    } = output;
+    let execution_driver = NoopRuntimeExecutionDriver;
+    stream_runtime_loop_with_execution_and_shutdown(
+        gateway,
+        store,
+        run_context,
+        watchlist,
+        RuntimeLoopExecutionOptions {
+            settings,
+            control,
+            shutdown,
+            execution_driver: &execution_driver,
+            output_sink: Some(output_sink),
+        },
+    )
+    .await
+}
+
 pub struct RuntimeLoopOutputOptions<'a> {
     pub shutdown: RuntimeShutdownToken,
     pub output_sink: &'a mut dyn RuntimeOutputSink,
@@ -861,6 +896,38 @@ where
     S: DryRunAuditStore,
     E: RuntimeTickExecutionDriver<G> + ?Sized,
 {
+    run_runtime_loop(gateway, store, run_context, watchlist, options, true).await
+}
+
+/// Stream chunks without retaining the complete runtime log. Returns an empty string.
+pub async fn stream_runtime_loop_with_execution_and_shutdown<G, S, E>(
+    gateway: &G,
+    store: &S,
+    run_context: &DryRunRunContext,
+    watchlist: &[Symbol],
+    options: RuntimeLoopExecutionOptions<'_, E>,
+) -> Result<String, TradeEngineError>
+where
+    G: TradingGateway + ?Sized,
+    S: DryRunAuditStore,
+    E: RuntimeTickExecutionDriver<G> + ?Sized,
+{
+    run_runtime_loop(gateway, store, run_context, watchlist, options, false).await
+}
+
+async fn run_runtime_loop<G, S, E>(
+    gateway: &G,
+    store: &S,
+    run_context: &DryRunRunContext,
+    watchlist: &[Symbol],
+    options: RuntimeLoopExecutionOptions<'_, E>,
+    collect_output: bool,
+) -> Result<String, TradeEngineError>
+where
+    G: TradingGateway + ?Sized,
+    S: DryRunAuditStore,
+    E: RuntimeTickExecutionDriver<G> + ?Sized,
+{
     let RuntimeLoopExecutionOptions {
         settings,
         control,
@@ -887,7 +954,7 @@ where
             settings.runtime.skip_if_previous_tick_running,
         )
         .blank();
-    let mut output = String::new();
+    let mut output = collect_output.then(String::new);
     append_runtime_output(&mut output, &mut output_sink, loop_header.finish())?;
     tracing::info!(
         event = "runtime_loop",
@@ -912,7 +979,7 @@ where
                 &mut output_sink,
             )
             .await?;
-            return Ok(output);
+            return Ok(output.unwrap_or_default());
         }
 
         let now = Instant::now();
@@ -1125,7 +1192,7 @@ where
                 &mut output_sink,
             )
             .await?;
-            return Ok(output);
+            return Ok(output.unwrap_or_default());
         }
 
         if control
@@ -1150,7 +1217,7 @@ where
                 status = RuntimeRunStatus::Completed.as_str(),
                 shutdown_reason = "max_market_ticks",
             );
-            return Ok(output);
+            return Ok(output.unwrap_or_default());
         }
 
         if !did_work {
@@ -1165,7 +1232,7 @@ where
                         &mut output_sink,
                     )
                     .await?;
-                    return Ok(output);
+                    return Ok(output.unwrap_or_default());
                 }
             }
         }
@@ -1176,7 +1243,7 @@ async fn finish_interrupted_run<S>(
     store: &S,
     run_id: StoredRuntimeRunId,
     mode: RuntimeMode,
-    output: &mut String,
+    output: &mut Option<String>,
     output_sink: &mut Option<&mut dyn RuntimeOutputSink>,
 ) -> Result<(), TradeEngineError>
 where
@@ -1204,11 +1271,13 @@ where
 }
 
 fn append_runtime_output(
-    output: &mut String,
+    output: &mut Option<String>,
     output_sink: &mut Option<&mut dyn RuntimeOutputSink>,
     chunk: String,
 ) -> Result<(), TradeEngineError> {
-    output.push_str(&chunk);
+    if let Some(output) = output {
+        output.push_str(&chunk);
+    }
     if let Some(sink) = output_sink.as_deref_mut() {
         sink.write(&chunk)?;
     }
