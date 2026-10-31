@@ -8,13 +8,7 @@
   mkNixOSConfig =
     name: config:
     let
-      requiredFields = [
-        "system"
-        "username"
-        "homeDirectory"
-        "profile"
-      ];
-      missingFields = builtins.filter (field: !(builtins.hasAttr field config)) requiredFields;
+      validateInventory = import ./inventory-validation.nix;
 
       flakeDirectory = config.flakeDirectory or (mkFlakeDirectory config.homeDirectory);
 
@@ -31,9 +25,7 @@
       homeModules = [ homeConfig ] ++ (config.homeModules or [ ]);
       sharedHomeModules = import ./home-manager-modules.nix { inherit inputs; };
     in
-    if missingFields != [ ] then
-      throw "Missing required fields for NixOS host ${name}: ${builtins.toString missingFields}"
-    else
+    validateInventory "NixOS host ${name}" config (
       nixpkgs.lib.nixosSystem {
         inherit specialArgs;
         modules = [
@@ -55,5 +47,6 @@
           }
         ]
         ++ (config.extraModules or [ ]);
-      };
+      }
+    );
 }
