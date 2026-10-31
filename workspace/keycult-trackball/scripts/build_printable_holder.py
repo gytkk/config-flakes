@@ -24,12 +24,11 @@ except ImportError as error:
 
 V = App.Vector
 # Prototype choices, not measured dimensions of the purchased sensor or case.
-S = dict(ball_radius=17., ball_z=8., bearing_radius=1., cavity_clearance=.5,
-         cup_radius=22., bottom_z=-12., cup_top_z=8.,
+S = dict(ball_radius=17., ball_z=8., bearing_radius=4., bearing_bore=3., bearing_width=4., cavity_clearance=.5,
+         bottom_z=-14.,
          pcb_top_z=-5., pcb_thickness=1.6, plate_thickness=1.5,
          sensor_width=22., sensor_height=25., sensor_thickness=1.6,
-         sensor_y=-26.5, sensor_bottom_z=-4.5, sensor_travel=3.,
-         deck_bottom_z=-10., deck_top_z=-7., mount_pitch=42.,
+         sensor_bottom_z=-17., sensor_travel=3., sensor_spacer=3., mount_pitch=42.,
          pilot_diameter=1.7, clearance_diameter=2.3)
 
 
@@ -58,70 +57,69 @@ def rounded_box(bounds, radius, z, height):
 
 def geometry():
     s = S
-    assert s['cup_top_z'] == s['ball_z'] and s['bottom_z'] < s['ball_z']-s['ball_radius']-1
+    assert (s['bearing_bore'], s['bearing_radius'], s['bearing_width']) == (3., 4., 4.), 'Redesign cheeks and inner-ring spacers when changing the bearing'
+    assert s['bottom_z'] < s['ball_z']-s['ball_radius']-1
     assert 0 < s['cavity_clearance'] < s['bearing_radius']
-    assert s['sensor_travel'] == 3., 'Slot geometry must change with travel'
     center = V(0, 0, s['ball_z'])
     ball = Part.makeSphere(s['ball_radius'], center)
     cavity = Part.makeSphere(s['ball_radius']+s['cavity_clearance'], center)
-    base = cylinder(s['cup_radius'], s['bottom_z'], s['cup_top_z']-s['bottom_z']).cut(cavity)
-    optical_window = Part.makeCylinder(5.5, 15, V(0, -30, s['ball_z']), V(0, 1, 0))
-    base = base.cut(optical_window)
-    # Three fixed ceramic balls are inserted from inside the cup and bonded below contact.
-    bearings = []
+    base = rounded_box((-22, -22, 22, 22), 3, s['bottom_z'], 2).cut(cylinder(12, -15, 4))
+    references = {'Ball': ball}
+    # Independent 3x8x4mm roller selection; tangential horizontal axes give 45-degree contacts.
     for angle in (90, 210, 330):
         a = math.radians(angle)
         radial = (s['ball_radius']+s['bearing_radius'])/math.sqrt(2)
         p = V(radial*math.cos(a), radial*math.sin(a), s['ball_z']-radial)
-        bearing = Part.makeSphere(s['bearing_radius'], p)
-        bore = Part.makeCylinder(s['bearing_radius']+.1, 4., p, (center-p).normalize())
-        base = base.cut(bearing.fuse(bore))
-        bearings.append(bearing)
+        axis = V(-math.sin(a), math.cos(a), 0)
+        bearing = Part.makeCylinder(s['bearing_radius'], 4, p-axis*2, axis).cut(Part.makeCylinder(1.5, 4, p-axis*2, axis))
+        references[f'Roller{angle}'] = bearing
+        for side in (-1, 1):
+            # 0.3mm metal inner-ring spacers prevent the cheeks rubbing the outer ring.
+            spacer_start = -2.3 if side == -1 else 2.
+            spacer = Part.makeCylinder(2, .3, p+axis*spacer_start, axis).cut(Part.makeCylinder(1.55, .3, p+axis*spacer_start, axis))
+            references[f'InnerSpacer{angle}_{side}'] = spacer
+            cheek = box(radial-2.5, -5.3 if side == -1 else 2.3, -14, 5, 3, p.z+3+14)
+            cheek.rotate(V(0, 0, 0), V(0, 0, 1), angle)
+            cheek = cheek.cut(Part.makeCylinder(1.6, 20, p-axis*10, axis)).cut(cavity)
+            base = base.fuse(cheek)
+        references[f'Axle{angle}'] = Part.makeCylinder(1.5, 14, p-axis*5.3, axis)
         assert abs((p-center).Length-s['ball_radius']-s['bearing_radius']) < 1e-8
-    # Ears contact the underside of a separately revised aluminium plate.
+        assert ball.common(bearing).Volume < 1e-6 and ball.distToShape(bearing)[0] < 1e-6
+    # Four posts join the cradle to the plate; separate bosses carry the sensor below it.
     for x in (-s['mount_pitch']/2, s['mount_pitch']/2):
         for y in (-s['mount_pitch']/2, s['mount_pitch']/2):
-            ear = box(min(x, 0)-3, min(y, 0)-3, -3.5, abs(x)+6, abs(y)+6, 2).cut(cavity)
-            base = base.fuse(ear)
+            base = base.fuse(cylinder(2.5, -14, 12.5, x, y))
     for x in (-s['mount_pitch']/2, s['mount_pitch']/2):
         for y in (-s['mount_pitch']/2, s['mount_pitch']/2):
-            base = base.cut(cylinder(s['clearance_diameter']/2, -4, 3, x, y))
-    deck = box(-19, -34, s['deck_bottom_z'], 38, 20, s['deck_top_z']-s['deck_bottom_z'])
-    base = base.fuse(deck).cut(cavity)
-    base = base.cut(box(-15, -34, -5, 30, 14, 14))
-    for x in (-16., 16.):
-        slot = cylinder(1.15, -11, 5, x, -30.5).fuse(cylinder(1.15, -11, 5, x, -24.5)).fuse(box(x-1.15, -30.5, -11, 2.3, 6, 5))
-        base = base.cut(slot)
-
-    y = s['sensor_y']
+            base = base.cut(cylinder(s['clearance_diameter']/2, -15, 15, x, y))
     z0 = s['sensor_bottom_z']
-    top = z0+s['sensor_height']+.2
-    carriage = box(-19, y-4, -7, 38, 4, 2)
-    # Open middle clears components; provisional edge channels require real-board checking.
-    for x in (-14., 10.):
-        carriage = carriage.fuse(box(x, y-2.5, -5, 4, 5, top+5))
-    channel = box(-s['sensor_width']/2-.2, y-s['sensor_thickness']/2-.15, z0,
-                  s['sensor_width']+.4, s['sensor_thickness']+.3, 30)
-    carriage = carriage.cut(channel)
-    cap = box(-14, y-2.5, top, 28, 5, 2)
-    for x in (-12.5, 12.5):
-        carriage = carriage.cut(cylinder(s['pilot_diameter']/2, top-6, 7, x, y))
-        cap = cap.cut(cylinder(s['clearance_diameter']/2, top-.1, 3, x, y))
-    for x in (-16., 16.):
-        carriage = carriage.cut(cylinder(s['clearance_diameter']/2, -8, 4, x, y-1))
-    sensor = box(-s['sensor_width']/2, y-s['sensor_thickness']/2, z0,
-                 s['sensor_width'], s['sensor_thickness'], s['sensor_height'])
-    # Compare seat fits before bonding the actual ceramic contacts.
+    top = z0+s['sensor_thickness']+.2
+    carriage = rounded_box((-22, -22, 22, 22), 3, z0-2, 2).cut(box(-10, -11.5, z0-3, 20, 23, 4))
+    locators = box(-13, -14.5, z0, 26, 29, s['sensor_thickness']).cut(box(-11.2, -12.7, z0-1, 22.4, 25.4, 4))
+    carriage = carriage.fuse(locators)
+    cap = rounded_box((-16, -16, 16, 16), 2, top, 1).cut(box(-10, -11.5, top-1, 20, 23, 3))
+    for x in (-14., 14.):
+        carriage = carriage.fuse(cylinder(2.5, z0, top-z0, x))
+        carriage = carriage.cut(cylinder(s['pilot_diameter']/2, z0-3, 7, x))
+        cap = cap.cut(cylinder(s['clearance_diameter']/2, top-1, 3, x))
+    spacers = {}
+    for x in (-18., 18.):
+        for y in (-18., 18.):
+            base = base.fuse(cylinder(3, -14, 6, x, y)).cut(cylinder(s['pilot_diameter']/2, -15, 8, x, y))
+            carriage = carriage.cut(cylinder(s['clearance_diameter']/2, z0-3, 4, x, y))
+            spacers[f'SensorSpacer{len(spacers)+1}'] = cylinder(2.2, z0, s['sensor_spacer'], x, y).cut(cylinder(1.15, z0-1, 5, x, y))
+    sensor = box(-s['sensor_width']/2, -s['sensor_height']/2, z0,
+                 s['sensor_width'], s['sensor_height'], s['sensor_thickness'])
+    references['SensorBoardAssumption'] = sensor
+    # These are fit coupons, not promises about a printing process's bore tolerance.
     coupon = box(0, 0, 0, 30, 12, 4)
-    for x, radius in ((5., 1.), (15., 1.05), (25., 1.1)):
-        p = V(x, 6, 3)
-        coupon = coupon.cut(Part.makeSphere(radius, p).fuse(Part.makeCylinder(radius+.1, 3, p, V(0, 0, 1))))
+    for x, radius in ((5., 1.5), (15., 1.55), (25., 1.6)):
+        coupon = coupon.cut(cylinder(radius, -1, 6, x, 4))
     coupon = coupon.cut(cylinder(s['pilot_diameter']/2, -1, 6, 10, 9))
     coupon = coupon.cut(cylinder(s['clearance_diameter']/2, -1, 6, 20, 9))
     return {"Cup": base.removeSplitter(),
             "SensorCarriage": carriage.removeSplitter(), "SensorCap": cap.removeSplitter(),
-            "SeatCoupon": coupon.removeSplitter()}, {"Ball": ball, "SensorBoardAssumption": sensor,
-                                                       **{f"CeramicBall{i+1}": b for i, b in enumerate(bearings)}}
+            "SeatCoupon": coupon.removeSplitter(), **spacers}, references
 
 
 def check(parts, references):
@@ -138,8 +136,7 @@ def check(parts, references):
     hole = report['pcb_opening']
     pcb = pcb.cut(rounded_box(hole['bounds_mm'], hole['corner_radius_mm'], -8, 5))
     # Generic local plate coupon only; no upstream outline is reproduced.
-    plate = box(-26, -37, -1.5, 52, 63, 1.5).cut(cylinder(22.4, -2, 3))
-    plate = plate.cut(box(-15, -34, -2, 30, 22, 3))
+    plate = box(-26, -26, -1.5, 52, 52, 1.5).cut(cylinder(18, -2, 3))
     for x in (-21, 21):
         for y in (-21, 21):
             plate = plate.cut(cylinder(1.15, -2, 3, x, y))
@@ -157,20 +154,38 @@ def check(parts, references):
             overlaps[name+'/'+other] = shape.common(ref).Volume
     bad = {k: v for k, v in overlaps.items() if v > 1e-6}
     assert not bad, f'Nominal geometry collisions: {bad}'
-    for offset in (-S['sensor_travel'], -1.5, 0., 1.5, S['sensor_travel']):
+    pcb_gap = min(shape.distToShape(pcb)[0] for shape in mounted.values())
+    assert pcb_gap >= .49, ('PCB passage clearance below 0.5mm nominal', pcb_gap)
+    for dx, dy in ((.5, 0), (-.5, 0), (0, .5), (0, -.5)):
+        displaced = references['SensorBoardAssumption'].copy()
+        displaced.translate(V(dx, dy, 0))
+        assert displaced.common(parts['SensorCarriage']).Volume > 1e-6, 'Sensor XY locators missing'
+    for offset in (-S['sensor_travel'], -1.5, 0.):
+        adjusted = {}
         for name in ('SensorCarriage', 'SensorCap', 'SensorBoardAssumption'):
             shape = (mounted | references)[name].copy()
-            shape.translate(V(0, offset, 0))
+            shape.translate(V(0, 0, offset))
+            adjusted[name] = shape
+        for i, (x, y) in enumerate(itertools.product((-18., 18.), repeat=2), 1):
+            z = S['sensor_bottom_z']+offset
+            height = S['sensor_spacer']-offset
+            adjusted[f'SensorSpacer{i}'] = cylinder(2.2, z, height, x, y).cut(cylinder(1.15, z-1, height+2, x, y))
+        for name, shape in adjusted.items():
             for other_name, other in dict(Cup=parts['Cup'], PCB=pcb,
                                           Plate=plate, Keys=keys, Switches=switches, Ball=references['Ball']).items():
                 assert shape.common(other).Volume < 1e-6, (name, other_name, 'travel collision', offset)
+        for (a, one), (b, two) in itertools.combinations(adjusted.items(), 2):
+            assert one.common(two).Volume < 1e-6, ('adjusted assembly collision', a, b, offset)
     # The user accepts lift-out; no printed part may obstruct vertical removal.
     for lift in (0., 2., 3., 8., 18., 35.):
         raised = references['Ball'].copy()
         raised.translate(V(0, 0, lift))
         for name, shape in mounted.items():
             assert raised.common(shape).Volume < 1e-6, (name, 'Ball insertion/removal obstructed', lift)
-    assert parts['Cup'].isInside(V(0, 0, S['bottom_z']+1), 1e-7, True), 'Cup floor missing'
+    assert parts['Cup'].isInside(V(20, 0, S['bottom_z']+1), 1e-7, True), 'Cradle floor missing'
+    # The central optical path must remain open through both printed supports.
+    optical = cylinder(5.5, -21, 12)
+    assert all(shape.common(optical).Volume < 1e-6 for shape in mounted.values()), 'Optical path obstructed'
     references.update(CandidatePlate=plate, CurrentPCB=pcb)
     assembly = Part.makeCompound(list(mounted.values()))
     bb = assembly.BoundBox
@@ -178,26 +193,26 @@ def check(parts, references):
                 coordinate_system='mm; ball XY=(0,0); plate top Z=0; rear=-Y',
                 pcb_sha256=digest, layout_sha256=hashlib.sha256(layout_path.read_bytes()).hexdigest(),
                 max_nominal_overlap_mm3=max(overlaps.values()),
-                sensor_radial_travel_mm=[-S['sensor_travel'], S['sensor_travel']],
+                printed_parts_to_pcb_minimum_gap_mm=pcb_gap,
+                sensor_vertical_shim_range_mm=[-S['sensor_travel'], 0],
                 ball_retention='none; vertical lift-out is intentional',
                 printed_assembly_bounds_mm=[bb.XMin, bb.YMin, bb.ZMin, bb.XMax, bb.YMax, bb.ZMax],
                 unverified=['sensor PCB/lens/components/connector envelope and optical datum',
                             'case depth, plate integration, fasteners, deflection',
-                            'printed tolerances, bearing adhesion, optical tracking, cable routing'])
+                            'printed tolerances, inner-ring spacers and axle fit, optical tracking, cable routing'])
 
 
 def preview(parts, references, path):
     # Orthographic mesh rendering avoids requiring a working OpenGL GUI.
-    colors = {'Cup': '#168a83', 'SensorCarriage': '#4269a5',
-              'SensorCap': '#244a82', 'Ball': '#dddddf', 'SensorBoardAssumption': '#6b9d70',
-              'CeramicBall1': '#e4daab', 'CeramicBall2': '#e4daab', 'CeramicBall3': '#e4daab'}
+    colors = {name: '#d8bc76' for name in (parts | references) if name.startswith(('Roller', 'Axle', 'InnerSpacer', 'SensorSpacer'))}
+    colors.update(Cup='#168a83', SensorCarriage='#4269a5', SensorCap='#244a82', Ball='#dddddf', SensorBoardAssumption='#6b9d70')
     panels = []
     for exploded, title in ((False, 'ASSEMBLED'), (True, 'EXPLODED')):
         faces = []
         for name, color in colors.items():
             shape = (parts | references)[name].copy()
             if exploded:
-                shift = {'Ball': 19, 'SensorCap': 15}.get(name, 0)
+                shift = {'Ball': 19, 'SensorCarriage': -12, 'SensorCap': -6, 'SensorBoardAssumption': -9}.get(name, 0)
                 shape.translate(V(0, 0, shift))
             mesh = MeshPart.meshFromShape(Shape=shape, LinearDeflection=.3, AngularDeflection=.35, Relative=False)
             vertices, triangles = mesh.Topology
@@ -217,7 +232,7 @@ def preview(parts, references, path):
         panels.append(f'<text x="{offset}" y="65" text-anchor="middle">{title}</text><g transform="translate({offset},415) scale(4.6)">{"".join(f for _, f in sorted(faces))}</g>')
     path.write_text('<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="650" viewBox="0 0 1140 650">'
                    '<rect width="1140" height="650" fill="#f6f5f1"/><g font-family="sans-serif" font-size="20" fill="#172033">'
-                   +''.join(panels)+'<text x="35" y="590">34 mm lift-out ball / 62-key prototype / teal cup + blue sensor carriage</text>'
+                   +''.join(panels)+'<text x="35" y="590">34 mm lift-out ball / three rollers / horizontal under-ball sensor</text>'
                    '<text x="35" y="625" font-size="16">Sensor board is an unmeasured envelope. Plate, cable and fasteners omitted. NOT FIT-QUALIFIED.</text></g></svg>')
 
 
@@ -237,8 +252,6 @@ def main():
             if name != 'SeatCoupon':
                 objects.append(obj)
             print_shape = shape.copy()
-            if name in ('SensorCarriage', 'SensorCap'):
-                print_shape.rotate(V(0, 0, 0), V(1, 0, 0), 90)
             bb = print_shape.BoundBox
             print_shape.translate(V(-bb.XMin, -bb.YMin, -bb.ZMin))
             mesh = MeshPart.meshFromShape(Shape=print_shape, LinearDeflection=.05, AngularDeflection=.15, Relative=False)

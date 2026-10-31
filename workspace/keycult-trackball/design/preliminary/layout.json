@@ -51,8 +51,10 @@
       22,
       25
     ],
-    "sensor_board_outline_scope": "Keyball46 published 2022 Gerber; vertical installation",
+    "sensor_board_outline_scope": "Historical Keyball46 22x25mm module reused horizontally under ball in 62-key prototype; actual module unmeasured",
     "sensor_connector_envelope_mm": null,
+    "support": "three bearing rollers; no retaining or scroll ring",
+    "sensor_orientation": "horizontal under ball; 62-key prototype only",
     "primary_evidence": {
       "repository_commit": "e1d1948e6e60a83f6b3566a209326508200d64ce",
       "ball_diameter_mm": 34,
@@ -2447,16 +2449,16 @@
         "height_u": 1
       }
     ],
-    "status": "priority draft; PCB opening assumed; holder fit and stiffness unverified",
+    "status": "priority cocot-inspired roller draft; horizontal under-ball sensor; fit and stiffness unverified",
     "pcb_opening": {
       "bounds_mm": [
         -24,
-        -35,
+        -24,
         24,
-        25
+        24
       ],
       "corner_radius_mm": 1.0,
-      "status": "design assumption; not measured holder clearance or fabrication approval"
+      "status": "cocot-inspired independent holder design assumption; not fabrication approval"
     }
   },
   "plate_visualization": "generic rectangular bounding envelope; not the official contour or case opening"

@@ -1278,7 +1278,7 @@
     {
       "ref": "J2",
       "lib": "Connector_Generic_MountingPin:Conn_01x07_MountingPin",
-      "value": "KEYBALL / 3V3 ASSUMED",
+      "value": "PMW3360 MODULE / 3V3 ASSUMED",
       "fp": "Connector_JST:JST_GH_SM07B-GHS-TB_1x07-1MP_P1.25mm_Horizontal",
       "nets": {
         "1": "SENSOR_SCLK_3V3",
@@ -1301,7 +1301,7 @@
       "angle": 0,
       "side": "B",
       "mpn": "JST SM07B-GHS-TB(LF)(SN)",
-      "status": "draft cable interface; module revision and fit unverified",
+      "status": "horizontal under-ball module prototype; revision and fit unverified",
       "note": "Host GH 1.25mm 7-pin; GHR-07V-S cable housing. Contact-number mapping to published Keyball46; sensor-end mating part TBD. 3V3 ONLY; retain module TPS73601/TXS0102; no motion/reset contacts; verify current and waveforms before powering",
       "uuid": "ce8ffddd-1ca3-5bd4-bb70-76153624a490"
     },

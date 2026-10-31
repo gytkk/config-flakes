@@ -1,14 +1,14 @@
 # keycult-ball
 
-Keycult No.1/60에 트랙볼을 결합하기 위한 PCB와 보강판(플레이트)을 제작하는 개인 프로젝트입니다. 기존 케이스를 절삭하거나 새 구멍을 뚫지 않고, PCB와 보강판을 교체해 G/H 사이에 34mm Keyball을 배치하는 것이 목표입니다. 키 배열은 직교 배열을 사용하고, 유선 USB와 QMK 기반 키보드 및 포인팅 장치를 구현할 계획입니다.
+Keycult No.1/60에 트랙볼을 결합하기 위한 PCB와 보강판(플레이트)을 제작하는 개인 프로젝트입니다. 기존 케이스를 절삭하거나 새 구멍을 뚫지 않고, PCB와 보강판을 교체해 G/H 사이에 34mm 트랙볼을 배치하는 것이 목표입니다. 현재 62키 시제품은 cocot36plus를 참고한 베어링 롤러와 하부 수평 센서 구조입니다. 키 배열은 직교 배열을 사용하고, 유선 USB와 QMK 기반 키보드 및 포인팅 장치를 구현할 계획입니다.
 
 현재 개발 우선안은 **62키 배열과 알루미늄 보강판**입니다. 65키안은 비교용으로 유지합니다. 알루미늄 합금, 최종 두께와 표면 처리는 미정이며, 기존 CAD의 1.5mm 두께는 검토 기준값입니다. [중앙 PCB 개구 검토](design/preliminary/design.md#중앙-pcb-개구와-알루미늄-보강판)에서 제조 방식과 남은 설계 조건을 설명합니다.
 
-[출력용 독립 홀더 시제품](design/printable-holder/README.md)은 34mm 볼 받침과 앞뒤 위치를 조절하는 센서 지지대를 제공합니다. 볼이 들리는 것을 허용하여 상부 링 없이 위로 들어낼 수 있습니다. 업체 전달용 부품별 STL, 조립 STEP과 FreeCAD 파일이 있으며, 실제 센서 치수와 케이스 수납 및 광학 보정은 미확정입니다. 이 홀더에는 보강판 중앙 개구 수정이 필요하므로 기존 보강판에 바로 장착할 수 있다고 보지 않습니다.
+[출력용 독립 홀더 시제품](design/printable-holder/README.md)은 34mm 볼의 베어링 받침과 높이를 조절하는 하부 수평 센서 지지대를 제공합니다. 볼이 들리는 것을 허용하여 상부 링 없이 위로 들어낼 수 있습니다. 업체 전달용 부품별 STL, 조립 STEP과 FreeCAD 파일이 있으며, 실제 센서 치수와 케이스 수납 및 광학 보정은 미확정입니다. 이 홀더의 후보 보강판은 지름 36mm 창과 42mm 정사각 체결 피치를 사용하며, 기존 보강판 초안은 과거 비교용으로 유지합니다. 출력 부품만으로 보강판 아래 19mm 깊이가 필요하므로 실측 전에는 수납을 확정하지 않습니다.
 
 현재는 예비 기구 배치와 **65키 및 62키 KiCad 회로도·PCB 배선 초안**을 검토하는 단계입니다. DRAFT E는 외부 조립체 DB1로 UDB C5-JSH를 그대로 사용하며, 하단 1.5u M1/M2 좌표에 맞춰 내부 회로와 매트릭스 배선을 다시 생성합니다. J1 측 USB는 F.Cu 중심 배선과 접지 귀환 경로를 적용합니다. JLC04161H-7628 후보 stackup을 CAD에 명시하고 접지 귀환 경로를 보완했으며, [USB 배선 검토](design/pcb/README.md#usb-routing-findings)에 적용 범위와 한계를 기록합니다. [KiCad 프로젝트 안내](design/pcb/README.md), 배치도, 키 중심 좌표 및 1:1 인쇄 자료가 있으며, 현재 검사 결과는 [65키 보고서](design/pcb/reports/validation.json)와 [62키 보고서](design/pcb/62/reports/validation.json)를 기준으로 합니다. 실제 케이스 조립, 센서 인터페이스, 전원 및 USB 신호 품질과 제조 적합성은 미확정입니다. 제조용 최종 CAD나 빌드·동작 검증된 QMK 펌웨어는 아직 없습니다.
 
-보유 케이스는 NovelKeys 최신 판매 버전의 WK이며, 정확한 리비전과 과거 공개 도면의 호환성은 확인이 필요합니다. G/H 사이 중앙 통합은 필수 조건이며 외부 별도 장치는 범위에서 제외합니다. 34mm Keyball은 현재 예비 배치의 기준이고, 작은 볼과 터치패드도 중앙 통합 후보로 검토합니다. 최종 장치는 아직 선택하지 않았으며 [실현 가능성과 대안 조사](docs/feasibility.md)를 참고합니다.
+보유 케이스는 NovelKeys 최신 판매 버전의 WK이며, 정확한 리비전과 과거 공개 도면의 호환성은 확인이 필요합니다. G/H 사이 중앙 통합은 필수 조건이며 외부 별도 장치는 범위에서 제외합니다. 34mm 볼은 현재 예비 배치의 기준이고, 작은 볼과 터치패드도 중앙 통합 후보로 검토합니다. 기구 시제품은 cocot 방식으로 전환했지만 최종 제조 사양은 확정하지 않았으며 [실현 가능성과 대안 조사](docs/feasibility.md)를 참고합니다.
 
 [로컬 FreeCAD 보강판 초안](design/preliminary/design.md#로컬-freecad-보강판-초안)은 공식 NoLeaf 외곽에 65키·62키 좌표를 적용해 재생성하고 중앙 개구와 네 점으로 고정하는 프레임을 검토합니다. 편집용 FCStd와 STEP/DXF는 원본 사용 조건에 따라 로컬에만 생성합니다. 62키는 native PCB의 둥근 개구를 반영하고 65키는 중앙이 막힌 상태를 유지합니다. 홀더·센서의 실제 고정부와 높이, 전체 3D 조립은 미확정이므로 제조용 도면이 아닙니다. [FreeCAD 실행 및 재현 절차](docs/reproduction.md#freecad-보강판-초안)를 따릅니다.
 
@@ -29,9 +29,9 @@ Keycult No.1/60에 트랙볼을 결합하기 위한 PCB와 보강판(플레이�
 | 개발 우선안 | 15u 62키. 65키안의 상단 중앙 Vol-/Mute/Vol+를 제거해 중앙 명목 빈 영역을 57.15 × 76.20mm로 확장 |
 | 보류한 대안 | 14u 너비의 64키 배열. 같은 예약 영역과 키캡이 5.425mm 겹침 |
 
-62키안은 볼 지름 34mm와 중심, G/H 및 하단 1.5u M1/M2를 포함한 나머지 키를 유지합니다. 뒤쪽 한 행을 비워 센서와 배선, 지지 브리지와 체결 간격을 검토할 공간을 확보합니다. 키 제거만으로 강성이 좋아지는 것은 아니며, 빈 영역 전체를 절개하면 강성이 낮아질 수 있습니다. 볼 지름과 수직 공간 조건은 65키안과 같습니다.
+62키안은 볼 지름 34mm와 중심, G/H 및 하단 1.5u M1/M2를 포함한 나머지 키를 유지합니다. 뒤쪽 한 행을 비워 센서와 배선, 지지 브리지와 체결 간격을 검토할 공간을 확보합니다. 키 제거만으로 강성이 좋아지는 것은 아니며, 빈 영역 전체를 절개하면 강성이 낮아질 수 있습니다. 볼 지름은 65키안과 같지만 현재 62키 홀더의 하부 센서 공간은 별도로 검토합니다.
 
-KiCad 원본은 65키의 `design/pcb/keycult65.*`와 62키의 `design/pcb/62/keycult62.*`로 나눕니다. 두 PCB의 MCU·전원 등 공통 회로는 이전 초안에서 왼쪽으로 76.2mm(4피치) 옮겨 뒤쪽 중앙 빈 영역을 피합니다. 65키 DRAFT E는 중앙 50 x 50mm를 예약하고 중앙 개구와 센서 커넥터 없이 유지합니다. 62키 DRAFT F는 57.15 x 75.875mm 부품·구리 금지 영역 안에 48 x 60mm, 코너 R1mm의 내부 Edge.Cuts 개구를 두고 금지 영역 밖에 호스트 측 7핀 센서 연결용 J2를 둡니다. 개구와 J2는 사용자가 승인한 초안 가정이며 실측 홀더나 센서의 확정 사양이 아닙니다. 예비 배치와 PCB는 같은 키 좌표를 사용합니다.
+KiCad 원본은 65키의 `design/pcb/keycult65.*`와 62키의 `design/pcb/62/keycult62.*`로 나눕니다. 두 PCB의 MCU·전원 등 공통 회로는 이전 초안에서 왼쪽으로 76.2mm(4피치) 옮겨 뒤쪽 중앙 빈 영역을 피합니다. 65키 DRAFT E는 중앙 50 x 50mm를 예약하고 중앙 개구와 센서 커넥터 없이 유지합니다. 62키 DRAFT G는 57.15 x 75.875mm 부품·구리 금지 영역 안에 48 x 48mm, 코너 R1mm의 내부 Edge.Cuts 개구를 두고 금지 영역 밖에 호스트 측 7핀 센서 연결용 J2를 둡니다. 개구와 J2는 사용자가 승인한 초안 가정이며 실측 홀더나 센서의 확정 사양이 아닙니다. 예비 배치와 PCB는 같은 키 좌표를 사용합니다.
 
 ![비교용 65키 배치](design/preliminary/layout.png)
 
@@ -48,7 +48,7 @@ KiCad 원본은 65키의 `design/pcb/keycult65.*`와 62키의 `design/pcb/62/key
 | [상세 설계와 출처](design/preliminary/design.md) | 치수 계산, 장착·flex, 센서 방향, QMK·USB 범위 |
 | [Ploopy / Keyball / Charybdis 및 라이선스](docs/alternatives-and-licenses.md) | 제품별 차이, 원본 공개 범위와 재사용 조건 |
 | [배치 HTML](design/preliminary/layout.html) · [SVG](design/preliminary/layout.svg) · [JSON](design/preliminary/layout.json) | 브라우저 설명도, 편집 가능한 벡터, 모든 키 중심 좌표 |
-| [단면 SVG](design/preliminary/section.svg) · [PNG](design/preliminary/section.png) | 수직 설치 센서와 미확정 Z 스택 |
+| [단면 SVG](design/preliminary/section.svg) · [PNG](design/preliminary/section.png) | 62키 하부 수평 센서와 미확정 Z 스택 |
 | [1:1 A3 PDF](design/preliminary/print-1to1.pdf) · [SVG](design/preliminary/print-1to1.svg) | 100mm 기준선 포함 종이 검증용 |
 | [62키 옵션 SVG](design/preliminary/rear-clearance.svg) · [PNG](design/preliminary/rear-clearance.png) · [1:1 A3 PDF](design/preliminary/rear-clearance-print.pdf) · [인쇄 SVG](design/preliminary/rear-clearance-print.svg) · [인쇄 HTML](design/preliminary/rear-clearance-print.html) | 뒤쪽 공간 확보 비교. 좌표는 `layout.json`의 `rear_clearance` |
 | [재현·검증 방법](docs/reproduction.md) | 좌표 생성, PNG/PDF 렌더, 원본 취득·해시 검증 |

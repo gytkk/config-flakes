@@ -138,7 +138,7 @@ trackball_python=$(nix eval --raw --impure --expr "let f = builtins.getFlake \"$
 uv run --no-project --python "$trackball_python" scripts/build_printable_holder.py
 ```
 
-실행 결과는 `design/printable-holder/`의 FCStd, STEP, 부품별 STL, SVG 미리보기, 검사 JSON과 ZIP이다. 재생성은 해당 생성 결과를 덮어쓰므로 수동 수정본은 다른 이름으로 저장한다. FreeCAD 속성은 기록용이며 치수는 생성기에서 바꾼다. 검사 범위는 홀더 안내에 기록한다. 기존 예비 배치와 보강판은 변경하지 않으므로 이 생성에 `build_artifacts.py` 및 기존 도면 렌더를 실행할 필요는 없다. SVG는 생성된 솔리드의 삼각형 면을 투영한 검토 그림이며 광학 시뮬레이션이 아니다.
+실행 결과는 `design/printable-holder/`의 FCStd, STEP, 부품별 STL, SVG 미리보기, 검사 JSON과 ZIP이다. 재생성은 해당 생성 결과를 덮어쓰므로 수동 수정본은 다른 이름으로 저장한다. FreeCAD 속성은 기록용이며 치수는 생성기에서 바꾼다. 검사 범위는 홀더 안내에 기록한다. 홀더만 수정하면 예비 배치 재생성은 필요 없지만, PCB 개구나 예비 단면을 바꾸면 `build_artifacts.py`, PCB 재생성 및 검증, `scripts/render.py`도 실행한다. 현재 DRAFT G는 48 x 48mm R1 개구와 하부 수평 센서 단면을 사용하며 기존 로컬 보강판과 순정 홀더 실험은 과거 비교용이다. SVG는 생성된 솔리드의 삼각형 면을 투영한 검토 그림이며 광학 시뮬레이션이 아니다.
 
 ## KiCad 65키·62키 회로·PCB 초안
 

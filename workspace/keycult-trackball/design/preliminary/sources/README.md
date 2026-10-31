@@ -66,6 +66,26 @@ The [NovelKeys No.1/60 product page](https://novelkeys.com/products/keycult-no-1
 
 For a local 65-key/62-key ortholinear adaptation, `Plate-NoLeaf.step` is a candidate donor for the case interface. Preserve its exact external mounting boundary and any alignment or mounting features when replacing the internal switch cutouts, then compare the resulting boundary against the imported solid. This is a modeling strategy, not a completed topology or fit verification: the donor must be inspected for internal mounting features before filling old cutouts. The STEP describes a plate, so it cannot establish the surrounding case opening, gasket compression, internal depth or assembly path. Central 34mm ball, holder and sensor clearance and support must be checked separately; the existing 50 x 50mm reservation is not a holder outline or an approved machining cutout. No new dimensions or physical-fit measurements were obtained in this source review.
 
+## Cocot36plus reference review
+
+Checked 2026-10-31 at [cocot36plus revision c19727643ee5929bd8d5af541be6720e9b7c3324](https://github.com/aki27kbd/cocot36plus/tree/c19727643ee5929bd8d5af541be6720e9b7c3324). Its [v2 guide](https://github.com/aki27kbd/cocot36plus/blob/c19727643ee5929bd8d5af541be6720e9b7c3324/doc/buildguide.md) describes a 34mm ball, three bearing rollers and a horizontal PMW3360 sensor soldered directly to the keyboard PCB. The separate PER601 scroll ring and ball cover are omitted from our prototype. The guide includes an older M3 screw mount and refers later silicone-tube lots to picot5400; these are distinct assemblies.
+
+Original files remain in ignored `upstream/cocot-review/`. The published generator does not read or copy their geometry. The repository LICENSE contains the MIT notice, copyright 2022 aki27kbd. No upstream CAD, code or firmware is redistributed with this independent prototype.
+
+| Original file | SHA-256 |
+| --- | --- |
+| `LICENSE` | `a51c84acd210d4674728cf53956fc59c6f833ef6f9a47a15adaafaee4a1ad22c` |
+| `BallBase_34mm_Bearing.stp` | `e2b8faf8e44675bb8ff10581db783fdbb85adf4b3cc1db6f51b412df544da94a` |
+| `cocot36plus_v2_34mm_ballbase_rev.stp` | `7ab511daffe0e06e215e31dbf2c04a26b3c09b04eb64b8f5b9d1b70d14d59195` |
+| `cocot36plus_v2_BallCover_34mm_MJF.stp` | `068e7c1bde251736309c1434fef27046c5485c39a133e039a44700ae3ec9901b` |
+| `bearing_catalog_en.pdf` (MinebeaMitsumi, downloaded 2026-10-31; dimensions on printed p.57) | `38e4bfc86abd3140c37d5f22b8b5a4b549e3d06f575bce4f8efb62524ed0668a` |
+
+FreeCAD 1.1.4 mesh bounds with linear deflection 0.05mm and angular deflection 0.15rad give approximately 43 x 43 x 14.95mm for the revised base and 60mm outer diameter for the MJF cover. These are tessellated individual-part bounds, not assembly envelopes or exact manufacturing dimensions. Untrimmed BRep surface bounds overestimate these shapes and were not used. No source geometry or full assembly datum was adopted.
+
+The upstream guide does not identify the roller's exact OD and width. Our independent candidate uses DDR-830ZZ dimensions, bore 3mm, OD 8mm and width 4mm, from [MinebeaMitsumi's catalog](https://www.minebeamitsumi.com/english/product/bearing/__icsFiles/afieldfile/2021/12/14/bearing_catalog_en.pdf). Our axis positions, cheeks, inner-ring spacers and screw mounts are design assumptions, not cocot dimensions. The [author's update](https://cocotkeebs.com/blogs/blogs/picot5400-update) identifies outer-ring rubbing as a reason to change the original mounting method; our prototype therefore reserves axial clearance and requires inner-ring-only spacers and physical rotation checks.
+
+The existing host J2 and historical Keyball module's conditional 3.3V supply are retained. A horizontal module does not inherit cocot PCB compatibility or its complete optical stack. Current supplier module geometry, lens datum, cable, sensor startup and case depth remain unverified.
+
 ## Keyball holder host interface review
 
 Checked 2026-10-30 at the same pinned Keyball commit `e1d1948e6e60a83f6b3566a209326508200d64ce`. The complete repository tree contains keyboard-shell STL files, host PCB/plate files and the older sensor Gerber, but no standalone production-holder STEP/STL was found. The reuse conclusion and assembly constraints are recorded in [feasibility.md](../../../docs/feasibility.md#순정-keyball-홀더를-가공하지-않고-재사용하는-조건).

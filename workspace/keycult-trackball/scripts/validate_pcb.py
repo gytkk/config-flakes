@@ -38,9 +38,9 @@ def outline_matches(edges,keys):
  outer=[((37.5,52.7),(322.5,52.7)),((322.5,52.7),(322.5,147.3)),((322.5,147.3),(37.5,147.3)),((37.5,147.3),(37.5,52.7))]
  expected=[{'start':a,'end':b} for a,b in outer]
  if keys==62:
-  expected.extend({'start':a,'end':b} for a,b in [((157,65),(203,65)),((204,66),(204,124)),((203,125),(157,125)),((156,124),(156,66))])
+  expected.extend({'start':a,'end':b} for a,b in [((157,76),(203,76)),((204,77),(204,123)),((203,124),(157,124)),((156,123),(156,77))])
   d=2**-.5
-  expected.extend({'start':a,'mid':m,'end':b} for a,m,b in [((203,65),(203+d,66-d),(204,66)),((204,124),(203+d,124+d),(203,125)),((157,125),(157-d,124+d),(156,124)),((156,66),(157-d,66-d),(157,65))])
+  expected.extend({'start':a,'mid':m,'end':b} for a,m,b in [((203,76),(203+d,77-d),(204,77)),((204,123),(203+d,123+d),(203,124)),((157,124),(157-d,123+d),(156,123)),((156,77),(157-d,77-d),(157,76))])
  def normalized(edge):
   ends=sorted(tuple(round(v,5) for v in edge[k]) for k in ('start','end'))
   return tuple(ends)+(tuple(round(v,5) for v in edge['mid']) if 'mid' in edge else (),)
@@ -165,11 +165,11 @@ for e in edges:
  record={'start':xy(e.GetStart()),'end':xy(e.GetEnd())}
  if e.GetShape()==pcb.SHAPE_T_ARC:record['mid']=xy(e.GetArcMid())
  edge_geometry.append(record)
-check(outline_matches(edge_geometry,args.keys),'Board outline or 48x60 R1 inner opening differs from draft')
+check(outline_matches(edge_geometry,args.keys),'Board outline or 48x48 R1 inner opening differs from draft')
 opening=layout[variant].get('pcb_opening')
 check((opening is not None)==(args.keys==62),'Opening metadata missing or on wrong variant')
 if opening:
- check(opening['bounds_mm']==[-24,-35,24,25] and opening['corner_radius_mm']==1,'Opening metadata differs from native contour requirement')
+ check(opening['bounds_mm']==[-24,-24,24,24] and opening['corner_radius_mm']==1,'Opening metadata differs from native contour requirement')
 epts=[xy(p) for e in edges for p in [e.GetStart(),e.GetEnd()]]
 bounds=[min(p[0] for p in epts),min(p[1] for p in epts),max(p[0] for p in epts),max(p[1] for p in epts)]
 check(all(abs(a-z)<.00001 for a,z in zip(bounds,[37.5,52.7,322.5,147.3])),'GH60 scalar envelope bounds differ from 285.0 x 94.6 mm')

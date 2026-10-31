@@ -35,19 +35,19 @@
   "structural_errors": [],
   "native_export_readback": {
     "exports/back.svg": {
-      "bytes": 336520,
+      "bytes": 343352,
       "viewBox": "0.0000 0.0000 284.9880 94.5896"
     },
     "exports/front.svg": {
-      "bytes": 283090,
+      "bytes": 289666,
       "viewBox": "0.0000 0.0000 284.9880 94.5896"
     },
     "exports/ground.svg": {
-      "bytes": 533269,
+      "bytes": 539845,
       "viewBox": "0.0000 0.0000 284.9880 94.5896"
     },
     "exports/schematic/keycult62.svg": {
-      "bytes": 2976547,
+      "bytes": 2988598,
       "viewBox": "0.0000 0.0000 840.9940 594.0044"
     },
     "exports/schematic.pdf": {
@@ -204,8 +204,8 @@
   ],
   "artifact_sha256": {
     "keycult62.kicad_pro": "1777de780dac702d509f434fef68f0f6280efa6d7621feddbdec4600f1a251b8",
-    "keycult62.kicad_sch": "135cf6515dc5b746045b2bbb161ae79570a078b63a4c6bcfc5d917fe0d6747cd",
-    "keycult62.kicad_pcb": "7433793fca05d014049d450d2130544e944f69434926bb623427b81e832451cf"
+    "keycult62.kicad_sch": "e699e5c39bbe1a9f0e0dea3bd8b78dca3b4230380f435518da8b80196db86dc8",
+    "keycult62.kicad_pcb": "8785daba7e68f02488666a53c1bb77802100e2ba992c3bb1ec94064c720a4f18"
   },
   "usb_reference_review": {
     "f_cu_width_mm": 0.29,
@@ -222,12 +222,12 @@
   "pcb_opening": {
     "bounds_mm": [
       -24,
-      -35,
+      -24,
       24,
-      25
+      24
     ],
     "corner_radius_mm": 1.0,
-    "status": "design assumption; not measured holder clearance or fabrication approval"
+    "status": "cocot-inspired independent holder design assumption; not fabrication approval"
   },
   "sensor_connector_pinout": {
     "1": "SENSOR_SCLK_3V3",

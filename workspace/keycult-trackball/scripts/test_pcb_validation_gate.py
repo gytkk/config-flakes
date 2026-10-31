@@ -76,7 +76,7 @@ class VariantTests(unittest.TestCase):
         for bad in ({**pins,'4':'VBUS_FUSED'}, {**pins,'6':pins['7'],'7':pins['6']}, {**pins,'MP':'+3V3'}):
             self.assertFalse(matches(bad))
 
-    def test_native_opening_rejects_missing_shifted_or_square_edges(self):
+    def test_native_opening_rejects_missing_shifted_or_sharp_edges(self):
         import re
         native = (SOURCE.parents[1] / 'design/pcb/62/keycult62.kicad_pcb').read_text()
         # Native records can be compact or formatted; each edge ends at its UUID.
@@ -96,6 +96,12 @@ class VariantTests(unittest.TestCase):
         self.assertFalse(matches(edges[:-1],62))
         self.assertFalse(matches([{**e,'start':(e['start'][0]+.1,e['start'][1])} for e in edges],62))
         self.assertFalse(matches([{k:v for k,v in e.items() if k!='mid'} for e in edges],62))
+        opening = self.layout['rear_clearance']['pcb_opening']
+        self.assertEqual(opening['bounds_mm'], [-24, -24, 24, 24])
+        self.assertEqual(opening['corner_radius_mm'], 1)
+        # Restore DRAFT F's 48x60 opening without changing the outer board edges.
+        old_edges = [{key: (x, y - 11 if y < 100 else y + 1) for key, (x, y) in edge.items()} if 155 < edge['start'][0] < 205 and 155 < edge['end'][0] < 205 else edge for edge in edges]
+        self.assertFalse(matches(old_edges,62))
 
     def test_no_connect_requires_own_single_pad_net(self):
         matches = self.namespace['circuit_net_matches']

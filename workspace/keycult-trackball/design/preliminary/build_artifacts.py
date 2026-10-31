@@ -42,11 +42,12 @@ rear['name']='rear-clearance-15u-3u-62'
 rear['keys']=[k for k in rear['keys'] if not (k['row']==0 and k['group']=='center')]
 rear['key_count']=len(rear['keys'])
 rear['central_empty_cells_mm']={'width':F(3*U),'height':F(4*U),'xmin':F(-1.5*U),'ymin':F(-2.5*U),'xmax':F(1.5*U),'ymax':F(1.5*U)}
-rear['status']='priority draft; PCB opening assumed; holder fit and stiffness unverified'
-rear['pcb_opening']={'bounds_mm':[-24,-35,24,25],'corner_radius_mm':1.0,'status':'design assumption; not measured holder clearance or fabrication approval'}
+rear['status']='priority cocot-inspired roller draft; horizontal under-ball sensor; fit and stiffness unverified'
+rear['pcb_opening']={'bounds_mm':[-24,-24,24,24],'corner_radius_mm':1.0,'status':'cocot-inspired independent holder design assumption; not fabrication approval'}
 metadata={'status':'preliminary; not fabrication-ready; exact case opening and z stack unmeasured','units':'mm','coordinate_system':{'origin':'center of keyfield and ball, home row between G and H','x':'right','y':'toward user/front/bottom row','z':'up from plate upper surface; z coordinates not yet assigned','case_alignment':'assumed concentric with exterior only for illustration; must register to physical plate datum'},'pitch_mm':U,'keycap_plan_assumption_mm':[CAP,CAP],'keycap_plan_width_formula':'18 + (width_u - 1) * 19.05 mm; height 18 mm','conservative_key_cell_mm':[U,U],'switch_cutout_proxy_mm':[SW,SW],'case_exterior_reference_mm':[294.3,111],'case_opening_mm':None,'plate_to_floor_mm':None,'official_plate_envelope_mm':[285.75,108.25,1.5],'trackball':{'center_mm':[0,0],'ball_diameter_mm':34,'ball_diameter_status':'primary source verified nominal','ball_center_height_above_plate_mm':None,'assembly_keepout_mm':[KEEP,KEEP],'assembly_keepout_status':'provisional planning reservation, not measured holder and not a plate/PCB cutout','holder_verified_envelope_mm':None,'sensor_board_outline_mm':[22,25],'sensor_board_outline_scope':'Keyball46 published 2022 Gerber; vertical installation','sensor_connector_envelope_mm':None},'preferred':a,'alternative':b}
 evidence=P/'sources/keyball-evidence.json'
 metadata['rear_clearance']=rear
+metadata['trackball'].update(sensor_board_outline_scope='Historical Keyball46 22x25mm module reused horizontally under ball in 62-key prototype; actual module unmeasured', support='three bearing rollers; no retaining or scroll ring', sensor_orientation='horizontal under ball; 62-key prototype only')
 if evidence.exists():metadata['trackball']['primary_evidence']=json.loads(evidence.read_text())
 report={'status':'numeric 2D checks only; z, opening, tolerances, sockets, wiring and final mounting remain unverified','layouts':{}}
 for lay in [a,b,rear]:
@@ -94,13 +95,35 @@ def render(lay,filename):
         parts+=[rect(x-cap_width(k)/2,y-9,f'{cap_width(k):g}',18,fill,'#475569',radius=.8),rect(x-7,y-7,14,14,'none','#cbd5e1'),text(x,y+1.2,k['label'],3.1 if len(k['label'])>3 else 4,'middle'),text(x,y+6.6,f'{x:g},{y:g}',1.75,'middle','#64748b')]
     parts+=[dim(-147.15,147.15,-64,'294.30 exterior reference — NOT the usable opening'),dim(env['xmin'],env['xmin']+env['width'],64,f"{env['width']:.2f} nominal keyfield ({lay['total_width_u']} × 19.05)")]
     parts+=[dim(-lay['center_gap_u']*U/2,lay['center_gap_u']*U/2,74,f"{lay['center_gap_u']*U:.2f} central grid gap")]
-    note='Pink: PCB opening DRAFT 48 x 60 R1. Purple: empty grid. Fit / Z unverified.' if lay is rear else 'Caps: 18 x 18 (1u), 27.525 x 18 (1.5u); switches: 14 x 14. Opening and Z UNKNOWN.'
+    note='Pink: PCB opening DRAFT 48 x 48 R1. Under-ball sensor / rollers. Fit / Z unverified.' if lay is rear else 'Caps: 18 x 18 (1u), 27.525 x 18 (1.5u); switches: 14 x 14. Opening and Z UNKNOWN.'
     if lay is b:note='Keys: assumed 18 × 18 caps / 14 × 14 switch proxies. Inner opening and Z stack UNKNOWN.'
     parts+=[text(-157,84,'Green: 285.75 × 108.25 bounding reference ONLY — not the official contour.',3),text(-157,90,'Orange: reserved assembly box, NOT a verified holder outline or cutout.',3,'start','#9a3412'),text(-157,96,note,3)]
     parts+=['</g></svg>'];s='\n'.join(parts);ET.fromstring(s);(P/filename).write_text(s+'\n');return s
 svg=render(a,'layout.svg');altsvg=render(b,'alternative.svg')
 rearsvg=render(rear,'rear-clearance.svg')
-section='''<svg xmlns="http://www.w3.org/2000/svg" width="170mm" height="90mm" viewBox="-55 -40 170 90"><g font-family="Arial,sans-serif"><rect x="-55" y="-40" width="170" height="90" fill="white"/><text x="-50" y="-32" font-size="4">Y–Z SECTION — illustrative, exact mounting height unknown</text><path d="M-50,0 H-28 M28,0 H100" fill="none" stroke="#0f766e" stroke-width="1.5"/><circle cx="0" cy="-8" r="17" fill="#bfdbfe" stroke="#1d4ed8" stroke-width=".3"/><path d="M-23,-4 V15 H23 V-4" fill="none" stroke="#c2410c" stroke-dasharray="2 1" stroke-width=".5"/><rect x="-27" y="-12" width="2" height="25" fill="#fed7aa" stroke="#c2410c" stroke-width=".3"/><path d="M-26,13 V17 H-19" fill="none" stroke="#c2410c" stroke-width=".5"/><path d="M-50,31 H100" fill="none" stroke="#64748b" stroke-width=".3" stroke-dasharray="2 1"/><path d="M0,-8 H65 M0,0 H65 M0,9 H65 M0,-25 H65" fill="none" stroke="#cbd5e1" stroke-width=".2"/><text x="36" y="-23" font-size="3">ball top = c + 17</text><text x="36" y="-10" font-size="3">ball center = c (UNKNOWN)</text><text x="36" y="-2" font-size="3">plate top z = 0</text><text x="36" y="12" font-size="3">ball bottom = c - 17</text><text x="36" y="21" font-size="3">vertical sensor PCB at rear (left): Z unknown</text><text x="36" y="29" font-size="3">floor z = -D (UNKNOWN)</text><text x="-50" y="42" font-size="3">Circle Ø34; example c=8 only. Sensor is VERTICAL, not under-ball horizontal.</text><text x="-50" y="47" font-size="3">Holder / sensor position / floor are schematic. No assembly pose is verified.</text></g></svg>'''
+section='''<svg xmlns="http://www.w3.org/2000/svg" width="170mm" height="90mm" viewBox="-55 -40 170 90">
+<g font-family="Arial,sans-serif">
+<rect x="-55" y="-40" width="170" height="90" fill="white"/>
+<text x="-50" y="-32" font-size="4">62-KEY DRAFT G / Y-Z SECTION / PROTOTYPE</text>
+<path d="M-50,0 H-18 M18,0 H100" fill="none" stroke="#0f766e" stroke-width="1.5"/>
+<path d="M-50,5 H-24 V6.6 H-50 M24,5 H100 V6.6 H24" fill="#86a884" stroke="#547452" stroke-width=".2"/>
+<circle cx="0" cy="-8" r="17" fill="#bfdbfe" stroke="#1d4ed8" stroke-width=".3"/>
+<circle cx="14.849" cy="6.849" r="4" fill="#d8bc76" stroke="#7e652a" stroke-width=".3"/>
+<circle cx="14.849" cy="6.849" r="1.5" fill="white" stroke="#7e652a" stroke-width=".2"/>
+<path d="M-22,12 V14 H-12 M12,14 H22 V12 M-22,17 V19 H-10 M10,19 H22 V17" fill="none" stroke="#168a83" stroke-width=".7"/>
+<rect x="-12.5" y="15.4" width="25" height="1.6" fill="#6b9d70" stroke="#325533" stroke-width=".2"/>
+<path d="M-5.5,11.4 H5.5 M0,9 V15.4" fill="none" stroke="#c2410c" stroke-dasharray="1 1" stroke-width=".3"/>
+<path d="M-50,31 H100" fill="none" stroke="#64748b" stroke-width=".3" stroke-dasharray="2 1"/>
+<g font-size="3">
+<text x="36" y="-23">ball top = +25; center = +8 assumed</text>
+<text x="36" y="-13">three tangential-axis rollers (one shown)</text>
+<text x="36" y="-3">plate top Z=0; candidate opening D36</text>
+<text x="36" y="12">ball bottom Z=-9; main PCB top -5</text>
+<text x="36" y="21">horizontal sensor PCB / rigid lower carrier</text>
+<text x="36" y="29">floor Z=-D UNKNOWN; print bottom -19</text>
+<text x="-50" y="42">PMW3360 module and lens datum unmeasured; spacers set sensor height.</text>
+<text x="-50" y="47">Schematic only. Case, fasteners, optics and manufacturing fit are NOT qualified.</text>
+</g></g></svg>'''
 ET.fromstring(section);(P/'section.svg').write_text(section+'\n')
 body='''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Keycult No.1/60 중앙 Keyball 예비 배치</title><style>:root{color-scheme:light}body{margin:0;background:#f1f5f9;color:#172033;font:16px/1.6 system-ui,sans-serif}main{max-width:1500px;margin:24px auto;padding:0 24px}h1{font-size:26px;margin:0}p{margin:8px 0}.panel{background:white;padding:20px;border:1px solid #cbd5e1;margin:20px 0}svg{display:block;width:100%;height:auto}.notice{color:#9a3412}details{margin:20px 0}summary{cursor:pointer;font-weight:650}table{border-collapse:collapse}td,th{padding:5px 12px;border:1px solid #cbd5e1;text-align:left}a{color:#1d4ed8}@media print{body{background:white}main{max-width:none;margin:0;padding:0}.noprint,details,.section{display:none}.panel{border:0;padding:0;margin:0}svg{width:330mm;height:190mm}h1,p{font-size:11pt}@page{size:A3 landscape;margin:10mm}}</style></head><body><main><h1>Keycult No.1/60 + 중앙 34mm Keyball · 65키 예비안</h1><p>1u = 19.05mm · 15열 × 5행 · 중앙 3 × 3칸 확보 · G(-38.10, 0) / H(+38.10, 0)</p><p class="notice">제작 도면 아님. 케이스 내부 개구부, 홀더 조립 치수, 플레이트–바닥 거리 미확정. 외장 높이를 내부 여유로 사용하지 않았습니다.</p><div class="panel">'''+svg+'''</div><div class="noprint"><p><a href="design.md">근거·설계 설명</a> · <a href="layout.json">키 중심 JSON</a> · <a href="validation.json">수치 검증</a> · <a href="print-1to1.svg">1:1 인쇄용</a></p><p>청색: 볼 최대 평면 투영 Ø34. 주황색 50 × 50: 임시 조립 예약 영역이며 실제 홀더 외곽·가공 구멍이 아닙니다. 키 좌표는 키캡 안쪽 하단에 mm로 표기했습니다.</p><p>인쇄: A3 가로, 배율 100% / 실제 크기, 페이지 맞춤 끄기. 100mm 검정 기준선 실측 후 사용. A4 한 장에는 294.3mm 외장 폭과 여백을 1:1로 담기 어렵습니다.</p></div><details><summary>대안: 14u / 중앙 2u / 64키 — 홀더 적합성 미승인</summary>'''+altsvg+'''<p>볼만 보면 가능하지만 50mm 조립 예약 영역과 키캡이 겹칩니다. 실물 홀더·PCB·커넥터의 높이별 외곽 검증 전에는 채택하지 않습니다.</p></details><div class="panel section">'''+section+'''</div></main></body></html>'''
 rear_panel='<details open><summary>장착 공간 대안: 15u / 중앙 3열 x 4행 / 62키</summary>'+rearsvg+'<p>상단 중앙 Vol- / Mute / Vol+를 제거하고 뒤쪽 19.05mm를 장착 구조 검토에 사용합니다. 볼은 지름 34mm, 중심 (0, 0)을 유지합니다. 보라색 영역은 가공 구멍이 아니며 보강판 재료를 남긴 지지 구조도 검토합니다. 강성과 수직 공간은 미검증입니다.</p><p><a href="rear-clearance.svg">SVG</a> · <a href="rear-clearance.png">PNG</a> · <a href="rear-clearance-print.pdf">62키 1:1 A3 PDF</a></p></details>'
