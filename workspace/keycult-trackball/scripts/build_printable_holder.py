@@ -25,12 +25,12 @@ except ImportError as error:
 V = App.Vector
 # Prototype choices, not measured dimensions of the purchased sensor or case.
 S = dict(ball_radius=17., ball_z=8., bearing_radius=1., cavity_clearance=.5,
-         cup_radius=22., bottom_z=-12., split_z=8., ring_top_z=16.,
+         cup_radius=22., bottom_z=-12., cup_top_z=8.,
          pcb_top_z=-5., pcb_thickness=1.6, plate_thickness=1.5,
          sensor_width=22., sensor_height=25., sensor_thickness=1.6,
          sensor_y=-26.5, sensor_bottom_z=-4.5, sensor_travel=3.,
          deck_bottom_z=-10., deck_top_z=-7., mount_pitch=42.,
-         ring_screw_radius=19.8, pilot_diameter=1.7, clearance_diameter=2.3)
+         pilot_diameter=1.7, clearance_diameter=2.3)
 
 
 def box(x, y, z, w, d, h):
@@ -58,19 +58,15 @@ def rounded_box(bounds, radius, z, height):
 
 def geometry():
     s = S
-    assert s['split_z'] == s['ball_z'] and s['bottom_z'] < s['ball_z']-s['ball_radius']-1
+    assert s['cup_top_z'] == s['ball_z'] and s['bottom_z'] < s['ball_z']-s['ball_radius']-1
     assert 0 < s['cavity_clearance'] < s['bearing_radius']
     assert s['sensor_travel'] == 3., 'Slot geometry must change with travel'
     center = V(0, 0, s['ball_z'])
     ball = Part.makeSphere(s['ball_radius'], center)
     cavity = Part.makeSphere(s['ball_radius']+s['cavity_clearance'], center)
-    base = cylinder(s['cup_radius'], s['bottom_z'], s['split_z']-s['bottom_z']).cut(cavity)
-    ring = cylinder(s['cup_radius'], s['split_z'], s['ring_top_z']-s['split_z']).cut(cavity)
-    # A cylindrical extension opens the spherical cavity through the top face.
-    ring = ring.cut(cylinder(math.sqrt((s['ball_radius']+s['cavity_clearance'])**2-(s['ring_top_z']-s['ball_z'])**2),
-                             s['ring_top_z']-0.01, 1.))
+    base = cylinder(s['cup_radius'], s['bottom_z'], s['cup_top_z']-s['bottom_z']).cut(cavity)
     optical_window = Part.makeCylinder(5.5, 15, V(0, -30, s['ball_z']), V(0, 1, 0))
-    base, ring = (p.cut(optical_window) for p in (base, ring))
+    base = base.cut(optical_window)
     # Three fixed ceramic balls are inserted from inside the cup and bonded below contact.
     bearings = []
     for angle in (90, 210, 330):
@@ -96,11 +92,6 @@ def geometry():
     for x in (-16., 16.):
         slot = cylinder(1.15, -11, 5, x, -30.5).fuse(cylinder(1.15, -11, 5, x, -24.5)).fuse(box(x-1.15, -30.5, -11, 2.3, 6, 5))
         base = base.cut(slot)
-    for angle in (45, 135, 225, 315):
-        a = math.radians(angle)
-        x, y = s['ring_screw_radius']*math.cos(a), s['ring_screw_radius']*math.sin(a)
-        base = base.cut(cylinder(s['pilot_diameter']/2, 2, 7, x, y))
-        ring = ring.cut(cylinder(s['clearance_diameter']/2, 7, 10, x, y))
 
     y = s['sensor_y']
     z0 = s['sensor_bottom_z']
@@ -127,7 +118,7 @@ def geometry():
         coupon = coupon.cut(Part.makeSphere(radius, p).fuse(Part.makeCylinder(radius+.1, 3, p, V(0, 0, 1))))
     coupon = coupon.cut(cylinder(s['pilot_diameter']/2, -1, 6, 10, 9))
     coupon = coupon.cut(cylinder(s['clearance_diameter']/2, -1, 6, 20, 9))
-    return {"Cup": base.removeSplitter(), "RetainingRing": ring.removeSplitter(),
+    return {"Cup": base.removeSplitter(),
             "SensorCarriage": carriage.removeSplitter(), "SensorCap": cap.removeSplitter(),
             "SeatCoupon": coupon.removeSplitter()}, {"Ball": ball, "SensorBoardAssumption": sensor,
                                                        **{f"CeramicBall{i+1}": b for i, b in enumerate(bearings)}}
@@ -170,17 +161,15 @@ def check(parts, references):
         for name in ('SensorCarriage', 'SensorCap', 'SensorBoardAssumption'):
             shape = (mounted | references)[name].copy()
             shape.translate(V(0, offset, 0))
-            for other_name, other in dict(Cup=parts['Cup'], Ring=parts['RetainingRing'], PCB=pcb,
+            for other_name, other in dict(Cup=parts['Cup'], PCB=pcb,
                                           Plate=plate, Keys=keys, Switches=switches, Ball=references['Ball']).items():
                 assert shape.common(other).Volume < 1e-6, (name, other_name, 'travel collision', offset)
-    # The ball can be dropped into the open cup; the installed ring retains it.
-    for lift in (0., 2., 8., 18., 35.):
+    # The user accepts lift-out; no printed part may obstruct vertical removal.
+    for lift in (0., 2., 3., 8., 18., 35.):
         raised = references['Ball'].copy()
         raised.translate(V(0, 0, lift))
-        assert raised.common(parts['Cup']).Volume < 1e-6, 'Ball insertion obstructed'
-    raised = references['Ball'].copy()
-    raised.translate(V(0, 0, 3))
-    assert raised.common(parts['RetainingRing']).Volume > 1., 'Ring fails to retain ball'
+        for name, shape in mounted.items():
+            assert raised.common(shape).Volume < 1e-6, (name, 'Ball insertion/removal obstructed', lift)
     assert parts['Cup'].isInside(V(0, 0, S['bottom_z']+1), 1e-7, True), 'Cup floor missing'
     references.update(CandidatePlate=plate, CurrentPCB=pcb)
     assembly = Part.makeCompound(list(mounted.values()))
@@ -190,7 +179,7 @@ def check(parts, references):
                 pcb_sha256=digest, layout_sha256=hashlib.sha256(layout_path.read_bytes()).hexdigest(),
                 max_nominal_overlap_mm3=max(overlaps.values()),
                 sensor_radial_travel_mm=[-S['sensor_travel'], S['sensor_travel']],
-                ring_aperture_diameter_mm=2*math.sqrt((S['ball_radius']+S['cavity_clearance'])**2-(S['ring_top_z']-S['ball_z'])**2),
+                ball_retention='none; vertical lift-out is intentional',
                 printed_assembly_bounds_mm=[bb.XMin, bb.YMin, bb.ZMin, bb.XMax, bb.YMax, bb.ZMax],
                 unverified=['sensor PCB/lens/components/connector envelope and optical datum',
                             'case depth, plate integration, fasteners, deflection',
@@ -199,7 +188,7 @@ def check(parts, references):
 
 def preview(parts, references, path):
     # Orthographic mesh rendering avoids requiring a working OpenGL GUI.
-    colors = {'Cup': '#168a83', 'RetainingRing': '#f4b451', 'SensorCarriage': '#4269a5',
+    colors = {'Cup': '#168a83', 'SensorCarriage': '#4269a5',
               'SensorCap': '#244a82', 'Ball': '#dddddf', 'SensorBoardAssumption': '#6b9d70',
               'CeramicBall1': '#e4daab', 'CeramicBall2': '#e4daab', 'CeramicBall3': '#e4daab'}
     panels = []
@@ -208,7 +197,7 @@ def preview(parts, references, path):
         for name, color in colors.items():
             shape = (parts | references)[name].copy()
             if exploded:
-                shift = {'RetainingRing': 36, 'Ball': 19, 'SensorCap': 15}.get(name, 0)
+                shift = {'Ball': 19, 'SensorCap': 15}.get(name, 0)
                 shape.translate(V(0, 0, shift))
             mesh = MeshPart.meshFromShape(Shape=shape, LinearDeflection=.3, AngularDeflection=.35, Relative=False)
             vertices, triangles = mesh.Topology
@@ -228,7 +217,7 @@ def preview(parts, references, path):
         panels.append(f'<text x="{offset}" y="65" text-anchor="middle">{title}</text><g transform="translate({offset},415) scale(4.6)">{"".join(f for _, f in sorted(faces))}</g>')
     path.write_text('<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="650" viewBox="0 0 1140 650">'
                    '<rect width="1140" height="650" fill="#f6f5f1"/><g font-family="sans-serif" font-size="20" fill="#172033">'
-                   +''.join(panels)+'<text x="35" y="590">34 mm ball / 62-key prototype / teal cup + amber ring + blue sensor carriage</text>'
+                   +''.join(panels)+'<text x="35" y="590">34 mm lift-out ball / 62-key prototype / teal cup + blue sensor carriage</text>'
                    '<text x="35" y="625" font-size="16">Sensor board is an unmeasured envelope. Plate, cable and fasteners omitted. NOT FIT-QUALIFIED.</text></g></svg>')
 
 
@@ -248,9 +237,7 @@ def main():
             if name != 'SeatCoupon':
                 objects.append(obj)
             print_shape = shape.copy()
-            if name == 'RetainingRing':
-                print_shape.rotate(V(0, 0, 0), V(1, 0, 0), 180)
-            elif name in ('SensorCarriage', 'SensorCap'):
+            if name in ('SensorCarriage', 'SensorCap'):
                 print_shape.rotate(V(0, 0, 0), V(1, 0, 0), 90)
             bb = print_shape.BoundBox
             print_shape.translate(V(-bb.XMin, -bb.YMin, -bb.ZMin))
