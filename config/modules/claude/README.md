@@ -10,6 +10,8 @@ This module installs and configures Claude Code, Anthropic's AI coding assistant
 - Installs plugin marketplaces, plugins, and MCP servers via activation scripts
 - Installs plannotator CLI for visual plan review
 
+[activation.nix](activation.nix) generates the marketplace, plugin, and MCP setup shell. `default.nix` owns their selections and Home Manager activation ordering; `plugin-updates.py` owns update caching.
+
 Each Home Manager activation runs the official plannotator installer with `--minimal` to install or update the CLI in `~/.local/bin`. The installer skips agent integrations, which this module manages through the Claude plugin. Installation failures are logged in `~/.claude/nix-setup.log` and do not stop activation.
 
 ## Configuration Files
