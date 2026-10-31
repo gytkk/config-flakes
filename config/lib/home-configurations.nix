@@ -6,7 +6,6 @@ in
   inherit mkFlakeDirectory;
 
   mkHomeConfig =
-    { baseModules }:
     name: config:
     let
       requiredFields = [
