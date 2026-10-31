@@ -14,9 +14,7 @@ let
   hostConfigs = lib.environments.allHosts;
 
   # 홈 설정 생성 함수
-  mkHomeConfig = lib.builders.mkHomeConfig {
-    baseModules = [ ];
-  };
+  mkHomeConfig = lib.builders.mkHomeConfig;
 
   # NixOS 설정 생성 함수
   mkNixOSConfig = lib.builders.mkNixOSConfig;
