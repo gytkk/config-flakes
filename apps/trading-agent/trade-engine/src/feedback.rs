@@ -1,13 +1,11 @@
+use crate::command_transport::{CommandError, run_command};
 use std::path::PathBuf;
-use std::process::Stdio;
 use std::time::Duration;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
-use tokio::time::timeout;
 
 use crate::error::TradeEngineError;
 use crate::stdout::{OutputField, StructuredOutput};
@@ -236,61 +234,45 @@ impl FeedbackProvider for CommandFeedbackProvider {
                 message: error.to_string(),
             }
         })?;
-        let mut child = Command::new(&self.command)
-            .args(&self.args)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|error| FeedbackProviderError::CommandIo {
-                operation: "spawn",
-                message: error.to_string(),
-            })?;
-        let mut stdin = child
-            .stdin
-            .take()
-            .ok_or_else(|| FeedbackProviderError::CommandIo {
-                operation: "stdin",
-                message: "feedback provider stdin was unavailable".to_owned(),
-            })?;
-        stdin
-            .write_all(request_json.as_bytes())
-            .await
-            .map_err(|error| FeedbackProviderError::CommandIo {
-                operation: "stdin",
-                message: error.to_string(),
-            })?;
-        drop(stdin);
-
-        let output = timeout(self.timeout, child.wait_with_output())
-            .await
-            .map_err(|_| FeedbackProviderError::Timeout {
+        let mut command = Command::new(&self.command);
+        command.args(&self.args);
+        let output = run_command(
+            &mut command,
+            request_json.as_bytes(),
+            self.timeout,
+            self.max_stdout_bytes,
+            self.max_stderr_bytes,
+        )
+        .await
+        .map_err(|error| match error {
+            CommandError::Timeout => FeedbackProviderError::Timeout {
                 timeout: self.timeout,
-            })?
-            .map_err(|error| FeedbackProviderError::CommandIo {
-                operation: "wait",
-                message: error.to_string(),
-            })?;
-        if output.stdout.len() > self.max_stdout_bytes {
+            },
+            CommandError::Io { operation, source } => FeedbackProviderError::CommandIo {
+                operation,
+                message: source.to_string(),
+            },
+        })?;
+        if output.stdout.truncated {
             return Err(FeedbackProviderError::OutputTooLarge {
                 stream: "stdout",
                 max_bytes: self.max_stdout_bytes,
             });
         }
-        if output.stderr.len() > self.max_stderr_bytes {
+        if output.stderr.truncated {
             return Err(FeedbackProviderError::OutputTooLarge {
                 stream: "stderr",
                 max_bytes: self.max_stderr_bytes,
             });
         }
-        let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+        let stderr = String::from_utf8_lossy(&output.stderr.bytes).into_owned();
         if !output.status.success() {
             return Err(FeedbackProviderError::CommandFailed {
                 status: output.status.to_string(),
                 stderr,
             });
         }
-        let raw_output_json = String::from_utf8(output.stdout).map_err(|error| {
+        let raw_output_json = String::from_utf8(output.stdout.bytes).map_err(|error| {
             FeedbackProviderError::InvalidOutput {
                 reason: format!("stdout was not UTF-8: {error}"),
             }

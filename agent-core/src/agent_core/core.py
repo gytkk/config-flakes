@@ -8,14 +8,13 @@ from pathlib import Path, PurePosixPath
 
 import tomllib
 
+from .validation import ValidationError, _expect_keys
+from .source_validation import validate_sources
+
 RUNTIMES = ("codex", "claude", "pi")
 _SOURCE_ROOT = Path(__file__).resolve().parents[2]
 _PACKAGED_ROOT = Path(__file__).resolve().parent / "resources"
 _FRONTMATTER = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
-
-
-class ValidationError(ValueError):
-    """Raised when canonical resources cannot be materialized safely."""
 
 
 def resource_root() -> Path:
@@ -35,12 +34,6 @@ def _safe_relative(value: str) -> PurePosixPath:
     ):
         raise ValidationError(f"unsafe source or output path: {value!r}")
     return path
-
-
-def _expect_keys(table: object, expected: set[str], context: str) -> dict:
-    if not isinstance(table, dict) or set(table) != expected:
-        raise ValidationError(f"{context} has unknown or missing keys")
-    return table
 
 
 def _load_manifest() -> dict:
@@ -84,9 +77,7 @@ def _load_manifest() -> dict:
         raise ValidationError("manifest must configure exactly the supported runtimes")
     for runtime, runtime_config in manifest["runtimes"].items():
         _expect_keys(runtime_config, {"skill_output", "skills"}, f"runtime {runtime}")
-    from .skill_sources import validate_sources
-
-    validate_sources(manifest)
+    validate_sources(manifest, source=_source, materialize_skill=_materialize_skill)
     return manifest
 
 

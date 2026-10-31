@@ -938,336 +938,290 @@ where
     let mut output_sink = output_sink;
     settings.validate()?;
     let run_id = store.start_dry_run_run(run_context).await?;
-    let market_interval = control.market_hours.market_tick_interval(&settings.runtime);
-    let mut loop_header = StructuredOutput::new();
-    loop_header
-        .heading(run_context.mode.loop_heading())
-        .field("status", "started")
-        .field("mode", run_context.mode.as_str())
-        .field("market_interval_seconds", market_interval.as_secs())
-        .field(
-            "max_tick_runtime_seconds",
-            settings.runtime.max_tick_runtime().as_secs(),
-        )
-        .field(
-            "skip_if_previous_tick_running",
-            settings.runtime.skip_if_previous_tick_running,
-        )
-        .blank();
-    let mut output = collect_output.then(String::new);
-    append_runtime_output(&mut output, &mut output_sink, loop_header.finish())?;
-    tracing::info!(
-        event = "runtime_loop",
-        status = RuntimeRunStatus::Started.as_str(),
-        mode = run_context.mode.as_str(),
-        market_interval_seconds = market_interval.as_secs(),
-        max_tick_runtime_seconds = settings.runtime.max_tick_runtime().as_secs(),
-        skip_if_previous_tick_running = settings.runtime.skip_if_previous_tick_running,
-    );
-
-    let mut market_ticks = 0_u64;
-    let mut next_market_tick = Instant::now();
-    let mut market_session_cache = MarketSessionCache::empty();
-    let mut advisor_invocation_state = AdvisorInvocationState::default();
-    loop {
-        if shutdown.is_shutdown_requested() {
-            finish_interrupted_run(
-                store,
-                run_id,
-                run_context.mode,
-                &mut output,
-                &mut output_sink,
+    let result = async {
+        let market_interval = control.market_hours.market_tick_interval(&settings.runtime);
+        let mut loop_header = StructuredOutput::new();
+        loop_header
+            .heading(run_context.mode.loop_heading())
+            .field("status", "started")
+            .field("mode", run_context.mode.as_str())
+            .field("market_interval_seconds", market_interval.as_secs())
+            .field(
+                "max_tick_runtime_seconds",
+                settings.runtime.max_tick_runtime().as_secs(),
             )
-            .await?;
-            return Ok(output.unwrap_or_default());
-        }
+            .field(
+                "skip_if_previous_tick_running",
+                settings.runtime.skip_if_previous_tick_running,
+            )
+            .blank();
+        let mut output = collect_output.then(String::new);
+        append_runtime_output(&mut output, &mut output_sink, loop_header.finish())?;
+        tracing::info!(
+            event = "runtime_loop",
+            status = RuntimeRunStatus::Started.as_str(),
+            mode = run_context.mode.as_str(),
+            market_interval_seconds = market_interval.as_secs(),
+            max_tick_runtime_seconds = settings.runtime.max_tick_runtime().as_secs(),
+            skip_if_previous_tick_running = settings.runtime.skip_if_previous_tick_running,
+        );
 
-        let now = Instant::now();
-        let mut did_work = false;
+        let mut market_ticks = 0_u64;
+        let mut next_market_tick = Instant::now();
+        let mut market_session_cache = MarketSessionCache::empty();
+        let mut advisor_invocation_state = AdvisorInvocationState::default();
+        loop {
+            if shutdown.is_shutdown_requested() {
+                append_runtime_output(
+                    &mut output,
+                    &mut output_sink,
+                    loop_stopped_block(run_context.mode, "shutdown_signal"),
+                )?;
+                return Ok((output, RuntimeRunStatus::Interrupted, "shutdown_signal"));
+            }
 
-        if now >= next_market_tick {
-            let tick_sequence = market_ticks;
-            let tick_index = market_ticks + 1;
-            if settings.runtime.skip_if_previous_tick_running
-                && store.has_active_dry_run_tick_lease().await?
-            {
-                market_ticks = tick_index;
-                append_runtime_output(
-                    &mut output,
-                    &mut output_sink,
-                    market_tick_status_block(tick_index, DryRunTickStatus::Started.as_str(), &[]),
-                )?;
-                tracing::info!(
-                    event = "market_tick",
-                    index = tick_index,
-                    tick_sequence,
-                    status = DryRunTickStatus::Started.as_str(),
-                );
-                store
-                    .record_dry_run_tick_skip(
-                        run_id,
-                        tick_sequence,
-                        DryRunTickStatus::SkippedPreviousTickRunning,
-                        "previous tick lease is active",
-                    )
-                    .await?;
-                append_runtime_output(
-                    &mut output,
-                    &mut output_sink,
-                    market_tick_status_block(
-                        tick_index,
-                        DryRunTickStatus::SkippedPreviousTickRunning.as_str(),
-                        &[],
-                    ),
-                )?;
-                tracing::warn!(
-                    event = "market_tick",
-                    index = tick_index,
-                    tick_sequence,
-                    status = DryRunTickStatus::SkippedPreviousTickRunning.as_str(),
-                );
-                next_market_tick = now + market_interval;
-                did_work = true;
-            } else {
-                match execution_driver
-                    .reconcile_before_tick(gateway, tick_sequence)
-                    .await
+            let now = Instant::now();
+            let mut did_work = false;
+
+            if now >= next_market_tick {
+                let tick_sequence = market_ticks;
+                let tick_index = market_ticks + 1;
+                if settings.runtime.skip_if_previous_tick_running
+                    && store.has_active_dry_run_tick_lease().await?
                 {
-                    Ok(reconciliation_output) => {
-                        append_runtime_output(
-                            &mut output,
-                            &mut output_sink,
-                            reconciliation_output,
-                        )?;
-                    }
-                    Err(error) => {
-                        let message = error.to_string();
-                        store
-                            .finish_dry_run_run(
-                                run_id,
-                                RuntimeRunStatus::Failed,
-                                Some(message.as_str()),
-                                None,
-                            )
-                            .await?;
-                        return Err(error);
-                    }
-                }
-                market_ticks = tick_index;
-                append_runtime_output(
-                    &mut output,
-                    &mut output_sink,
-                    market_tick_status_block(tick_index, DryRunTickStatus::Started.as_str(), &[]),
-                )?;
-                tracing::info!(
-                    event = "market_tick",
-                    index = tick_index,
-                    tick_sequence,
-                    status = DryRunTickStatus::Started.as_str(),
-                );
-                let market_profile = MarketProfile::new(run_context.market_scope.clone());
-                let market_session = market_session_cache
-                    .get(gateway, &settings.runtime, &market_profile)
-                    .await?;
-                match run_dry_run_tick_for_run(
-                    gateway,
-                    store,
-                    DryRunMarketTickContext {
-                        run_id,
+                    market_ticks = tick_index;
+                    append_runtime_output(
+                        &mut output,
+                        &mut output_sink,
+                        market_tick_status_block(
+                            tick_index,
+                            DryRunTickStatus::Started.as_str(),
+                            &[],
+                        ),
+                    )?;
+                    tracing::info!(
+                        event = "market_tick",
+                        index = tick_index,
                         tick_sequence,
-                        run_context,
-                        watchlist,
-                        settings: &settings,
-                        market_session_open: market_session.is_open,
-                    },
-                    &mut advisor_invocation_state,
-                )
-                .await
-                {
-                    Ok(completed_tick) => {
-                        append_runtime_output(
-                            &mut output,
-                            &mut output_sink,
-                            completed_tick.rendered_output,
-                        )?;
-                        match execution_driver
-                            .submit_after_tick(
-                                gateway,
-                                run_id,
-                                tick_sequence,
-                                run_context,
-                                &completed_tick.effective_candidates,
-                                &settings,
-                            )
-                            .await
-                        {
-                            Ok(execution_output) => {
-                                append_runtime_output(
-                                    &mut output,
-                                    &mut output_sink,
-                                    execution_output,
-                                )?;
-                            }
-                            Err(error) => {
-                                let message = error.to_string();
-                                store
-                                    .finish_dry_run_run(
-                                        run_id,
-                                        RuntimeRunStatus::Failed,
-                                        Some(message.as_str()),
-                                        None,
-                                    )
-                                    .await?;
-                                return Err(error);
-                            }
+                        status = DryRunTickStatus::Started.as_str(),
+                    );
+                    store
+                        .record_dry_run_tick_skip(
+                            run_id,
+                            tick_sequence,
+                            DryRunTickStatus::SkippedPreviousTickRunning,
+                            "previous tick lease is active",
+                        )
+                        .await?;
+                    append_runtime_output(
+                        &mut output,
+                        &mut output_sink,
+                        market_tick_status_block(
+                            tick_index,
+                            DryRunTickStatus::SkippedPreviousTickRunning.as_str(),
+                            &[],
+                        ),
+                    )?;
+                    tracing::warn!(
+                        event = "market_tick",
+                        index = tick_index,
+                        tick_sequence,
+                        status = DryRunTickStatus::SkippedPreviousTickRunning.as_str(),
+                    );
+                    next_market_tick = now + market_interval;
+                    did_work = true;
+                } else {
+                    match execution_driver
+                        .reconcile_before_tick(gateway, tick_sequence)
+                        .await
+                    {
+                        Ok(reconciliation_output) => {
+                            append_runtime_output(
+                                &mut output,
+                                &mut output_sink,
+                                reconciliation_output,
+                            )?;
                         }
-                        append_runtime_output(
-                            &mut output,
-                            &mut output_sink,
-                            market_tick_status_block(
-                                tick_index,
-                                DryRunTickStatus::Completed.as_str(),
-                                &[],
-                            ),
-                        )?;
-                        tracing::info!(
-                            event = "market_tick",
-                            index = tick_index,
-                            tick_sequence,
-                            status = DryRunTickStatus::Completed.as_str(),
-                        );
+                        Err(error) => {
+                            return Err(error);
+                        }
                     }
-                    Err(failure) => {
-                        tracing::warn!(
-                            event = "market_tick",
-                            index = tick_index,
+                    market_ticks = tick_index;
+                    append_runtime_output(
+                        &mut output,
+                        &mut output_sink,
+                        market_tick_status_block(
+                            tick_index,
+                            DryRunTickStatus::Started.as_str(),
+                            &[],
+                        ),
+                    )?;
+                    tracing::info!(
+                        event = "market_tick",
+                        index = tick_index,
+                        tick_sequence,
+                        status = DryRunTickStatus::Started.as_str(),
+                    );
+                    let market_profile = MarketProfile::new(run_context.market_scope.clone());
+                    let market_session = market_session_cache
+                        .get(gateway, &settings.runtime, &market_profile)
+                        .await?;
+                    match run_dry_run_tick_for_run(
+                        gateway,
+                        store,
+                        DryRunMarketTickContext {
+                            run_id,
                             tick_sequence,
-                            status = failure.status.as_str(),
-                            stage = failure.stage.as_str(),
-                            symbol = failure.symbol.as_ref().map(Symbol::as_str).unwrap_or(""),
-                            error = failure.message.as_str(),
-                        );
-                        if failure.should_retry_next_tick() {
-                            let mut fields = vec![
-                                OutputField::new("stage", failure.stage.as_str()),
-                                OutputField::new("error", failure.message.as_str()),
-                                OutputField::new("retry", "next_tick"),
-                            ];
-                            if let Some(symbol) = failure.symbol.as_ref() {
-                                fields.push(OutputField::new("symbol", symbol.as_str()));
+                            run_context,
+                            watchlist,
+                            settings: &settings,
+                            market_session_open: market_session.is_open,
+                        },
+                        &mut advisor_invocation_state,
+                    )
+                    .await
+                    {
+                        Ok(completed_tick) => {
+                            append_runtime_output(
+                                &mut output,
+                                &mut output_sink,
+                                completed_tick.rendered_output,
+                            )?;
+                            match execution_driver
+                                .submit_after_tick(
+                                    gateway,
+                                    run_id,
+                                    tick_sequence,
+                                    run_context,
+                                    &completed_tick.effective_candidates,
+                                    &settings,
+                                )
+                                .await
+                            {
+                                Ok(execution_output) => {
+                                    append_runtime_output(
+                                        &mut output,
+                                        &mut output_sink,
+                                        execution_output,
+                                    )?;
+                                }
+                                Err(error) => {
+                                    return Err(error);
+                                }
                             }
                             append_runtime_output(
                                 &mut output,
                                 &mut output_sink,
                                 market_tick_status_block(
                                     tick_index,
-                                    failure.status.as_str(),
-                                    &fields,
+                                    DryRunTickStatus::Completed.as_str(),
+                                    &[],
                                 ),
                             )?;
-                        } else {
-                            store
-                                .finish_dry_run_run(
-                                    run_id,
-                                    RuntimeRunStatus::Failed,
-                                    Some(failure.message.as_str()),
-                                    None,
-                                )
-                                .await?;
-                            return Err(failure.to_error());
+                            tracing::info!(
+                                event = "market_tick",
+                                index = tick_index,
+                                tick_sequence,
+                                status = DryRunTickStatus::Completed.as_str(),
+                            );
+                        }
+                        Err(failure) => {
+                            tracing::warn!(
+                                event = "market_tick",
+                                index = tick_index,
+                                tick_sequence,
+                                status = failure.status.as_str(),
+                                stage = failure.stage.as_str(),
+                                symbol = failure.symbol.as_ref().map(Symbol::as_str).unwrap_or(""),
+                                error = failure.message.as_str(),
+                            );
+                            if failure.should_retry_next_tick() {
+                                let mut fields = vec![
+                                    OutputField::new("stage", failure.stage.as_str()),
+                                    OutputField::new("error", failure.message.as_str()),
+                                    OutputField::new("retry", "next_tick"),
+                                ];
+                                if let Some(symbol) = failure.symbol.as_ref() {
+                                    fields.push(OutputField::new("symbol", symbol.as_str()));
+                                }
+                                append_runtime_output(
+                                    &mut output,
+                                    &mut output_sink,
+                                    market_tick_status_block(
+                                        tick_index,
+                                        failure.status.as_str(),
+                                        &fields,
+                                    ),
+                                )?;
+                            } else {
+                                return Err(failure.to_error());
+                            }
                         }
                     }
+                    next_market_tick = now + market_interval;
+                    did_work = true;
                 }
-                next_market_tick = now + market_interval;
-                did_work = true;
             }
-        }
 
-        if shutdown.is_shutdown_requested() {
-            finish_interrupted_run(
-                store,
-                run_id,
-                run_context.mode,
-                &mut output,
-                &mut output_sink,
-            )
-            .await?;
-            return Ok(output.unwrap_or_default());
-        }
+            if shutdown.is_shutdown_requested() {
+                append_runtime_output(
+                    &mut output,
+                    &mut output_sink,
+                    loop_stopped_block(run_context.mode, "shutdown_signal"),
+                )?;
+                return Ok((output, RuntimeRunStatus::Interrupted, "shutdown_signal"));
+            }
 
-        if control
-            .max_market_ticks
-            .is_some_and(|max_ticks| market_ticks >= max_ticks)
-        {
-            store
-                .finish_dry_run_run(
-                    run_id,
-                    RuntimeRunStatus::Completed,
-                    None,
-                    Some("max_market_ticks"),
-                )
-                .await?;
-            append_runtime_output(
-                &mut output,
-                &mut output_sink,
-                loop_stopped_block(run_context.mode, "max_market_ticks"),
-            )?;
-            tracing::info!(
-                event = "runtime_loop",
-                status = RuntimeRunStatus::Completed.as_str(),
-                shutdown_reason = "max_market_ticks",
-            );
-            return Ok(output.unwrap_or_default());
-        }
+            if control
+                .max_market_ticks
+                .is_some_and(|max_ticks| market_ticks >= max_ticks)
+            {
+                append_runtime_output(
+                    &mut output,
+                    &mut output_sink,
+                    loop_stopped_block(run_context.mode, "max_market_ticks"),
+                )?;
+                tracing::info!(
+                    event = "runtime_loop",
+                    status = RuntimeRunStatus::Completed.as_str(),
+                    shutdown_reason = "max_market_ticks",
+                );
+                return Ok((output, RuntimeRunStatus::Completed, "max_market_ticks"));
+            }
 
-        if !did_work {
-            tokio::select! {
-                _ = sleep_until_next_tick(next_market_tick) => {}
-                _ = wait_for_runtime_shutdown(shutdown.clone()) => {
-                    finish_interrupted_run(
-                        store,
-                        run_id,
-                        run_context.mode,
-                        &mut output,
-                        &mut output_sink,
-                    )
-                    .await?;
-                    return Ok(output.unwrap_or_default());
+            if !did_work {
+                tokio::select! {
+                    _ = sleep_until_next_tick(next_market_tick) => {}
+                    _ = wait_for_runtime_shutdown(shutdown.clone()) => {
+                        append_runtime_output(&mut output, &mut output_sink,
+                        loop_stopped_block(run_context.mode, "shutdown_signal"))?;
+                return Ok((output, RuntimeRunStatus::Interrupted, "shutdown_signal"));
+                    }
                 }
             }
         }
     }
-}
+    .await;
 
-async fn finish_interrupted_run<S>(
-    store: &S,
-    run_id: StoredRuntimeRunId,
-    mode: RuntimeMode,
-    output: &mut Option<String>,
-    output_sink: &mut Option<&mut dyn RuntimeOutputSink>,
-) -> Result<(), TradeEngineError>
-where
-    S: DryRunAuditStore,
-{
-    store
-        .finish_dry_run_run(
-            run_id,
-            RuntimeRunStatus::Interrupted,
-            None,
-            Some("shutdown_signal"),
-        )
-        .await?;
-    append_runtime_output(
-        output,
-        output_sink,
-        loop_stopped_block(mode, "shutdown_signal"),
-    )?;
-    tracing::info!(
-        event = "runtime_loop",
-        status = RuntimeRunStatus::Interrupted.as_str(),
-        shutdown_reason = "shutdown_signal",
-    );
-    Ok(())
+    match result {
+        Ok((output, status, reason)) => {
+            store
+                .finish_dry_run_run(run_id, status, None, Some(reason))
+                .await?;
+            Ok(output.unwrap_or_default())
+        }
+        Err(error) => {
+            let message = error.to_string();
+            if let Err(finalization_error) = store
+                .finish_dry_run_run(run_id, RuntimeRunStatus::Failed, Some(&message), None)
+                .await
+            {
+                tracing::error!(event = "runtime_finalization_failed", run_id = ?run_id,
+                    error = %finalization_error, "could not persist failed runtime status");
+            }
+            Err(error)
+        }
+    }
 }
 
 fn append_runtime_output(

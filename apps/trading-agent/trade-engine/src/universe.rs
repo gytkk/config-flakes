@@ -1,15 +1,13 @@
+use crate::command_transport::{CommandError, capped_utf8_lossy, run_command};
 use std::fmt::{self, Display};
 use std::path::PathBuf;
-use std::process::Stdio;
 use std::time::Duration;
 
 use async_trait::async_trait;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
-use tokio::time::timeout;
 
 use crate::command_usage::{
     COMMAND_USAGE_EVENTS_PATH_ENV, CommandUsageCapture, ProviderTokenUsage,
@@ -493,75 +491,27 @@ impl UniverseDiscoveryProvider for CommandUniverseDiscoveryProvider {
         })?;
         let usage_capture = CommandUsageCapture::new("universe");
 
-        let mut child = Command::new(&self.command)
+        let mut command = Command::new(&self.command);
+        command
             .args(&self.args)
-            .env(COMMAND_USAGE_EVENTS_PATH_ENV, usage_capture.path())
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .kill_on_drop(true)
-            .spawn()
-            .map_err(|error| UniverseDiscoveryProviderError::Io {
-                operation: "spawn",
-                message: error.to_string(),
-                raw_output_json: String::new(),
-            })?;
-
-        let mut stdin = child
-            .stdin
-            .take()
-            .ok_or_else(|| UniverseDiscoveryProviderError::Io {
-                operation: "open stdin",
-                message: "child stdin was not available".to_owned(),
-                raw_output_json: String::new(),
-            })?;
-        stdin.write_all(&request_json).await.map_err(|error| {
-            UniverseDiscoveryProviderError::Io {
-                operation: "write stdin",
-                message: error.to_string(),
-                raw_output_json: String::new(),
-            }
-        })?;
-        drop(stdin);
-
-        let stdout = child
-            .stdout
-            .take()
-            .ok_or_else(|| UniverseDiscoveryProviderError::Io {
-                operation: "open stdout",
-                message: "child stdout was not available".to_owned(),
-                raw_output_json: String::new(),
-            })?;
-        let stderr = child
-            .stderr
-            .take()
-            .ok_or_else(|| UniverseDiscoveryProviderError::Io {
-                operation: "open stderr",
-                message: "child stderr was not available".to_owned(),
-                raw_output_json: String::new(),
-            })?;
-        let max_stdout_bytes = self.max_stdout_bytes;
-        let max_stderr_bytes = self.max_stderr_bytes;
-        let command_output = timeout(self.timeout, async move {
-            let (status, stdout, stderr) = tokio::try_join!(
-                child.wait(),
-                read_capped_output(stdout, max_stdout_bytes),
-                read_capped_output(stderr, max_stderr_bytes),
-            )?;
-            Ok::<_, std::io::Error>(CommandOutput {
-                status,
-                stdout,
-                stderr,
-            })
-        })
+            .env(COMMAND_USAGE_EVENTS_PATH_ENV, usage_capture.path());
+        let command_output = run_command(
+            &mut command,
+            &request_json,
+            self.timeout,
+            self.max_stdout_bytes,
+            self.max_stderr_bytes,
+        )
         .await
-        .map_err(|_| UniverseDiscoveryProviderError::Timeout {
-            timeout: self.timeout,
-        })?
-        .map_err(|error| UniverseDiscoveryProviderError::Io {
-            operation: "read output",
-            message: error.to_string(),
-            raw_output_json: String::new(),
+        .map_err(|error| match error {
+            CommandError::Timeout => UniverseDiscoveryProviderError::Timeout {
+                timeout: self.timeout,
+            },
+            CommandError::Io { operation, source } => UniverseDiscoveryProviderError::Io {
+                operation,
+                message: source.to_string(),
+                raw_output_json: String::new(),
+            },
         })?;
         let raw_output_json = capped_utf8_lossy(&command_output.stdout);
         let token_usage = usage_capture.read_token_usage();
@@ -702,55 +652,6 @@ fn validate_text(
         return Err(UniverseDiscoveryValidationError::TextTooLong { field, max_chars });
     }
     Ok(())
-}
-
-#[derive(Debug)]
-struct CommandOutput {
-    status: std::process::ExitStatus,
-    stdout: CappedOutput,
-    stderr: CappedOutput,
-}
-
-#[derive(Debug)]
-struct CappedOutput {
-    bytes: Vec<u8>,
-    truncated: bool,
-}
-
-async fn read_capped_output<R>(mut reader: R, max_bytes: usize) -> std::io::Result<CappedOutput>
-where
-    R: AsyncRead + Unpin,
-{
-    let mut bytes = Vec::new();
-    let mut truncated = false;
-    let mut buffer = [0_u8; 8192];
-
-    loop {
-        let read = reader.read(&mut buffer).await?;
-        if read == 0 {
-            break;
-        }
-        let remaining = max_bytes.saturating_sub(bytes.len());
-        if remaining > 0 {
-            let keep = remaining.min(read);
-            bytes.extend_from_slice(&buffer[..keep]);
-            if keep < read {
-                truncated = true;
-            }
-        } else {
-            truncated = true;
-        }
-    }
-
-    Ok(CappedOutput { bytes, truncated })
-}
-
-fn capped_utf8_lossy(output: &CappedOutput) -> String {
-    let mut value = String::from_utf8_lossy(&output.bytes).into_owned();
-    if output.truncated {
-        value.push_str("<truncated>");
-    }
-    value
 }
 
 #[cfg(test)]

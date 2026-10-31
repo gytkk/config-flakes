@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+mod command_transport;
+
 pub mod advisor;
 pub mod backtest;
 pub mod command_usage;

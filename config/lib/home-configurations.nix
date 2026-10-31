@@ -6,16 +6,9 @@ in
   inherit mkFlakeDirectory;
 
   mkHomeConfig =
-    { baseModules }:
     name: config:
     let
-      requiredFields = [
-        "system"
-        "username"
-        "homeDirectory"
-        "profile"
-      ];
-      missingFields = builtins.filter (field: !(builtins.hasAttr field config)) requiredFields;
+      validateInventory = import ./inventory-validation.nix;
       pkgs = systemPkgs.${config.system};
 
       flakeDirectory = config.flakeDirectory or (mkFlakeDirectory config.homeDirectory);
@@ -27,9 +20,7 @@ in
         else
           throw "Base profile '${config.profile}' not found at ${baseHomeModule}";
     in
-    if missingFields != [ ] then
-      throw "Missing required fields for ${name}: ${builtins.toString missingFields}"
-    else
+    validateInventory name config (
       inputs.home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         extraSpecialArgs = {
@@ -44,5 +35,6 @@ in
           (import ./home-manager-modules.nix { inherit inputs; })
           ++ dynamicModules
           ++ (config.homeModules or [ ]);
-      };
+      }
+    );
 }
