@@ -92,13 +92,13 @@ The `devsisters` base profile enables `modules.claude.mumu.enable`, which regist
 - `ponytail@ponytail` (minimal implementation guidance, review commands, and session hooks)
 - `impeccable@impeccable` (frontend design skill and automatic design checks)
 - `slack` (Slack's hosted MCP server plus Slack developer skills)
-- LSP plugins: `gopls-lsp`, `rust-analyzer-lsp`, `typescript-lsp`, `pyright-lsp`, `terraform-ls`, `nixd-lsp`
+- LSP plugins: `gopls-lsp`, `rust-analyzer-lsp`, `typescript-lsp`, `ty-lsp`, `terraform-ls`, `nixd-lsp`
 - `plannotator` (visual plan annotation and review)
 - `mumu@mumu` (Devsisters profile only)
 - `codex` (official OpenAI Codex plugin — provides `/codex:review`, `/codex:rescue`, etc.)
 - `cc-plugin-you-should-know@builtin` (bundled side agent that flags easily missed information above the prompt). Built-in plugins ship inside Claude Code, so they are enabled only through `enabledPlugins` in `files/settings.json`, not through the `plugins` install list in `default.nix`.
 
-The official `pyright-lsp` plugin uses `pyright-langserver --stdio` from [the LSP module](../lsp/default.nix) for Python code intelligence. `ty-lsp@gytkk` is explicitly disabled because Claude uses one server per file extension; the `ty` package remains installed for other clients. Apply Home Manager and start a new Claude session to load the package and plugin settings.
+The local `ty-lsp@gytkk` plugin uses `ty server` from [the LSP module](../lsp/default.nix) for Python code intelligence in `.py` and `.pyi` files. `pyright-lsp@claude-plugins-official` is explicitly disabled so Python requests use ty. Home Manager installs the plugin on new hosts; when ty and the plugin are already installed, start a new Claude session to load the shared settings change.
 
 ## MCP Servers
 
