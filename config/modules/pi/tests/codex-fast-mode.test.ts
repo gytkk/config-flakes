@@ -72,7 +72,7 @@ describe("footer token totals", () => {
 });
 
 describe("Codex usage footer", () => {
-  test("keeps usage on its own bounded line, including when the model fills the first line", () => {
+  test("places usage immediately before the model on one bounded line", () => {
     const handlers = new Map<string, Function>();
     const statuses = new Map([["codex-usage", "Codex weekly 9% left | reset in 2d 15h 0m"]]);
     let footer: { render: (width: number) => string[] };
@@ -97,16 +97,21 @@ describe("Codex usage footer", () => {
         },
       },
     });
-    for (const width of [10, 40, 80, 200]) {
+    for (const width of [0, 1, 2, 10, 40, 80, 120, 200]) {
       const lines = footer!.render(width);
-      expect(lines).toHaveLength(2);
-      expect(lines[1].length).toBeLessThanOrEqual(width);
-      expect(lines[1]).toContain("Codex");
-      expect(lines[0]).not.toContain("Codex weekly");
+      expect(lines).toHaveLength(1);
+      expect(lines[0].length).toBeLessThanOrEqual(width);
     }
-    expect(footer!.render(80)[1]).toContain("Codex weekly 9% left | reset in 2d 15h 0m");
+    const plainLine = footer!.render(200)[0].replace(/\x1b\[[0-9;]*m/g, "");
+    expect(plainLine).toContain("Codex weekly 9% left | reset in 2d 15h 0m | test-model");
+    expect(footer!.render(80)[0]).toContain("test-model");
+    statuses.set("codex-usage", "Codex weekly unavailable (/codex-usage)");
+    expect(footer!.render(200)[0]).toContain("Codex weekly unavailable");
     statuses.clear();
-    expect(footer!.render(80)).toHaveLength(1);
+    const withoutUsage = footer!.render(80);
+    expect(withoutUsage).toHaveLength(1);
+    expect(withoutUsage[0]).not.toContain("Codex");
+    expect(withoutUsage[0]).toContain("test-model");
   });
 });
 

@@ -209,26 +209,26 @@ export default function (pi: ExtensionAPI) {
           const modelWidth = visibleWidth(modelStatus);
           const ellipsis = styleStatus("...", CLAUDE_ANSI.dim);
           const margin = " ".repeat(sidePadding);
-          const withUsage = (line: string): string[] => {
-            const usage = extensionStatuses.get("codex-usage");
-            return usage
-              ? [line, margin + truncateToWidth(sanitizeStatusText(usage), contentWidth, "...") + margin]
-              : [line];
-          };
-          if (modelWidth + 2 > contentWidth) {
-            const truncatedModel = truncateToWidth(modelStatus, contentWidth, ellipsis);
-            const modelPadding = " ".repeat(
-              contentWidth - visibleWidth(truncatedModel),
+          const usage = sanitizeStatusText(extensionStatuses.get("codex-usage") ?? "");
+          const usageWidth = contentWidth - modelWidth - visibleWidth(separator);
+          const right = usage && usageWidth >= 7
+            ? truncateToWidth(usage, usageWidth, "...") + separator + modelStatus
+            : modelStatus;
+          const rightWidth = visibleWidth(right);
+          if (rightWidth + 2 > contentWidth) {
+            const truncatedRight = truncateToWidth(right, contentWidth, ellipsis);
+            const rightPadding = " ".repeat(
+              contentWidth - visibleWidth(truncatedRight),
             );
-            return withUsage(margin + modelPadding + truncatedModel + margin);
+            return [margin + rightPadding + truncatedRight + margin];
           }
 
-          const availableLeft = contentWidth - modelWidth - 2;
+          const availableLeft = contentWidth - rightWidth - 2;
           const truncatedLeft = truncateToWidth(left, availableLeft, ellipsis);
           const padding = " ".repeat(
-            contentWidth - visibleWidth(truncatedLeft) - modelWidth,
+            contentWidth - visibleWidth(truncatedLeft) - rightWidth,
           );
-          return withUsage(margin + truncatedLeft + padding + modelStatus + margin);
+          return [margin + truncatedLeft + padding + right + margin];
         },
         invalidate: () => {},
         dispose: () => {
