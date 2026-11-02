@@ -72,21 +72,20 @@ export function parseWeeklyUsage(stdout: string): WeeklyUsage {
   return { remainingPercent: 100 - used, resetsAt, updatedAt };
 }
 
-const resetFormatter = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Seoul",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
-
 function formatResetTime(timestamp: number): string {
+  const resetFormatter = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZoneName: "shortOffset",
+  });
   const parts = Object.fromEntries(
     resetFormatter.formatToParts(timestamp).map(({ type, value }) => [type, value]),
   );
-  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute} KST`;
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute} ${parts.timeZoneName}`;
 }
 
 export function formatWeeklyUsage(usage: WeeklyUsage, now = Date.now()): string {
@@ -171,7 +170,7 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_shutdown", stop);
 
   pi.registerCommand("codex-usage", {
-    description: "Refresh CodexBar weekly quota and reset time in KST",
+    description: "Refresh CodexBar weekly quota and local reset time",
     handler: async (args, ctx) => {
       if (args.trim()) {
         ctx.ui.notify("Usage: /codex-usage", "warning");
