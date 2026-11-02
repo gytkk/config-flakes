@@ -4,6 +4,7 @@
   "quietStartup": "header",
   "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "high",
+  "showCacheMissNotices": true,
   "packages": [
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
     "npm:pi-lsp@0.1.7",

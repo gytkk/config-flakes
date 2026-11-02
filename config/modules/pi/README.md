@@ -38,6 +38,7 @@ The module also installs:
 - a startup header without the loaded-resource listing
 - a fixed `❯` prompt with space before the input and default output padding
 - the hardware terminal cursor for IME positioning
+- prompt-cache notices, with cache warming left at Pi's default `"streaming"` mode
 
 Pi uses the default fullscreen mode and built-in keybindings: `Home` and `Ctrl+A` move to the input line's start, while `Ctrl+Home` moves to the top of the fullscreen conversation. The module does not install a keybinding override.
 
