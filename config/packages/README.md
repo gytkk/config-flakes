@@ -74,7 +74,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 
 `gksdud` is exposed only on Darwin. Its signed universal app bundle supports Apple Silicon and Intel Macs running macOS 13 or later. Home Manager installs it through the [gksdud module](../modules/gksdud/README.md). Automatic startup is controlled by the app's own login-item option.
 
-`lspi` packages the upstream MCP-to-LSP bridge for [Codex's Python integration](../modules/codex/README.md#python-코드-탐색). Upstream provides release binaries for both macOS architectures and x86_64 Linux; the catalog omits it on aarch64 Linux. Linux installation patches the ELF interpreter and runtime library paths for Nix.
+`lspi` packages the upstream MCP-to-LSP bridge for [Codex's LSP integration](../modules/codex/README.md#lsp-코드-탐색). Upstream provides release binaries for both macOS architectures and x86_64 Linux; the catalog omits it on aarch64 Linux. Linux installation patches the ELF interpreter and runtime library paths for Nix.
 
 ## Adding new apps
 

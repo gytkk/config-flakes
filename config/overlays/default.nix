@@ -24,6 +24,10 @@
       # stable-25_05: ruby_3_2 사용
       stable-25_05 = mkLazyPkgs inputs.nixpkgs-25_05 [ "ruby_3_2" ];
 
+    }
+    // import ./lsp.nix {
+      nixpkgs = inputs.nixpkgs-lsp;
+      system = final.stdenv.hostPlatform.system;
     };
 
   # 패키지 수정 overlay

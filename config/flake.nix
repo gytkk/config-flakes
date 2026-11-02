@@ -4,6 +4,7 @@
   inputs = {
     # Nix 패키지 모음
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    nixpkgs-lsp.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixpkgs-25_05.url = "github:nixos/nixpkgs/nixos-25.05";
 
     # Neovim development builds
