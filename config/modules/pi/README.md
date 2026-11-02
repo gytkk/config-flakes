@@ -41,7 +41,7 @@ The module also installs:
 - the hardware terminal cursor for IME positioning
 - prompt-cache notices, with cache warming left at Pi's default `"streaming"` mode
 
-Pi uses the default fullscreen mode and built-in keybindings: `Home` and `Ctrl+A` move to the input line's start, while `Ctrl+Home` moves to the top of the fullscreen conversation. The module does not install a keybinding override.
+Pi uses the default fullscreen mode and built-in keybindings: `Home` and `Ctrl+A` move to the input line's start, while `Ctrl+Home` moves to the top of the fullscreen conversation. The module does not install a keybindings file; its editor extension adds conditional background-task navigation described below.
 
 ### Automatic compaction
 
@@ -187,7 +187,7 @@ When migrating an existing installation, apply Home Manager to remove its manage
 
 `pi-bg-bash` replaces Pi's model-facing `bash` tool, not the system Bash executable, login shell, or user-entered `!` commands. Ordinary calls still wait for exit; `background: true` returns a task ID immediately, and completion sends the agent the exit state and recent output. `Ctrl+Shift+B` moves running foreground tool calls to the background when the terminal supports modified keys. Elapsed time alone does not trigger that transition.
 
-Use `/bg` to view task state, runtime, and commands. Press Enter for live output, `x` to stop a task after confirmation, and Escape to go back. The agent can use `bash_tasks`, `bash_output`, `bash_kill`, and `bash_watch` to inspect or manage tasks. Output watches are optional; completion notifications do not require them.
+Use `/bg` to view task state, runtime, and commands. The local editor also shows a `Background tasks (/bg)` item below an empty input when the command is available and autocomplete is closed, including when there are no tasks yet. Press Down to select the item, Enter to open `/bg`, or Up/Escape to return to the input. Typing or pasting leaves the selection and edits the input normally. Nonempty input retains normal cursor and history navigation. In `/bg`, press Enter for live output, `x` to stop a task after confirmation, and Escape to go back. The agent can use `bash_tasks`, `bash_output`, `bash_kill`, and `bash_watch` to inspect or manage tasks. Output watches are optional; completion notifications do not require them.
 
 Tasks survive `/reload`, but quitting Pi or switching sessions stops them. Logs are private files under `$XDG_STATE_HOME/pi-bg/` (default `~/.local/state/pi-bg/`), with seven-day cleanup and a 100 MiB per-task limit. The package does not honor Pi's `shellPath` or `shellCommandPrefix`; neither is configured by this module. Do not combine it with another extension that replaces `bash` or registers `/bg` or `Ctrl+Shift+B`.
 

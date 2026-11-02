@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { CustomEditor } from "@earendil-works/pi-coding-agent";
-import { CombinedAutocompleteProvider, CURSOR_MARKER, visibleWidth } from "@earendil-works/pi-tui";
+import { CombinedAutocompleteProvider, CURSOR_MARKER, matchesKey, visibleWidth } from "@earendil-works/pi-tui";
 import hardwareCursorOnly, { stripSoftwareCursor } from "../files/extensions/hardware-cursor-only";
 
 const dim = (text: string) => `\x1b[2m${text}\x1b[22m`;
@@ -10,11 +10,20 @@ const theme = {
   selectList: { selectedText: plain, description: plain, scrollInfo: plain, noMatch: plain },
 };
 const tui = { terminal: { rows: 24 }, requestRender() {} };
-const keybindings = { matches: () => false };
+const keys: Record<string, string[]> = {
+  "tui.editor.cursorDown": ["down"],
+  "tui.editor.cursorUp": ["up"],
+  "tui.select.confirm": ["enter"],
+  "tui.select.cancel": ["escape", "ctrl+c"],
+};
+const keybindings = {
+  matches: (data: string, action: string) => (keys[action] ?? []).some((key) => matchesKey(data, key as never)),
+};
 
-function createEditor(mode = "tui") {
+function createEditor(mode = "tui", commands: string[] = []) {
   let editor: CustomEditor | undefined;
   hardwareCursorOnly({
+    getCommands: () => commands.map((name) => ({ name })),
     on: (_event: string, handler: Function) => handler({}, {
       mode,
       ui: {
@@ -107,6 +116,94 @@ describe("hardware cursor prompt", () => {
       expect(lines[1].startsWith("❯")).toBe(width >= 3);
       expect(editor.getText()).toBe(width >= 3 ? "abcde" : "");
     }
+  });
+
+  test("selects background tasks with Down and submits /bg only on Enter", () => {
+    const editor = createEditor("tui", ["bg"])!;
+    const submitted: string[] = [];
+    editor.onSubmit = (text) => { submitted.push(text); };
+    expect(editor.render(80).at(-1)).toContain("Down: select");
+    editor.handleInput("\x1b[B");
+    expect(submitted).toEqual([]);
+    expect(editor.getText()).toBe("");
+    const lines = editor.render(80);
+    expect(lines.at(-1)).toContain("> Background tasks (/bg)");
+    expect(lines.at(-1)).toContain(CURSOR_MARKER);
+    expect(lines.slice(0, -1).join("")).not.toContain(CURSOR_MARKER);
+    editor.handleInput("\x1b[B");
+    editor.handleInput("\r");
+    expect(submitted).toEqual(["/bg"]);
+    expect(editor.render(80).at(-1)).toContain("Down: select");
+  });
+
+  test("Up and Escape return to editing without submitting or aborting", () => {
+    for (const key of ["\x1b[A", "\x1b", "\x03"]) {
+      const editor = createEditor("tui", ["bg"])!;
+      let submitted = false;
+      editor.onSubmit = () => { submitted = true; };
+      editor.onEscape = () => { throw new Error("selection must not abort the agent"); };
+      editor.handleInput("\x1b[B");
+      editor.handleInput(key);
+      expect(editor.render(80).at(-1)).toContain("Down: select");
+      expect(submitted).toBe(false);
+    }
+  });
+
+  test("typing, paste, and programmatic text changes leave task selection", () => {
+    for (const input of ["hello", "\x1b[200~한글\ntext\x1b[201~"]) {
+      const editor = createEditor("tui", ["bg"])!;
+      editor.handleInput("\x1b[B");
+      editor.handleInput(input);
+      expect(editor.render(80).join("")).not.toContain("Background tasks");
+      expect(editor.getText()).not.toBe("");
+    }
+    const editor = createEditor("tui", ["bg"])!;
+    editor.handleInput("\x1b[B");
+    editor.setText("");
+    expect(editor.render(80).at(-1)).toContain("Down: select");
+  });
+
+  test("preserves multiline movement, history, and autocomplete", async () => {
+    const editor = createEditor("tui", ["bg"])!;
+    editor.addToHistory("previous prompt");
+    editor.handleInput("\x1b[A");
+    expect(editor.getText()).toBe("previous prompt");
+    editor.handleInput("\x1b[B");
+    expect(editor.getText()).toBe("");
+    expect(editor.render(80).at(-1)).toContain("Down: select");
+    editor.setText("first\nsecond");
+    editor.handleInput("\x1b[A");
+    editor.handleInput("\x1b[B");
+    expect(editor.getCursor().line).toBe(1);
+    expect(editor.render(80).join("")).not.toContain("Background tasks");
+    editor.setAutocompleteProvider(new CombinedAutocompleteProvider([{ name: "bg" }, { name: "branch" }]));
+    editor.setText("/b");
+    editor.handleInput("\t");
+    await Bun.sleep(0);
+    expect(editor.isShowingAutocomplete()).toBe(true);
+    editor.handleInput("\x1b[B");
+    expect(editor.render(80).join("")).not.toContain("Background tasks");
+  });
+
+  test("clicking the input restores its cursor without opening tasks", () => {
+    const editor = createEditor("tui", ["bg"])!;
+    editor.handleInput("\x1b[B");
+    editor.render(80);
+    editor.handleMouse({ type: "click", button: "left", x: 3, y: 1, width: 80 } as never);
+    expect(editor.render(80).at(-1)).toContain("Down: select");
+    expect(editor.render(80)[1]).toContain(CURSOR_MARKER);
+  });
+
+  test("hides unavailable commands and fits selected rows to terminal width", () => {
+    const commands = ["bg"];
+    const editor = createEditor("tui", commands)!;
+    editor.handleInput("\x1b[B");
+    for (const width of [1, 2, 3, 20, 80]) {
+      expect(editor.render(width).every((line) => visibleWidth(line) <= width)).toBe(true);
+    }
+    commands.length = 0;
+    expect(editor.render(80).join("")).not.toContain("Background tasks");
+    expect(editor.render(80).join("")).toContain(CURSOR_MARKER);
   });
 
   test("leaves non-TUI modes alone", () => {
