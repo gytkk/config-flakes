@@ -34,6 +34,11 @@ behavior.
 
 ## Subagent context
 
+- Use one foreground child at a time in the current rollout. Background runs,
+  workflow scripts, and delegated worktrees require a separate policy change.
+- Before delegation, check that the role's required tools have providers loaded
+  in the foreground child. Tool names alone do not load extensions. Report a
+  missing capability instead of changing execution mode after a failed launch.
 - Default delegated runs to fresh context and pass a compact task contract with
   the required files, decisions, constraints, and validation.
 - Use forked context only when the parent transcript is essential and cannot be

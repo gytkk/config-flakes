@@ -40,31 +40,14 @@
       },
       "researcher": {
         "model": "openai/gpt-6-luna",
-        "thinking": "low",
-        "inheritProjectContext": false,
-        "tools": [
-          "read",
-          "web_search",
-          "fetch_content",
-          "get_search_content",
-          "intercom"
-        ]
+        "thinking": "low"
       },
       "worker": {
         "thinking": "medium",
         "defaultContext": "fresh"
       },
       "reviewer": {
-        "thinking": "high",
-        "acceptanceRole": "read-only",
-        "tools": [
-          "read",
-          "grep",
-          "find",
-          "ls",
-          "bash",
-          "intercom"
-        ]
+        "thinking": "high"
       },
       "context-builder": {
         "tools": [

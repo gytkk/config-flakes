@@ -16,6 +16,7 @@ symlinks.
 | `agent-core/rules/` and `agent-core/adapters/pi.md` | `~/.pi/agent/AGENTS.md` | Generated shared and Pi-specific instructions |
 | `agent-core/rules/OPERATING.md` | `~/.pi/agent/APPEND_SYSTEM.md` | Operating invariants added to Pi's system prompt |
 | `files/extensions/` | `~/.pi/agent/extensions/` | Local Pi extensions |
+| `agents/researcher.md` and `agents/reviewer.md` | `~/.pi/agent/agents/` | Foreground specialist prompts and tool contracts |
 | `config/themes/exports/pi/one-half-light.json` | `~/.pi/agent/themes/one-half-light.json` | Generated One Half Light theme |
 | `files/themes/claude-like.json` | `~/.pi/agent/themes/claude-like.json` | Alternate dark theme |
 | Agent core skill sources | `~/.agents/skills/` | Codex/Pi shared pool, installed or updated by shared activation |
@@ -72,18 +73,11 @@ Versioned npm packages are skipped by `pi update --extensions`. Update pins
 through a reviewed repository change, and review package source and release
 notes because Pi packages execute with the permissions of the Pi process.
 
-`pi-subagents` loads only its extension; its bundled skills and prompt templates are filtered out so they cannot opt into background workflows or wide fanout. The initial rollout uses packaged agents with explicit Luna/Sol/Astra routing. Delegation defaults to foreground, stores artifacts under the parent Pi session, allows eight child launches per parent session, and blocks nested delegation at child depth. Automatic missions, schedules, resumption of interrupted background workflows, and the generic `delegate` agent are disabled. Tool activation stays dynamic through `subagents_enable`. The package removes completed background records after 30 days, or 90 days when their session still exists; this retention does not apply to foreground session artifacts.
+`pi-subagents` loads only its extension; its bundled skills and prompt templates are filtered out so they cannot opt into background workflows or wide fanout. The initial rollout uses packaged agents plus local `researcher` and `reviewer` definitions with explicit Luna/Sol/Astra routing. Delegation defaults to foreground, stores artifacts under the parent Pi session, allows eight child launches per parent session, and blocks nested delegation at child depth. Automatic missions, schedules, resumption of interrupted background workflows, and the generic `delegate` agent are disabled. Tool activation stays dynamic through `subagents_enable`. The package removes completed background records after 30 days, or 90 days when their session still exists; this retention does not apply to foreground session artifacts.
 
 Delegation defaults to `openai/gpt-6.1-sol`; `scout` and `researcher` use `openai/gpt-6-luna`, `planner` uses Sol, and `oracle` uses `openai/gpt-6-astra`. All three models are in the allowlist. The `reviewer` uses `high` thinking.
 
-The packaged `planner`, `worker`, and `oracle` fork defaults are overridden to
-fresh context. Use an explicit `context: "fork"` only when the child genuinely
-needs the parent transcript; otherwise pass a compact task contract. The
-`researcher` also skips inherited project instructions because its role prompt
-and research task provide its operating context. Other agents retain project
-instruction inheritance. When a child persists a substantial artifact, prefer
-`outputMode: "file-only"` so the full result is not injected back into the
-parent context.
+The packaged `planner`, `worker`, and `oracle` fork defaults are overridden to fresh context. The local researcher and reviewer also use fresh context. Use an explicit `context: "fork"` only when the child genuinely needs the parent transcript; otherwise pass a compact task contract. The researcher skips inherited project instructions because its role prompt and research task provide its operating context. Other agents retain repository instruction inheritance, but fresh children exclude the operator's global context and skills catalog unless explicitly configured otherwise. The child runtime also excludes the operator's `APPEND_SYSTEM.md`; a parent must pass relevant constraints in the task contract rather than assume its whole prompt is inherited. When a child persists a substantial artifact, prefer `outputMode: "file-only"` so the full result is not injected back into the parent context.
 
 Only `worker` retains normal implementation tools. `scout`, `researcher`,
 `context-builder`, and `reviewer` have no `edit` or `write` tool. Their `bash`
@@ -91,11 +85,32 @@ access is for inspection and verification and is not a security boundary; Pi
 packages and child processes still run with the current user's permissions.
 For the initial rollout, use one direct foreground child at a time and do not request `workflowScript`, background runs, or worktrees. The configured global concurrency limit applies to both legacy multi-child paths and `workflowScript` children.
 
+### Specialist contracts
+
+`agents/researcher.md` loads the already pinned `pi-web-access` package through `subagentOnlyExtensions`. Foreground children do not load ambient extensions, and listing a tool name alone does not load its provider. The path assumes Pi's managed npm package location under `~/.pi/agent/npm/node_modules/`; review it when changing package installation layout. The role includes `web_enable`, the search/fetch tools, `source_check`, and native `contact_supervisor`. Web tools activate on demand. It has no shell or file-writing tools, does not request progress files or a default repository output, and returns evidence and gaps to the parent. An explicitly requested runtime artifact is still managed by pi-subagents.
+
+`agents/reviewer.md` replaces the bundled reviewer prompt, which prohibits shell commands despite this module's inspection-oriented `bash` selection. The local role permits read-only Git inspection and focused local checks authorized by the task or repository instructions after their side effects are checked. It prohibits source/snapshot rewrites, auto-fixes, installation, staging, commits, branch changes, production access, and external writes. Unknown or unauthorized checks are reported to the parent rather than run. This is an instruction contract, not a shell sandbox; `acceptanceRole: "read-only"` does not restrict shell execution.
+
+The local files own role prompts, context inheritance, tool selection, and child extension loading. `files/settings.json` owns model and thinking overrides. Avoid adding a settings override that silently replaces those role fields.
+
+### Prompt baseline and verification evidence
+
+The 2026-11-02 baseline used Pi 1.4.0, pi-subagents 0.84.0, and pi-web-access 0.46.0. The installed agent definitions were resolved with the package's discovery code. Foreground child requests were captured after prompt hooks using the installed child-session factory and a local response stub, without sending the captured prompts to a provider. The parent instruction sources were inspected in the active session. Raw request captures remain outside the repository because they contain local paths and instructions.
+
+| Role | Baseline prompt and context | Baseline issue | Managed contract |
+| --- | --- | --- | --- |
+| Astra parent, high | Pi base prompt, operating addendum, global/project instructions, skill catalog, active extension guidance | External research skill requires background execution and repository notes | Pi adapter retains foreground-only rollout; canonical research skill follows runtime policy and requested output |
+| Sol worker, medium | Packaged replacement prompt, repository context; no global context, operating addendum, or skill catalog in fresh requests | Parent instruction inheritance must not be assumed | Unchanged; parent supplies task-specific constraints |
+| Sol reviewer, high | Packaged replacement prompt with repository context and shell prohibition; settings allow `bash` and legacy `intercom` | Role instructions conflict with shell selection | Local read-only validation prompt and native `contact_supervisor` |
+| Luna researcher, low | Packaged replacement prompt with no inherited project context; no web extension loaded | Missing web providers and `source_check`; default output/progress expectations conflict with read-only research | Local prompt, explicit web provider, native supervisor, no default repository artifacts |
+
+An isolated configuration with the managed profiles passed live foreground smoke checks on the same versions. Researcher called `web_enable`, `web_search`, and `fetch_content`, returned an official source, and distinguished current documentation from unverified version-specific evidence. Sol reviewer inspected a disposable Git diff, ran the explicitly authorized `node --test sum.test.mjs`, and reported the injected addition-to-subtraction defect and failed assertion. The fixture diff and index were unchanged. These checks establish loading and bounded role behavior, not prompt optimality or automatic skill discovery.
+
 ## Global prompts and skills
 
 `agent-core/rules/OPERATING.md` is rendered as `APPEND_SYSTEM.md`, so it augments Pi's maintained system prompt instead of replacing it. The generated `AGENTS.md` combines shared methodology, prose guidance, and `agent-core/adapters/pi.md` without duplicating the operating invariants.
 
-The shared [Agent skills activation](../agent-skills/README.md) installs or updates the manifest's Codex/Pi pool at `~/.agents/skills/` with pinned `skills@1.7.2` on each Home Manager switch, including when only Pi is enabled. It includes `devils-advocate`, `parallel-research-merge`, `pi-agent`, and `openai-decisions`. Before the first switch on an existing host, back up its skill files and CLI lock and resolve legacy ownership conflicts as described in [Agent core](../../../agent-core/README.md#skill-설치와-복구). Verify discovery after switching and confirm that the old `~/.pi/agent/skills/` link is absent to avoid duplicates. A successful switch needs no separate installation command. The Pi module does not own skill copies or merge logic.
+The shared [Agent skills activation](../agent-skills/README.md) installs or updates the manifest's Codex/Pi pool at `~/.agents/skills/` with pinned `skills@1.7.2` on each Home Manager switch, including when only Pi is enabled. It includes `devils-advocate`, `parallel-research-merge`, `pi-agent`, and `openai-decisions`. Before the first switch on an existing host, back up its skill files and CLI lock and resolve legacy ownership conflicts as described in [Agent core](../../../agent-core/README.md#skill-설치와-복구). Verify discovery after switching and confirm that the old `~/.pi/agent/skills/` link is absent to avoid duplicates. A successful switch needs no separate installation command. The Pi module does not own skill copies or merge logic. The local `research` skill follows the runtime's delegation policy and creates repository notes only when requested or required by project instructions. Its source changes from `matt` to `local` for the shared and Claude targets. Existing installations require the reviewed skill ownership handoff in Agent core before Home Manager activation can complete; do not overwrite the installed skill or edit ownership records to bypass that check.
 
 ## Local extensions
 
@@ -218,11 +233,7 @@ After changing this module:
    web-access tools relevant to the change.
 8. In a fresh session, verify `web_enable` and `subagents_enable`, then activate each and confirm that the corresponding tools appear. Verify `/mcp`, `pi mcp list`, and a read-only MCP call through `codemode`, with no extension-loading warnings.
 
-For the subagent rollout, also run `/subagents-doctor` and
-`/subagents-models`, then verify one foreground `scout`, one `researcher`, and
-a read-only `reviewer` before trying `worker` against a disposable fixture.
-Confirm that no `.pi-subagents/` directory or additional Git worktree appears
-in the repository.
+For the subagent rollout, also run `/subagents-doctor` and `/subagents-models`. Inspect `/subagents researcher prompt` and `/subagents reviewer prompt` to confirm the local definitions, then verify one foreground `scout`, one `researcher`, and a read-only `reviewer` before trying `worker` against a disposable fixture. Researcher must activate the web tools, search, fetch an original source, and return citations without creating repository notes. Reviewer must inspect a disposable diff and run a known side-effect-free check, report its actual outcome, and leave files and the index unchanged. Confirm that no `.pi-subagents/` directory or additional Git worktree appears in the repository. A passed settings or frontmatter check alone does not establish child tool loading or model behavior.
 
 Do not commit credentials, OAuth tokens, API keys, `auth.json`, session files,
 or MCP credential caches. Pi has no built-in sandbox; packages, extensions,

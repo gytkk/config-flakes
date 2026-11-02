@@ -40,6 +40,8 @@ in
     home.file = {
       ".pi/agent/AGENTS.md".source = "${agentCoreOutput}/AGENTS.md";
       ".pi/agent/APPEND_SYSTEM.md".source = "${agentCoreOutput}/APPEND_SYSTEM.md";
+      ".pi/agent/agents/researcher.md".source = mkSymlink "agents/researcher.md";
+      ".pi/agent/agents/reviewer.md".source = mkSymlink "agents/reviewer.md";
       ".pi/agent/lsp.json".source = mkSymlink "files/lsp.json";
       ".pi/agent/mcp.json".source = mkSymlink "files/mcp.json";
       ".pi/web-search.json".source = mkSymlink "files/web-search.json";

@@ -44,6 +44,8 @@ def test_plan_selections_apply_approved_addition_and_removal(
     assert all(
         "codebase-design" not in source["skills"] for source in plan["sources"][1:]
     )
+    assert plan["sources"][0]["skills"]["research"] == "research"
+    assert all("research" not in source["skills"] for source in plan["sources"][1:])
     assert plan["cli_version"] == "1.7.2"
     assert plan["target"] == target
     assert plan["runtimes"] == skill_sources.TARGET_RUNTIMES[target]
