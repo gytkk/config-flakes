@@ -74,20 +74,22 @@ export function parseWeeklyUsage(stdout: string): WeeklyUsage {
 
 export function formatWeeklyUsage(usage: WeeklyUsage, now = Date.now()): string {
   if (now - usage.updatedAt > MAX_AGE_MS || usage.updatedAt > now + 60_000) {
-    return "Codex weekly unavailable (stale data)";
+    return "weekly unavailable (stale data)";
   }
   if (usage.resetsAt !== undefined && usage.resetsAt <= now) {
-    return "Codex weekly reset due; awaiting fresh usage";
+    return "weekly reset due; awaiting fresh usage";
   }
-  const remaining = `${Number(usage.remainingPercent.toFixed(1))}% left`;
-  if (usage.resetsAt === undefined) return `Codex weekly ${remaining} | reset unknown`;
+  const filled = Math.floor(usage.remainingPercent / 10);
+  const bar = "#".repeat(filled) + "-".repeat(10 - filled);
+  const remaining = `${bar} weekly ${Number(usage.remainingPercent.toFixed(1))}% left`;
+  if (usage.resetsAt === undefined) return `${remaining} | reset unknown`;
   const minutes = Math.ceil((usage.resetsAt - now) / 60_000);
   const days = Math.floor(minutes / 1440);
   const hours = Math.floor((minutes % 1440) / 60);
   const duration = days > 0
     ? `${days}d ${hours}h ${minutes % 60}m`
     : hours > 0 ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
-  return `Codex weekly ${remaining} | reset in ${duration}`;
+  return `${remaining} | reset in ${duration}`;
 }
 
 export default function (pi: ExtensionAPI) {
@@ -97,8 +99,8 @@ export default function (pi: ExtensionAPI) {
   const publish = (state: Session): void => {
     if (state.controller.signal.aborted || state.ctx.mode !== "tui") return;
     state.ctx.ui.setStatus(STATUS_KEY, state.error
-      ? "Codex weekly unavailable (/codex-usage)"
-      : state.usage ? formatWeeklyUsage(state.usage) : "Codex weekly loading...");
+      ? "weekly unavailable (/codex-usage)"
+      : state.usage ? formatWeeklyUsage(state.usage) : "weekly loading...");
   };
 
   const refresh = (state: Session): Promise<void> => {

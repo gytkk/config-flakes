@@ -69,9 +69,23 @@ describe("CodexBar weekly data", () => {
     }
   });
 
+  test.each([
+    [0, "----------"],
+    [9, "----------"],
+    [10, "#---------"],
+    [33, "###-------"],
+    [99, "#########-"],
+    [100, "##########"],
+  ])("renders a ten-cell remaining-quota bar at %s percent", (remainingPercent, bar) => {
+    const usage = { ...parseWeeklyUsage(payload()), remainingPercent };
+    const text = formatWeeklyUsage(usage, NOW);
+    expect(text).toStartWith(`${bar} weekly ${remainingPercent}% left | reset in `);
+    expect(text).not.toContain("Codex");
+  });
+
   test("formats countdown boundaries without inventing a reset or new quota", () => {
     const data = parseWeeklyUsage(payload());
-    expect(formatWeeklyUsage(data, NOW)).toBe("Codex weekly 9% left | reset in 2d 15h 0m");
+    expect(formatWeeklyUsage(data, NOW)).toBe("---------- weekly 9% left | reset in 2d 15h 0m");
     expect(formatWeeklyUsage({ ...data, resetsAt: NOW + 3_600_000 }, NOW)).toContain("1h 0m");
     expect(formatWeeklyUsage({ ...data, resetsAt: NOW + 1 }, NOW)).toContain("1m");
     expect(formatWeeklyUsage({ ...data, resetsAt: NOW }, NOW)).toContain("awaiting fresh usage");
@@ -92,7 +106,7 @@ describe("Codex usage lifecycle", () => {
       "codexbar", ["usage", "--provider", "codex", "--source", "oauth", "--json", "--no-credits"],
       { timeout: 30_000, signal: expect.any(AbortSignal) },
     ]);
-    expect(f.statuses.get("codex-usage")).toBe("Codex weekly 9% left | reset in 2d 15h 0m");
+    expect(f.statuses.get("codex-usage")).toBe("---------- weekly 9% left | reset in 2d 15h 0m");
     expect(f.ctx.ui.notify.mock.calls[0][0]).toContain("Codex CLI account, not Pi login");
     await f.command();
     expect(f.exec).toHaveBeenCalledTimes(2);
@@ -151,7 +165,7 @@ describe("Codex usage lifecycle", () => {
     await f.command();
     f.exec.mockResolvedValueOnce({ stdout: "secret", stderr: "secret", code: 1, killed: false });
     await f.command();
-    expect(f.statuses.get("codex-usage")).toBe("Codex weekly unavailable (/codex-usage)");
+    expect(f.statuses.get("codex-usage")).toBe("weekly unavailable (/codex-usage)");
     const calls = f.ctx.ui.notify.mock.calls;
     expect(calls.at(-1)).toEqual([expect.stringContaining("code 1"), "error"]);
     expect(JSON.stringify(calls)).not.toContain("secret");

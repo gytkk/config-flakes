@@ -74,7 +74,7 @@ describe("footer token totals", () => {
 describe("Codex usage footer", () => {
   test("places usage immediately before the model on one bounded line", () => {
     const handlers = new Map<string, Function>();
-    const statuses = new Map([["codex-usage", "Codex weekly 9% left | reset in 2d 15h 0m"]]);
+    const statuses = new Map([["codex-usage", "---------- weekly 9% left | reset in 2d 15h 0m"]]);
     let footer: { render: (width: number) => string[] };
     fastMode({
       on: (event: string, handler: Function) => handlers.set(event, handler),
@@ -103,10 +103,10 @@ describe("Codex usage footer", () => {
       expect(lines[0].length).toBeLessThanOrEqual(width);
     }
     const plainLine = footer!.render(200)[0].replace(/\x1b\[[0-9;]*m/g, "");
-    expect(plainLine).toContain("Codex weekly 9% left | reset in 2d 15h 0m | test-model");
+    expect(plainLine).toContain("---------- weekly 9% left | reset in 2d 15h 0m | test-model");
     expect(footer!.render(80)[0]).toContain("test-model");
-    statuses.set("codex-usage", "Codex weekly unavailable (/codex-usage)");
-    expect(footer!.render(200)[0]).toContain("Codex weekly unavailable");
+    statuses.set("codex-usage", "weekly unavailable (/codex-usage)");
+    expect(footer!.render(200)[0]).toContain("weekly unavailable");
     statuses.clear();
     const withoutUsage = footer!.render(80);
     expect(withoutUsage).toHaveLength(1);
