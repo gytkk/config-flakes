@@ -7,7 +7,7 @@ import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { sep } from "node:path";
 
 const STATE_TYPE = "codex-fast-mode";
-const DEFAULT_ENABLED = true;
+const DEFAULT_ENABLED = false;
 const HORIZONTAL_PADDING = 1;
 const ANSI_RESET = "\x1b[0m";
 

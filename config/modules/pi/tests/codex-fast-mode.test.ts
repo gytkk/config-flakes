@@ -73,15 +73,62 @@ describe("footer token totals", () => {
 
 describe("OpenAI fast mode", () => {
   let handlers: Map<string, Function>;
+  let command: Function;
+  let appendEntry: ReturnType<typeof mock>;
+  const ctx = {
+    model: { provider: "openai" },
+    sessionManager: { getBranch: () => [] },
+    ui: { notify: mock(() => {}) },
+  };
+
   beforeEach(() => {
     handlers = new Map();
+    appendEntry = mock(() => {});
     fastMode({
       on: (event: string, handler: Function) => handlers.set(event, handler),
-      registerCommand: () => {},
+      registerCommand: (_name: string, definition: { handler: Function }) => {
+        command = definition.handler;
+      },
+      appendEntry,
     } as never);
   });
 
-  test("applies priority to OpenAI without mutating the original payload", () => {
+  test("starts disabled and resets to disabled for a new session", async () => {
+    const event = { payload: { model: "test" } };
+    expect(handlers.get("before_provider_request")!(event, ctx)).toBeUndefined();
+    await command("on", ctx);
+    handlers.get("session_start")!({}, ctx);
+    expect(handlers.get("before_provider_request")!(event, ctx)).toBeUndefined();
+    expect(appendEntry).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([true, false])("restores saved fast mode state: %s", (enabled) => {
+    handlers.get("session_start")!({}, {
+      ...ctx,
+      sessionManager: {
+        getBranch: () => [{
+          type: "custom",
+          customType: "codex-fast-mode",
+          data: { enabled },
+        }],
+      },
+    });
+    const result = handlers.get("before_provider_request")!({ payload: {} }, ctx);
+    expect(result).toEqual(enabled ? { service_tier: "priority" } : undefined);
+  });
+
+  test("toggles on from the default and explicitly turns off", async () => {
+    await command("", ctx);
+    expect(appendEntry).toHaveBeenLastCalledWith("codex-fast-mode", { enabled: true });
+    expect(handlers.get("before_provider_request")!({ payload: {} }, ctx))
+      .toEqual({ service_tier: "priority" });
+    await command("off", ctx);
+    expect(appendEntry).toHaveBeenLastCalledWith("codex-fast-mode", { enabled: false });
+    expect(handlers.get("before_provider_request")!({ payload: {} }, ctx)).toBeUndefined();
+  });
+
+  test("applies priority to OpenAI without mutating the original payload", async () => {
+    await command("on", ctx);
     const payload = { model: "test" };
     expect(handlers.get("before_provider_request")!({ payload }, { model: { provider: "openai" } }))
       .toEqual({ model: "test", service_tier: "priority" });
@@ -90,7 +137,8 @@ describe("OpenAI fast mode", () => {
       .toBeUndefined();
   });
 
-  test("does not enable priority for subagent children", () => {
+  test("does not enable priority for subagent children", async () => {
+    await command("on", ctx);
     const previous = process.env.PI_SUBAGENT_CHILD;
     process.env.PI_SUBAGENT_CHILD = "1";
     try {

@@ -143,7 +143,7 @@ Home Manager installs the extension. After applying the configuration, run `/rel
 - a one-line footer with working directory, Git branch, model, thinking level,
   fast-mode state, context usage, and cumulative input/output tokens
 
-Fast mode starts enabled in each new session. Toggle changes are stored in the session so resumed branches recover their previous state. The extension is the sole owner of the custom footer and priority-mode request field. Token totals include assistant, tool, summary, compaction, and standalone usage entries; the footer caches totals until the session or its leaf changes.
+Fast mode starts disabled in each new session; use `/fast on` to enable it. Toggle changes are stored in the session so resumed branches recover their previous state. The extension is the sole owner of the custom footer and priority-mode request field. Token totals include assistant, tool, summary, compaction, and standalone usage entries; the footer caches totals until the session or its leaf changes.
 
 Subagent child processes are detected through `PI_SUBAGENT_CHILD=1` and do
 not receive the priority service tier. `PI_SUBAGENT_PARENT_SESSION` is also set
