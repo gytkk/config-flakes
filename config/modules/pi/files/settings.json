@@ -83,5 +83,6 @@
     }
   },
   "editorPaddingX": 1,
+  "outputPad": 1,
   "showHardwareCursor": true
 }

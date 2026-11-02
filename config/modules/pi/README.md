@@ -37,7 +37,7 @@ The module also installs:
 - `openai/gpt-6-astra` with `high` thinking
 - the generated `one-half-light` theme
 - a startup header without the loaded-resource listing
-- a fixed `❯` prompt with space before the input and default output padding
+- a fixed `❯` prompt with space before the input and explicit one-column horizontal output padding (`outputPad: 1`)
 - the hardware terminal cursor for IME positioning
 - prompt-cache notices, with cache warming left at Pi's default `"streaming"` mode
 
