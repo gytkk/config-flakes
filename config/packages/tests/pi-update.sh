@@ -30,6 +30,16 @@ export function openBrowser(target: string): void {
 	spawn(cmd, args).unref();
 }
 EOF
+mkdir -p "$FIXTURE_SOURCE/packages/tui/src"
+cat > "$FIXTURE_SOURCE/packages/tui/src/tui-alt-screen.ts" <<'EOF'
+				this.selectionAnchor = undefined;
+				this.selectionFocus = undefined;
+				try {
+					this.openUrl(clickedUrl);
+				} catch {
+					// URL activation is best-effort.
+				}
+EOF
 printf '{ "version": "99.1.2" }\n' > "$FIXTURE_SOURCE/packages/coding-agent/package.json"
 for file in nix/package.nix nix/model-catalog.json packages/coding-agent/install-lock/package-lock.json package-lock.json; do
   touch "$FIXTURE_SOURCE/$file"
@@ -120,3 +130,9 @@ reset_package
 perl -0pi -e 's/export function openBrowser/export function renamedOpener/' "$FIXTURE_SOURCE/packages/coding-agent/src/utils/open-browser.ts"
 assert_failure
 echo 'PASS: incompatible file opener patch preserves the package'
+
+perl -0pi -e 's/export function renamedOpener/export function openBrowser/' "$FIXTURE_SOURCE/packages/coding-agent/src/utils/open-browser.ts"
+reset_package
+perl -0pi -e 's/this.openUrl\(clickedUrl\)/this.renamedOpener(clickedUrl)/' "$FIXTURE_SOURCE/packages/tui/src/tui-alt-screen.ts"
+assert_failure
+echo 'PASS: incompatible mouse activation patch preserves the package'

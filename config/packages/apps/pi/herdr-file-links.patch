@@ -1,3 +1,18 @@
+diff --git a/packages/tui/src/tui-alt-screen.ts b/packages/tui/src/tui-alt-screen.ts
+--- a/packages/tui/src/tui-alt-screen.ts
++++ b/packages/tui/src/tui-alt-screen.ts
+@@ -1351,7 +1351,10 @@
+ 				this.selectionAnchor = undefined;
+ 				this.selectionFocus = undefined;
+ 				try {
+-					this.openUrl(clickedUrl);
++					// Consume plain file clicks without invoking the OS default editor.
++					if (!/^file:/i.test(clickedUrl) || (event.button & 16) !== 0) {
++						this.openUrl(clickedUrl);
++					}
+ 				} catch {
+ 					// URL activation is best-effort.
+ 				}
 diff --git a/packages/coding-agent/src/utils/open-browser.ts b/packages/coding-agent/src/utils/open-browser.ts
 --- a/packages/coding-agent/src/utils/open-browser.ts
 +++ b/packages/coding-agent/src/utils/open-browser.ts

@@ -45,11 +45,11 @@ Pi uses the default fullscreen mode and built-in keybindings: `Home` and `Ctrl+A
 
 ### File links in Herdr
 
-In fullscreen Pi running inside Herdr, a normal click on a local `file://` link, including the path in a `read` tool heading, splits the Pi pane to the right and opens the file in Neovim. The new pane takes focus, retains Pi's working directory, and closes when Neovim exits. Each click creates a new pane. Web links and links opened outside Herdr retain the platform's default handler.
+In fullscreen Pi running inside Herdr, Ctrl-clicking a local `file://` link, including the paths in `read` and `edit` tool headings, splits the Pi pane to the right and opens the file in Neovim. Keep Ctrl held until releasing the mouse button. The new pane takes focus, retains Pi's working directory, and closes when Neovim exits. Each Ctrl-click creates a new pane. Plain file-link clicks are consumed without launching Neovim or the platform's default editor, such as Zed. Dragging still selects text. Web links retain their normal click behavior; outside Herdr, Ctrl-clicked file links use the platform's default handler.
 
 This behavior comes from the [local Pi package patch](../../packages/apps/pi/herdr-file-links.patch), not an extension or a Herdr Ctrl-click handler. It requires `nvim` on `PATH` and a working Herdr CLI. Invalid or remote file URLs are rejected. Launch failures are reported on Pi's stderr without falling back to another editor; if command submission fails after splitting, the new pane remains open for inspection.
 
-Apply Home Manager and restart Pi to load the patched package; `/reload` alone does not replace Pi's code. Run `bun test config/packages/tests/pi-file-links.test.ts` from the repository root for routing, path quoting, and failure tests. After applying, click a file path in a `read` heading and confirm the right-hand editor pane opens and closes with `:q`.
+Apply Home Manager and restart Pi to load the patched package; `/reload` alone does not replace Pi's code. Run `bun test config/packages/tests/pi-file-links.test.ts` from the repository root for routing, path quoting, and failure tests. To test mouse routing against a patched upstream source tree with its runtime dependencies available, run `PI_TUI_SOURCE=/path/to/patched/packages/tui/src bun test config/packages/tests/pi-file-clicks.test.ts`; this suite is skipped when `PI_TUI_SOURCE` is unset. After applying, confirm that a plain click on a file path in either a `read` or `edit` heading launches no editor, Ctrl-click opens the right-hand Neovim pane, and `:q` closes it. Regular mode delegates mouse input to the terminal and is not covered by this fullscreen click policy.
 
 ### Automatic compaction
 
