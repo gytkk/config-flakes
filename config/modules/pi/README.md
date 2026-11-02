@@ -33,7 +33,7 @@ The module also installs:
 
 `files/settings.json` currently selects:
 
-- `openai/gpt-6.1-sol` with `high` thinking
+- `openai/gpt-6-astra` with `high` thinking
 - the generated `one-half-light` theme
 - a startup header without the loaded-resource listing
 - a fixed `❯` prompt with space before the input and default output padding
@@ -50,7 +50,7 @@ Run `/login openai` in Pi and choose `Sign in with ChatGPT`, then approve the br
 pi auth check --provider openai --json --no-refresh
 ```
 
-The parent and delegated chat models use `openai`. In Pi 1.1, its GPT-6 Luna classifier is a separate model type and requires an API key; ChatGPT OAuth supports the chat model but not the Decisions API classifier. Use the existing `with-openai` wrapper in a separate process for API-key clients rather than replacing the subscription credential. See the [OpenAI API module](../openai-api/README.md).
+The parent and delegated chat models use `openai`. The legacy `openai-codex` provider is not used. On existing installations, remove its saved credential through `/logout` and select `openai-codex`; its models then disappear from the authenticated model picker without affecting the `openai` login or historical sessions. In Pi 1.1, its GPT-6 Luna classifier is a separate model type and requires an API key; ChatGPT OAuth supports the chat model but not the Decisions API classifier. Use the existing `with-openai` wrapper in a separate process for API-key clients rather than replacing the subscription credential. See the [OpenAI API module](../openai-api/README.md).
 
 `pkgs.pi` calls the official upstream Nix package definition from a pinned source release. [App package maintenance](../../packages/README.md#updates-and-ci) owns that source pin. Apply Home Manager to install the pinned Pi version and synchronize common settings.
 
@@ -131,7 +131,7 @@ not receive the priority service tier. `PI_SUBAGENT_PARENT_SESSION` is also set
 in the parent UI session for permission forwarding, so it must not be used as
 the child-process signal. Parent Pi sessions continue to use fast mode normally.
 
-The module does not install `/codex-usage` or query ChatGPT's internal Codex usage endpoint. Existing legacy credentials and historical sessions are preserved. Apply Home Manager and restart Pi to remove the previously managed usage extension.
+The module does not install `/codex-usage` or query ChatGPT's internal Codex usage endpoint. Apply Home Manager and restart Pi to remove the previously managed usage extension. Home Manager does not manage `auth.json`; remove legacy credentials through `/logout` as described above. Historical sessions are preserved.
 
 ### Prompt and cursor rendering
 

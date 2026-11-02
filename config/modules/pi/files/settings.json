@@ -2,7 +2,7 @@
   "theme": "one-half-light",
   "defaultProvider": "openai",
   "quietStartup": "header",
-  "defaultModel": "gpt-6.1-sol",
+  "defaultModel": "gpt-6-astra",
   "defaultThinkingLevel": "high",
   "showCacheMissNotices": true,
   "packages": [
