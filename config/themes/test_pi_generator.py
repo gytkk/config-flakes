@@ -4,7 +4,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-from generate import load_yaml, pi_theme_doc, theme_context
+from generate import load_yaml, pi_theme_doc, soft_background, theme_context
 
 
 ROOT = Path(__file__).resolve().parent
@@ -20,8 +20,28 @@ class PiGeneratorTest(unittest.TestCase):
         self.assertEqual("#bfceff", doc["colors"]["selectedBg"])
         self.assertEqual("#0184bc", doc["colors"]["syntaxFunction"])
         self.assertEqual("#50a14f", doc["colors"]["syntaxString"])
+        self.assertEqual("#e1eff6", doc["colors"]["toolSuccessBg"])
+        self.assertEqual("#f6ebe4", doc["colors"]["toolErrorBg"])
         self.assertEqual("#e45649", doc["colors"]["toolDiffRemoved"])
         self.assertEqual("#fafbfc", doc["export"]["pageBg"])
+
+    def test_tool_backgrounds_use_blue_and_orange_without_changing_status_or_diff_colors(self) -> None:
+        for path in sorted((ROOT / "core").glob("*.yaml")):
+            with self.subTest(theme=path.stem):
+                ctx = theme_context(load_yaml(path))
+                colors = pi_theme_doc(ctx, ROOT)["colors"]
+                bg = ctx["roles"]["ui"]["bg"]
+                is_light = ctx["meta"]["variant"] == "light"
+
+                for token, accent in (("toolSuccessBg", "blue"), ("toolErrorBg", "orange")):
+                    self.assertEqual(
+                        soft_background(ctx["palette"][accent], bg, light=is_light, strength=0.9),
+                        colors[token],
+                    )
+                self.assertEqual(ctx["roles"]["diagnostics"]["ok"], colors["success"])
+                self.assertEqual(ctx["roles"]["diagnostics"]["error"], colors["error"])
+                self.assertEqual(ctx["roles"]["vcs"]["added"], colors["toolDiffAdded"])
+                self.assertEqual(ctx["roles"]["vcs"]["removed"], colors["toolDiffRemoved"])
 
 
 if __name__ == "__main__":
