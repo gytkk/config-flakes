@@ -28,6 +28,11 @@
     vault
     inputs.keycloak2aws.packages.${pkgs.stdenv.hostPlatform.system}.kc2aws
     inputs.devsisters-wg.packages.${pkgs.stdenv.hostPlatform.system}.wg-cli
+    # wg-quick for the devsisters WireGuard profiles
+    wireguard-tools
+
+    # kubectl oidc-login plugin (int128/kubelogin)
+    kubelogin-oidc
 
     # Ruby
     pkgs.stable-25_05.ruby_3_2
