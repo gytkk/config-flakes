@@ -56,6 +56,8 @@ jobs:
       - name: Test Codex package validation
         run: bash config/packages/tests/codex-check-package.sh
       - run: nix flake check ./config/packages --no-build
+      - name: Test Pi workspace packaging
+        run: bash config/packages/tests/pi-package.sh
 
   detect-app-changes:
     name: Detect changed app packages
