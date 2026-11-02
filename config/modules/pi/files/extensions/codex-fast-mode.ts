@@ -18,6 +18,7 @@ const CLAUDE_ANSI = {
   cyan: "\x1b[36m",
   dim: "\x1b[2m",
   boldBlue: "\x1b[1;34m",
+  boldPurple: "\x1b[1;35m",
   brightOrange: "\x1b[1;33m",
 } as const;
 
@@ -128,7 +129,7 @@ function styleStatus(text: string, ansi: string): string {
   return `${ansi}${text}${ANSI_RESET}`;
 }
 
-export default function (pi: ExtensionAPI) {
+export default function(pi: ExtensionAPI) {
   let enabled = DEFAULT_ENABLED;
   let requestRender: (() => void) | undefined;
 
@@ -205,8 +206,8 @@ export default function (pi: ExtensionAPI) {
             const selected = extensionStatuses.get("bg-selection") === "selected";
             sections.push(
               (selected ? CURSOR_MARKER : "") + styleStatus(
-                `${selected ? "> " : ""}/bg (${count})`,
-                selected ? CLAUDE_ANSI.boldBlue : CLAUDE_ANSI.dim,
+                `${selected ? "* " : ""}/bg (${count})`,
+                selected ? CLAUDE_ANSI.boldPurple : CLAUDE_ANSI.dim,
               ),
             );
           }
@@ -242,7 +243,7 @@ export default function (pi: ExtensionAPI) {
           );
           return [margin + truncatedLeft + padding + right + margin];
         },
-        invalidate: () => {},
+        invalidate: () => { },
         dispose: () => {
           requestRender = undefined;
           unsubscribe();

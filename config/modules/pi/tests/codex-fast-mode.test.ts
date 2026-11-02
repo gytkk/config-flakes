@@ -129,7 +129,10 @@ describe("Codex usage footer", () => {
     }
     statuses.delete("bg");
     expect(line()).toContain("> /bg (0)");
+    expect(footer!.render(500)[0]).toContain("\x1b[1;35m> /bg (0)\x1b[0m");
     statuses.delete("bg-selection");
+    expect(footer!.render(500)[0]).toContain("\x1b[2m/bg (0)\x1b[0m");
+    expect(footer!.render(500)[0]).not.toContain("\x1b[1;35m");
     expect(line()).not.toContain("\x1b_pi:c\x07");
     statuses.set("bg", "unexpected status");
     expect(line()).toContain("/bg (?)");
