@@ -43,6 +43,10 @@ The module also installs:
 
 Pi uses the default fullscreen mode and built-in keybindings: `Home` and `Ctrl+A` move to the input line's start, while `Ctrl+Home` moves to the top of the fullscreen conversation. The module does not install a keybinding override.
 
+### Automatic compaction
+
+`compaction.modelOverrides` configures `openai/gpt-6-astra` to reserve 54,400 tokens and retain roughly 40,000 recent tokens without summarization. With Pi's registered 272,000-token context window, automatic compaction starts above 217,600 tokens (80%). Other models use Pi's default compaction budgets. The reserve is an absolute token count, so review it if the model's registered context window changes.
+
 ### ChatGPT authentication
 
 Run `/login openai` in Pi and choose `Sign in with ChatGPT`, then approve the browser login. Pi stores the OAuth credential under `openai` in `~/.pi/agent/auth.json`. Verify without printing credentials:

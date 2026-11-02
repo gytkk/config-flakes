@@ -5,6 +5,15 @@
   "defaultModel": "gpt-6-astra",
   "defaultThinkingLevel": "high",
   "showCacheMissNotices": true,
+  "compaction": {
+    "enabled": true,
+    "modelOverrides": {
+      "openai/gpt-6-astra": {
+        "reserveTokens": 54400,
+        "keepRecentTokens": 40000
+      }
+    }
+  },
   "packages": [
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
     "npm:pi-lsp@0.1.7",
