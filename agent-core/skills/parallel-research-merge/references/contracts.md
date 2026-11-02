@@ -1,23 +1,38 @@
 # Worker contract and integration
 
+Use this reference for an authorized investigation or implementation delegation. Reading it alone does not start the parallel research workflow. The runtime determines whether delegation is available and which execution mode is permitted.
+
 ## Before dispatch
+
+Give each worker this compact contract, including only fields relevant to its task. Supply the actual facts and constraints, not placeholders or a pointer to a parent conversation the child cannot see.
+
+```text
+Task and outcome: <question to answer or behavior to implement; decision served>
+Starting evidence: <relevant paths, confirmed facts, reproduction, or primary sources>
+Allowed scope: <read-only by default; otherwise exclusive editable paths and exclusions>
+Contracts to preserve: <existing behavior, approved design, compatibility, operating constraints>
+Completion conditions: <observable result and required checks; analysis ends with findings>
+Decision boundary: <local choices the worker owns; changes requiring parent approval>
+Return: <conclusion or changed files; actual checks and outcomes; blockers and uncertainty>
+```
+
+## Investigation branch
 
 Split by evidence that can be investigated independently, such as runtime installation state versus session usage, or backend behavior versus a separately specified client contract. Keep dependent questions sequential. The main agent retains a useful task and final decision ownership; a second worker is optional.
 
-Give each worker this compact contract, adapting the form to the task:
-
-```text
-Question and decision served: <what to establish and what its answer enables>
-Evidence scope: <files, subsystem, dataset, or primary sources>
-Allowed edits: <none by default, otherwise exclusive owned paths>
-Constraints: <relevant user requirements and other workers' boundaries>
-Investigation bound: <a finite source set, sample, check, or time limit>
-Stop when: <question answered, bound reached, or blocking evidence identified>
-Return: <a short conclusion, decisive path:line/source evidence, checks and uncertainty>
-Result budget: <length appropriate to the question; link large artifacts only if requested>
-```
+Include a finite source set, sample, check, or time limit, and a result budget appropriate to the question. Stop when the question is answered, the bound is reached, or blocking evidence is identified. Request decisive path:line or source evidence; link large artifacts only when requested.
 
 Choose a concrete bound that can be checked. For example, inspect the two named runtime adapters and installed skill manifests, or sample the last 14 complete days from the named repository's root sessions. On a blocker, return the missing evidence and the smallest useful next step. Expand the scope only after the main agent decides the unanswered question still matters.
+
+## Implementation branch
+
+Provide the reproduction or expected behavior, owned paths, approved design, and exact acceptance checks where known. State which checks are authorized; task instructions do not make a command side-effect-free. Include relevant approval boundaries and user-work preservation rules when the child does not inherit them. A path to unreadable parent-only instructions is not a substitute.
+
+The worker checks supplied evidence against the code, chooses implementation details within the agreed scope using existing conventions, and completes the change through the required verification. Changes to requirements, public APIs, dependencies, approved design, or edit ownership require the parent's decision and any required user approval before proceeding. On a blocker, return the evidence and smallest decision needed rather than broadening the task.
+
+Return changed files, commands actually run and their outcomes, checks not run with reasons, and unresolved issues. Finish when the requested behavior and required checks are satisfied; additional investigation needs a concrete failure or unresolved risk.
+
+## Reporting and ownership
 
 Workers report what they verified and separate evidence from inference. Include changed files only when edits were allowed. Workers do not delegate further or commit unless the main agent explicitly assigns that responsibility.
 

@@ -1,6 +1,6 @@
 ---
 name: research
-description: Investigate a question using primary sources. Use for topic research, documentation or API fact gathering, and evidence-backed recommendations; not routine local code inspection.
+description: Investigate a question through primary sources for topic research, documentation or API facts, and evidence-backed recommendations. Not routine local code inspection; independent multi-investigation coordination belongs to parallel-research-merge.
 ---
 
 # Research

@@ -1,20 +1,6 @@
 # Pi-specific rules
 
-These instructions extend the shared global agent rules with Pi-specific
-behavior.
-
-## Skill routing
-
-- Use `parallel-research-merge` when independent evidence can change a decision
-  and the main agent has useful concurrent work. Routine delegation does not
-  require loading a research workflow.
-- Use parallel workers only when the session exposes an executable worker or
-  subagent tool. Otherwise, run the same scopes sequentially.
-
-## Repository tools
-
-- Use `read` to inspect files and `edit` for precise manual changes.
-- Formatting commands and generated outputs do not require `edit`.
+These instructions extend the shared global agent rules with Pi-specific behavior.
 
 ## Runtime safety
 
@@ -23,14 +9,8 @@ behavior.
 
 ## Pi skills
 
-- Follow Pi's Agent Skills format: a focused `SKILL.md` with valid `name` and
-  `description` frontmatter.
-- Store the canonical shared skill under `agent-core/skills/` and declare its
-  runtime exposure in `agent-core/manifest.toml`.
-- Express required capabilities in the shared skill. Keep Pi packages,
-  settings, extensions, and optional UI metadata in `config/modules/pi/`.
-- Keep skills focused, trim unused files, and align them with repository
-  conventions.
+- When authoring Pi skills, use `writing-for-agents` for instruction design and `pi-agent`'s skills reference for Pi format and discovery. Store canonical shared skills under `agent-core/skills/` and declare exposure in `agent-core/manifest.toml`.
+- Express required capabilities in shared skills; keep Pi packages, settings, extensions, and optional UI metadata in `config/modules/pi/`.
 
 ## Subagent context
 
@@ -39,10 +19,8 @@ behavior.
 - Before delegation, check that the role's required tools have providers loaded
   in the foreground child. Tool names alone do not load extensions. Report a
   missing capability instead of changing execution mode after a failed launch.
-- Default delegated runs to fresh context and pass a compact task contract with
-  the required files, decisions, constraints, and validation.
-- Use forked context only when the parent transcript is essential and cannot be
-  summarized safely.
+- For an authorized delegation, read `references/contracts.md` in the discovered `parallel-research-merge` skill directory and use the relevant contract branch. Reading this reference for an implementation worker does not select the parallel research workflow or authorize delegation. If the reference is unavailable, report the missing resource rather than guessing its contents.
+- Default to fresh context. Include the task contract and relevant operating constraints in the child request: fresh children do not automatically inherit the parent's global instructions, operating addendum, or skill catalog. Use forked context only when the parent transcript is essential and cannot be summarized safely.
 - When a child persists a substantial output artifact, prefer `file-only`
   output and read only the needed portions. Use inline output for short results
   or when no output path is available.

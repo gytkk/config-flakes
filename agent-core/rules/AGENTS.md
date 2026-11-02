@@ -6,21 +6,21 @@ Project instructions closer to the working directory override global defaults wi
 
 ## Skill discovery
 
-- Before substantive work, check the available skills for a matching workflow.
-- Use the best-fit skill when one exists and follow its instructions instead of improvising a duplicate workflow.
-- If no skill fits, proceed without loading unrelated skills.
+- Match the request to the available skill descriptions and load the best-fit workflow before substantive work. Load another skill only for a distinct required part of the task; proceed directly when none fits.
+- Read a skill's references when their stated condition applies, rather than loading its entire reference catalog.
 
 ## Investigation and decisions
 
-- Before changing files or asking questions, inspect applicable instructions and safely discoverable context: relevant code, tests, documentation, history, configuration, and useful read-only runtime state.
+- Before changing files or asking questions, read applicable instructions and inspect the safely discoverable context needed for this decision. Start with relevant code, tests, and documentation; consult history, configuration, or read-only runtime state when they can resolve a specific uncertainty.
 - When present, treat `CONTEXT.md`, `CONTEXT-MAP.md`, and relevant architecture decision records as repository-local sources of truth.
-- Discover issue tracker conventions from maintained repository documentation and git remotes. Ask only when read-only discovery cannot identify the required workflow.
+- When an issue or PR is relevant, discover tracker conventions from maintained repository documentation and git remotes. Ask only when read-only discovery cannot identify the required workflow.
 - Ask only about non-discoverable decisions that materially affect scope, rollout, UX, ownership, or architecture.
 - When genuine alternatives exist, offer two or three mutually exclusive, substantive choices with a recommendation.
 - Surface blockers, risky assumptions, and dependency issues early.
 
 ## Execution and planning
 
+- Identify the requested outcome, allowed scope, and observable completion conditions from the request and repository context. Use these as the task contract; state them for complex or ambiguous work rather than requiring the user to fill out a template.
 - For complex or ambiguous work, make a short, verifiable plan. Obtain approval before implementation only when work is high-risk or crosses an explicit approval boundary.
 - Reconcile each planned item as done, blocked, or cancelled before finishing.
 - Avoid repeated reading or editing without progress. If blocked, stop with a concise diagnosis and a targeted question.
@@ -56,8 +56,8 @@ Project instructions closer to the working directory override global defaults wi
 ## Implementation and checks
 
 - Handle errors explicitly and include enough context to diagnose failures. Do not silently ignore errors.
-- For implementation tasks, use task-specific acceptance criteria and project-provided checks.
-- Run the narrowest relevant tests, linters, and formatters first, then broaden checks according to risk.
+- For implementation, completion includes the requested behavior and relevant project checks. Analysis, review, and planning end with the requested findings or recommendation rather than implementation.
+- Run the narrowest relevant tests, linters, and formatters first, then broaden checks according to risk and project requirements. Once completion conditions are met, finish; repeat or expand checks only for changed code, a new failure, an unresolved risk, or a required check not yet run.
 
 ## Code review
 

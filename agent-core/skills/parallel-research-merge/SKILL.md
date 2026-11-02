@@ -1,6 +1,6 @@
 ---
 name: parallel-research-merge
-description: Reconcile independent investigations when their evidence can change a design, diagnosis, or recommendation and the main agent has useful work to do concurrently. Use for explicit parallel research requests; skip routine edits and dependent lookups.
+description: Reconcile independent investigations that can change a design, diagnosis, or recommendation while the main agent has useful concurrent work. Use for explicit parallel research requests; not routine implementation delegation, single-source research, or dependent lookups.
 ---
 
 # Parallel research merge
@@ -15,7 +15,7 @@ Keep routine edits, dependent lookups, and work whose answer is already known in
 
 ## Investigate and reconcile
 
-1. Keep scope and final decisions with the main agent. Before dispatch, read [the worker contract](references/contracts.md) and specify the decision served, evidence scope, edit ownership, investigation bound, and expected result size. Default workers to read-only investigation.
+1. Keep scope and final decisions with the main agent. Before an authorized dispatch, read [the worker contract and investigation branch](references/contracts.md) and specify the decision served, evidence scope, edit ownership, investigation bound, and expected result size. Default workers to read-only investigation. Follow the runtime's execution limits; when concurrent children are unavailable, investigate sequentially rather than changing execution mode.
 2. Dispatch only independent questions and continue the main agent's work. Share new constraints promptly. Reuse a worker for a related follow-up instead of starting overlapping investigations.
 3. Verify decision-changing claims against cited sources or checks. Resolve conflicting evidence before making dependent changes; agreement alone is not verification. Stop an investigation when it answers its question, reaches its bound, or becomes irrelevant. Close or cancel every dispatched unit before finishing.
 4. Record a compact contribution note in the working summary: evidence accepted or rejected, the reason, and the resulting decision or verification change. If a worker added no useful evidence, record that instead of inventing a benefit. Use the note to avoid redundant follow-ups.

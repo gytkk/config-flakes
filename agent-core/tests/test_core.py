@@ -67,6 +67,33 @@ def test_runtime_document_layouts() -> None:
     assert b"# Operating invariants" in pi[PurePosixPath("APPEND_SYSTEM.md")]
 
 
+@pytest.mark.parametrize("runtime", core.RUNTIMES)
+def test_task_contracts_preserve_operating_rules_and_reference_packaging(
+    runtime: str,
+) -> None:
+    files = core.materialize(runtime)
+    document = PurePosixPath("CLAUDE.md" if runtime == "claude" else "AGENTS.md")
+    instructions = files[document]
+    operating = (core.resource_root() / "rules/OPERATING.md").read_bytes()
+    if runtime == "pi":
+        assert operating in files[PurePosixPath("APPEND_SYSTEM.md")]
+        assert operating not in instructions
+        assert b"references/contracts.md" in instructions
+        assert b"fresh children do not automatically inherit" in instructions
+    else:
+        assert instructions.count(operating) == 1
+        assert b"fresh children do not automatically inherit" not in instructions
+    assert b"observable completion conditions" in instructions
+    assert b"a required check not yet run" in instructions
+
+    reference = PurePosixPath("skills/parallel-research-merge/references/contracts.md")
+    assert files[reference] == (
+        core.resource_root() / "skills/parallel-research-merge/references/contracts.md"
+    ).read_bytes()
+    assert b"## Investigation branch" in files[reference]
+    assert b"## Implementation branch" in files[reference]
+
+
 def test_codex_includes_runtime_model_routing() -> None:
     codex_instructions = core.materialize("codex")[PurePosixPath("AGENTS.md")]
     assert b"# Delegated execution" in codex_instructions
