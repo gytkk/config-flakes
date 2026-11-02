@@ -90,9 +90,9 @@ describe("CodexBar weekly data", () => {
 
   test("formats reset boundaries without inventing a reset or new quota", () => {
     const data = parseWeeklyUsage(payload());
-    expect(formatWeeklyUsage(data, NOW)).toMatch(/^---------- weekly 9% left \| reset 2026-11-04 18:00 GMT(?:\+0)?$/);
-    expect(formatWeeklyUsage({ ...data, resetsAt: NOW + 3_600_000 }, NOW)).toContain("2026-11-02 04:00 GMT");
-    expect(formatWeeklyUsage({ ...data, resetsAt: NOW + 1 }, NOW)).toContain("2026-11-02 03:00 GMT");
+    expect(formatWeeklyUsage(data, NOW)).toBe("---------- weekly 9% left | reset 2026-11-04 18:00");
+    expect(formatWeeklyUsage({ ...data, resetsAt: NOW + 3_600_000 }, NOW)).toContain("2026-11-02 04:00");
+    expect(formatWeeklyUsage({ ...data, resetsAt: NOW + 1 }, NOW)).toContain("2026-11-02 03:00");
     expect(formatWeeklyUsage({ ...data, resetsAt: NOW }, NOW)).toContain("awaiting fresh usage");
     expect(formatWeeklyUsage({ ...data, resetsAt: undefined }, NOW)).toContain("reset unknown");
     expect(formatWeeklyUsage(data, NOW + 600_001)).toContain("stale data");
@@ -101,11 +101,11 @@ describe("CodexBar weekly data", () => {
 });
 
 test.each([
-  ["Asia/Seoul", "2026-11-30T15:00:00Z", "2026-12-01 00:00 GMT+9"],
-  ["Asia/Seoul", "2026-12-31T15:05:00Z", "2027-01-01 00:05 GMT+9"],
-  ["America/Los_Angeles", "2026-11-04T18:00:00Z", "2026-11-04 10:00 GMT-8"],
-  ["America/Los_Angeles", "2026-07-04T18:00:00Z", "2026-07-04 11:00 GMT-7"],
-  ["Asia/Kolkata", "2026-11-04T18:00:00Z", "2026-11-04 23:30 GMT+5:30"],
+  ["Asia/Seoul", "2026-11-30T15:00:00Z", "2026-12-01 00:00"],
+  ["Asia/Seoul", "2026-12-31T15:05:00Z", "2027-01-01 00:05"],
+  ["America/Los_Angeles", "2026-11-04T18:00:00Z", "2026-11-04 10:00"],
+  ["America/Los_Angeles", "2026-07-04T18:00:00Z", "2026-07-04 11:00"],
+  ["Asia/Kolkata", "2026-11-04T18:00:00Z", "2026-11-04 23:30"],
 ])("uses the host time zone %s for %s", (timeZone, timestamp, expected) => {
   process.env.TZ = timeZone;
   const resetsAt = Date.parse(timestamp);
@@ -125,9 +125,9 @@ describe("Codex usage lifecycle", () => {
       "codexbar", ["usage", "--provider", "codex", "--source", "oauth", "--json", "--no-credits"],
       { timeout: 30_000, signal: expect.any(AbortSignal) },
     ]);
-    expect(f.statuses.get("codex-usage")).toMatch(/^---------- weekly 9% left \| reset 2026-11-04 18:00 GMT(?:\+0)?$/);
+    expect(f.statuses.get("codex-usage")).toBe("---------- weekly 9% left | reset 2026-11-04 18:00");
     expect(f.ctx.ui.notify.mock.calls[0][0]).toContain("Codex CLI account, not Pi login");
-    expect(f.ctx.ui.notify.mock.calls[0][0]).toContain("Reset: 2026-11-04 18:00 GMT");
+    expect(f.ctx.ui.notify.mock.calls[0][0]).toContain("Reset: 2026-11-04 18:00");
     await f.command();
     expect(f.exec).toHaveBeenCalledTimes(2);
   });
@@ -150,7 +150,7 @@ describe("Codex usage lifecycle", () => {
     tick();
     await f.command();
     expect(f.exec).toHaveBeenCalledTimes(2);
-    expect(f.statuses.get("codex-usage")).toContain("2026-11-04 18:00 GMT");
+    expect(f.statuses.get("codex-usage")).toContain("2026-11-04 18:00");
     f.stop();
     expect(clear).toHaveBeenCalledWith(timer);
     expect(f.statuses.size).toBe(0);

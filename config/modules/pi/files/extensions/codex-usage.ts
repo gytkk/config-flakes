@@ -80,12 +80,11 @@ function formatResetTime(timestamp: number): string {
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
-    timeZoneName: "shortOffset",
   });
   const parts = Object.fromEntries(
     resetFormatter.formatToParts(timestamp).map(({ type, value }) => [type, value]),
   );
-  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute} ${parts.timeZoneName}`;
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
 export function formatWeeklyUsage(usage: WeeklyUsage, now = Date.now()): string {
