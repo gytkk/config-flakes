@@ -36,7 +36,7 @@ The module also installs:
 - `openai/gpt-6.1-sol` with `high` thinking
 - the generated `one-half-light` theme
 - a startup header without the loaded-resource listing
-- one-cell editor padding and default output padding
+- a fixed `❯` prompt with space before the input and default output padding
 - the hardware terminal cursor for IME positioning
 
 Pi uses the default fullscreen mode and built-in keybindings: `Home` and `Ctrl+A` move to the input line's start, while `Ctrl+Home` moves to the top of the fullscreen conversation. The module does not install a keybinding override.
@@ -62,16 +62,16 @@ The package list is intentionally version-pinned:
 
 | Package | Version | Purpose |
 | --- | --- | --- |
-| `@juicesharp/rpiv-ask-user-question` | `2.12.0` | Structured user questions |
+| `@juicesharp/rpiv-ask-user-question` | `2.15.0` | Structured user questions |
 | `pi-lsp` | `0.1.7` | Lazy language-server diagnostics and navigation |
-| `pi-web-access` | `0.32.0` | Web search, source checks, and content fetching |
-| `pi-subagents` | `0.72.0` | Foreground-first delegated Pi sessions |
+| `pi-web-access` | `0.46.0` | Web search, source checks, and content fetching |
+| `pi-subagents` | `0.84.0` | Foreground-first delegated Pi sessions |
 
 Versioned npm packages are skipped by `pi update --extensions`. Update pins
 through a reviewed repository change, and review package source and release
 notes because Pi packages execute with the permissions of the Pi process.
 
-`pi-subagents` loads only its extension; its bundled skills and prompt templates are filtered out so they cannot opt into background workflows or wide fanout. The initial rollout uses packaged agents with explicit Luna/Sol/Astra routing. Delegation defaults to foreground, stores artifacts under the parent Pi session, allows eight child launches per parent session, and blocks nested delegation at child depth. Automatic missions, schedules, and the generic `delegate` agent are disabled.
+`pi-subagents` loads only its extension; its bundled skills and prompt templates are filtered out so they cannot opt into background workflows or wide fanout. The initial rollout uses packaged agents with explicit Luna/Sol/Astra routing. Delegation defaults to foreground, stores artifacts under the parent Pi session, allows eight child launches per parent session, and blocks nested delegation at child depth. Automatic missions, schedules, resumption of interrupted background workflows, and the generic `delegate` agent are disabled. Tool activation stays dynamic through `subagents_enable`. The package removes completed background records after 30 days, or 90 days when their session still exists; this retention does not apply to foreground session artifacts.
 
 Delegation defaults to `openai/gpt-6.1-sol`; `scout` and `researcher` use `openai/gpt-6-luna`, `planner` uses Sol, and `oracle` uses `openai/gpt-6-astra`. All three models are in the allowlist. The `reviewer` uses `high` thinking.
 
@@ -88,7 +88,7 @@ Only `worker` retains normal implementation tools. `scout`, `researcher`,
 `context-builder`, and `reviewer` have no `edit` or `write` tool. Their `bash`
 access is for inspection and verification and is not a security boundary; Pi
 packages and child processes still run with the current user's permissions.
-For the initial rollout, use one direct foreground child at a time and do not request `workflowScript`, background runs, or worktrees. The configured global concurrency limit applies to both legacy multi-child paths and `workflowScript` children in pi-subagents 0.72.0.
+For the initial rollout, use one direct foreground child at a time and do not request `workflowScript`, background runs, or worktrees. The configured global concurrency limit applies to both legacy multi-child paths and `workflowScript` children.
 
 ## Global prompts and skills
 
@@ -110,7 +110,7 @@ Apply Home Manager and run `/reload` in Pi, or start a new Pi session inside Her
 
 The extension publishes display metadata only from the parent interactive Pi session inside Herdr. Completed, failed, interrupted, and detached foreground children disappear from the list. Session shutdown clears its tokens; active metadata expires after 45 seconds without refresh if Pi crashes. At most seven children fit in Herdr's 16-line layout. Larger groups show the first six children and an overflow count. Clicking any child line focuses the parent pane.
 
-The progress payload and slash events follow `pi-subagents` 0.72.0. Review this integration when updating that package. It does not import the package's internal modules or modify its execution behavior. Herdr failures produce a warning and leave Pi running.
+The progress payload and slash events follow `pi-subagents` 0.84.0. Review this integration when updating that package. It does not import the package's internal modules or modify its execution behavior. Herdr failures produce a warning and leave Pi running.
 
 Home Manager installs the extension. After applying the configuration, run `/reload` in Pi and `herdr server reload-config` for the [Herdr sidebar layout](../herdr/README.md#subagents). For a foreground smoke test, run `/run scout List the top-level files without changing anything` inside a Herdr Pi pane and verify that the child appears, updates, and disappears when finished. Run `bun test config/modules/pi/tests/herdr-subagents.test.ts` for the isolated event and metadata tests.
 
@@ -132,13 +132,11 @@ the child-process signal. Parent Pi sessions continue to use fast mode normally.
 
 The module does not install `/codex-usage` or query ChatGPT's internal Codex usage endpoint. Existing legacy credentials and historical sessions are preserved. Apply Home Manager and restart Pi to remove the previously managed usage extension.
 
-### Hardware cursor rendering
+### Prompt and cursor rendering
 
-`files/extensions/hardware-cursor-only.ts` removes Pi's reverse-video software
-cursor while preserving the terminal cursor used for IME positioning. It is
-paired with `showHardwareCursor: true` in `settings.json`.
+`files/extensions/hardware-cursor-only.ts` adds a fixed `❯` to the first visible input row and uses the active theme's `dim` color for the top and bottom borders. Built-in editor padding reserves space for the prompt, so the marker is not part of submitted text. Continuation lines, autocomplete, wrapping, and mouse positioning use Pi's editor behavior. The marker is omitted when the terminal is narrower than three columns.
 
-Pi 1.1 still renders a reverse-video software cursor, so `showHardwareCursor` alone does not replace this extension. Review it when updating Pi if cursor rendering or IME positioning changes.
+The extension removes Pi 1.4's software cursor markers while preserving the terminal cursor used for IME positioning. It is paired with `showHardwareCursor: true` in `settings.json`. Review it when updating Pi if cursor rendering or IME positioning changes.
 
 ## On-demand tools
 

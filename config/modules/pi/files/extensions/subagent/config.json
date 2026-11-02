@@ -1,6 +1,8 @@
 {
   "asyncByDefault": false,
   "forceTopLevelAsync": false,
+  "autoResume": false,
+  "toolActivation": "dynamic",
   "toolDescriptionMode": "compact",
   "inlineToolDisplay": "summary",
   "fleetView": true,
