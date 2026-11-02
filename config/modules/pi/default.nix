@@ -48,6 +48,7 @@ in
       ".pi/agent/themes/claude-like.json".source = mkSymlink "files/themes/claude-like.json";
       ".pi/agent/themes/one-half-light.json".source = themeExports.file "pi" "one-half-light.json";
       ".pi/agent/extensions/codex-fast-mode.ts".source = mkSymlink "files/extensions/codex-fast-mode.ts";
+      ".pi/agent/extensions/codex-usage.ts".source = mkSymlink "files/extensions/codex-usage.ts";
       ".pi/agent/extensions/hardware-cursor-only.ts".source =
         mkSymlink "files/extensions/hardware-cursor-only.ts";
       ".pi/agent/extensions/herdr-agent-state.ts" = lib.mkIf config.modules.herdr.enable {

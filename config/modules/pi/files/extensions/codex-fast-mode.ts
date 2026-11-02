@@ -199,7 +199,8 @@ export default function (pi: ExtensionAPI) {
             `${styleStatus("tokens", CLAUDE_ANSI.dim)} ${styleStatus(`↓${formatTokens(totals.input)}`, CLAUDE_ANSI.boldBlue)} ${styleStatus(`↑${formatTokens(totals.output)}`, CLAUDE_ANSI.brightOrange)}`,
           );
 
-          for (const status of extensionStatuses.values()) {
+          for (const [key, status] of extensionStatuses) {
+            if (key === "codex-usage") continue;
             const styled = sanitizeStatusText(status);
             if (styled) sections.push(styled);
           }
@@ -208,12 +209,18 @@ export default function (pi: ExtensionAPI) {
           const modelWidth = visibleWidth(modelStatus);
           const ellipsis = styleStatus("...", CLAUDE_ANSI.dim);
           const margin = " ".repeat(sidePadding);
+          const withUsage = (line: string): string[] => {
+            const usage = extensionStatuses.get("codex-usage");
+            return usage
+              ? [line, margin + truncateToWidth(sanitizeStatusText(usage), contentWidth, "...") + margin]
+              : [line];
+          };
           if (modelWidth + 2 > contentWidth) {
             const truncatedModel = truncateToWidth(modelStatus, contentWidth, ellipsis);
             const modelPadding = " ".repeat(
               contentWidth - visibleWidth(truncatedModel),
             );
-            return [margin + modelPadding + truncatedModel + margin];
+            return withUsage(margin + modelPadding + truncatedModel + margin);
           }
 
           const availableLeft = contentWidth - modelWidth - 2;
@@ -221,7 +228,7 @@ export default function (pi: ExtensionAPI) {
           const padding = " ".repeat(
             contentWidth - visibleWidth(truncatedLeft) - modelWidth,
           );
-          return [margin + truncatedLeft + padding + modelStatus + margin];
+          return withUsage(margin + truncatedLeft + padding + modelStatus + margin);
         },
         invalidate: () => {},
         dispose: () => {

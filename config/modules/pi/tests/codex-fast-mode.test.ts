@@ -71,6 +71,45 @@ describe("footer token totals", () => {
   });
 });
 
+describe("Codex usage footer", () => {
+  test("keeps usage on its own bounded line, including when the model fills the first line", () => {
+    const handlers = new Map<string, Function>();
+    const statuses = new Map([["codex-usage", "Codex weekly 9% left | reset in 2d 15h 0m"]]);
+    let footer: { render: (width: number) => string[] };
+    fastMode({
+      on: (event: string, handler: Function) => handlers.set(event, handler),
+      registerCommand: () => {},
+    } as never);
+    handlers.get("session_start")!({}, {
+      mode: "tui",
+      model: { id: "test-model", provider: "openai" },
+      sessionManager: {
+        getBranch: () => [], getEntries: () => [], getCwd: () => "/workspace",
+        getSessionId: () => "test", getLeafId: () => null,
+      },
+      getContextUsage: () => undefined,
+      ui: {
+        setFooter: (factory: Function) => {
+          footer = factory({ requestRender: () => {} }, {}, {
+            onBranchChange: () => () => {}, getGitBranch: () => "main",
+            getExtensionStatuses: () => statuses,
+          });
+        },
+      },
+    });
+    for (const width of [10, 40, 80, 200]) {
+      const lines = footer!.render(width);
+      expect(lines).toHaveLength(2);
+      expect(lines[1].length).toBeLessThanOrEqual(width);
+      expect(lines[1]).toContain("Codex");
+      expect(lines[0]).not.toContain("Codex weekly");
+    }
+    expect(footer!.render(80)[1]).toContain("Codex weekly 9% left | reset in 2d 15h 0m");
+    statuses.clear();
+    expect(footer!.render(80)).toHaveLength(1);
+  });
+});
+
 describe("OpenAI fast mode", () => {
   let handlers: Map<string, Function>;
   let command: Function;

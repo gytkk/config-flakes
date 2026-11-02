@@ -160,7 +160,15 @@ not receive the priority service tier. `PI_SUBAGENT_PARENT_SESSION` is also set
 in the parent UI session for permission forwarding, so it must not be used as
 the child-process signal. Parent Pi sessions continue to use fast mode normally.
 
-The module does not install `/codex-usage` or query ChatGPT's internal Codex usage endpoint. Apply Home Manager and restart Pi to remove the previously managed usage extension. Home Manager does not manage `auth.json`; remove legacy credentials through `/logout` as described above. Historical sessions are preserved.
+### Codex subscription usage
+
+`files/extensions/codex-usage.ts` adds `/codex-usage` and a dedicated second footer line showing the Codex weekly quota remaining and time until reset. Interactive parent sessions fetch usage at startup and every minute without blocking startup; the countdown also updates once a minute. `/codex-usage` refreshes immediately and shows the local reset time and source timestamp. Concurrent refreshes share one request, each request has a 30-second timeout, and shutdown or reload cancels pending work. Non-interactive sessions and subagent processes do not poll.
+
+The extension runs `codexbar usage --provider codex --source oauth --json --no-credits` using the CodexBar CLI already installed by the common profile. It reads the weekly `usage.secondary` window, not session token totals or API credit balances. OAuth uses the Codex CLI account selected by CodexBar and `CODEX_HOME`, which can differ from Pi's ChatGPT login. Use the same account in both clients to track the subscription used by Pi. The extension does not read, copy, or manage authentication files; CodexBar owns usage retrieval and its authentication behavior. It does not fall back to browser cookie extraction.
+
+Failed queries replace the displayed quota with an unavailable status; `/codex-usage` reports a bounded error without raw CLI output or account identifiers. Data older than ten minutes is marked stale. Missing reset times remain unknown, and an elapsed reset is marked as awaiting fresh usage rather than assuming a replenished quota. Usage stays in memory and is not added to the model context or session history.
+
+Apply Home Manager and restart Pi to install the extension. To try it before applying Home Manager, start `pi --extension ./config/modules/pi/files/extensions/codex-usage.ts` from the repository root. If a fetch fails, check that `codexbar` is on `PATH` and that the Codex CLI account is authenticated; Pi's `/login openai` does not authenticate CodexBar.
 
 ### Prompt and cursor rendering
 
