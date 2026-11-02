@@ -72,6 +72,23 @@ export function parseWeeklyUsage(stdout: string): WeeklyUsage {
   return { remainingPercent: 100 - used, resetsAt, updatedAt };
 }
 
+const resetFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+function formatResetTime(timestamp: number): string {
+  const parts = Object.fromEntries(
+    resetFormatter.formatToParts(timestamp).map(({ type, value }) => [type, value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute} KST`;
+}
+
 export function formatWeeklyUsage(usage: WeeklyUsage, now = Date.now()): string {
   if (now - usage.updatedAt > MAX_AGE_MS || usage.updatedAt > now + 60_000) {
     return "weekly unavailable (stale data)";
@@ -83,13 +100,7 @@ export function formatWeeklyUsage(usage: WeeklyUsage, now = Date.now()): string 
   const bar = "#".repeat(filled) + "-".repeat(10 - filled);
   const remaining = `${bar} weekly ${Number(usage.remainingPercent.toFixed(1))}% left`;
   if (usage.resetsAt === undefined) return `${remaining} | reset unknown`;
-  const minutes = Math.ceil((usage.resetsAt - now) / 60_000);
-  const days = Math.floor(minutes / 1440);
-  const hours = Math.floor((minutes % 1440) / 60);
-  const duration = days > 0
-    ? `${days}d ${hours}h ${minutes % 60}m`
-    : hours > 0 ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
-  return `${remaining} | reset in ${duration}`;
+  return `${remaining} | reset ${formatResetTime(usage.resetsAt)}`;
 }
 
 export default function (pi: ExtensionAPI) {
@@ -160,7 +171,7 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_shutdown", stop);
 
   pi.registerCommand("codex-usage", {
-    description: "Refresh CodexBar weekly quota and reset countdown",
+    description: "Refresh CodexBar weekly quota and reset time in KST",
     handler: async (args, ctx) => {
       if (args.trim()) {
         ctx.ui.notify("Usage: /codex-usage", "warning");
@@ -178,7 +189,7 @@ export default function (pi: ExtensionAPI) {
       }
       const usage = state.usage;
       const reset = usage.resetsAt === undefined
-        ? "unknown" : new Date(usage.resetsAt).toLocaleString();
+        ? "unknown" : formatResetTime(usage.resetsAt);
       ctx.ui.notify([
         formatWeeklyUsage(usage),
         `Reset: ${reset}`,
