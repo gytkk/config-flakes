@@ -21,7 +21,11 @@ if [[ "$schema" != "${ai%/ai.tgz}/schema.tgz" || "$schema" != file:/nix/store/* 
 fi
 
 workspace_drv=$(jq -er '.contexts | map(select(contains("-pi-workspace-packages-"))) | select(length == 1) | .[0]' <<<"$metadata")
-phases=$(nix derivation show "$workspace_drv" | jq -er 'to_entries[0].value.env | .installPhase + "\n" + (.postInstall // "")')
+# Query bindings directly; `nix derivation show` has version-dependent JSON envelopes.
+phases=$(
+  nix-store --query --binding installPhase "$workspace_drv" &&
+    nix-store --query --binding postInstall "$workspace_drv"
+)
 if ! rg -q 'pack_package packages/schema schema' <<<"$phases"; then
   echo 'FAIL: workspace build does not pack schema.tgz' >&2
   exit 1
