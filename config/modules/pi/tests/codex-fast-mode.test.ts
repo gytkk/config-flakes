@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 mock.module("@earendil-works/pi-tui", () => ({
+  CURSOR_MARKER: "\x1b_pi:c\x07",
   truncateToWidth: (text: string, width: number) => text.slice(0, width),
   visibleWidth: (text: string) => text.length,
 }));
@@ -76,7 +77,9 @@ describe("Codex usage footer", () => {
     const handlers = new Map<string, Function>();
     const statuses = new Map([["codex-usage", "---------- weekly 9% left | reset 2026-11-05 03:00"]]);
     let footer: { render: (width: number) => string[] };
+    const commands = ["bg"];
     fastMode({
+      getCommands: () => commands.map((name) => ({ name })),
       on: (event: string, handler: Function) => handlers.set(event, handler),
       registerCommand: () => {},
     } as never);
@@ -112,6 +115,27 @@ describe("Codex usage footer", () => {
     expect(withoutUsage).toHaveLength(1);
     expect(withoutUsage[0]).not.toContain("Codex");
     expect(withoutUsage[0]).toContain("test-model");
+
+    const line = () => footer!.render(500)[0].replace(/\x1b\[[0-9;]*m/g, "");
+    expect(line()).toContain("tokens ↓0 ↑0 | /bg (0)");
+    statuses.set("bg", "bg: 3");
+    expect(line()).toContain("tokens ↓0 ↑0 | /bg (3)");
+    expect(line()).not.toContain("bg: 3");
+    statuses.set("bg-selection", "selected");
+    expect(line()).toContain("\x1b_pi:c\x07> /bg (3)");
+    expect(line()).not.toContain("selected");
+    for (const width of [0, 1, 2, 10, 40, 80, 200]) {
+      expect(footer!.render(width)[0].length).toBeLessThanOrEqual(width);
+    }
+    statuses.delete("bg");
+    expect(line()).toContain("> /bg (0)");
+    statuses.delete("bg-selection");
+    expect(line()).not.toContain("\x1b_pi:c\x07");
+    statuses.set("bg", "unexpected status");
+    expect(line()).toContain("/bg (?)");
+    commands.length = 0;
+    expect(line()).not.toContain("/bg");
+    expect(line()).not.toContain("unexpected status");
   });
 });
 

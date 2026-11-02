@@ -3,7 +3,7 @@ import {
   type ExtensionAPI,
   type ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { CURSOR_MARKER, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { sep } from "node:path";
 
 const STATE_TYPE = "codex-fast-mode";
@@ -199,8 +199,20 @@ export default function (pi: ExtensionAPI) {
             `${styleStatus("tokens", CLAUDE_ANSI.dim)} ${styleStatus(`↓${formatTokens(totals.input)}`, CLAUDE_ANSI.boldBlue)} ${styleStatus(`↑${formatTokens(totals.output)}`, CLAUDE_ANSI.brightOrange)}`,
           );
 
+          if (pi.getCommands().some((command) => command.name === "bg")) {
+            const status = extensionStatuses.get("bg");
+            const count = status === undefined ? "0" : /^bg: (\d+)$/.exec(status)?.[1] ?? "?";
+            const selected = extensionStatuses.get("bg-selection") === "selected";
+            sections.push(
+              (selected ? CURSOR_MARKER : "") + styleStatus(
+                `${selected ? "> " : ""}/bg (${count})`,
+                selected ? CLAUDE_ANSI.boldBlue : CLAUDE_ANSI.dim,
+              ),
+            );
+          }
+
           for (const [key, status] of extensionStatuses) {
-            if (key === "codex-usage") continue;
+            if (key === "codex-usage" || key === "bg" || key === "bg-selection") continue;
             const styled = sanitizeStatusText(status);
             if (styled) sections.push(styled);
           }

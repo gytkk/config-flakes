@@ -1,5 +1,5 @@
 import { CustomEditor, type ExtensionAPI, type KeybindingsManager } from "@earendil-works/pi-coding-agent";
-import { CURSOR_MARKER, truncateToWidth, type TuiMouseEvent } from "@earendil-works/pi-tui";
+import { CURSOR_MARKER, type TuiMouseEvent } from "@earendil-works/pi-tui";
 
 const SOFTWARE_CURSOR_PATTERN = /\x1b_pi:\/?fc\x07/g;
 
@@ -12,32 +12,37 @@ class HardwareCursorOnlyEditor extends CustomEditor {
   private backgroundSelected = false;
   hasBackgroundCommand = () => false;
   matchesBackgroundKey: KeybindingsManager["matches"] = () => false;
-  styleBackgroundItem = (text: string, _selected: boolean) => text;
+  onBackgroundSelectionChange = (_selected: boolean) => {};
+
+  private setBackgroundSelected(selected: boolean): void {
+    if (this.backgroundSelected === selected) return;
+    this.backgroundSelected = selected;
+    this.onBackgroundSelectionChange(selected);
+    this.tui.requestRender();
+  }
 
   private showBackgroundItem(): boolean {
     return this.getText() === "" && !this.isShowingAutocomplete() && this.hasBackgroundCommand();
   }
 
   setText(text: string): void {
-    this.backgroundSelected = false;
+    this.setBackgroundSelected(false);
     super.setText(text);
   }
 
   handleMouse(event: TuiMouseEvent) {
-    if (event.type === "click") this.backgroundSelected = false;
+    if (event.type === "click") this.setBackgroundSelected(false);
     return super.handleMouse(event);
   }
 
   handleInput(data: string): void {
     if (this.showBackgroundItem()) {
       if (this.matchesBackgroundKey(data, "tui.editor.cursorDown")) {
-        this.backgroundSelected = true;
-        this.tui.requestRender();
+        this.setBackgroundSelected(true);
         return;
       }
       if (this.backgroundSelected) {
-        this.backgroundSelected = false;
-        this.tui.requestRender();
+        this.setBackgroundSelected(false);
         if (this.matchesBackgroundKey(data, "tui.select.confirm")) {
           this.onSubmit?.("/bg");
           return;
@@ -48,7 +53,7 @@ class HardwareCursorOnlyEditor extends CustomEditor {
         ) return;
       }
     }
-    this.backgroundSelected = false;
+    this.setBackgroundSelected(false);
     super.handleInput(data);
   }
 
@@ -56,20 +61,11 @@ class HardwareCursorOnlyEditor extends CustomEditor {
     // Pi replaces borderColor when thinking or bash mode changes.
     this.borderColor = this.dimBorder;
     this.setPaddingX(Math.max(2, this.getPaddingX()));
-    const showBackground = this.showBackgroundItem();
-    if (!showBackground) this.backgroundSelected = false;
+    if (!this.showBackgroundItem()) this.setBackgroundSelected(false);
     const lines = super.render(width).map(stripSoftwareCursor);
     if (width >= 3) lines[1] = `❯${lines[1].slice(1)}`;
-    if (showBackground) {
-      const selected = this.backgroundSelected;
-      const label = selected
-        ? "> Background tasks (/bg)  Enter: open  Up/Esc: back"
-        : "  Background tasks (/bg)  Down: select";
-      if (selected) {
-        for (let i = 0; i < lines.length; i++) lines[i] = lines[i].replaceAll(CURSOR_MARKER, "");
-      }
-      const cursor = selected && this.focused ? CURSOR_MARKER : "";
-      lines.push(cursor + this.styleBackgroundItem(truncateToWidth(label, width), selected));
+    if (this.backgroundSelected) {
+      for (let i = 0; i < lines.length; i++) lines[i] = lines[i].replaceAll(CURSOR_MARKER, "");
     }
     return lines;
   }
@@ -78,6 +74,7 @@ class HardwareCursorOnlyEditor extends CustomEditor {
 export default function (pi: ExtensionAPI) {
   pi.on("session_start", (_event, ctx) => {
     if (ctx.mode !== "tui") return;
+    ctx.ui.setStatus("bg-selection", undefined);
     ctx.ui.setEditorComponent((tui, theme, keybindings) => {
       const editor = new HardwareCursorOnlyEditor(tui, {
         ...theme,
@@ -85,7 +82,7 @@ export default function (pi: ExtensionAPI) {
       }, keybindings);
       editor.matchesBackgroundKey = (data, action) => keybindings.matches(data, action);
       editor.hasBackgroundCommand = () => pi.getCommands().some((command) => command.name === "bg");
-      editor.styleBackgroundItem = (text, selected) => ctx.ui.theme.fg(selected ? "accent" : "dim", text);
+      editor.onBackgroundSelectionChange = (selected) => ctx.ui.setStatus("bg-selection", selected ? "selected" : undefined);
       return editor;
     });
   });

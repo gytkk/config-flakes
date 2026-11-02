@@ -22,11 +22,16 @@ const keybindings = {
 
 function createEditor(mode = "tui", commands: string[] = []) {
   let editor: CustomEditor | undefined;
+  const statuses = new Map<string, string>();
   hardwareCursorOnly({
     getCommands: () => commands.map((name) => ({ name })),
     on: (_event: string, handler: Function) => handler({}, {
       mode,
       ui: {
+        setStatus: (key: string, value: string | undefined) => {
+          if (value === undefined) statuses.delete(key);
+          else statuses.set(key, value);
+        },
         theme: { fg: (_color: string, text: string) => dim(text) },
         setEditorComponent: (factory: Function) => {
           editor = factory(tui, theme, keybindings);
@@ -35,7 +40,7 @@ function createEditor(mode = "tui", commands: string[] = []) {
     }),
   } as never);
   if (editor) editor.focused = true;
-  return editor;
+  return editor ? Object.assign(editor, { statuses }) : undefined;
 }
 
 describe("hardware cursor prompt", () => {
@@ -122,18 +127,18 @@ describe("hardware cursor prompt", () => {
     const editor = createEditor("tui", ["bg"])!;
     const submitted: string[] = [];
     editor.onSubmit = (text) => { submitted.push(text); };
-    expect(editor.render(80).at(-1)).toContain("Down: select");
+    expect(editor.render(80)).toHaveLength(3);
     editor.handleInput("\x1b[B");
     expect(submitted).toEqual([]);
     expect(editor.getText()).toBe("");
     const lines = editor.render(80);
-    expect(lines.at(-1)).toContain("> Background tasks (/bg)");
-    expect(lines.at(-1)).toContain(CURSOR_MARKER);
-    expect(lines.slice(0, -1).join("")).not.toContain(CURSOR_MARKER);
+    expect(lines).toHaveLength(3);
+    expect(editor.statuses.get("bg-selection")).toBe("selected");
+    expect(lines.join("")).not.toContain(CURSOR_MARKER);
     editor.handleInput("\x1b[B");
     editor.handleInput("\r");
     expect(submitted).toEqual(["/bg"]);
-    expect(editor.render(80).at(-1)).toContain("Down: select");
+    expect(editor.statuses.has("bg-selection")).toBe(false);
   });
 
   test("Up and Escape return to editing without submitting or aborting", () => {
@@ -144,7 +149,7 @@ describe("hardware cursor prompt", () => {
       editor.onEscape = () => { throw new Error("selection must not abort the agent"); };
       editor.handleInput("\x1b[B");
       editor.handleInput(key);
-      expect(editor.render(80).at(-1)).toContain("Down: select");
+      expect(editor.statuses.has("bg-selection")).toBe(false);
       expect(submitted).toBe(false);
     }
   });
@@ -156,11 +161,12 @@ describe("hardware cursor prompt", () => {
       editor.handleInput(input);
       expect(editor.render(80).join("")).not.toContain("Background tasks");
       expect(editor.getText()).not.toBe("");
+      expect(editor.statuses.has("bg-selection")).toBe(false);
     }
     const editor = createEditor("tui", ["bg"])!;
     editor.handleInput("\x1b[B");
     editor.setText("");
-    expect(editor.render(80).at(-1)).toContain("Down: select");
+    expect(editor.statuses.has("bg-selection")).toBe(false);
   });
 
   test("preserves multiline movement, history, and autocomplete", async () => {
@@ -170,7 +176,7 @@ describe("hardware cursor prompt", () => {
     expect(editor.getText()).toBe("previous prompt");
     editor.handleInput("\x1b[B");
     expect(editor.getText()).toBe("");
-    expect(editor.render(80).at(-1)).toContain("Down: select");
+    expect(editor.statuses.has("bg-selection")).toBe(false);
     editor.setText("first\nsecond");
     editor.handleInput("\x1b[A");
     editor.handleInput("\x1b[B");
@@ -190,7 +196,7 @@ describe("hardware cursor prompt", () => {
     editor.handleInput("\x1b[B");
     editor.render(80);
     editor.handleMouse({ type: "click", button: "left", x: 3, y: 1, width: 80 } as never);
-    expect(editor.render(80).at(-1)).toContain("Down: select");
+    expect(editor.statuses.has("bg-selection")).toBe(false);
     expect(editor.render(80)[1]).toContain(CURSOR_MARKER);
   });
 
@@ -204,6 +210,7 @@ describe("hardware cursor prompt", () => {
     commands.length = 0;
     expect(editor.render(80).join("")).not.toContain("Background tasks");
     expect(editor.render(80).join("")).toContain(CURSOR_MARKER);
+    expect(editor.statuses.has("bg-selection")).toBe(false);
   });
 
   test("leaves non-TUI modes alone", () => {
