@@ -25,8 +25,7 @@ let
       builtins.readFile ./files/codex-launcher.sh
     )
   );
-  pyrightMcp = pkgs.writeShellScriptBin "codex-pyright-mcp" ''
-    export PATH="${lib.makeBinPath [ pkgs.pyright ]}:$PATH"
+  lspMcp = pkgs.writeShellScriptBin "codex-lsp-mcp" ''
     exec ${pkgs.lspi}/bin/lspi mcp \
       --workspace-root "$PWD" \
       --config ${./files/lspi.toml} \
@@ -73,7 +72,7 @@ in
       pkgs.codex
       pkgs.mcp-nixos
       pkgs.lspi
-      pyrightMcp
+      lspMcp
     ];
 
     home.file.".codex/AGENTS.md".source = "${agentCoreOutput}/AGENTS.md";

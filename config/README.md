@@ -119,7 +119,7 @@ The official [openai/codex-plugin-cc](https://github.com/openai/codex-plugin-cc)
 
 The `devsisters` base profile also installs the `devsisters/mumu` marketplace and `mumu@mumu` plugin. Its `claude` launcher adds the mumu settings through `--settings`; all profiles link user settings to the checkout so changes saved in Claude Code update the repository file. Remote marketplaces enable automatic plugin updates. See the [Claude module README](modules/claude/README.md#marketplaces) for update settings and profile-specific behavior.
 
-The [LSP module](modules/lsp/default.nix) installs Pyright alongside ty. Claude uses the official `pyright-lsp` plugin for Python, with `ty-lsp` disabled to avoid competing for the same file extensions. Codex uses a read-only lspi MCP bridge for Python definitions, references, hover, symbols, and diagnostics. See [Claude's plugin settings](modules/claude/README.md#installed-plugins) and [Codex's Python integration](modules/codex/README.md#python-코드-탐색) for activation and workspace behavior.
+The [LSP module](modules/lsp/default.nix) installs shared language servers. Claude and Codex use ty for Python, plus gopls, rust-analyzer, typescript-language-server, terraform-ls, and nixd. Codex connects through a read-only lspi MCP bridge; Rust uses the active rustup toolchain. See [Claude's plugin settings](modules/claude/README.md#installed-plugins) and [Codex's LSP integration](modules/codex/README.md#lsp-코드-탐색) for activation and workspace behavior.
 
 ### Available Commands
 
@@ -191,7 +191,7 @@ For a remote machine, use `cf auth login --no-browser`. Automation can supply `C
 
 This section is a design plan only. The bridge and skills below are not implemented yet.
 
-The current Python integration uses upstream lspi with Pyright as described in [the Codex module](modules/codex/README.md#python-코드-탐색). The custom multi-language bridge below remains a proposal.
+The current integration uses upstream lspi with Claude's language-server mappings as described in [the Codex module](modules/codex/README.md#lsp-코드-탐색). `codex-lsp-mcp` is a launcher for upstream lspi. The custom bridge, root detection, and skills below remain a proposal.
 
 #### Goals
 

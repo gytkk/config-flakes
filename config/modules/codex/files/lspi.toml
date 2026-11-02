@@ -1,8 +1,83 @@
 [[servers]]
-id = "pyright"
-# Pyright rejects lspi 0.2.0's version probes; use the generic LSP transport.
+id = "ty"
 kind = "generic"
 extensions = ["py", "pyi"]
 language_id = "python"
-command = "pyright-langserver"
+command = "ty"
+args = ["server"]
+
+[[servers]]
+id = "gopls"
+kind = "generic"
+extensions = ["go"]
+language_id = "go"
+command = "gopls"
+# lspi 0.2.0 replaces empty args with --stdio, which gopls does not accept.
+args = ["serve"]
+
+[[servers]]
+id = "rust-analyzer"
+kind = "rust_analyzer"
+extensions = ["rs"]
+
+# lspi 0.2.0 uses one language_id per server, so JSX and JS need separate routes.
+[[servers]]
+id = "typescript"
+kind = "generic"
+extensions = ["ts", "mts", "cts"]
+language_id = "typescript"
+command = "typescript-language-server"
 args = ["--stdio"]
+adapter = "tsserver"
+
+[[servers]]
+id = "typescriptreact"
+kind = "generic"
+extensions = ["tsx"]
+language_id = "typescriptreact"
+command = "typescript-language-server"
+args = ["--stdio"]
+adapter = "tsserver"
+
+[[servers]]
+id = "javascript"
+kind = "generic"
+extensions = ["js", "mjs", "cjs"]
+language_id = "javascript"
+command = "typescript-language-server"
+args = ["--stdio"]
+adapter = "tsserver"
+
+[[servers]]
+id = "javascriptreact"
+kind = "generic"
+extensions = ["jsx"]
+language_id = "javascriptreact"
+command = "typescript-language-server"
+args = ["--stdio"]
+adapter = "tsserver"
+
+[[servers]]
+id = "terraform-ls"
+kind = "generic"
+extensions = ["tf"]
+language_id = "terraform"
+command = "terraform-ls"
+args = ["serve"]
+
+[[servers]]
+id = "terraform-vars"
+kind = "generic"
+extensions = ["tfvars"]
+language_id = "terraform-vars"
+command = "terraform-ls"
+args = ["serve"]
+
+[[servers]]
+id = "nixd"
+kind = "generic"
+extensions = ["nix"]
+language_id = "nix"
+command = "nixd"
+# A nonempty argument list prevents lspi 0.2.0 from adding unsupported --stdio.
+args = ["--log=error"]

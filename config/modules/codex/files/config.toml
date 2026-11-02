@@ -23,8 +23,8 @@ url = "https://mcp.context7.com/mcp"
 [mcp_servers.nixos]
 command = "mcp-nixos"
 
-[mcp_servers.pyright]
-command = "codex-pyright-mcp"
+[mcp_servers.lsp]
+command = "codex-lsp-mcp"
 
 [features]
 default_mode_request_user_input = true
