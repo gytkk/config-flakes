@@ -4,16 +4,38 @@ set -euo pipefail
 SOURCE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEST_ROOT=$(mktemp -d)
 trap 'rm -rf "$TEST_ROOT"' EXIT
-APP_DIR="$TEST_ROOT/pi"
+APP_DIR="$TEST_ROOT/apps/pi"
 export FIXTURE_SOURCE="$TEST_ROOT/source"
 export FIXTURE_TAG="v99.1.2"
 export FIXTURE_DOWNLOAD_FAILURE="0"
 mkdir -p "$APP_DIR" "$TEST_ROOT/bin" "$FIXTURE_SOURCE/nix" "$FIXTURE_SOURCE/packages/coding-agent/install-lock"
-cp "$SOURCE_ROOT/apps/pi/update.sh" "$APP_DIR/update.sh"
+cp "$SOURCE_ROOT/apps/pi/"{update.sh,patches.nix,herdr-file-links.patch} "$APP_DIR/"
+mkdir -p "$TEST_ROOT/scripts" "$FIXTURE_SOURCE/packages/coding-agent/src/utils"
+cp "$SOURCE_ROOT/scripts/check-nix-patches.sh" "$TEST_ROOT/scripts/"
+cat > "$FIXTURE_SOURCE/packages/coding-agent/src/utils/open-browser.ts" <<'EOF'
+import { spawn } from "node:child_process";
+
+/**
+ * Open a URL or file in the platform browser/default handler.
+ *
+ * This intentionally never invokes a shell. On Windows, do not use
+ * `cmd /c start`: cmd.exe re-parses metacharacters (&, |, ^, ...) before
+ * `start` runs, which would make attacker-controlled URLs injectable.
+ */
+export function openBrowser(target: string): void {
+	const [cmd, args]: [string, string[]] =
+		process.platform === "darwin"
+			? ["open", [target]]
+			: ["xdg-open", [target]];
+	spawn(cmd, args).unref();
+}
+EOF
 printf '{ "version": "99.1.2" }\n' > "$FIXTURE_SOURCE/packages/coding-agent/package.json"
 for file in nix/package.nix nix/model-catalog.json packages/coding-agent/install-lock/package-lock.json package-lock.json; do
   touch "$FIXTURE_SOURCE/$file"
 done
+
+printf 'pname = "pi-workspace-packages";\n' > "$FIXTURE_SOURCE/nix/package.nix"
 
 cat > "$TEST_ROOT/bin/curl" <<'EOF'
 #!/usr/bin/env bash
@@ -82,5 +104,19 @@ for file in nix/package.nix nix/model-catalog.json packages/coding-agent/install
   rm "$FIXTURE_SOURCE/$file"
   assert_failure
   touch "$FIXTURE_SOURCE/$file"
+  if [ "$file" = nix/package.nix ]; then
+    printf 'pname = "pi-workspace-packages";\n' > "$FIXTURE_SOURCE/$file"
+  fi
 done
 echo 'PASS: missing upstream packaging files preserve the package'
+
+reset_package
+printf 'pname = "renamed-workspace";\n' > "$FIXTURE_SOURCE/nix/package.nix"
+assert_failure
+printf 'pname = "pi-workspace-packages";\n' > "$FIXTURE_SOURCE/nix/package.nix"
+echo 'PASS: changed workspace derivation preserves the package'
+
+reset_package
+perl -0pi -e 's/export function openBrowser/export function renamedOpener/' "$FIXTURE_SOURCE/packages/coding-agent/src/utils/open-browser.ts"
+assert_failure
+echo 'PASS: incompatible file opener patch preserves the package'

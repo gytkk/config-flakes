@@ -40,6 +40,12 @@ for file in nix/package.nix nix/model-catalog.json packages/coding-agent/install
   fi
 done
 
+if ! rg -Fq 'pname = "pi-workspace-packages";' "$source_path/nix/package.nix"; then
+  echo "ERROR: Release $tag changed the workspace derivation used for local patches" >&2
+  exit 1
+fi
+bash "$SCRIPT_DIR/../../scripts/check-nix-patches.sh" "$source_path" "$SCRIPT_DIR/patches.nix"
+
 candidate=$(mktemp "$SCRIPT_DIR/.package.nix.XXXXXX")
 trap 'rm -f "$candidate"' EXIT
 cp "$PACKAGE_NIX" "$candidate"

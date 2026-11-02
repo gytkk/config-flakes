@@ -43,6 +43,14 @@ The module also installs:
 
 Pi uses the default fullscreen mode and built-in keybindings: `Home` and `Ctrl+A` move to the input line's start, while `Ctrl+Home` moves to the top of the fullscreen conversation. The module does not install a keybindings file; its editor extension adds conditional background-task navigation described below.
 
+### File links in Herdr
+
+In fullscreen Pi running inside Herdr, a normal click on a local `file://` link, including the path in a `read` tool heading, splits the Pi pane to the right and opens the file in Neovim. The new pane takes focus, retains Pi's working directory, and closes when Neovim exits. Each click creates a new pane. Web links and links opened outside Herdr retain the platform's default handler.
+
+This behavior comes from the [local Pi package patch](../../packages/apps/pi/herdr-file-links.patch), not an extension or a Herdr Ctrl-click handler. It requires `nvim` on `PATH` and a working Herdr CLI. Invalid or remote file URLs are rejected. Launch failures are reported on Pi's stderr without falling back to another editor; if command submission fails after splitting, the new pane remains open for inspection.
+
+Apply Home Manager and restart Pi to load the patched package; `/reload` alone does not replace Pi's code. Run `bun test config/packages/tests/pi-file-links.test.ts` from the repository root for routing, path quoting, and failure tests. After applying, click a file path in a `read` heading and confirm the right-hand editor pane opens and closes with `:q`.
+
 ### Automatic compaction
 
 `compaction.modelOverrides` configures `openai/gpt-6-astra` to reserve 54,400 tokens and retain roughly 40,000 recent tokens without summarization. With Pi's registered 272,000-token context window, automatic compaction starts above 217,600 tokens (80%). Other models use Pi's default compaction budgets. The reserve is an absolute token count, so review it if the model's registered context window changes.

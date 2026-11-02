@@ -1,0 +1,28 @@
+diff --git a/packages/coding-agent/src/utils/open-browser.ts b/packages/coding-agent/src/utils/open-browser.ts
+--- a/packages/coding-agent/src/utils/open-browser.ts
++++ b/packages/coding-agent/src/utils/open-browser.ts
+@@ -1,13 +1,22 @@
+ import { spawn } from "node:child_process";
++import { openHerdrFile } from "./herdr-file-opener.ts";
+ 
+ /**
+- * Open a URL or file in the platform browser/default handler.
++ * Open file links in Herdr when available, otherwise use the platform handler.
+  *
+- * This intentionally never invokes a shell. On Windows, do not use
++ * The platform handler never invokes a shell. On Windows, do not use
+  * `cmd /c start`: cmd.exe re-parses metacharacters (&, |, ^, ...) before
+  * `start` runs, which would make attacker-controlled URLs injectable.
+  */
+ export function openBrowser(target: string): void {
++	void openHerdrFile(target)
++		.then((handled) => {
++			if (!handled) openDefault(target);
++		})
++		.catch((error) => console.error("Could not open file in Herdr:", error));
++}
++
++function openDefault(target: string): void {
+ 	const [cmd, args]: [string, string[]] =
+ 		process.platform === "darwin"
+ 			? ["open", [target]]
