@@ -70,6 +70,7 @@ The package list is intentionally version-pinned:
 | --- | --- | --- |
 | `@juicesharp/rpiv-ask-user-question` | `2.15.0` | Structured user questions |
 | `pi-lsp` | `0.1.7` | Lazy language-server diagnostics and navigation |
+| `pi-bg-bash` | `0.5.1` | Background shell tasks, live output, and completion notifications |
 | `pi-web-access` | `0.46.0` | Web search, source checks, and content fetching |
 | `pi-subagents` | `0.84.0` | Foreground-first delegated Pi sessions |
 
@@ -181,6 +182,16 @@ The extension removes Pi 1.4's software cursor markers while preserving the term
 Fresh sessions use the packages' own `web_enable` and `subagents_enable` tools to activate the full web and delegation tools when needed. Package commands such as `/run` remain available. Native MCP uses Pi's `codemode` tool without declaring every server tool to the model. The module does not install a custom `enable_tools` tool or `/tool-profile` command.
 
 When migrating an existing installation, apply Home Manager to remove its managed `~/.pi/agent/extensions/tool-profiles` symlink, then restart Pi. New sessions use the default activation state; resumed sessions may retain tools already activated in their transcript.
+
+## Background shell tasks
+
+`pi-bg-bash` replaces Pi's model-facing `bash` tool, not the system Bash executable, login shell, or user-entered `!` commands. Ordinary calls still wait for exit; `background: true` returns a task ID immediately, and completion sends the agent the exit state and recent output. `Ctrl+Shift+B` moves running foreground tool calls to the background when the terminal supports modified keys. Elapsed time alone does not trigger that transition.
+
+Use `/bg` to view task state, runtime, and commands. Press Enter for live output, `x` to stop a task after confirmation, and Escape to go back. The agent can use `bash_tasks`, `bash_output`, `bash_kill`, and `bash_watch` to inspect or manage tasks. Output watches are optional; completion notifications do not require them.
+
+Tasks survive `/reload`, but quitting Pi or switching sessions stops them. Logs are private files under `$XDG_STATE_HOME/pi-bg/` (default `~/.local/state/pi-bg/`), with seven-day cleanup and a 100 MiB per-task limit. The package does not honor Pi's `shellPath` or `shellCommandPrefix`; neither is configured by this module. Do not combine it with another extension that replaces `bash` or registers `/bg` or `Ctrl+Shift+B`.
+
+After installing the pinned package, run `/reload` or restart Pi. Verify with a disposable background command that prints a line, waits briefly, and exits; inspect it in `/bg` and confirm its completion notification. This shell-task extension does not enable background subagent delegation.
 
 ## LSP diagnostics
 
