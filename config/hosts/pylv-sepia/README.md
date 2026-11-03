@@ -160,6 +160,17 @@ Cloudflare and are not configured by this flake. The transitional
 and the encrypted backup until two Menu releases and a rollback have been
 verified; remove them only as a separate cleanup step.
 
+## GitHub Actions runner
+
+`github-runner.nix` registers a self-hosted runner for `gytkk/ws` with the default `self-hosted`, `Linux`, and `X64` labels plus `pylv-sepia`. The `github-runner-ws.service` unit runs jobs as a dynamically allocated user with `nix` on its `PATH`, and the host's one-build-at-a-time Nix limit also applies to jobs. Select it in a workflow with `runs-on: [self-hosted, pylv-sepia]`.
+
+The runner authenticates with a fine-grained PAT restricted to `gytkk/ws` with `Administration: Read and write`, stored in `config/secrets/github-runner-ws-token.age` for the administrator and this host. The file must contain the token without a trailing newline. Create or rotate it from `config/secrets/` with `agx -e github-runner-ws-token.age`, then rebuild; a changed token triggers a new runner registration.
+
+```bash
+sudo systemctl status github-runner-ws.service
+sudo journalctl --unit github-runner-ws.service
+```
+
 ## Ghost
 
 Ghost runs as one declarative Podman container using the
@@ -458,6 +469,7 @@ home.packages = with pkgs; [
 | `configuration.nix` | NixOS system configuration and host module imports |
 | `ghost.nix` | Ghost container, loopback nginx origin, and local backups |
 | `menu.nix` | Menu static site origin and deployment integration |
+| `github-runner.nix` | GitHub Actions self-hosted runner for `gytkk/ws` |
 | `disk-config.nix` | Disk partitioning configuration (disko) |
 | `hardware-configuration.nix` | Auto-generated hardware configuration |
 
