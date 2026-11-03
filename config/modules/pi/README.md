@@ -185,6 +185,10 @@ Apply Home Manager and restart Pi to install the extension. To try it before app
 
 The extension removes Pi 1.4's software cursor markers while preserving the terminal cursor used for IME positioning. It is paired with `showHardwareCursor: true` in `settings.json`. Review it when updating Pi if cursor rendering or IME positioning changes.
 
+### Terminal title on exit
+
+Pi sets the terminal title to `π - <directory>` and does not clear it on exit, so the shell and [Herdr Auto Title](../herdr/README.md) would keep showing it. `files/extensions/terminal-title-reset.ts` sends an empty title when the TUI process exits after a quit. It writes from a process `exit` listener because Pi 1.5 rewrites the title after `session_shutdown`. Session reload, new, resume, and fork leave the title to Pi.
+
 ## On-demand tools
 
 Fresh sessions use the packages' own `web_enable` and `subagents_enable` tools to activate the full web and delegation tools when needed. Package commands such as `/run` remain available. Native MCP uses Pi's `codemode` tool without declaring every server tool to the model. The module does not install a custom `enable_tools` tool or `/tool-profile` command.

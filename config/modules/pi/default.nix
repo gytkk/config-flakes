@@ -55,6 +55,8 @@ in
         source = "${pkgs.herdr.src}/src/integration/assets/pi/herdr-agent-state.ts";
       };
       ".pi/agent/extensions/herdr-subagents.ts".source = mkSymlink "files/extensions/herdr-subagents.ts";
+      ".pi/agent/extensions/terminal-title-reset.ts".source =
+        mkSymlink "files/extensions/terminal-title-reset.ts";
       ".pi/agent/extensions/subagent/config.json".source =
         mkSymlink "files/extensions/subagent/config.json";
     };
