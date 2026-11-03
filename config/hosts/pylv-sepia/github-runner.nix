@@ -24,6 +24,10 @@
       BindPaths = lib.mkForce [ ];
       # systemd mounts DynamicUser directories noexec; jobs run actions and rustup toolchains from here.
       ExecPaths = [ config.services.github-runners.ws.workDir ];
+      # The host has no swap; cap CI so the kernel OOM-kills a job process instead of a production service.
+      MemoryMax = "8G";
+      # The default OOMPolicy=stop would stop the runner, and the module sets Restart=no.
+      OOMPolicy = "continue";
     };
     # Workflow tools that GitHub-hosted Ubuntu images provide.
     extraPackages = with pkgs; [
