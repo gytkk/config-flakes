@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   rust:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, pylv-sepia]
     defaults:
       run:
         working-directory: apps/trading-agent
