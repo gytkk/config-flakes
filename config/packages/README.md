@@ -53,7 +53,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 |-----|---------|
 | agent-browser | 0.41.1 |
 | cf | 1.0.0-beta.21 |
-| claude-code | 2.1.316 |
+| claude-code | 2.1.317 |
 | codex | 0.166.0 |
 | codexbar | 0.83.0 |
 | databricks-cli | 1.19.0 |
@@ -62,7 +62,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 | herdr-annotate | 0.9.9 |
 | herdr-auto-title | 0.19.0 |
 | lspi | 0.2.0 |
-| notion-cli | 0.23.25 |
+| notion-cli | 0.23.26 |
 | pantry | main-69de978b5555 |
 | pi | 1.5.0 |
 | pup | 1.4.0 |
