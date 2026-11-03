@@ -15,7 +15,9 @@
     # Re-registration after a token or workDir change otherwise fails on the existing runner name.
     replace = true;
     # The default work directory and HOME live in the /run tmpfs, which Rust builds fill.
-    workDir = "/var/cache/github-runner/ws";
+    # Use the real DynamicUser path, not the /var/cache/github-runner/ws symlink: git resolves the
+    # gitdir, so actions/checkout's includeIf credential entry for the symlink path never matches.
+    workDir = "/var/cache/private/github-runner/ws";
     serviceOverrides = {
       CacheDirectory = [ "github-runner/ws" ];
       # The module binds a custom workDir onto itself, which makes the DynamicUser cache directory read-only.
