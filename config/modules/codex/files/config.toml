@@ -8,23 +8,25 @@ suppress_unstable_features_warning = true
 web_search = "live"
 personality = "pragmatic"
 
-tool_timeout_sec = 300
-
 [agents]
 default_subagent_model = "gpt-6-luna"
 default_subagent_reasoning_effort = "medium"
 
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"
+tool_timeout_sec = 300
 
 [mcp_servers.context7]
 url = "https://mcp.context7.com/mcp"
+tool_timeout_sec = 300
 
 [mcp_servers.nixos]
 command = "mcp-nixos"
+tool_timeout_sec = 300
 
 [mcp_servers.lsp]
 command = "codex-lsp-mcp"
+tool_timeout_sec = 300
 
 [features]
 default_mode_request_user_input = true
