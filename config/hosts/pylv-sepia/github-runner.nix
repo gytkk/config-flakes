@@ -7,6 +7,9 @@
     url = "https://github.com/gytkk/ws";
     tokenFile = config.age.secrets.github-runner-ws-token.path;
     extraLabels = [ "pylv-sepia" ];
+    # The default work directory and HOME live in the /run tmpfs, which Rust builds fill.
+    workDir = "/var/cache/github-runner/ws";
+    serviceOverrides.CacheDirectory = [ "github-runner/ws" ];
     # Workflow tools that GitHub-hosted Ubuntu images provide.
     extraPackages = with pkgs; [
       curl
@@ -14,6 +17,7 @@
       findutils
       gawk
       gcc
+      gnupatch
       gnused
       jq
       perl
