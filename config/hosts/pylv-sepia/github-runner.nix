@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   age.secrets.github-runner-ws-token.file = ../../secrets/github-runner-ws-token.age;
 
@@ -11,7 +16,11 @@
     replace = true;
     # The default work directory and HOME live in the /run tmpfs, which Rust builds fill.
     workDir = "/var/cache/github-runner/ws";
-    serviceOverrides.CacheDirectory = [ "github-runner/ws" ];
+    serviceOverrides = {
+      CacheDirectory = [ "github-runner/ws" ];
+      # The module binds a custom workDir onto itself, which makes the DynamicUser cache directory read-only.
+      BindPaths = lib.mkForce [ ];
+    };
     # Workflow tools that GitHub-hosted Ubuntu images provide.
     extraPackages = with pkgs; [
       curl
