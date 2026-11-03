@@ -22,6 +22,8 @@
       CacheDirectory = [ "github-runner/ws" ];
       # The module binds a custom workDir onto itself, which makes the DynamicUser cache directory read-only.
       BindPaths = lib.mkForce [ ];
+      # systemd mounts DynamicUser directories noexec; jobs run actions and rustup toolchains from here.
+      ExecPaths = [ config.services.github-runners.ws.workDir ];
     };
     # Workflow tools that GitHub-hosted Ubuntu images provide.
     extraPackages = with pkgs; [
