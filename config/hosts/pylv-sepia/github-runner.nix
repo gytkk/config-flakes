@@ -7,6 +7,8 @@
     url = "https://github.com/gytkk/ws";
     tokenFile = config.age.secrets.github-runner-ws-token.path;
     extraLabels = [ "pylv-sepia" ];
+    # Re-registration after a token or workDir change otherwise fails on the existing runner name.
+    replace = true;
     # The default work directory and HOME live in the /run tmpfs, which Rust builds fill.
     workDir = "/var/cache/github-runner/ws";
     serviceOverrides.CacheDirectory = [ "github-runner/ws" ];
