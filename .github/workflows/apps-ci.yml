@@ -39,12 +39,10 @@ jobs:
   evaluate:
     name: Evaluate app package flake
     if: github.event_name != 'workflow_run'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, pylv-sepia]
     steps:
       - uses: actions/checkout@v6
       - uses: cachix/install-nix-action@v31
-      - name: Install ripgrep
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: Test changed-app detection
         run: bash config/packages/tests/detect-changed-apps.sh
       - name: Test app updaters and patch preflight
@@ -62,7 +60,7 @@ jobs:
   detect-app-changes:
     name: Detect changed app packages
     if: github.event_name != 'workflow_run'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, pylv-sepia]
     outputs:
       apps: ${{ steps.detect.outputs.apps }}
     steps:
@@ -96,7 +94,7 @@ jobs:
       - evaluate
       - detect-app-changes
     if: needs.detect-app-changes.outputs.apps != '[]'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, pylv-sepia]
     strategy:
       fail-fast: false
       matrix:
