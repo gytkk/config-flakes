@@ -6,11 +6,11 @@
 
 buildGoModule rec {
   pname = "herdr-auto-title";
-  version = "0.19.0";
+  version = "0.19.1";
 
   src = fetchzip {
     url = "https://github.com/kryptamine/herdr-auto-title/archive/refs/tags/v${version}.tar.gz";
-    hash = "sha256-HfZqth8aFy05KkSPAyWCJKKtAQanVZMrU+6rRVCRgcg=";
+    hash = "sha256-0GJFx8/qwa3mj3pFzVpm02vJI4uvDqgxoL5f2E22tSs=";
   };
 
   vendorHash = "sha256-QxFp1b7pf7bn3Hh0hyaj8ke5Z61N+WwjhHt3pFiapTs=";
