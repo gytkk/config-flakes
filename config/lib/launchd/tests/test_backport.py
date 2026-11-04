@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 def home_manager_source():
-    expr = f'let f = builtins.getFlake "path:{ROOT}"; in f.inputs.home-manager.outPath + "/modules/launchd/default.nix"'
+    expr = f'let f = builtins.getFlake "path:{ROOT}"; in f.inputs.config.inputs.home-manager.outPath + "/modules/launchd/default.nix"'
     return Path(
         subprocess.run(
             ["nix", "eval", "--raw", "--impure", "--expr", expr],
@@ -24,7 +24,7 @@ SOURCE = home_manager_source()
 
 
 def transformed():
-    expr = f"""let f = builtins.getFlake "path:{ROOT}"; in import {ROOT}/config/lib/launchd/backport.nix {{ lib = f.inputs.nixpkgs.lib; source = builtins.readFile {SOURCE}; }}"""
+    expr = f"""let f = builtins.getFlake "path:{ROOT}"; in import {ROOT}/config/lib/launchd/backport.nix {{ lib = f.inputs.config.inputs.nixpkgs.lib; source = builtins.readFile {SOURCE}; }}"""
     return subprocess.run(
         ["nix", "eval", "--raw", "--impure", "--expr", expr],
         check=True,
@@ -70,10 +70,17 @@ class Fixture:
             p = self.bin / name
             p.write_text("#!/usr/bin/env bash\n" + code)
             p.chmod(0o755)
+        empty_triggers = self.root / "empty-triggers.json"
+        empty_triggers.write_text("[]")
         activation = (
             activation.replace("/bin/launchctl", str(self.bin / "launchctl"))
             .replace("/usr/bin/sw_vers", str(self.bin / "sw_vers"))
             .replace("${lib.escapeShellArg dstDir}", str(self.dst))
+            .replace(
+                '${lib.escapeShellArg "${config.xdg.stateHome}/home-manager/launchd"}',
+                str(self.root / "state"),
+            )
+            .replace("${emptyTriggers}", str(empty_triggers))
         )
         self.script = self.root / "activate"
         self.script.write_text(
@@ -228,9 +235,9 @@ class BackportTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             drift = Path(d) / "source"
             drift.write_text(
-                SOURCE.read_text().replace("processAgent", "processChangedAgent", 1)
+                SOURCE.read_text().replace("processAgentImpl() {", "processChangedAgent() {", 1)
             )
-            expr = f"""let f = builtins.getFlake "path:{ROOT}"; in import {ROOT}/config/lib/launchd/backport.nix {{ lib=f.inputs.nixpkgs.lib; source=builtins.readFile {drift}; }}"""
+            expr = f"""let f = builtins.getFlake "path:{ROOT}"; in import {ROOT}/config/lib/launchd/backport.nix {{ lib=f.inputs.config.inputs.nixpkgs.lib; source=builtins.readFile {drift}; }}"""
             result = subprocess.run(
                 ["nix", "eval", "--raw", "--impure", "--expr", expr],
                 text=True,

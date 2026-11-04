@@ -1,4 +1,4 @@
-            processAgent() {
+            processAgentImpl() {
               local srcPath="$1"
               local dstDir="$2"
               local oldDir="$3"
@@ -26,6 +26,9 @@
               # Skip if unchanged
               if cmp -s "$srcPath" "$dstPath" && [[ "$oldDomainName" == "$newDomainName" ]]; then
                 if agentIsLoaded "$newDomain" "$agentName"; then
+                  if [[ "$triggerChanged" -eq 1 ]]; then
+                    restartRunningAgent "$newDomain" "$agentName" || return 1
+                  fi
                   verboseEcho "Agent '$newDomain/$agentName' is already up-to-date"
                   return 0
                 else
