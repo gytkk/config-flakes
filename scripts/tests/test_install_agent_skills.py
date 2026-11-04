@@ -716,6 +716,33 @@ def test_latest_resolves_once_per_operation_and_replay_avoids_latest(
     assert len(calls) == 2
 
 
+@pytest.mark.parametrize("failures, succeeds", [(4, True), (5, False)])
+def test_remote_head_retries_transient_failures(
+    fixture, monkeypatch, failures, succeeds
+):
+    plan, _, _, _, _ = fixture
+    source = {"id": "external", "kind": "git", "url": "https://github.com/test/skills.git"}
+    calls = []
+    sleeps = []
+
+    def flaky(*args, **kwargs):
+        calls.append(args)
+        if len(calls) <= failures:
+            raise installer.ValidationError("Could not resolve host: github.com")
+        return f"ref: refs/heads/main\tHEAD\n{'1' * 40}\tHEAD\n"
+
+    monkeypatch.setattr(installer, "run", flaky)
+    monkeypatch.setattr(installer.time, "sleep", sleeps.append)
+    plans = [{**plan, "sources": [source]}]
+    if succeeds:
+        assert installer.revisions(plans, {}, {}) == {"external": "1" * 40}
+    else:
+        with pytest.raises(installer.ValidationError, match="resolve host"):
+            installer.revisions(plans, {}, {})
+    assert len(calls) == min(failures + 1, 5)
+    assert sleeps == [3] * 4
+
+
 def test_license_acquisition_failure_preserves_installed_files(fixture, monkeypatch):
     plan, home, state, calls, _ = fixture
     installer.install([plan], home, state, {})

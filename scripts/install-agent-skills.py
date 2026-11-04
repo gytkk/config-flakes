@@ -16,6 +16,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.request
 
 from agent_core.core import ValidationError, _skill_body
@@ -244,11 +245,19 @@ def revisions(plans, overrides, env):
             continue
         revision = overrides.get(identifier)
         if revision is None:
-            output = run(
-                ["git", "ls-remote", "--symref", source["url"], "HEAD"],
-                cwd=Path.cwd(),
-                env=env,
-            )
+            # Read-only, so retry through the brief DNS outage while a NixOS switch restarts networking.
+            for attempt in range(5):
+                try:
+                    output = run(
+                        ["git", "ls-remote", "--symref", source["url"], "HEAD"],
+                        cwd=Path.cwd(),
+                        env=env,
+                    )
+                    break
+                except ValidationError:
+                    if attempt == 4:
+                        raise
+                    time.sleep(3)
             matches = re.findall(r"^([0-9a-f]{40})\s+HEAD$", output, re.MULTILINE)
             if len(matches) != 1 or not re.search(
                 r"^ref: refs/heads/[^\s]+\s+HEAD$", output, re.MULTILINE
