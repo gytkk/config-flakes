@@ -151,13 +151,13 @@ def test_install_reinstall_user_change_and_independent_targets(fixture):
     assert not (destination / "one/reference.md").exists()
     claude = {**plan, "target": "claude", "runtimes": ["claude"]}
     installer.install([claude], home, state, {})
+    expected = installer.tree(destination / "one")
     (destination / "one/SKILL.md").write_text("user edit")
-    before = len(calls)
-    with pytest.raises(installer.ValidationError, match="user modification"):
-        installer.install([plan], home, state, {})
-    assert len(calls) == before
     # Claude ownership is independent from the shared pool's changed content.
-    installer.install([claude], home, state, {})
+    assert installer.install([claude], home, state, {}) is None
+    backup = installer.install([plan], home, state, {})
+    assert installer.tree(destination / "one") == expected
+    assert (backup / "0/one/SKILL.md").read_text() == "user edit"
 
 
 def test_hardlinked_local_source_installs_and_replays(fixture, tmp_path):
@@ -233,14 +233,15 @@ def test_hardlinked_source_change_during_preparation_is_rejected(
     assert not installer.location("shared", home).exists()
 
 
-def test_unowned_collision_and_symlink_parent_are_rejected_before_cli(fixture):
+def test_unowned_collision_is_replaced_and_symlink_parent_rejected(fixture):
     plan, home, state, calls, _ = fixture
     destination = installer.location("shared", home)
     (destination / "one").mkdir(parents=True)
     (destination / "one/SKILL.md").write_text("personal skill")
-    with pytest.raises(installer.ValidationError, match="unowned skill collision"):
-        installer.install([plan], home, state, {})
-    assert not calls
+    backup = installer.install([plan], home, state, {})
+    assert (destination / "one/reference.md").read_text() == "original\n"
+    assert (backup / "0/one/SKILL.md").read_text() == "personal skill"
+    calls.clear()
     shutil.rmtree(destination)
     destination.symlink_to(Path(plan["sources"][0]["path"]))
     with pytest.raises(installer.ValidationError, match="symlink ancestor"):
@@ -561,18 +562,22 @@ def test_replay_refuses_changed_local_source_before_touching_home(fixture):
     assert installer.tree(destination / "one") == original
 
 
-def test_source_change_and_stale_skill_require_review(fixture):
+def test_source_change_reinstalls_and_stale_skill_is_removed(fixture):
     plan, home, state, _, _ = fixture
     installer.install([plan], home, state, {})
+    destination = installer.location("shared", home)
+    owner_file = installer.owner_path(state, destination)
     source = plan["sources"][0]
     changed = {**plan, "sources": [{**source, "id": "other"}]}
-    with pytest.raises(
-        installer.ValidationError, match="source change requires review"
-    ):
-        installer.install([changed], home, state, {})
+    installer.install([changed], home, state, {})
+    assert installer.read_json(owner_file)["skills"]["one"]["source"] == "other"
     changed = {**plan, "sources": [{**source, "skills": {"one": "one"}}]}
-    with pytest.raises(installer.ValidationError, match="stale managed skills"):
-        installer.install([changed], home, state, {})
+    original = installer.tree(destination / "two")
+    backup = installer.install([changed], home, state, {})
+    assert not (destination / "two").exists()
+    assert set(installer.read_json(owner_file)["skills"]) == {"one"}
+    installer.restore(backup, home, state)
+    assert installer.tree(destination / "two") == original
 
 
 def test_restore_refuses_newer_claude_lock_without_touching_shared_files(fixture):
@@ -806,22 +811,20 @@ def test_changed_install_inputs_require_preparation(fixture, change):
 
 
 @pytest.mark.parametrize("change", ["missing", "modified", "unowned"])
-def test_cached_install_preserves_ownership_checks(fixture, change):
+def test_cached_install_repairs_drift_from_manifest(fixture, change):
     plan, home, state, calls, _ = fixture
     installer.install([plan], home, state, {})
-    count = len(calls)
     destination = installer.location("shared", home)
+    expected = installer.tree(destination / "one")
     if change == "missing":
         shutil.rmtree(destination / "one")
     elif change == "modified":
         (destination / "one/reference.md").write_text("user edit")
     else:
         installer.owner_path(state, destination).unlink()
-    with pytest.raises(
-        installer.ValidationError, match="user modification|unowned skill collision"
-    ):
-        installer.install([plan], home, state, {})
-    assert len(calls) == count
+    assert installer.install([plan], home, state, {}) is not None
+    assert installer.tree(destination / "one") == expected
+    assert installer.install([plan], home, state, {}) is None
 
 
 def test_failed_install_retries_instead_of_caching(fixture, monkeypatch):

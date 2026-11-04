@@ -155,7 +155,7 @@ Codex and Claude share the `openai-decisions` skill through agent-core for `gpt-
 - Using the repo path instead of the flake source store path avoids repeated sudo prompts after unrelated repo changes.
 - If `/etc/codex/config.toml` or the legacy `/etc/codex/managed_config.toml` already exists as a regular file, activation stops instead of overwriting it.
 - `~/.codex/config.toml` stays writable and is not rewritten by activation, preserving user-local state such as project trust, hook trust, notices, and TUI state.
-- Maintain local skill content under `agent-core/skills/` and source selections in `agent-core/manifest.toml`. The installation command records exact external SHAs and protects user modifications. Legacy skill renderer goldens remain frozen until all hosts migrate.
+- Maintain local skill content under `agent-core/skills/` and source selections in `agent-core/manifest.toml`. The installation command records exact external SHAs and backs up any installed skill before replacing it to match the manifest. Legacy skill renderer goldens remain frozen until all hosts migrate.
 - Cloudflare operations use the shared [`cf` CLI](#cloudflare-cli).
 - `home-manager switch` installs and enables `superpowers@openai-curated` from the official Codex marketplace and removes the legacy `~/.agents/skills/superpowers` link when it points to `~/.codex/superpowers/skills`. Installation failures stop activation and are recorded in `~/.codex/nix-setup.log`. See the [Codex module README](modules/codex/README.md#적용) for installation and restart instructions.
 

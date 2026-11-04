@@ -360,27 +360,23 @@ def preflight(plans, home, state):
             owner.get("skills"), dict
         ):
             raise ValidationError(f"invalid ownership record: {owner_file}")
-        names = selected(plan)
-        if set(owner["skills"]) - names.keys():
-            raise ValidationError(
-                f"stale managed skills need reviewed removal: {destination}"
-            )
-        for name, source in names.items():
-            actual = tree(destination / name)
-            previous = owner["skills"].get(name)
-            if previous:
-                if previous.get("source") != source["id"]:
-                    raise ValidationError(
-                        f"source change requires review: {destination / name}"
-                    )
-                if actual != previous.get("files"):
-                    raise ValidationError(
-                        f"user modification or missing managed skill: {destination / name}"
-                    )
-            elif actual is not None:
-                raise ValidationError(f"unowned skill collision: {destination / name}")
+        # The manifest is authoritative: install replaces these after backing them up.
+        for name in managed(plan, owner):
+            tree(destination / name)
         items.append((plan, destination, owner_file, owner))
     return items
+
+
+def managed(plan, owner):
+    """Selected skills plus previously owned ones that installation removes."""
+    return sorted(set(selected(plan)) | set(owner["skills"]))
+
+
+def matches_disk(destination, owner):
+    return all(
+        tree(destination / name) == record.get("files")
+        for name, record in owner["skills"].items()
+    )
 
 
 def validate_receipt(receipt, home, state):
@@ -582,15 +578,16 @@ def install(plans, home, state, overrides, replay=None):
             and owner.get("installation")
             == installation_state(plan, revs, local_hashes, home, state)
             and successful_owner(owner)
-            for plan, _, _, owner in items
+            and matches_disk(destination, owner)
+            for plan, destination, _, owner in items
         ):
             return None
         revs, notices, prepared, local_hashes = prepare(
             plans, Path(temporary).resolve(), overrides, replay, inputs=inputs
         )
-        # Recheck ownership after network preparation, before touching user files.
+        # Recheck paths and ownership after network preparation, before touching files.
         items = preflight(plans, home, state)
-        names = {name for plan in plans for name in selected(plan)}
+        names = {name for plan, _, _, owner in items for name in managed(plan, owner)}
         locks = {
             str(path): {
                 "before": lock_entries(path, names),
@@ -614,7 +611,7 @@ def install(plans, home, state, overrides, replay=None):
             "locks": locks,
         }
         for index, (plan, destination, owner_file, owner) in enumerate(items):
-            for name in selected(plan):
+            for name in managed(plan, owner):
                 if (destination / name).exists():
                     shutil.copytree(destination / name, backup / str(index) / name)
             receipt["targets"].append(
@@ -640,6 +637,9 @@ def install(plans, home, state, overrides, replay=None):
                     },
                 )
             for index, (plan, destination, owner_file, owner) in enumerate(items):
+                for name in managed(plan, owner):
+                    if (destination / name).exists():
+                        shutil.rmtree(destination / name)
                 for source in plan["sources"]:
                     cli_add(plan, source, revs.get(source["id"]), home, state)
                 supplements = add_licenses(plan, destination, notices)
@@ -676,8 +676,9 @@ def install(plans, home, state, overrides, replay=None):
             receipt["snapshot_errors"] = []
             for item in receipt["targets"]:
                 item["snapshot_errors"] = []
-                for name in selected(
-                    next(plan for plan in plans if plan["target"] == item["target"])
+                for name in managed(
+                    next(plan for plan in plans if plan["target"] == item["target"]),
+                    item["before_owner"],
                 ):
                     try:
                         item["after"][name] = tree(Path(item["destination"]) / name)

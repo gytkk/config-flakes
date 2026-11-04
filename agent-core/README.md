@@ -198,7 +198,7 @@ uv run --project agent-core scripts/install-agent-skills.py probe \
 
 Switch 전에 이전 Nix generation과 `/etc/codex/skills`, `~/.claude/skills`, `~/.pi/agent/skills`의 대상과 파일을 백업한다. Inventory의 다섯 host 모두 Codex/Pi/Claude 대상이다.
 
-최초 switch 전에 legacy 경로의 소유권을 확인하고 필요한 backup과 인계를 완료한다. Standalone `/etc/codex/skills`는 자동 삭제되지 않으므로 repo-managed 링크임을 확인하고 승인한 뒤 백업 위치로 옮긴다. Claude와 Pi의 기존 Home Manager symlink는 새 generation에서 제거되지만 다른 legacy 링크나 동명 개인 skill, 다른 source는 자동으로 삭제하거나 인계하지 않는다. 현재 맥북의 legacy Codex 링크와 소유권 기록이 없는 `~/.agents/skills/find-skills`는 shared target의 사전 검사를 막으므로 switch 전에 별도 검토와 인계가 필요하다. Switch 후에는 legacy 경로와 중복 discovery가 없는지 확인한다.
+최초 switch 전에 legacy 경로의 소유권을 확인하고 필요한 backup과 인계를 완료한다. Standalone `/etc/codex/skills`는 자동 삭제되지 않으므로 repo-managed 링크임을 확인하고 승인한 뒤 백업 위치로 옮긴다. Claude와 Pi의 기존 Home Manager symlink는 새 generation에서 제거되지만 다른 legacy 링크는 자동으로 삭제하지 않는다. 설치 경로 안의 동명 skill은 backup한 뒤 manifest 기준으로 교체한다. Switch 후에는 legacy 경로와 중복 discovery가 없는지 확인한다.
 
 다음은 직접 계획을 확인하고 probe의 exact SHA로 설치를 재현하는 명령이다. 일반 switch는 replay 영수증을 사용하지 않고 최신 SHA를 새로 결정한다.
 
@@ -210,9 +210,9 @@ uv run --project agent-core scripts/install-agent-skills.py install \
 
 `--replay` 없이 직접 설치해도 외부 latest를 새로 결정한다. `--revision matt=<full-sha> --revision vercel=<full-sha>`로 명시적 revision을 지정할 수도 있다. 설치는 먼저 격리된 경로에서 모든 source를 검증한 뒤 실제 target에 CLI를 실행하고 파일 bytes를 대조한다. 최신 source에 선택한 이름이나 license가 없으면 기존 설치를 변경하지 않는다.
 
-소유권은 설치 경로와 이름별로 `$XDG_STATE_HOME/agent-core/skills` 또는 `~/.local/state/agent-core/skills`에 기록한다. 원본 SHA 또는 local content, 설치 파일의 hash와 mode, 추가한 `AGENT-CORE-SOURCE-LICENSE`를 구분해 기록한다. CLI의 이름별 global lock을 target별 소유권으로 간주하지 않는다. 사용자 수정, 동명 타 source, 선택 목록에서 빠진 기존 관리 항목은 검토 전까지 중단한다. 포괄적인 `skills update`와 자동 삭제는 사용하지 않는다.
+소유권은 설치 경로와 이름별로 `$XDG_STATE_HOME/agent-core/skills` 또는 `~/.local/state/agent-core/skills`에 기록한다. 원본 SHA 또는 local content, 설치 파일의 hash와 mode, 추가한 `AGENT-CORE-SOURCE-LICENSE`를 구분해 기록한다. CLI의 이름별 global lock을 target별 소유권으로 간주하지 않는다. 설치 결과는 항상 manifest와 일치하도록 맞춘다. 설치본이 없거나 수정되었거나, 기록된 source가 manifest와 다르거나, 소유권 기록이 없는 동명 skill이 있으면 기존 디렉터리를 backup한 뒤 다시 설치한다. 선택 목록에서 빠진 기존 관리 항목은 backup한 뒤 삭제한다. 포괄적인 `skills update`는 사용하지 않는다.
 
-`diagnosing-bugs`, `codebase-design`, `research`는 로컬 수정본을 설치한다. 기존 소유권 기록이 `matt`이면 다음 switch의 사전 검사에서 `source change requires review`로 중단하므로, switch 전에 해당 skill의 source 전환을 검토해야 한다. 설치본과 소유권 기록, CLI lock을 백업하고 기존 파일의 사용자 수정 여부를 확인한 뒤 승인된 인계를 진행한다. Manifest 변경만으로 설치본이나 소유권 기록을 덮어쓰지 않는다.
+`diagnosing-bugs`, `codebase-design`, `research`는 로컬 수정본을 설치한다. 기존 소유권 기록이 `matt`이어도 다음 switch에서 기존 설치본을 backup한 뒤 로컬 수정본으로 교체한다.
 
 실제 설치 오류는 backup 경로를 출력한다. 다른 skill의 lock 항목을 보존하며 선택한 항목만 복구한다. Backup 이후 같은 이름의 lock이나 설치 파일, 소유권이 변경되었다면 복구를 중단한다. Symlink나 특수 파일을 남긴 비정상 실패는 기존 backup을 유지하고 수동 보존이 필요하다고 보고한다.
 
