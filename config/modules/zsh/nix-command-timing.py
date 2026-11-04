@@ -133,10 +133,8 @@ def run_with_streams(tool, command, streams):
             reader = streams.enter_context(os.fdopen(read_fd, "rb", buffering=0))
             writer = streams.enter_context(os.fdopen(write_fd, "wb", buffering=0))
             if is_terminal:
-                attributes = termios.tcgetattr(write_fd)
-                # The real terminal applies output processing after forwarding.
-                attributes[1] &= ~termios.OPOST
-                termios.tcsetattr(write_fd, termios.TCSANOW, attributes)
+                # Keep the PTY's newline translation: sudo puts the real terminal
+                # in raw mode while the command runs, so it cannot add the CR.
                 termios.tcsetwinsize(read_fd, termios.tcgetwinsize(output.fileno()))
                 terminals[read_fd] = output
             outputs.append((reader, writer, output))

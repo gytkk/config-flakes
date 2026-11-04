@@ -154,8 +154,14 @@ class RunnerTest(unittest.TestCase):
                     else result.stderr
                 )
                 self.assertEqual(result.returncode, 0)
-                self.assertEqual(stdout, str(stdout_tty).encode() + b"\n")
-                self.assertTrue(stderr.startswith(str(stderr_tty).encode() + b"\n"))
+                self.assertEqual(
+                    stdout, str(stdout_tty).encode() + (b"\r\n" if stdout_tty else b"\n")
+                )
+                self.assertTrue(
+                    stderr.startswith(
+                        str(stderr_tty).encode() + (b"\r\n" if stderr_tty else b"\n")
+                    )
+                )
 
     def test_terminal_preserves_ansi_carriage_returns_and_newlines(self):
         stdout_master, stdout_slave = self.terminal()
@@ -170,9 +176,11 @@ class RunnerTest(unittest.TestCase):
             timeout=10,
             check=False,
         )
+        # The test terminal is raw, as under sudo, so the runner must add the CR.
+        displayed = payload.replace(b"\n", b"\r\n")
         self.assertEqual(result.returncode, 0)
-        self.assertEqual(self.read_terminal(stdout_master, b"END"), payload)
-        self.assertTrue(self.read_terminal(stderr_master, b"END").startswith(payload))
+        self.assertEqual(self.read_terminal(stdout_master, b"END"), displayed)
+        self.assertTrue(self.read_terminal(stderr_master, b"END").startswith(displayed))
 
     def test_terminal_size_and_sigwinch_are_forwarded(self):
         master, slave = self.terminal()
@@ -190,10 +198,10 @@ class RunnerTest(unittest.TestCase):
             start_new_session=True,
         )
         try:
-            self.assertEqual(self.read_terminal(master, b"\n"), b"(97, 31)\n")
+            self.assertEqual(self.read_terminal(master, b"\n"), b"(97, 31)\r\n")
             termios.tcsetwinsize(slave, (43, 121))
             process.send_signal(signal.SIGWINCH)
-            self.assertEqual(self.read_terminal(master, b"\n"), b"(121, 43)\n")
+            self.assertEqual(self.read_terminal(master, b"\n"), b"(121, 43)\r\n")
             process.communicate(b"x", timeout=10)
             self.assertEqual(process.returncode, 0)
         finally:
