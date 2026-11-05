@@ -26,7 +26,6 @@ in
           run /usr/bin/defaults write io.gksdud.inputswitch source -string 30064771303
           run /usr/bin/defaults write io.gksdud.inputswitch target -string F19
           run /usr/bin/defaults write io.gksdud.inputswitch active -bool true
-          run /usr/bin/defaults write io.gksdud.inputswitch switchOnKeyDown -bool true
         '';
   };
 }

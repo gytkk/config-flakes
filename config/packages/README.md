@@ -57,7 +57,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 | codex | 0.166.0 |
 | codexbar | 0.83.0 |
 | databricks-cli | 1.19.0 |
-| gksdud | 1.6.0 |
+| gksdud | 2.1.0 |
 | herdr | 0.9.5 |
 | herdr-annotate | 0.9.9 |
 | herdr-auto-title | 0.19.1 |

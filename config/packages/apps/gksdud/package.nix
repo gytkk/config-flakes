@@ -7,11 +7,11 @@
 
 stdenvNoCC.mkDerivation rec {
   pname = "gksdud";
-  version = "1.6.0";
+  version = "2.1.0";
 
   src = fetchurl {
     url = "https://github.com/codingnoye/gksdud/releases/download/v${version}/gksdud-${version}-macos-universal.zip";
-    hash = "sha256-eCNt5pWHzmrfrPoec8X5BZsauLEQTtJyLOayHoIEjiU=";
+    hash = "sha256-JoXZTE7Z6v0H1QjSkWbuTwc3JRhW3BHIqP4kcKKuTMI=";
   };
 
   nativeBuildInputs = [ unzip ];
