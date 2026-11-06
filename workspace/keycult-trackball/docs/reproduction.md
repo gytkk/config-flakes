@@ -145,6 +145,19 @@ Linux의 보강판 생성은 ezdxf와 NumPy도 불러온다. `libstdc++.so.6`를
 
 실행 결과는 `design/printable-holder/`의 FCStd, STEP, 부품별 STL, SVG, 검사 JSON과 ZIP이다. DRAFT H는 볼 중심 Z=23.5mm와 PCB 아래 돌출 한도 0.82mm를 사용하며 센서 높이는 위로만 조절한다. 생성기는 현재 CAD를 덮어쓰므로 수동 편집을 별도 이름으로 저장한다. `build_printable_holder.py` 이후 같은 FreeCAD 환경에서 `uv run --no-project --python "$trackball_python" scripts/build_plate.py`를 실행하면 공식 NoLeaf 외곽을 유지한 `design/preliminary/sources/local/prototype-62/`의 `plate-62-PROTOTYPE.step`, `plate-62-PROTOTYPE.dxf`, `prototype-62.FCStd`, `prototype-62.step`, `plan.svg`와 `checks.json`을 만든다. Linux 변수는 위 명령에서 설정하며 macOS는 해당 앱 Python을 사용한다. 이 파일은 개인 사용을 위한 로컬 산출물이며 Git에 포함하지 않는다. 기존 깊은 홀더와 케이스 실험은 비교 자료로만 유지한다. PCB 배치 또는 예비 단면을 바꾸면 예비 도면 생성, PCB 생성 및 배선과 검증, 렌더, 홀더 및 보강판 생성 순서로 현재 해시와 검사 결과를 맞춘다.
 
+## PLA 출력 요청 패키지
+
+[출력 요청 안내](../design/print-request/README.md)는 기존 홀더 STL과 독립 시험용 부품을 묶습니다. 기존 홀더 생성 결과가 있어야 하며, 아래 명령은 기존 파일의 해시와 형상을 검사한 뒤 복사합니다. 공식 보강판 CAD를 읽거나 포함하지 않습니다. 명령은 프로젝트 루트에서 실행합니다.
+
+```bash
+uv run --python /Applications/FreeCAD.app/Contents/Resources/bin/python scripts/build_print_request.py
+uv run --python /Applications/FreeCAD.app/Contents/Resources/bin/python scripts/test_print_request.py
+```
+
+생성기는 `design/print-request/`에 추가 STL 5종, 조립 참조 FCStd, 평면과 조립 SVG, 수량표와 검사 JSON, `keycult-print-request-PLA.zip`을 만듭니다. 기존 홀더 STL 8종은 원래 위치를 유지하고 ZIP 안의 `stl/`에만 복사합니다. README와 `EMAIL-DRAFT.txt`는 편집 원본이며 ZIP에 포함됩니다. 안내나 메일을 수정한 뒤에도 생성기를 다시 실행해야 ZIP에 반영됩니다. Linux에서는 위 홀더 절차와 같은 FreeCAD Python과 `FREECAD_ROOT`를 사용합니다.
+
+검사는 기존 홀더와 높이 조절 검증, 새 부품의 단일 솔리드와 명목 간섭, 시험판 지지와 분리, PCB 더미 삽입, STL 재열기와 부피 오차, FCStd 재열기, ZIP의 파일 목록과 바이트 일치를 포함합니다. 회귀 테스트는 막힌 스위치 구멍과 중앙 창, 사라진 받침, 잘못된 스페이서 높이를 거부하는지 확인합니다. 실제 프린터와 슬라이서, 공차, 강성, 케이스 적합성은 검증하지 않습니다.
+
 ## KiCad 65키·62키 회로·PCB 초안
 
 [PCB 재현 안내](../design/pcb/README.md#reproduction)를 별도로 따른다. 키 배열을 변경하면 예비 도면 생성기와 PNG/PDF 렌더를 먼저 실행한다. Python은 설치된 KiCad 10.0.7의 `pcbnew` 바인딩과 버전이 일치해야 한다. 기존 Nix 환경은 Python 3.14, 아래 공식 Docker 환경은 Python 3.13을 사용한다. 65키 원본은 `design/pcb/keycult65.*`, 62키 원본은 `design/pcb/62/keycult62.*`이며, 각 디렉터리에 BOM·핀맵·배선과 `reports/`, `exports/`를 둔다.

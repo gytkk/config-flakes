@@ -1,0 +1,16 @@
+출력 수량표: STL 13종, 예비분 포함 총 24개
+단위 mm, 배율 100%. 파일명 뒤 숫자는 수량이 아닙니다.
+
+1개 | stl/Cup-PROTOTYPE.stl | 47.0 x 47.0 x 11.651 mm
+1개 | stl/SensorCarriage-PROTOTYPE.stl | 36.0 x 36.0 x 3.8 mm
+2개 | stl/SensorCap-PROTOTYPE.stl | 32.0 x 32.0 x 1.0 mm
+1개 | stl/SeatCoupon-PROTOTYPE.stl | 30.0 x 12.0 x 4.0 mm
+2개 | stl/SensorSpacer1-PROTOTYPE.stl | 4.4 x 4.4 x 4.5 mm
+2개 | stl/SensorSpacer2-PROTOTYPE.stl | 4.4 x 4.4 x 4.5 mm
+2개 | stl/SensorSpacer3-PROTOTYPE.stl | 4.4 x 4.4 x 4.5 mm
+2개 | stl/SensorSpacer4-PROTOTYPE.stl | 4.4 x 4.4 x 4.5 mm
+1개 | stl/BenchPlate-PROTOTYPE.stl | 110.0 x 87.0 x 1.5 mm
+1개 | stl/BenchStand-PROTOTYPE.stl | 114.6 x 91.6 x 20.0 mm
+1개 | stl/PCBOpeningGauge-PROTOTYPE.stl | 58.0 x 58.0 x 1.6 mm
+4개 | stl/SensorSpacer3p75mm-PROTOTYPE.stl | 4.4 x 4.4 x 3.75 mm
+4개 | stl/SensorSpacer3p0mm-PROTOTYPE.stl | 4.4 x 4.4 x 3.0 mm

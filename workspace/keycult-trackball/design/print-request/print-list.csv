@@ -1,0 +1,14 @@
+﻿file,quantity_including_spares,X_mm,Y_mm,Z_mm
+stl/Cup-PROTOTYPE.stl,1,47.0,47.0,11.651
+stl/SensorCarriage-PROTOTYPE.stl,1,36.0,36.0,3.8
+stl/SensorCap-PROTOTYPE.stl,2,32.0,32.0,1.0
+stl/SeatCoupon-PROTOTYPE.stl,1,30.0,12.0,4.0
+stl/SensorSpacer1-PROTOTYPE.stl,2,4.4,4.4,4.5
+stl/SensorSpacer2-PROTOTYPE.stl,2,4.4,4.4,4.5
+stl/SensorSpacer3-PROTOTYPE.stl,2,4.4,4.4,4.5
+stl/SensorSpacer4-PROTOTYPE.stl,2,4.4,4.4,4.5
+stl/BenchPlate-PROTOTYPE.stl,1,110.0,87.0,1.5
+stl/BenchStand-PROTOTYPE.stl,1,114.6,91.6,20.0
+stl/PCBOpeningGauge-PROTOTYPE.stl,1,58.0,58.0,1.6
+stl/SensorSpacer3p75mm-PROTOTYPE.stl,4,4.4,4.4,3.75
+stl/SensorSpacer3p0mm-PROTOTYPE.stl,4,4.4,4.4,3.0
