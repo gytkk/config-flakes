@@ -36,6 +36,8 @@ In Herdr 0.9.1, closing a tab terminates its panes. Closing the last tab also cl
 
 When both Pi and Herdr modules are enabled, the [Pi parent status integration](../pi/README.md#herdr-parent-status) reports working, idle, and blocked states through Herdr's bundled extension. Home Manager installs the version matched to the pinned Herdr package. Pi's model and subagent display metadata does not set the parent lifecycle state.
 
+When OMP and Herdr are enabled, the [OMP integration](../omp/README.md#herdr-agents-sidebar) installs Herdr's bundled OMP extension for parent lifecycle and session identity. A separate local extension reports the parent model and native subagent metadata. OMP is detected as `omp`, not `pi`, and uses its own sidebar layout.
+
 The packaged Herdr excludes direct `claude plugin ...`, `claude mcp ...`, `claude --version` / `-v`, and `claude --help` / `-h` invocations from process-based agent detection. Home Manager runs plugin and MCP management commands during `setupClaudeCode`; they do not represent an interactive Claude session. Normal Claude sessions, including resume and continue, remain detectable. Unrecognized argument layouts retain upstream detection behavior.
 
 This behavior comes from [the local detection patch](../../packages/apps/herdr/claude-admin-detection.patch). After applying Home Manager, restart the Herdr server when its running tasks can be interrupted to load the patched binary. `herdr server reload-config` only reloads configuration.
@@ -52,7 +54,9 @@ The expanded desktop sidebar supports seven children with two lines each. If mor
 
 Claude uses the same two-line layout and status colors. Its `SubagentStop` hook is tentative: `○` remains until a parent result or task notification confirms completion, failure, or interruption. For Agent Teams, removal from a valid team configuration led by the current session also confirms interruption. Task descriptions replace agent types when an Agent result arrives, and messages update from child transcripts. Confirmed terminal states remain visible for five seconds, and stale metadata expires within 15 seconds. Sidebar cleanup preserves worktrees.
 
-Apply Home Manager, run `herdr server reload-config`, and start a new Claude, Pi, or Codex session inside Herdr to load the integration.
+OMP uses the same status colors and seven-child layout. It consumes native task/eval lifecycle and progress events, including background and nested children, and displays their resolved models and recent activity. Terminal rows remain for five seconds; metadata expires after fifteen seconds without refresh. A parent turn ending does not clear running children. See [OMP's integration and reload limits](../omp/README.md#herdr-agents-sidebar).
+
+Apply Home Manager, run `herdr server reload-config`, and start a new Claude, Pi, Codex, or OMP session inside Herdr to load the integration.
 
 ## Shared JSONL reader
 

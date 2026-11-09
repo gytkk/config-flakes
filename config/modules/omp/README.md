@@ -21,6 +21,22 @@ The layout follows the Pi footer using OMP's built-in segments:
 - `/agents`: agent-definition/settings UI, including enable/disable and model overrides.
 - `/hotkeys`: inspect active bindings if a terminal intercepts these shortcuts.
 
+## Herdr Agents sidebar
+
+When OMP and Herdr are enabled, Home Manager installs Herdr's bundled OMP parent-state extension and [the local metadata extension](files/extensions/herdr-subagents.ts). The parent reports working, idle, and blocked states, including tool approvals and `ask`; metadata never changes the parent lifecycle. Both extensions ignore nested OMP shells and headless child sessions.
+
+The [Herdr sidebar](../herdr/README.md#subagents) shows the parent's current model and native task/eval subagents, including background and nested children. Child rows show the stable OMP name, resolved model, and recent intent or assistant text; tool arguments and reasoning are not displayed. Progress supplies the actual model, including fallback changes, rather than the requested model role.
+
+Running (`●`), completed (`✓`), interrupted (`■`), and failed (`×`) runs use the same colors as the other integrations. Terminal rows remain for five seconds. Seven children fit; overflow shows six plus a count, prioritizing running children. Parent turn completion does not remove background children. Follow-up runs reset their old activity; session replacement and shutdown clear the metadata. Reports refresh every five seconds and expire after fifteen seconds if the reporter stops.
+
+This integration targets OMP 18.18.2's `task:subagent:lifecycle` and `task:subagent:progress` events. It does not import OMP's private agent registry or scan transcripts. After an extension reload, already-running children appear on their next progress event; no event-history snapshot is available.
+
+Apply Home Manager, run `herdr server reload-config`, and restart OMP inside Herdr. `herdr integration status` should list OMP as current. No Herdr server restart is required for these extension/config changes.
+
+```bash
+bun test config/modules/omp/tests
+```
+
 ## Apply
 
 Run from the repository root. On the first standalone Home Manager switch, preserve an existing regular configuration file with a unique backup suffix:
