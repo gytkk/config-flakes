@@ -163,6 +163,10 @@ Codex and Claude share the `openai-decisions` skill through agent-core for `gpt-
 
 Pi uses the official upstream Nix package definition, the generated `one-half-light` theme, and the `openai` provider's ChatGPT login. Home Manager synchronizes common settings into a device-local writable file, keeping installation IDs out of the checkout. The module does not install the legacy Codex usage extension. See the [Pi module README](modules/pi/README.md) for authentication, native MCP integration, background shell tasks, on-demand web and subagent tools, pinned extensions, and verification steps.
 
+### OMP
+
+Home Manager installs `omp` alongside Pi without migrating Pi's settings, extensions, credentials, or sessions. The [app package](packages/apps/omp/package.nix) uses OMP's official source-build flake at an immutable release revision, including upstream's locked toolchain and install checks. [App updates](packages/README.md#updates-and-ci) track stable OMP releases automatically; pull the resulting commits and apply Home Manager to install them. Run `omp` after switching, then use `/login` to authenticate. OMP settings and state remain device-local under `~/.omp`; this configuration does not manage them.
+
 ### Cloudflare CLI
 
 The common Home Manager profile installs Cloudflare's [`cf` CLI](https://developers.cloudflare.com/cf/get-started/) from the pinned [app package](packages/README.md). It provides `cf` and `cloudflare` with a Nix-managed Node.js runtime. Wrangler and the Codex/Pi Cloudflare MCP registrations are replaced by this CLI; Claude activation removes the legacy user-scope `cloudflare` MCP registration. Restart the agents after applying the configuration.

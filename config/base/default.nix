@@ -148,6 +148,7 @@ in
         rsync
         glow
         ntn
+        omp
         pup
 
         # Git
