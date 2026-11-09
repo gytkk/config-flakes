@@ -1,0 +1,15 @@
+modelRoles:
+  default: openai-codex/gpt-6-astra
+symbolPreset: nerd
+composer:
+  shape: claude
+theme:
+  dark: titanium
+  light: light
+setupVersion: 3
+statusLine:
+  preset: custom
+  separator: pipe
+  compactThinkingLevel: false
+  leftSegments: [path, git, context_pct, token_in, token_out, subagents]
+  rightSegments: [usage, model, mode]
