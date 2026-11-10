@@ -22,9 +22,11 @@ agent-core/
 └── tests/
 ```
 
-`manifest.toml`의 `skill_sources`는 로컬 skill, Matt upstream skill, Vercel의 `find-skills`를 선언한다. 두 외부 source는 설치 작업마다 기본 branch의 최신 full SHA를 한 번 결정하며, 같은 작업의 모든 target에 같은 SHA를 사용한다. `resolving-merge-conflicts`는 최신 upstream에서 삭제되어 사용자 결정에 따라 새 설치 목록에서 제외한다. 최신 upstream의 workflow와 UI metadata 변경도 첫 전환에 포함된다.
+`manifest.toml`의 `skill_sources`는 로컬 skill과 외부 Git source를 선언한다. 외부 source는 설치 작업마다 기본 branch의 최신 full SHA를 한 번 결정하며, 같은 작업의 모든 target에 같은 SHA를 사용한다. `resolving-merge-conflicts`는 최신 upstream에서 삭제되어 사용자 결정에 따라 새 설치 목록에서 제외한다. 최신 upstream의 workflow와 UI metadata 변경도 첫 전환에 포함된다.
 
 `skill_targets`는 Codex/Pi 공통 pool과 Claude copy에 설치할 skill을 선택한다. Codex와 Pi는 `~/.agents/skills`를 공유하므로 Pi에서도 `openai-decisions`를, Codex에서도 `pi-agent`를 발견할 수 있다. [OpenAI API 모듈](../config/modules/openai-api/README.md)은 API client에 agenix 키를 전달하며, skill 설치 자체가 package나 credential을 준비하지는 않는다.
+
+Hunk의 `hunk-review`는 `modem-dev/hunk`의 `.agents/skills/hunk-review`에서 취득하여 shared와 Claude target에 설치한다. Skill은 `hunk skill show hunk-review`로 설치된 CLI 버전에 맞는 지침을 읽는다. Hunk 실행 파일은 공통 Home Manager 패키지가 설치하며, skill은 다른 외부 source와 동일하게 switch 때 갱신한다.
 
 `runtimes.*.skills`와 기존 vendored tree는 이전 Nix generation의 복구와 최종 renderer 정리를 위해 남아 있다. 현재 module은 이 skill output을 설치하지 않는다. 모든 host의 Codex/Claude/Pi 전환과 실제 discovery 검증이 끝나기 전에는 이 fallback과 golden hash를 제거하거나 변경하지 않는다.
 

@@ -4,6 +4,8 @@ This directory owns local shared skills and retains legacy vendored files during
 
 New installations acquire the Matt skills selected under the external source in `agent-core/manifest.toml` and Vercel's `find-skills` directly from the latest default-branch SHA resolved once per operation. `resolving-merge-conflicts` was removed upstream and is excluded from new installations with user approval. Imported directories still selected from external sources remain for legacy rendering and recovery until all host gates pass. Locally selected skills remain canonical here. Each external installation preserves its own revision's root license separately; the legacy license below does not replace those notices.
 
+[`hunk-review`](https://github.com/modem-dev/hunk/tree/main/.agents/skills/hunk-review) is acquired directly from `modem-dev/hunk` for Codex/Pi and Claude. It delegates to the installed Hunk CLI's version-matched instructions for inspecting and annotating live diff review sessions. The installer resolves the latest default-branch SHA once per operation and preserves upstream's MIT license; no vendored copy is maintained here.
+
 The skills imported from [mattpocock/skills](https://github.com/mattpocock/skills) are `code-review`, `codebase-design`, `diagnosing-bugs`, `domain-modeling`, `grilling`, `prototype`, `research`, `resolving-merge-conflicts`, `tdd`, `wizard`, and `writing-for-agents`.
 
 - Upstream version: `1.2.3`

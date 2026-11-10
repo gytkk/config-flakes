@@ -68,7 +68,7 @@ Home Manager modules expose `modules.<name>.enable`; `config/base/default.nix` o
 
 The common Home Manager profile installs GitUI in every environment. Run `gitui` inside a Git repository after applying the configuration.
 
-The common profile also installs [Hunk](packages/README.md#updates-and-ci), an agent-aware diff TUI. After applying Home Manager, run `hunk diff` for local changes or `hunk show` for the latest commit. Its stable release pin follows the existing three-hour package update CI; installing those updates still requires pulling the commits and applying the configuration. The Git pager is unchanged. Agents can read `hunk skill show` to interact with an open review; no global agent skill is installed by this package.
+The common profile also installs [Hunk](packages/README.md#updates-and-ci), an agent-aware diff TUI. After applying Home Manager, run `hunk diff` for local changes or `hunk show` for the latest commit. Its stable release pin follows the existing three-hour package update CI; installing those updates still requires pulling the commits and applying the configuration. The Git pager is unchanged. [Agent core](../agent-core/README.md) separately installs the upstream `hunk-review` skill for Codex/Pi and Claude during Home Manager activation; it reads version-matched instructions through `hunk skill show hunk-review`.
 
 On `pylv-onyx`, DankMaterialShell comes from the `dms` input, while the login screen uses nixpkgs' `services.displayManager.dms-greeter` module with niri in [the host configuration](hosts/pylv-onyx/configuration.nix). The niri package uses the `niri` input's own pinned package set to keep its library dependencies compatible.
 

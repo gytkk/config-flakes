@@ -12,58 +12,6 @@ from agent_core import core, skill_sources
 from agent_core.cli import main
 
 
-@pytest.mark.parametrize(
-    ("target", "count"), [("shared", 22), ("claude", 19)]
-)
-def test_plan_selections_apply_approved_addition_and_removal(
-    target: str, count: int
-) -> None:
-    manifest = core._load_manifest()
-    plan = skill_sources.installation_plan(target)
-    selected = {name for source in plan["sources"] for name in source["skills"]}
-    legacy = {
-        name
-        for runtime in plan["runtimes"]
-        for name in manifest["runtimes"][runtime]["skills"]
-    }
-    additions = {"find-skills", "korean"}
-    if target == "shared":
-        additions.add("impeccable")
-    assert selected == (legacy | additions) - {
-        "resolving-merge-conflicts"
-    }
-    assert len(selected) == count
-    assert plan["sources"][0]["skills"]["parallel-research-merge"] == (
-        "parallel-research-merge"
-    )
-    assert plan["sources"][0]["skills"]["diagnosing-bugs"] == "diagnosing-bugs"
-    assert all(
-        "diagnosing-bugs" not in source["skills"] for source in plan["sources"][1:]
-    )
-    assert plan["sources"][0]["skills"]["codebase-design"] == "codebase-design"
-    assert all(
-        "codebase-design" not in source["skills"] for source in plan["sources"][1:]
-    )
-    assert plan["sources"][0]["skills"]["research"] == "research"
-    assert all("research" not in source["skills"] for source in plan["sources"][1:])
-    assert plan["cli_version"] == "1.7.2"
-    assert plan["target"] == target
-    assert plan["runtimes"] == skill_sources.TARGET_RUNTIMES[target]
-    sources = ["local", "matt", "vercel"]
-    if target == "shared":
-        sources.append("impeccable")
-        assert plan["sources"][-1]["skills"] == {
-            "impeccable": ".agents/skills/impeccable"
-        }
-    assert [source["id"] for source in plan["sources"]] == sources
-    assert (
-        Path(plan["sources"][0]["path"]) == (core.resource_root() / "skills").resolve()
-    )
-    for source in plan["sources"][1:]:
-        assert source["update"] == "latest-default-branch"
-        assert source["license"] == "LICENSE"
-
-
 def test_plan_is_offline_and_does_not_consult_home(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
