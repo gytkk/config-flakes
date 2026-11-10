@@ -2,6 +2,8 @@
   lib,
   buildGoModule,
   fetchzip,
+  stdenv,
+  lsof,
 }:
 
 buildGoModule rec {
@@ -16,6 +18,8 @@ buildGoModule rec {
   vendorHash = "sha256-BN/q/5o9CiklREYZloLZU2rLKUIW6Eq6Yy1Wr9vK3hU=";
   subPackages = [ "cmd/herdr-auto-title" ];
   env.CGO_ENABLED = 0;
+
+  nativeCheckInputs = lib.optionals stdenv.hostPlatform.isDarwin [ lsof ];
 
   checkPhase = ''
     runHook preCheck
