@@ -31,7 +31,7 @@
     ],
     "defaultMode": "acceptEdits"
   },
-  "model": "claude-fable-5-2",
+  "model": "opus",
   "enableAllProjectMcpServers": true,
   "hooks": {
     "SessionStart": [

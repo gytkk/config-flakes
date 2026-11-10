@@ -2,7 +2,11 @@ modelRoles:
   default: openai-codex/gpt-6-astra:high
   memory: openai-codex/gpt-6-astra:high
   image: openai-codex/gpt-image-2
-  smol: openai-codex/gpt-6-luna:auto
+  smol: openai-codex/gpt-6.1-terra:auto
+  task: openai-codex/gpt-6.1-sol:high
+  advisor: openai-codex/gpt-6-astra:xhigh
+  plan: openai-codex/gpt-6-astra:high
+  commit: openai-codex/gpt-6-luna:off
 symbolPreset: nerd
 composer:
   shape: pi
@@ -25,3 +29,6 @@ statusLine:
     - usage
     - model
     - mode
+cycleOrder:
+  - default
+  - task
