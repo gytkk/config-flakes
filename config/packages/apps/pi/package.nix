@@ -6,13 +6,13 @@
 }:
 
 let
-  version = "1.5.0";
+  version = "1.5.1";
   # Upstream 1.5.0 omits pi-schema from both workspace packing and install overrides.
   needsSchemaFix = version == "1.5.0";
   # The upstream package reads lockfiles and the model catalog during evaluation.
   source = builtins.fetchTarball {
     url = "https://github.com/earendil-works/pi/archive/refs/tags/v${version}.tar.gz";
-    sha256 = "sha256-eH3RuypmXeayuZ9lEag6KW3m2LSM4bDc4ogyHxjZMNI=";
+    sha256 = "sha256-G3SRvVaxOlgMY8bxl+SLAlF2+cMFQ2dBOuPo+NPKn/I=";
   };
 in
 callPackage "${source}/nix/package.nix" {
