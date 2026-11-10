@@ -50,7 +50,6 @@
         "keycloak2aws": "keycloak2aws",
         "neovim-nightly-overlay": "neovim-nightly-overlay",
         "niri": "niri",
-        "nix-vscode-extensions": "nix-vscode-extensions",
         "nix-zed-extensions": "nix-zed-extensions",
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-25_05": "nixpkgs-25_05",
@@ -425,27 +424,6 @@
       "original": {
         "owner": "YaLTeR",
         "repo": "niri",
-        "type": "github"
-      }
-    },
-    "nix-vscode-extensions": {
-      "inputs": {
-        "nixpkgs": [
-          "config",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1793685958,
-        "narHash": "sha256-VGj+BaexfNJnWUygcwel4/yOznh2DwniSw1p7jYhThI=",
-        "owner": "nix-community",
-        "repo": "nix-vscode-extensions",
-        "rev": "57e113a9b401663a634fff6186293c66cfbb983f",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-community",
-        "repo": "nix-vscode-extensions",
         "type": "github"
       }
     },

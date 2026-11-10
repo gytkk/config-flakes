@@ -78,6 +78,10 @@ New Darwin environments leave [Claude session mining](modules/claude-session-min
 
 [Terraform version management](modules/terraform/README.md) uses tenv on Devsisters environments to select Terraform from project version files or `required_version` constraints and install missing versions on demand.
 
+The Devsisters profile no longer installs Scala 2.12 or `saml2aws`; its login helper uses `kc2aws` alongside Vault and WireGuard. Projects that still need Scala should declare it in their project environment. Ruby remains installed from the existing stable nixpkgs pin.
+
+VSCode is managed outside this configuration. The unused Home Manager module and its extension-catalog input have been removed; existing user-managed VSCode installations, settings, and extensions are untouched.
+
 ## Zsh config
 
 The local [git-commit-suggestions Zsh plugin](modules/zsh/README.md#ai-commit-subjects) uses a Bun/TypeScript generator to request an AI commit subject when you type `gc -m`, using the staged diff, global/repository commit rules, and Minuet's OpenAI key. Accept the gray suggestion with the right arrow, review it, then press Enter to commit.

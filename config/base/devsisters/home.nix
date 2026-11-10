@@ -20,11 +20,7 @@
 
   # Devsisters 특화 패키지 추가
   home.packages = with pkgs; [
-    # Scala (default to 2.12, compatible with existing projects)
-    scala_2_12
-
     # Authentication
-    saml2aws
     vault
     inputs.keycloak2aws.packages.${pkgs.stdenv.hostPlatform.system}.kc2aws
     inputs.devsisters-wg.packages.${pkgs.stdenv.hostPlatform.system}.wg-cli
