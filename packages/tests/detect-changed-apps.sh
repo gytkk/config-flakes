@@ -76,9 +76,9 @@ assert_apps "README-only change selects no apps" '[]' "$lock_sha" "$readme_sha"
 assert_apps "missing baseline rebuilds every app" '["alpha","beta"]' ""
 assert_apps "invalid baseline rebuilds every app" '["alpha","beta"]' "not-a-commit"
 
-mkdir -p "$REPO/lib"
+mkdir -p "$REPO/lib/pkgs"
 parent_sha="$readme_sha"
-for path in flake.nix flake.lock outputs.nix lib/pkgs.nix; do
+for path in flake.nix flake.lock outputs.nix lib/pkgs/default.nix; do
   printf '{ }\n' > "$REPO/$path"
   next_sha="$(commit "change $path")"
   assert_apps "$path does not affect the standalone package flake" '[]' "$parent_sha" "$next_sha"

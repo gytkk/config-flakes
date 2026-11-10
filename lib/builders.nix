@@ -1,6 +1,6 @@
 { inputs, nixpkgs }:
 let
-  pkgsLib = import ./pkgs.nix { inherit inputs nixpkgs; };
+  pkgsLib = import ./pkgs { inherit inputs nixpkgs; };
   homeLib = import ./home-configurations.nix {
     inherit inputs;
     systemPkgs = pkgsLib.systemPkgs;

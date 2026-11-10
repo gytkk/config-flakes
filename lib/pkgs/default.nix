@@ -1,9 +1,32 @@
 { inputs, nixpkgs }:
 let
-  repoOverlays = import ../overlays { inherit inputs; };
+  nixpkgsVersionsOverlay =
+    final: _prev:
+    let
+      mkLazyPkgs =
+        nixpkgsInput: packages:
+        builtins.listToAttrs (
+          map (name: {
+            inherit name;
+            value =
+              (import nixpkgsInput {
+                localSystem = final.stdenv.hostPlatform.system;
+                config.allowUnfree = true;
+              }).${name};
+          }) packages
+        );
+    in
+    {
+      stable-25_05 = mkLazyPkgs inputs.nixpkgs-25_05 [ "ruby_3_2" ];
+    }
+    // import ./lsp.nix {
+      nixpkgs = inputs.nixpkgs-lsp;
+      system = final.stdenv.hostPlatform.system;
+    };
+
   localAppsOverlay =
     final: prev:
-    import ../packages {
+    import ../../packages {
       pkgs = final;
       inherit (prev.stdenv.hostPlatform) isDarwin system;
     };
@@ -13,8 +36,10 @@ let
     inputs.nix-zed-extensions.overlays.default
     localAppsOverlay
     inputs.niri.overlays.niri
-    repoOverlays.nixpkgs-versions
-    repoOverlays.package-fixes
+    nixpkgsVersionsOverlay
+    (final: _prev: {
+      agent-core = final.callPackage ../../agent-core/nix/package.nix { };
+    })
   ];
 
   systemPkgs = {

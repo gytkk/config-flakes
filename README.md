@@ -100,13 +100,15 @@ modules/nixos/                    # Common NixOS modules and shared secrets
 systems/hosts/<name>/configuration.nix # Host-specific NixOS imports and values
 packages/                        # Package catalog, shared helpers, updaters, and tests
 packages/apps/                   # Non-nixpkgs app packages
-lib/pkgs.nix                      # Overlay and per-system package-set construction
+lib/pkgs/default.nix              # Overlay and per-system package-set construction
 lib/home-configurations.nix       # Home Manager configuration builder
 lib/nixos-configurations.nix      # NixOS configuration builder
 lib/builders.nix                  # Backward-compatible builder aggregation
 ```
 
 Home Manager modules expose `modules.<name>.enable`; `systems/base/default.nix` owns common default enables, and profile files can override them. NixOS input modules that are host-specific, such as Disko, Copyparty, niri, and DankMaterialShell, are imported by the relevant `systems/hosts/<name>/configuration.nix`.
+
+`lib/pkgs/` owns system package-set composition and overlay ordering; `packages/` owns the independent app catalog. LSP package selection and source pins remain in `lib/pkgs/lsp.nix`.
 
 The common Home Manager profile installs GitUI in every environment. Run `gitui` inside a Git repository after applying the configuration.
 
@@ -173,7 +175,7 @@ The `devsisters` base profile also installs the `devsisters/mumu` marketplace an
 
 The [LSP module](modules/lsp/default.nix) installs shared language servers. Claude and Codex use ty for Python, plus gopls, rust-analyzer, typescript-language-server, terraform-ls, and nixd. Codex connects through a read-only lspi MCP bridge; Rust uses the active rustup toolchain. See [Claude's plugin settings](modules/claude/README.md#installed-plugins) and [Codex's LSP integration](modules/codex/README.md#lsp-코드-탐색) for activation and workspace behavior.
 
-[The LSP overlay](overlays/lsp.nix) selects ty, gopls, terraform-ls, nixd, yaml-language-server, and the VSCodium-derived HTML/CSS/JSON servers from the separate `nixpkgs-lsp` input declared in `flake.nix`. Update that input with `nix flake update nixpkgs-lsp` from the repository root. The overlay also pins nixd and its matching libraries, plus VSCodium's extraction source, when their upstream releases are newer than that input. Review or remove those explicit source pins when updating the input so they do not override newer packages. Other packages keep the main nixpkgs pin. Apply Home Manager or NixOS configuration to install these server updates; rust-analyzer follows the active rustup toolchain separately.
+[The LSP package selection](lib/pkgs/lsp.nix) selects ty, gopls, terraform-ls, nixd, yaml-language-server, and the VSCodium-derived HTML/CSS/JSON servers from the separate `nixpkgs-lsp` input declared in `flake.nix`. Update that input with `nix flake update nixpkgs-lsp` from the repository root. It also pins nixd and its matching libraries, plus VSCodium's extraction source, when their upstream releases are newer than that input. Review or remove those explicit source pins when updating the input so they do not override newer packages. Other packages keep the main nixpkgs pin. Apply Home Manager or NixOS configuration to install these server updates; rust-analyzer follows the active rustup toolchain separately.
 
 ### Available Commands
 

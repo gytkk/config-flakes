@@ -93,7 +93,7 @@ To add a new app package:
 
 To disable aggregate updates for an app, add its name to the `update.deny` list in `settings.json`.
 
-The package catalog in `default.nix` is the single source of truth for exported apps and aliases. Register each package there once; the parent package outputs, nested flake, and configuration overlay in `lib/pkgs.nix` expose the full catalog. App-specific settings still belong in `modules/<app>/`, and enabling a package in a profile remains a separate choice.
+The package catalog in `default.nix` is the single source of truth for exported apps and aliases. Register each package there once; the parent package outputs, nested flake, and configuration overlay in `lib/pkgs/default.nix` expose the full catalog. App-specific settings still belong in `modules/<app>/`, and enabling a package in a profile remains a separate choice.
 
 `ntn` is an alias of `notion-cli` in the catalog. Both attributes provide the same derivation and the `ntn` executable. Aliases need no package directory or updater and do not add duplicate rows to the version table.
 

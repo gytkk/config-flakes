@@ -81,11 +81,11 @@ modules/nixos/                    # Common NixOS modules and shared secrets
 systems/hosts/<name>/configuration.nix # NixOS host configuration
 packages/                        # Package catalog, shared helpers, updaters, and tests
 packages/apps/                   # Non-nixpkgs app packages
-lib/pkgs.nix                      # Overlay and per-system package-set construction
+lib/pkgs/default.nix              # Overlay and per-system package-set construction
 lib/home-configurations.nix       # Home Manager configuration builder
 lib/nixos-configurations.nix      # NixOS configuration builder
 lib/builders.nix                  # Backward-compatible builder aggregation
-overlays/default.nix              # nixpkgs version overlays
+lib/pkgs/lsp.nix                  # LSP package selection and source pins
 secrets/secrets.nix               # Agenix recipient configuration
 ```
 
