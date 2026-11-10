@@ -70,6 +70,8 @@ The common Home Manager profile installs GitUI in every environment. Run `gitui`
 
 The common profile also installs [Hunk](packages/README.md#updates-and-ci), an agent-aware diff TUI. After applying Home Manager, run `hunk diff` for local changes or `hunk show` for the latest commit. Its stable release pin follows the existing three-hour package update CI; installing those updates still requires pulling the commits and applying the configuration. The Git pager is unchanged. [Agent core](../agent-core/README.md) separately installs the upstream `hunk-review` skill for Codex/Pi/OMP and Claude during Home Manager activation; it reads version-matched instructions through `hunk skill show hunk-review`.
 
+The [Hunk module](modules/hunk/README.md) installs `theme = "auto"` in the user configuration, selecting a light or dark theme from the terminal background at startup.
+
 On `pylv-onyx`, DankMaterialShell comes from the `dms` input, while the login screen uses nixpkgs' `services.displayManager.dms-greeter` module with niri in [the host configuration](hosts/pylv-onyx/configuration.nix). The niri package uses the `niri` input's own pinned package set to keep its library dependencies compatible.
 
 The [Onyx Home Manager profile](base/pylv/onyx.nix) installs KiCad for PCB design and FreeCAD for mechanical CAD. Apply the configuration on Onyx with `sudo nixos-rebuild switch --flake .#pylv-onyx` from this checkout.

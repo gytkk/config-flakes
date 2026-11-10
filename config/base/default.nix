@@ -45,6 +45,7 @@ in
     ../modules/git
     ../modules/gksdud
     ../modules/herdr
+    ../modules/hunk
     ../modules/k9s
     ../modules/lsp
     ../modules/nix-gc
@@ -75,6 +76,7 @@ in
       git.enable = lib.mkDefault true;
       gksdud.enable = lib.mkDefault pkgs.stdenv.hostPlatform.isDarwin;
       herdr.enable = lib.mkDefault true;
+      hunk.enable = lib.mkDefault true;
       openaiApi.enable = lib.mkDefault (
         config.modules.vim.enable || config.modules.codex.enable || config.modules.claude.enable
       );
