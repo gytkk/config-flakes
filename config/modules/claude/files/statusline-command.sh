@@ -82,8 +82,9 @@ BRIGHT_ORANGE='\033[1;33m'
 home="$HOME"
 short_cwd="${cwd/#$home/~}"
 
-# Git branch (cached to avoid slowness in large repos)
-CACHE_FILE="/tmp/claude-statusline-git-cache"
+# Git branch (cached per working directory to avoid cross-worktree reuse)
+cwd_hash=$(printf '%s' "$cwd" | sha256sum)
+CACHE_FILE="${TMPDIR:-/tmp}/claude-statusline-git-cache-${cwd_hash%% *}"
 CACHE_MAX_AGE=5
 git_branch=""
 
