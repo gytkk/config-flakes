@@ -11,7 +11,6 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 ```
 .
 ├── apps/
-│   ├── agent-browser/
 │   ├── cf/
 │   ├── claude-code/
 │   ├── codex/
@@ -55,7 +54,6 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 
 | App | Version |
 |-----|---------|
-| agent-browser | 0.42.0 |
 | cf | 1.0.0-beta.21 |
 | claude-code | 2.1.322 |
 | codex | 0.167.0 |
@@ -76,7 +74,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 ## Build entrypoints
 
 - `nix build ./config/packages#packages.<system>.ntn`
-- `nix build ./config/packages#packages.<system>.default` (same as first app)
+- `nix build ./config/packages#packages.<system>.default` (the alphabetically first app, currently `cf`)
 - `nix run ./config/packages#apps.<system>.ntn`
 
 `gksdud` is exposed only on Darwin. Its signed universal app bundle supports Apple Silicon and Intel Macs running macOS 13 or later. Home Manager installs it through the [gksdud module](../modules/gksdud/README.md). Automatic startup is controlled by the app's own login-item option.
@@ -136,4 +134,4 @@ The helper selects the host platform, fetches the pinned archive, disables confi
 - `pantry` packages a `main` build of the Devsisters teamdev.ai CLI, versioned as `main-<12-character commit>` with no releases or tags. It is listed in `update.deny`, so aggregate updates skip it. To bump it manually, run `bash config/packages/apps/pantry/update.sh`, which pins the build named by the per-platform `latest/<os>-<arch>.json` manifests after confirming all four agree and each binary matches its manifest SHA-256.
 - `cf`, `databricks-cli`, `gksdud`, `lspi`, and `pup` are manually updated. They have no `update.sh`, so aggregate updates skip them. Moving a package into this catalog does not enable automatic updates.
 - Package outputs follow each platform's catalog. The Linux build job skips apps absent from the Linux catalog, including `gksdud`; it does not validate their macOS runtime behavior.
-- Changes under `config/lib/` rebuild all catalog package directories. A package-local change rebuilds that package. The changed-app detector is checked with `bash config/packages/tests/detect-changed-apps.sh`.
+- Changes to the nested catalog, flake, lockfile, shared `config/packages/lib/` helpers, or package build workflow select all catalog packages for CI builds. A package-local change selects that package. Parent configuration inputs, outputs, package-set wiring, and root lockfile changes do not trigger this independent package CI or widen its build selection: it uses `config/packages/flake.lock`, not the root lockfile. Parent integration still needs its own targeted Home Manager or NixOS evaluation. The changed-app detector is checked with `bash config/packages/tests/detect-changed-apps.sh`.

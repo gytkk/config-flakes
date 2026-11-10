@@ -194,8 +194,7 @@ in
         imagemagick
         yt-dlp
 
-        # AI / Browser automation
-        agent-browser
+        # AI usage
         codexbar
 
         # etc

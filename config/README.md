@@ -80,6 +80,12 @@ New Darwin environments leave [Claude session mining](modules/claude-session-min
 
 [Terraform version management](modules/terraform/README.md) uses tenv on Devsisters environments to select Terraform from project version files or `required_version` constraints and install missing versions on demand.
 
+The Devsisters profile no longer installs Scala 2.12 or `saml2aws`; its login helper uses `kc2aws` alongside Vault and WireGuard. Projects that still need Scala should declare it in their project environment. Ruby remains installed from the existing stable nixpkgs pin.
+
+VSCode is managed outside this configuration. The unused Home Manager module and its extension-catalog input have been removed; existing user-managed VSCode installations, settings, and extensions are untouched.
+
+Themes use the local definitions and generated exports in [the theme pipeline](themes/README.md). The unused Rosé Pine and Catppuccin Ghostty source inputs have been removed; all existing theme variants and colors remain unchanged.
+
 ## Zsh config
 
 The local [git-commit-suggestions Zsh plugin](modules/zsh/README.md#ai-commit-subjects) uses a Bun/TypeScript generator to request an AI commit subject when you type `gc -m`, using the staged diff, global/repository commit rules, and Minuet's OpenAI key. Accept the gray suggestion with the right arrow, review it, then press Enter to commit.
@@ -141,7 +147,7 @@ See the [Codex module README](modules/codex/README.md) for official bundle packa
 
 Home Manager installs Ponytail only when it is missing and preserves its installed version and enabled state on later switches. Update it explicitly with `codex plugin add ponytail@ponytail`; changed plugin contents require hook approval again. See [Codex activation](modules/codex/README.md#적용) for hook trust and update behavior.
 
-Codex and Claude Code follow shared instructions to display pages in the system default browser and use `agent-browser` for automation, with headless mode as the default. See [Claude browser use](modules/claude/README.md#browser-use) for Playwright MCP cleanup and activation.
+Codex and Claude Code follow shared instructions to display pages in the system default browser and use runtime- or project-provided tooling for automation, with headless mode as the default. See [Claude browser use](modules/claude/README.md#browser-use) for Playwright MCP cleanup and activation.
 
 The Codex and Claude Herdr watchers share the [JSONL reader](modules/herdr/README.md#shared-jsonl-reader), which handles incremental reads, file replacement, and malformed records.
 

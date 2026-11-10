@@ -4,22 +4,12 @@ on:
   pull_request:
     paths:
       - "config/packages/**"
-      - "config/lib/pkgs.nix"
-      - "config/flake.nix"
-      - "config/outputs.nix"
-      - "flake.nix"
-      - "flake.lock"
       - ".github/workflows/apps-ci.yml"
       - ".github/workflows/apps-update.yml"
   push:
     branches: [main]
     paths:
       - "config/packages/**"
-      - "config/lib/pkgs.nix"
-      - "config/flake.nix"
-      - "config/outputs.nix"
-      - "flake.nix"
-      - "flake.lock"
       - ".github/workflows/apps-ci.yml"
       - ".github/workflows/apps-update.yml"
   workflow_dispatch:

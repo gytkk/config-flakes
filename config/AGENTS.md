@@ -93,7 +93,7 @@ Defined in `config/inventory.nix` (single source of truth). `kind` field determi
 #### Base System
 
 1. **`config/base/default.nix`**: Common config. core modules, standard dev packages, programs
-2. **`config/base/devsisters/home.nix`**: saml2aws, vault, kc2aws, wg-cli, scala, ruby, databricks-cli, pantry, custom scripts
+2. **`config/base/devsisters/home.nix`**: vault, kc2aws, wg-cli, ruby, databricks-cli, pantry, custom scripts
 3. **`config/base/pylv/home.nix`**: Minimal (inherits base)
 4. **`config/base/pylv/sepia.nix`**: Home Manager additions for `pylv-sepia`; system configuration lives in `config/hosts/pylv-sepia/configuration.nix`
 
@@ -134,7 +134,6 @@ This table lists selected modules, with paths relative to the repository root. S
 | `config/modules/lsp/` | LSP server packages | `config/modules/lsp/default.nix` | NO |
 | `config/modules/terraform/` | Terraform versions | `config/modules/terraform/default.nix` (tenv) | NO |
 | `config/modules/vim/` | Neovim | `config/modules/vim/files/lua/`, `config/modules/vim/files/lazy-lock.json`, `config/themes/exports/nvim` | 부분적 |
-| `config/modules/vscode/` | VSCode (disabled) | `config/modules/vscode/default.nix`, `config/modules/vscode/one-half-light-theme/` | NO |
 | `config/modules/zed/` | Zed editor | `config/modules/zed/files/settings.json`, `config/themes/exports/zed` | 부분적 |
 | `config/modules/zsh/` | Zsh shell | `config/modules/zsh/default.nix`, `config/themes/exports/starship` | 부분적 |
 
@@ -145,10 +144,6 @@ This table lists selected modules, with paths relative to the repository root. S
 #### Neovim (`config/modules/vim/`)
 
 [Neovim README](modules/vim/README.md)에서 LazyVim 설정 구조와 적용 방식을 확인한다. LSP 서버를 추가할 때는 `config/modules/vim/files/lua/plugins/lsp.lua`의 서버 설정과 `config/modules/lsp/default.nix`의 바이너리를 함께 확인한다.
-
-#### VSCode (`config/modules/vscode/`). DISABLED
-
-현재 비활성화. VSCode 수정 요청 시 모듈 재활성화 여부를 먼저 확인할 것.
 
 #### Zed (`config/modules/zed/`)
 
@@ -175,6 +170,6 @@ AI 코딩 에이전트 설정을 변경할 때 공통 지침, runtime adapter, s
 
 - **Base packages** (`config/base/default.nix`): nixfmt, coreutils, findutils, docker, gcc, jq, fd, ripgrep, git, gh, lazygit, nodejs, bun, go, uv, ruff, rustup, kubectl, helm, etc.
 - **LSP servers** (`config/modules/lsp/`): nixd, gopls, typescript-language-server, terraform-ls, ty, pyright, yaml-language-server, marksman (`rust-analyzer` must be installed in the active rustup toolchain)
-- **Devsisters-specific** (`config/base/devsisters/`): saml2aws, vault, kc2aws, wg-cli, scala, ruby, databricks-cli, pantry. `kc2aws` and `wg-cli` come from the private `keycloak2aws` and `devsisters-wg` flake inputs.
+- **Devsisters-specific** (`config/base/devsisters/`): vault, kc2aws, wg-cli, ruby, databricks-cli, pantry. `kc2aws` and `wg-cli` come from the private `keycloak2aws` and `devsisters-wg` flake inputs.
 
 The private `keycloak2aws` flake input is declared in `config/flake.nix` and pinned in the root `flake.lock`. To update `kc2aws`, run `nix flake update config/keycloak2aws` from the repository root, apply Home Manager, and commit the resulting lockfile change.
