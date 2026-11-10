@@ -157,6 +157,7 @@ in
         gh
         lazygit
         gitui
+        hunk
         delta
         bat
 

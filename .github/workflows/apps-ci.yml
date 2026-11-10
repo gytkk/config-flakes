@@ -49,6 +49,7 @@ jobs:
         run: |
           bash config/packages/tests/update-all.sh
           bash config/packages/tests/check-nix-patches.sh
+          bash config/packages/tests/hunk-update.sh
           bash config/packages/tests/notion-cli-update.sh
           bash config/packages/tests/omp-update.sh
           bash config/packages/tests/pi-update.sh
