@@ -1,5 +1,8 @@
 modelRoles:
-  default: openai-codex/gpt-6-astra
+  default: openai-codex/gpt-6-astra:high
+  memory: openai-codex/gpt-6-astra:high
+  image: openai-codex/gpt-image-2
+  smol: openai-codex/gpt-6-luna:auto
 symbolPreset: nerd
 composer:
   shape: pi
