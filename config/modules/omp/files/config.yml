@@ -12,7 +12,7 @@ composer:
   shape: pi
 theme:
   dark: titanium
-  light: light
+  light: light-one
 setupVersion: 3
 statusLine:
   preset: custom
