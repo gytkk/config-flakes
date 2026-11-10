@@ -145,7 +145,7 @@ See the [Codex module README](modules/codex/README.md) for official bundle packa
 
 Home Manager installs Ponytail only when it is missing and preserves its installed version and enabled state on later switches. Update it explicitly with `codex plugin add ponytail@ponytail`; changed plugin contents require hook approval again. See [Codex activation](modules/codex/README.md#적용) for hook trust and update behavior.
 
-Codex and Claude Code follow shared instructions to display pages in the system default browser and use `agent-browser` for automation, with headless mode as the default. See [Claude browser use](modules/claude/README.md#browser-use) for Playwright MCP cleanup and activation.
+Codex and Claude Code follow shared instructions to display pages in the system default browser and use runtime- or project-provided tooling for automation, with headless mode as the default. See [Claude browser use](modules/claude/README.md#browser-use) for Playwright MCP cleanup and activation.
 
 The Codex and Claude Herdr watchers share the [JSONL reader](modules/herdr/README.md#shared-jsonl-reader), which handles incremental reads, file replacement, and malformed records.
 

@@ -4,7 +4,7 @@
 
 Cloudflare 작업은 공통 Home Manager profile이 설치하는 `cf` CLI를 사용한다. 인증과 명령 검색은 [Cloudflare CLI 설정](../../README.md#cloudflare-cli)을 참고한다. MCP 설정 변경 후에는 Codex 세션을 다시 시작한다.
 
-Codex가 사용자에게 웹 페이지, 로컬 미리보기, 인증 링크를 열어 줄 때는 시스템 기본 브라우저를 사용한다. [공통 지침](../../../agent-core/rules/AGENTS.md#tool-specific-workflows)은 macOS의 `open <URL>`과 같은 운영체제의 URL 열기 기능을 사용하도록 지시한다. 브라우저 자동화와 테스트에는 공통 profile이 설치하는 `agent-browser`를 사용하며, 기본적으로 headless 모드로 실행한다. Playwright MCP는 등록하지 않는다. 이 동작은 에이전트 지침이며, Codex 앱의 링크 클릭 동작을 강제하는 설정은 아니다. 지침 변경은 아래 [적용](#적용) 절차로 설치한다.
+Codex가 사용자에게 웹 페이지, 로컬 미리보기, 인증 링크를 열어 줄 때는 시스템 기본 브라우저를 사용한다. [공통 지침](../../../agent-core/rules/AGENTS.md#tool-specific-workflows)은 macOS의 `open <URL>`과 같은 운영체제의 URL 열기 기능을 사용하도록 지시한다. 브라우저 자동화와 테스트에는 현재 runtime이나 프로젝트가 제공하는 도구를 사용하며, 기본적으로 headless 모드로 실행한다. 공통 profile은 전용 브라우저 자동화 CLI를 설치하지 않는다. Playwright MCP는 등록하지 않는다. 이 동작은 에이전트 지침이며, Codex 앱의 링크 클릭 동작을 강제하는 설정은 아니다. 지침 변경은 아래 [적용](#적용) 절차로 설치한다.
 
 TUI 구문 강조는 밝은 터미널 배경에 맞춰 기본 제공 `one-half-light`를 사용한다. 공통 테마의 Codex용 export는 없으므로 canonical 배경색 조정은 이 구문 강조 테마에 반영되지 않는다. [공식 CLI 테마 문서](https://learn.chatgpt.com/docs/cli-customization)에서 설명하는 사용자 지정 테마는 별도의 `.tmTheme` 파일이 필요하다.
 

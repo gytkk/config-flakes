@@ -71,8 +71,8 @@ When reviewing changes:
 ## Tool-specific workflows
 
 - When opening a page for the user, including local previews and authentication links, use the system default browser: `open <URL>` on macOS, `xdg-open <URL>` on Linux, or the Windows default URL handler from WSL. Let the operating system select the browser and profile.
-- For browser automation and testing, use `agent-browser` in headless mode by default. Use a visible browser window only when the user requests it or the task requires visible interaction. Keep page display requests on the system URL opener.
-- If the system URL opener or `agent-browser` fails or is unavailable, report the error and ask before switching to another browser or automation tool.
+- For browser automation and testing, use tooling provided by the current runtime or project, in headless mode by default. Use a visible browser window only when the user requests it or the task requires visible interaction. Keep page display requests on the system URL opener.
+- If the system URL opener or required browser automation tooling fails or is unavailable, report the error and ask before switching to another browser or automation tool.
 - For Python, use `uv`. Run commands through `uv run`, not `python`, `python3`, or bare `pip`.
   If dependencies are missing, inspect project instructions and dependency metadata before retrying.
   Prefer `uv sync --locked` when a lockfile exists.

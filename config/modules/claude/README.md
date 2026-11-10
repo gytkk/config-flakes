@@ -119,7 +119,7 @@ Cloudflare operations use the `cf` CLI installed by the common Home Manager prof
 
 ## Browser use
 
-The [shared instructions](../../../agent-core/rules/AGENTS.md#tool-specific-workflows) direct Claude Code to open pages, local previews, and authentication links with the system default browser. Browser automation and testing use `agent-browser`, installed by the common Home Manager profile, in headless mode by default. These are agent instructions, not execution restrictions. Activation removes the user-scope `playwright` MCP registration. Apply Home Manager and start a new Claude Code session to load the instructions.
+The [shared instructions](../../../agent-core/rules/AGENTS.md#tool-specific-workflows) direct Claude Code to open pages, local previews, and authentication links with the system default browser. Browser automation and testing use tooling provided by the current runtime or project, in headless mode by default; the common profile does not install a dedicated browser automation CLI. These are agent instructions, not execution restrictions. Activation removes the user-scope `playwright` MCP registration. Apply Home Manager and start a new Claude Code session to load the instructions.
 
 ## Usage
 

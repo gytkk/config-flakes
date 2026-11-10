@@ -12,7 +12,6 @@ let
   );
 in
 rec {
-  agent-browser = callPackage ./apps/agent-browser/package.nix { };
   cf = callPackage ./apps/cf/package.nix { };
   claude-code = callPackage ./apps/claude-code/package.nix { };
   codex = callPackage ./apps/codex/package.nix { };

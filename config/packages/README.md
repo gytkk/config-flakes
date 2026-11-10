@@ -11,7 +11,6 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 ```
 .
 ├── apps/
-│   ├── agent-browser/
 │   ├── cf/
 │   ├── claude-code/
 │   ├── codex/
@@ -53,7 +52,6 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 
 | App | Version |
 |-----|---------|
-| agent-browser | 0.42.0 |
 | cf | 1.0.0-beta.21 |
 | claude-code | 2.1.322 |
 | codex | 0.167.0 |
@@ -73,7 +71,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 ## Build entrypoints
 
 - `nix build ./config/packages#packages.<system>.ntn`
-- `nix build ./config/packages#packages.<system>.default` (same as first app)
+- `nix build ./config/packages#packages.<system>.default` (the alphabetically first app, currently `cf`)
 - `nix run ./config/packages#apps.<system>.ntn`
 
 `gksdud` is exposed only on Darwin. Its signed universal app bundle supports Apple Silicon and Intel Macs running macOS 13 or later. Home Manager installs it through the [gksdud module](../modules/gksdud/README.md). Automatic startup is controlled by the app's own login-item option.
