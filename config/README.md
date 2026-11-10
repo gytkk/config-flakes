@@ -68,7 +68,7 @@ Home Manager modules expose `modules.<name>.enable`; `config/base/default.nix` o
 
 The common Home Manager profile installs GitUI in every environment. Run `gitui` inside a Git repository after applying the configuration.
 
-The common profile also installs [Hunk](packages/README.md#updates-and-ci), an agent-aware diff TUI. After applying Home Manager, run `hunk diff` for local changes or `hunk show` for the latest commit. Its stable release pin follows the existing three-hour package update CI; installing those updates still requires pulling the commits and applying the configuration. The Git pager is unchanged. [Agent core](../agent-core/README.md) separately installs the upstream `hunk-review` skill for Codex/Pi and Claude during Home Manager activation; it reads version-matched instructions through `hunk skill show hunk-review`.
+The common profile also installs [Hunk](packages/README.md#updates-and-ci), an agent-aware diff TUI. After applying Home Manager, run `hunk diff` for local changes or `hunk show` for the latest commit. Its stable release pin follows the existing three-hour package update CI; installing those updates still requires pulling the commits and applying the configuration. The Git pager is unchanged. [Agent core](../agent-core/README.md) separately installs the upstream `hunk-review` skill for Codex/Pi/OMP and Claude during Home Manager activation; it reads version-matched instructions through `hunk skill show hunk-review`.
 
 On `pylv-onyx`, DankMaterialShell comes from the `dms` input, while the login screen uses nixpkgs' `services.displayManager.dms-greeter` module with niri in [the host configuration](hosts/pylv-onyx/configuration.nix). The niri package uses the `niri` input's own pinned package set to keep its library dependencies compatible.
 
@@ -117,7 +117,7 @@ openclaw gateway install --force --wrapper ~/.openclaw/bin/openclaw
 
 Use `openclaw update` for verified core and plugin updates. The mutable config owns the update channel and automatic updates. Nix does not pin or replace the OpenClaw executable.
 
-`agent-core/` owns shared coding-agent rules, runtime adapters, local skills, and external skill source declarations. Nix installs generated instructions and extensions. [Agent skills activation](modules/agent-skills/README.md) installs or updates skills for all enabled agents on each Home Manager switch with pinned `skills@1.7.2`: Codex/Pi share the native pool, Claude uses global copies, and OpenClaw uses external project copies. Activation resolves the latest external source SHAs once for all targets and requires network access; Nix evaluation and builds remain offline for skill acquisition. See [Agent core](../agent-core/README.md#skill-설치와-복구) for the one-time ownership handoff, recovery, and pending host migration gates. Run `nix run .#agent-core -- check` to validate canonical resources offline.
+`agent-core/` owns shared coding-agent rules, runtime adapters, local skills, and external skill source declarations. Nix installs generated instructions and extensions. [Agent skills activation](modules/agent-skills/README.md) installs or updates skills for all enabled agents on each Home Manager switch with pinned `skills@1.7.2`: Codex/Pi/OMP share the native pool and Claude uses global copies. OpenClaw is not part of this integration. Activation resolves the latest external source SHAs once for all targets and requires network access; Nix evaluation and builds remain offline for skill acquisition. See [Agent core](../agent-core/README.md#skill-설치와-복구) for the one-time ownership handoff, recovery, and pending host migration gates. Run `nix run .#agent-core -- check` to validate canonical resources offline.
 
 ## Codex Plugin for Claude Code
 
@@ -156,7 +156,7 @@ The Codex and Claude Herdr watchers share the [JSONL reader](modules/herdr/READM
 Codex and Claude share the `openai-decisions` skill through agent-core for `gpt-6-luna` Decisions API judgments. The [OpenAI API module](modules/openai-api/README.md) supplies `with-openai` to run API clients with the existing agenix-managed `OPENAI_API_KEY`.
 
 - On NixOS hosts, the static Codex base config is installed to the overridable system layer at `/etc/codex/config.toml`.
-- Repository-managed skill sources and selections are declared in `agent-core/manifest.toml`. [Skill activation](modules/agent-skills/README.md) checks source revisions and installation integrity, skipping unchanged installations into the Codex/Pi native pool at `~/.agents/skills` and Claude's skill directory.
+- Repository-managed skill sources and selections are declared in `agent-core/manifest.toml`. [Skill activation](modules/agent-skills/README.md) checks source revisions and installation integrity, skipping unchanged installations into the Codex/Pi/OMP native pool at `~/.agents/skills` and Claude's skill directory.
 - On standalone Home Manager environments, `home-manager switch` ensures `/etc/codex/config.toml` is a symlink to this repo's `config/modules/codex/files/config.toml`.
 - Existing standalone `/etc/codex/skills` links require an ownership check and backup during migration; activation no longer manages them.
 - Standalone activation only prompts for `sudo` when `/etc/codex` needs to be created or repaired, or when removing the legacy `/etc/codex/managed_config.toml` symlink.

@@ -159,7 +159,7 @@ AI 코딩 에이전트 설정을 변경할 때 공통 지침, runtime adapter, s
 
 - `agent-core/rules/`는 공통 지침, `agent-core/adapters/`는 runtime별 지침, `agent-core/skills/`는 로컬 skill과 전환 중인 legacy source를 관리한다. `agent-core/manifest.toml`이 문서 조합, 로컬 및 외부 skill source와 설치 target을 정의한다.
 - Skill은 필요한 capability를 runtime 중립적으로 표현한다. Runtime tool, SDK, metadata, plugin 설정은 대응 module이 소유하며, runtime module에 shared skill 복사본이나 별도 selection logic을 추가하지 않는다.
-- Nix module은 `agent-core render`의 지침 문서를 설치한다. [Agent skills module](modules/agent-skills/README.md)은 Home Manager switch마다 활성 Codex, Claude, Pi의 skill 설치와 갱신을 `scripts/install-agent-skills.py`와 pinned Skills CLI로 실행한다. 최초 전환의 소유권 충돌, 복구 또는 host discovery를 다룰 때는 [Agent core README](../agent-core/README.md)를 읽는다. 모든 host의 코딩 에이전트 discovery 검증 전에는 해당 runtime의 legacy renderer와 vendored source를 정리하지 않는다.
+- Nix module은 Claude/Codex/Pi의 `agent-core render` 지침 문서를 설치한다. [Agent skills module](modules/agent-skills/README.md)은 Home Manager switch마다 활성 Codex, Claude, Pi, OMP의 skill 설치와 갱신을 `scripts/install-agent-skills.py`와 pinned Skills CLI로 실행한다. OMP는 shared skill 소비자이며 별도 renderer output을 만들지 않는다. 최초 전환의 소유권 충돌, 복구 또는 host discovery를 다룰 때는 [Agent core README](../agent-core/README.md)를 읽는다. 모든 host의 코딩 에이전트 discovery 검증 전에는 해당 runtime의 legacy renderer와 vendored source를 정리하지 않는다.
 
 - **Claude Code** (`config/modules/claude/`): `gytkk` marketplace의 원본은 `config/modules/claude/marketplace/`다. 공통 prompt는 agent-core output을 사용하고 shared skill은 CLI global copy로 설치한다. Plugin과 marketplace 목록은 [Claude README](modules/claude/README.md)에서 확인한다.
 - **Codex CLI** (`config/modules/codex/`): 기본 설정은 `files/config.toml`에서 관리하고 최종 instruction은 agent-core output을 사용한다. Skill은 Pi와 `~/.agents/skills`를 공유한다.

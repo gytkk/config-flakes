@@ -1,8 +1,10 @@
 # Agent skills activation
 
-The common Home Manager profile imports [default.nix](default.nix) to install or update skills for enabled Codex, Claude, and Pi agents during each switch. Codex or Pi enables the shared target once, and Claude enables its global copy target.
+The common Home Manager profile imports [default.nix](default.nix) to install or update skills for enabled Codex, Claude, Pi, and OMP agents during each switch. Any enabled Codex, Pi, or OMP module enables the shared target once, including OMP-only configurations; Claude enables its global copy target.
 
 One invocation of [the installation adapter](../../../scripts/install-agent-skills.py) handles all selected targets after `linkGeneration` and, when Codex is enabled, `codexUserConfig`. Each external source resolves to one latest full SHA for that invocation, shared by every target. The module provides Node/npm, Git, and Python with the packaged canonical agent-core resources. Nix evaluation and builds do not fetch external skills; activation requires network access. Home Manager's `run` wrapper honors dry-run mode. Installation errors fail the switch and retain the adapter's backup and recovery safeguards.
+
+The shared target's manifest runtimes describe consumers, not Skills CLI agent IDs. The adapter keeps `--agent codex pi` to install into `~/.agents/skills`; OMP discovers that same pool through its `agents` provider. OMP does not receive a separate copy, symlink, or generated instruction document.
 
 After resolving external revisions, the adapter skips staging, license downloads, CLI installation, and backups when every target matches its last successful receipt. It compares the complete installation plan, including the CLI version, external revisions, local file contents and modes, ownership records, installed files, and selected CLI lock entries. Unchanged switches still check external source revisions. The manifest is authoritative: when an installed skill is missing, modified, recorded under another source, or not owned, the adapter runs the full installation, backs up the existing directory, and replaces it. Previously managed skills that the manifest no longer selects are backed up and removed. An older installation without this metadata runs the full installation once. Failed operations do not provide a successful cache record.
 
