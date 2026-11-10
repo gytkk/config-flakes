@@ -11,7 +11,7 @@ class InventoryValidationTests(unittest.TestCase):
     def evaluate(self, builder, config):
         if builder == "home":
             expression = f'''let
-              builders = import {ROOT}/config/lib/home-configurations.nix {{
+              builders = import {ROOT}/lib/home-configurations.nix {{
                 inputs.home-manager.lib.homeManagerConfiguration = args: {{ inherit (args.extraSpecialArgs) username homeDirectory flakeDirectory; }};
                 systemPkgs = {{}};
               }};
@@ -21,7 +21,7 @@ class InventoryValidationTests(unittest.TestCase):
             in home "test" ({config})'''
         else:
             expression = f'''let
-              builders = import {ROOT}/config/lib/nixos-configurations.nix {{
+              builders = import {ROOT}/lib/nixos-configurations.nix {{
                 inputs = {{}};
                 nixpkgs.lib.nixosSystem = args: {{ inherit (args.specialArgs) username homeDirectory flakeDirectory; }};
                 commonOverlays = [];
@@ -46,10 +46,10 @@ class InventoryValidationTests(unittest.TestCase):
     def test_real_inventory_entries_preserve_checkout_and_identity(self):
         inventory = json.loads(subprocess.check_output(
             ["nix", "eval", "--impure", "--json", "--expr",
-             f"builtins.attrNames (import {ROOT}/config/inventory.nix)"], text=True,
+             f"builtins.attrNames (import {ROOT}/systems/inventory.nix)"], text=True,
         ))
         for name in inventory:
-            config = f'(import {ROOT}/config/inventory.nix)."{name}"'
+            config = f'(import {ROOT}/systems/inventory.nix)."{name}"'
             for builder in ["home", "nixos"]:
                 with self.subTest(host=name, builder=builder):
                     # Select only public arguments; do not force actual module evaluation.

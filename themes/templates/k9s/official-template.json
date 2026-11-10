@@ -1,0 +1,150 @@
+{
+  "name": "k9s-skin-template",
+  "version": 1,
+  "description": "K9s skin template derived from the official K9s skin configuration format and the existing local module skin definitions.",
+  "sources": [
+    {
+      "kind": "official-docs",
+      "ref": "K9s skins documentation",
+      "url": "https://k9scli.io/topics/skins/"
+    },
+    {
+      "kind": "local-example",
+      "ref": "existing k9s module skin definitions",
+      "path": "modules/k9s/default.nix"
+    }
+  ],
+  "skin_schema": {
+    "format": "yaml",
+    "root_key": "k9s",
+    "token_prefix": "$",
+    "value_types": ["string", "boolean", "array", "object"]
+  },
+  "document": {
+    "k9s": {
+      "body": {
+        "fgColor": "$body_fg",
+        "bgColor": "$body_bg",
+        "logoColor": "$body_logo"
+      },
+      "prompt": {
+        "fgColor": "$prompt_fg",
+        "bgColor": "$prompt_bg",
+        "suggestColor": "$prompt_suggest"
+      },
+      "help": {
+        "fgColor": "$help_fg",
+        "bgColor": "$help_bg",
+        "sectionColor": "$help_section",
+        "keyColor": "$help_key",
+        "numKeyColor": "$help_num_key"
+      },
+      "info": {
+        "fgColor": "$info_fg",
+        "sectionColor": "$info_section"
+      },
+      "dialog": {
+        "fgColor": "$dialog_fg",
+        "bgColor": "$dialog_bg",
+        "buttonFgColor": "$dialog_button_fg",
+        "buttonBgColor": "$dialog_button_bg",
+        "buttonFocusFgColor": "$dialog_button_focus_fg",
+        "buttonFocusBgColor": "$dialog_button_focus_bg",
+        "labelFgColor": "$dialog_label",
+        "fieldFgColor": "$dialog_field"
+      },
+      "frame": {
+        "border": {
+          "fgColor": "$frame_border_fg",
+          "focusColor": "$frame_border_focus"
+        },
+        "menu": {
+          "fgColor": "$frame_menu_fg",
+          "keyColor": "$frame_menu_key",
+          "numKeyColor": "$frame_menu_num_key"
+        },
+        "crumbs": {
+          "fgColor": "$frame_crumbs_fg",
+          "bgColor": "$frame_crumbs_bg",
+          "activeColor": "$frame_crumbs_active"
+        },
+        "status": {
+          "newColor": "$frame_status_new",
+          "modifyColor": "$frame_status_modify",
+          "addColor": "$frame_status_add",
+          "pendingColor": "$frame_status_pending",
+          "errorColor": "$frame_status_error",
+          "highlightcolor": "$frame_status_highlight",
+          "killColor": "$frame_status_kill",
+          "completedColor": "$frame_status_completed"
+        },
+        "title": {
+          "fgColor": "$frame_title_fg",
+          "bgColor": "$frame_title_bg",
+          "highlightColor": "$frame_title_highlight",
+          "counterColor": "$frame_title_counter",
+          "filterColor": "$frame_title_filter"
+        }
+      },
+      "views": {
+        "table": {
+          "fgColor": "$table_fg",
+          "bgColor": "$table_bg",
+          "cursorFgColor": "$table_cursor_fg",
+          "cursorBgColor": "$table_cursor_bg",
+          "markColor": "$table_mark",
+          "header": {
+            "fgColor": "$table_header_fg",
+            "bgColor": "$table_header_bg",
+            "sorterColor": "$table_header_sorter"
+          }
+        },
+        "xray": {
+          "fgColor": "$xray_fg",
+          "bgColor": "$xray_bg",
+          "cursorColor": "$xray_cursor",
+          "cursorTextColor": "$xray_cursor_text",
+          "graphicColor": "$xray_graphic"
+        },
+        "charts": {
+          "bgColor": "$charts_bg",
+          "chartBgColor": "$charts_chart_bg",
+          "dialBgColor": "$charts_dial_bg",
+          "defaultDialColors": [
+            "$charts_dial_primary",
+            "$charts_dial_secondary"
+          ],
+          "defaultChartColors": [
+            "$charts_chart_primary",
+            "$charts_chart_secondary"
+          ],
+          "resourceColors": {
+            "cpu": [
+              "$charts_cpu_primary",
+              "$charts_cpu_secondary"
+            ],
+            "mem": [
+              "$charts_mem_primary",
+              "$charts_mem_secondary"
+            ]
+          }
+        },
+        "yaml": {
+          "keyColor": "$yaml_key",
+          "colonColor": "$yaml_colon",
+          "valueColor": "$yaml_value"
+        },
+        "logs": {
+          "fgColor": "$logs_fg",
+          "bgColor": "$logs_bg",
+          "indicator": {
+            "fgColor": "$logs_indicator_fg",
+            "bgColor": "$logs_indicator_bg",
+            "toggleOnColor": "$logs_indicator_on",
+            "toggleOffColor": "$logs_indicator_off"
+          }
+        }
+      }
+    }
+  }
+}

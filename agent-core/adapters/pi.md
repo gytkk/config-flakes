@@ -10,7 +10,7 @@ These instructions extend the shared global agent rules with Pi-specific behavio
 ## Pi skills
 
 - When authoring Pi skills, use `writing-for-agents` for instruction design and `pi-agent`'s skills reference for Pi format and discovery. Store canonical shared skills under `agent-core/skills/` and declare exposure in `agent-core/manifest.toml`.
-- Express required capabilities in shared skills; keep Pi packages, settings, extensions, and optional UI metadata in `config/modules/pi/`.
+- Express required capabilities in shared skills; keep Pi packages, settings, extensions, and optional UI metadata in `modules/pi/`.
 
 ## Subagent context
 

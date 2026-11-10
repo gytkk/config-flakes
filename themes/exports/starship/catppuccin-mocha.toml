@@ -1,0 +1,185 @@
+# Auto-generated from themes/core/catppuccin-mocha.yaml
+# Template: starship-theme-template v1
+"$schema" = "https://starship.rs/config-schema.json"
+
+palette = "catppuccin_mocha"
+format = """
+[](iris)\
+[ 󰉋 ](bg:iris fg:base)\
+[](bg:foam fg:iris)\
+$directory\
+[](fg:foam bg:layer3)\
+$git_branch\
+$git_status\
+[](fg:layer3 bg:layer2)\
+$c\
+$cpp\
+$rust\
+$golang\
+$nodejs\
+$php\
+$java\
+$kotlin\
+$haskell\
+$python\
+[](fg:layer2 bg:layer1)\
+$docker_context\
+$conda\
+$pixi\
+[](fg:layer1)\
+$fill\
+[](fg:layer1)\
+$kubernetes\
+[](fg:layer2 bg:layer1)\
+$hostname\
+[](fg:layer3 bg:layer2)\
+$time\
+[](fg:layer3)
+$character"""
+
+[fill]
+"symbol" = " "
+
+[directory]
+"style" = "fg:base bg:foam"
+"format" = "[ $path ]($style)"
+"truncation_length" = 4
+"truncation_symbol" = "…/"
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = "󰇚 "
+"Music" = "󰝚 "
+"Pictures" = "󰈟 "
+"Developer" = "󰲷 "
+
+[git_branch]
+"symbol" = ""
+"style" = "bg:layer3"
+"format" = "[[ $symbol $branch ](fg:pine bg:layer3)]($style)"
+
+[git_status]
+"style" = "bg:layer3"
+"format" = "[[($conflicted$staged$modified$untracked$renamed$deleted$stashed$ahead_behind )](fg:pine bg:layer3)]($style)"
+"conflicted" = "=$count "
+"staged" = "+$count "
+"modified" = "!$count "
+"untracked" = "?$count "
+"renamed" = "»$count "
+"deleted" = "-$count "
+"stashed" = "*$count "
+"ahead" = "↑$count"
+"behind" = "↓$count"
+"diverged" = "↑$ahead_count↓$behind_count"
+
+[c]
+"symbol" = " "
+"style" = "bg:layer2"
+"format" = "[[ $symbol($version) ](fg:foam bg:layer2)]($style)"
+
+[cpp]
+"symbol" = " "
+"style" = "bg:layer2"
+"format" = "[[ $symbol($version) ](fg:foam bg:layer2)]($style)"
+
+[nodejs]
+"symbol" = " "
+"style" = "bg:layer2"
+"format" = "[[ $symbol($version) ](fg:pine bg:layer2)]($style)"
+
+[rust]
+"symbol" = "󱘗 "
+"style" = "bg:layer2"
+"format" = "[[ $symbol($version) ](fg:rose bg:layer2)]($style)"
+
+[golang]
+"symbol" = " "
+"style" = "bg:layer2"
+"format" = "[[ $symbol($version) ](fg:foam bg:layer2)]($style)"
+
+[php]
+"symbol" = " "
+"style" = "bg:layer2"
+"format" = "[[ $symbol($version) ](fg:iris bg:layer2)]($style)"
+
+[java]
+"symbol" = " "
+"style" = "bg:layer2"
+"format" = "[[ $symbol($version) ](fg:love bg:layer2)]($style)"
+
+[kotlin]
+"symbol" = " "
+"style" = "bg:layer2"
+"format" = "[[ $symbol($version) ](fg:iris bg:layer2)]($style)"
+
+[haskell]
+"symbol" = " "
+"style" = "bg:layer2"
+"format" = "[[ $symbol($version) ](fg:iris bg:layer2)]($style)"
+
+[python]
+"symbol" = " "
+"style" = "bg:layer2"
+"format" = "[[ $symbol($version) ](fg:gold bg:layer2)]($style)"
+
+[docker_context]
+"symbol" = " "
+"style" = "bg:layer1"
+"format" = "[[ $symbol($context) ](fg:foam bg:layer1)]($style)"
+
+[conda]
+"symbol" = " "
+"style" = "bg:layer1"
+"format" = "[[ $symbol($environment) ](fg:pine bg:layer1)]($style)"
+
+[pixi]
+"symbol" = "󰏗 "
+"style" = "bg:layer1"
+"format" = "[[ $symbol($version) ($environment) ](fg:pine bg:layer1)]($style)"
+
+[kubernetes]
+"disabled" = false
+"symbol" = "󱃾 "
+"style" = "bg:layer1"
+"format" = "[[ $symbol$context ](fg:foam bg:layer1)]($style)"
+
+[time]
+"disabled" = false
+"time_format" = "%R"
+"style" = "bg:layer3"
+"format" = "[[ 󰥔 $time ](fg:text bg:layer3)]($style)"
+
+[hostname]
+"ssh_only" = true
+"style" = "bg:layer2"
+"format" = "[[ $hostname ](fg:love bg:layer2)]($style)"
+
+[character]
+"disabled" = false
+"success_symbol" = "[❯](bold fg:pine)"
+"error_symbol" = "[❯](bold fg:love)"
+"vimcmd_symbol" = "[❮](bold fg:pine)"
+"vimcmd_replace_one_symbol" = "[❮](bold fg:iris)"
+"vimcmd_replace_symbol" = "[❮](bold fg:iris)"
+"vimcmd_visual_symbol" = "[❮](bold fg:gold)"
+
+[palettes.catppuccin_mocha]
+base = "#1e1e2e"
+surface = "#313244"
+overlay = "#6c7086"
+muted = "#a6adc8"
+subtle = "#cdd6f4"
+text = "#cdd6f4"
+love = "#f38ba8"
+gold = "#f9e2af"
+rose = "#f5c2e7"
+pine = "#a6e3a1"
+foam = "#f5c2e7"
+iris = "#cba6f7"
+highlight_low = "#181825"
+highlight_med = "#46485b"
+highlight_high = "#6c7086"
+green = "#a6e3a1"
+layer1 = "#181825"
+layer2 = "#46485b"
+layer3 = "#6c7086"

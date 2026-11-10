@@ -1,0 +1,58 @@
+{
+  "name": "tmux-theme-template",
+  "version": 1,
+  "description": "tmux statusline theme template derived from tmux style syntax and the local statusline configuration.",
+  "sources": [
+    {
+      "kind": "official-docs",
+      "ref": "tmux style and format syntax",
+      "url": "https://github.com/tmux/tmux/wiki/Styles"
+    },
+    {
+      "kind": "local-example",
+      "ref": "existing tmux statusline config",
+      "path": "modules/tmux/files/statusline.conf"
+    }
+  ],
+  "config_schema": {
+    "token_prefix": "$",
+    "value_type": "tmux-style-or-format"
+  },
+  "sections": [
+    {
+      "name": "statusline",
+      "entries": [
+        {
+          "scope": "set",
+          "option": "status-style",
+          "value": "$status_style"
+        },
+        {
+          "scope": "set",
+          "option": "status-left",
+          "value": "$status_left"
+        },
+        {
+          "scope": "set",
+          "option": "status-right",
+          "value": "$status_right"
+        }
+      ]
+    },
+    {
+      "name": "windows",
+      "entries": [
+        {
+          "scope": "setw",
+          "option": "window-status-format",
+          "value": "$window_status_format"
+        },
+        {
+          "scope": "setw",
+          "option": "window-status-current-format",
+          "value": "$window_status_current_format"
+        }
+      ]
+    }
+  ]
+}

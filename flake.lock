@@ -3,7 +3,6 @@
     "agenix": {
       "inputs": {
         "nixpkgs": [
-          "config",
           "nixpkgs"
         ]
       },
@@ -21,39 +20,10 @@
         "type": "github"
       }
     },
-    "config": {
-      "inputs": {
-        "agenix": "agenix",
-        "copyparty": "copyparty",
-        "devsisters-wg": "devsisters-wg",
-        "disko": "disko",
-        "dms": "dms",
-        "gws": "gws",
-        "home-manager": "home-manager",
-        "keycloak2aws": "keycloak2aws",
-        "neovim-nightly-overlay": "neovim-nightly-overlay",
-        "niri": "niri",
-        "nix-zed-extensions": "nix-zed-extensions",
-        "nixpkgs": "nixpkgs_3",
-        "nixpkgs-25_05": "nixpkgs-25_05",
-        "nixpkgs-lsp": "nixpkgs-lsp",
-        "rust-overlay": "rust-overlay"
-      },
-      "locked": {
-        "path": "./config",
-        "type": "path"
-      },
-      "original": {
-        "path": "./config",
-        "type": "path"
-      },
-      "parent": []
-    },
     "copyparty": {
       "inputs": {
         "flake-utils": "flake-utils",
         "nixpkgs": [
-          "config",
           "nixpkgs"
         ]
       },
@@ -90,12 +60,10 @@
     "devsisters-wg": {
       "inputs": {
         "flake-utils": [
-          "config",
           "gws",
           "flake-utils"
         ],
         "nixpkgs": [
-          "config",
           "nixpkgs"
         ],
         "nixpkgs-old": "nixpkgs-old"
@@ -117,7 +85,6 @@
     "disko": {
       "inputs": {
         "nixpkgs": [
-          "config",
           "nixpkgs"
         ]
       },
@@ -140,7 +107,6 @@
         "dank-qml-common": "dank-qml-common",
         "flake-compat": "flake-compat",
         "nixpkgs": [
-          "config",
           "nixpkgs"
         ]
       },
@@ -177,7 +143,6 @@
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": [
-          "config",
           "keycloak2aws",
           "nixpkgs"
         ]
@@ -199,7 +164,6 @@
     "flake-parts_2": {
       "inputs": {
         "nixpkgs-lib": [
-          "config",
           "neovim-nightly-overlay",
           "nixpkgs"
         ]
@@ -255,7 +219,6 @@
       "inputs": {
         "flake-utils": "flake-utils_2",
         "nixpkgs": [
-          "config",
           "nixpkgs"
         ]
       },
@@ -276,7 +239,6 @@
     "home-manager": {
       "inputs": {
         "nixpkgs": [
-          "config",
           "nixpkgs"
         ]
       },
@@ -299,7 +261,6 @@
       "inputs": {
         "flake-parts": "flake-parts",
         "nixpkgs": [
-          "config",
           "nixpkgs"
         ]
       },
@@ -412,11 +373,9 @@
     "nix-zed-extensions": {
       "inputs": {
         "nixpkgs": [
-          "config",
           "nixpkgs"
         ],
         "rust-overlay": [
-          "config",
           "rust-overlay"
         ]
       },
@@ -548,13 +507,26 @@
     },
     "root": {
       "inputs": {
-        "config": "config"
+        "agenix": "agenix",
+        "copyparty": "copyparty",
+        "devsisters-wg": "devsisters-wg",
+        "disko": "disko",
+        "dms": "dms",
+        "gws": "gws",
+        "home-manager": "home-manager",
+        "keycloak2aws": "keycloak2aws",
+        "neovim-nightly-overlay": "neovim-nightly-overlay",
+        "niri": "niri",
+        "nix-zed-extensions": "nix-zed-extensions",
+        "nixpkgs": "nixpkgs_3",
+        "nixpkgs-25_05": "nixpkgs-25_05",
+        "nixpkgs-lsp": "nixpkgs-lsp",
+        "rust-overlay": "rust-overlay"
       }
     },
     "rust-overlay": {
       "inputs": {
         "nixpkgs": [
-          "config",
           "nixpkgs"
         ]
       },

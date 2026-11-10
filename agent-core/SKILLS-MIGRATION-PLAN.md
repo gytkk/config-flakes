@@ -188,7 +188,7 @@ Shared global pool은 Claude와 별개로 갱신한다. 원본 수정이 checkou
 
 ### 3. 설치 소유권 전환
 
-1. [Inventory](../inventory.nix)와 실제 적용 상태에서 대상 host/runtime 목록을 확정하고 각각의 상태를 추적한다. 대상 runtime은 Codex, Claude와 Pi다. 기존 경로와 새 CLI 경로의 타입, content와 충돌, 이전 Nix generation과 복구 가능성을 점검한다.
+1. [Inventory](../systems/inventory.nix)와 실제 적용 상태에서 대상 host/runtime 목록을 확정하고 각각의 상태를 추적한다. 대상 runtime은 Codex, Claude와 Pi다. 기존 경로와 새 CLI 경로의 타입, content와 충돌, 이전 Nix generation과 복구 가능성을 점검한다.
 2. [Claude module](../modules/claude/default.nix)의 `~/.claude/skills`, [Pi module](../modules/pi/default.nix)의 `~/.pi/agent/skills`에 대한 directory-level Home Manager 선언을 제거한다. [Codex system module](../modules/codex/system.nix)과 [standalone activation](../modules/codex/system-activation.nix)의 `/etc/codex/skills` 관리도 제거한다. 생성 지침, `/etc/codex/config.toml`과 runtime 설정은 유지한다.
 3. 각 모듈의 소유권 제거와 [flake source wiring assertion](../flake.nix)의 관련 변경을 같은 커밋에 넣는다. Coding-agent 지침과 extension assertion은 유지한다.
 4. Host별 switch 전에 pinned CLI와 필요한 source의 취득 가능성을 확인하고 영향받는 파일 및 상태를 backup한다. Npm cache만으로 Git source의 재취득이 보장된다고 가정하지 않는다. 사용자가 Home Manager/NixOS switch를 실행한 뒤 CLI 설치 명령을 실행한다. 설치 실패 시 아래 rollback 순서로 기존 상태를 복구한다.

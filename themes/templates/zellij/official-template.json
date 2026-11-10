@@ -1,0 +1,193 @@
+{
+  "name": "zellij-theme-template",
+  "version": 1,
+  "description": "Zellij theme template derived from the official Zellij theme definition specification.",
+  "sources": [
+    {
+      "kind": "official-docs",
+      "ref": "Zellij themes documentation",
+      "url": "https://zellij.dev/documentation/themes.html"
+    },
+    {
+      "kind": "local-example",
+      "ref": "existing zellij module theme",
+      "path": "modules/zellij/files/config.linux.kdl"
+    }
+  ],
+  "theme_schema": {
+    "root_node": "themes",
+    "token_prefix": "$",
+    "value_type": "rgb-triplet"
+  },
+  "sections": [
+    {
+      "component": "text_unselected",
+      "attrs": {
+        "base": "$text_base",
+        "background": "$text_background",
+        "emphasis_0": "$text_emphasis_0",
+        "emphasis_1": "$text_emphasis_1",
+        "emphasis_2": "$text_emphasis_2",
+        "emphasis_3": "$text_emphasis_3"
+      }
+    },
+    {
+      "component": "text_selected",
+      "attrs": {
+        "base": "$text_selected_base",
+        "background": "$text_selected_background",
+        "emphasis_0": "$text_selected_emphasis_0",
+        "emphasis_1": "$text_selected_emphasis_1",
+        "emphasis_2": "$text_selected_emphasis_2",
+        "emphasis_3": "$text_selected_emphasis_3"
+      }
+    },
+    {
+      "component": "ribbon_selected",
+      "attrs": {
+        "base": "$ribbon_selected_base",
+        "background": "$ribbon_selected_background",
+        "emphasis_0": "$ribbon_selected_emphasis_0",
+        "emphasis_1": "$ribbon_selected_emphasis_1",
+        "emphasis_2": "$ribbon_selected_emphasis_2",
+        "emphasis_3": "$ribbon_selected_emphasis_3"
+      }
+    },
+    {
+      "component": "ribbon_unselected",
+      "attrs": {
+        "base": "$ribbon_unselected_base",
+        "background": "$ribbon_unselected_background",
+        "emphasis_0": "$ribbon_unselected_emphasis_0",
+        "emphasis_1": "$ribbon_unselected_emphasis_1",
+        "emphasis_2": "$ribbon_unselected_emphasis_2",
+        "emphasis_3": "$ribbon_unselected_emphasis_3"
+      }
+    },
+    {
+      "component": "table_title",
+      "attrs": {
+        "base": "$table_title_base",
+        "background": "$table_title_background",
+        "emphasis_0": "$table_title_emphasis_0",
+        "emphasis_1": "$table_title_emphasis_1",
+        "emphasis_2": "$table_title_emphasis_2",
+        "emphasis_3": "$table_title_emphasis_3"
+      }
+    },
+    {
+      "component": "table_cell_selected",
+      "attrs": {
+        "base": "$table_cell_selected_base",
+        "background": "$table_cell_selected_background",
+        "emphasis_0": "$table_cell_selected_emphasis_0",
+        "emphasis_1": "$table_cell_selected_emphasis_1",
+        "emphasis_2": "$table_cell_selected_emphasis_2",
+        "emphasis_3": "$table_cell_selected_emphasis_3"
+      }
+    },
+    {
+      "component": "table_cell_unselected",
+      "attrs": {
+        "base": "$table_cell_unselected_base",
+        "background": "$table_cell_unselected_background",
+        "emphasis_0": "$table_cell_unselected_emphasis_0",
+        "emphasis_1": "$table_cell_unselected_emphasis_1",
+        "emphasis_2": "$table_cell_unselected_emphasis_2",
+        "emphasis_3": "$table_cell_unselected_emphasis_3"
+      }
+    },
+    {
+      "component": "list_selected",
+      "attrs": {
+        "base": "$list_selected_base",
+        "background": "$list_selected_background",
+        "emphasis_0": "$list_selected_emphasis_0",
+        "emphasis_1": "$list_selected_emphasis_1",
+        "emphasis_2": "$list_selected_emphasis_2",
+        "emphasis_3": "$list_selected_emphasis_3"
+      }
+    },
+    {
+      "component": "list_unselected",
+      "attrs": {
+        "base": "$list_unselected_base",
+        "background": "$list_unselected_background",
+        "emphasis_0": "$list_unselected_emphasis_0",
+        "emphasis_1": "$list_unselected_emphasis_1",
+        "emphasis_2": "$list_unselected_emphasis_2",
+        "emphasis_3": "$list_unselected_emphasis_3"
+      }
+    },
+    {
+      "component": "frame_selected",
+      "attrs": {
+        "base": "$frame_selected_base",
+        "background": "$frame_selected_background",
+        "emphasis_0": "$frame_selected_emphasis_0",
+        "emphasis_1": "$frame_selected_emphasis_1",
+        "emphasis_2": "$frame_selected_emphasis_2",
+        "emphasis_3": "$frame_selected_emphasis_3"
+      }
+    },
+    {
+      "component": "frame_unselected",
+      "attrs": {
+        "base": "$frame_unselected_base",
+        "background": "$frame_unselected_background",
+        "emphasis_0": "$frame_unselected_emphasis_0",
+        "emphasis_1": "$frame_unselected_emphasis_1",
+        "emphasis_2": "$frame_unselected_emphasis_2",
+        "emphasis_3": "$frame_unselected_emphasis_3"
+      }
+    },
+    {
+      "component": "frame_highlight",
+      "attrs": {
+        "base": "$frame_highlight_base",
+        "background": "$frame_highlight_background",
+        "emphasis_0": "$frame_highlight_emphasis_0",
+        "emphasis_1": "$frame_highlight_emphasis_1",
+        "emphasis_2": "$frame_highlight_emphasis_2",
+        "emphasis_3": "$frame_highlight_emphasis_3"
+      }
+    },
+    {
+      "component": "exit_code_success",
+      "attrs": {
+        "base": "$exit_code_success_base",
+        "background": "$exit_code_success_background",
+        "emphasis_0": "$exit_code_success_emphasis_0",
+        "emphasis_1": "$exit_code_success_emphasis_1",
+        "emphasis_2": "$exit_code_success_emphasis_2",
+        "emphasis_3": "$exit_code_success_emphasis_3"
+      }
+    },
+    {
+      "component": "exit_code_error",
+      "attrs": {
+        "base": "$exit_code_error_base",
+        "background": "$exit_code_error_background",
+        "emphasis_0": "$exit_code_error_emphasis_0",
+        "emphasis_1": "$exit_code_error_emphasis_1",
+        "emphasis_2": "$exit_code_error_emphasis_2",
+        "emphasis_3": "$exit_code_error_emphasis_3"
+      }
+    },
+    {
+      "component": "multiplayer_user_colors",
+      "attrs": {
+        "player_1": "$player_1",
+        "player_2": "$player_2",
+        "player_3": "$player_3",
+        "player_4": "$player_4",
+        "player_5": "$player_5",
+        "player_6": "$player_6",
+        "player_7": "$player_7",
+        "player_8": "$player_8",
+        "player_9": "$player_9",
+        "player_10": "$player_10"
+      }
+    }
+  ]
+}

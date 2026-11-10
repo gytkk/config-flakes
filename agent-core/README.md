@@ -4,7 +4,7 @@
 
 `agent-core/`는 coding-agent 공통 규칙과 runtime adapter, 로컬 skill, 외부 skill source 선언을 관리한다. Stdlib-only Python renderer는 지침 문서를 생성하고, `skill-plan`은 설치 대상과 source를 JSON으로 출력한다. 실제 skill 취득과 배치는 버전을 고정한 `skills@1.7.2` CLI가 담당한다.
 
-Runtime module은 생성 지침과 extension을 설치한다. [Agent skills module](../config/modules/agent-skills/README.md)은 Home Manager switch마다 활성 agent 전체의 skill을 설치하거나 갱신한다. [설치 연결 명령](../scripts/install-agent-skills.py)은 manifest의 선택 목록을 pinned CLI에 전달하고 설치 경로별 소유권, 충돌, 백업과 복구를 관리한다. Nix build와 evaluation은 외부 skill을 다운로드하지 않으며, activation에는 network 접근이 필요하다.
+Runtime module은 생성 지침과 extension을 설치한다. [Agent skills module](../modules/agent-skills/README.md)은 Home Manager switch마다 활성 agent 전체의 skill을 설치하거나 갱신한다. [설치 연결 명령](../scripts/install-agent-skills.py)은 manifest의 선택 목록을 pinned CLI에 전달하고 설치 경로별 소유권, 충돌, 백업과 복구를 관리한다. Nix build와 evaluation은 외부 skill을 다운로드하지 않으며, activation에는 network 접근이 필요하다.
 
 ## 구조
 
@@ -24,7 +24,7 @@ agent-core/
 
 `manifest.toml`의 `skill_sources`는 로컬 skill과 외부 Git source를 선언한다. 외부 source는 설치 작업마다 기본 branch의 최신 full SHA를 한 번 결정하며, 같은 작업의 모든 target에 같은 SHA를 사용한다. `resolving-merge-conflicts`는 최신 upstream에서 삭제되어 사용자 결정에 따라 새 설치 목록에서 제외한다. 최신 upstream의 workflow와 UI metadata 변경도 첫 전환에 포함된다.
 
-`skill_targets`는 Codex/Pi/OMP 공통 pool과 Claude copy에 설치할 skill을 선택한다. 세 runtime은 `~/.agents/skills`를 공유하므로 같은 shared 선택 목록을 발견한다. [OpenAI API 모듈](../config/modules/openai-api/README.md)은 API client에 agenix 키를 전달하며, skill 설치 자체가 package나 credential을 준비하지는 않는다.
+`skill_targets`는 Codex/Pi/OMP 공통 pool과 Claude copy에 설치할 skill을 선택한다. 세 runtime은 `~/.agents/skills`를 공유하므로 같은 shared 선택 목록을 발견한다. [OpenAI API 모듈](../modules/openai-api/README.md)은 API client에 agenix 키를 전달하며, skill 설치 자체가 package나 credential을 준비하지는 않는다.
 
 Hunk의 `hunk-review`는 `modem-dev/hunk`의 `.agents/skills/hunk-review`에서 취득하여 shared와 Claude target에 설치한다. Skill은 `hunk skill show hunk-review`로 설치된 CLI 버전에 맞는 지침을 읽는다. Hunk 실행 파일은 공통 Home Manager 패키지가 설치하며, skill은 다른 외부 source와 동일하게 switch 때 갱신한다.
 
@@ -59,7 +59,7 @@ Hunk의 `hunk-review`는 `modem-dev/hunk`의 `.agents/skills/hunk-review`에서 
 
 ### Runtime module
 
-`config/modules/claude`, `config/modules/codex`, `config/modules/pi`, `config/modules/omp`는 다음을 소유한다.
+`modules/claude`, `modules/codex`, `modules/pi`, `modules/omp`는 다음을 소유한다.
 
 - Runtime package 또는 user-managed runtime의 host integration
 - Renderer의 지침 문서를 실제 runtime 경로에 설치하는 선언
@@ -69,7 +69,7 @@ Hunk의 `hunk-review`는 `modem-dev/hunk`의 `.agents/skills/hunk-review`에서 
 
 Runtime module은 공통 원문, shared skill 원문, 독자적인 render 또는 merge 알고리즘을 소유하지 않는다. Renderer는 manifest에 선언한 source만 선택한다.
 
-공통 `config/modules/agent-skills`는 활성 agent에 맞춰 한 번의 설치 작업을 구성한다. Codex, Pi, OMP 중 하나라도 활성화되면 shared target을 한 번 선택하고, Claude가 활성화되면 Claude target을 선택한다. `linkGeneration`과 필요한 `codexUserConfig` 이후에 실행하며 Node/npm, Git, packaged canonical resource를 포함한 Python을 제공한다. Home Manager의 `run`으로 dry-run을 존중하고 설치 오류가 나면 switch를 실패시킨다.
+공통 `modules/agent-skills`는 활성 agent에 맞춰 한 번의 설치 작업을 구성한다. Codex, Pi, OMP 중 하나라도 활성화되면 shared target을 한 번 선택하고, Claude가 활성화되면 Claude target을 선택한다. `linkGeneration`과 필요한 `codexUserConfig` 이후에 실행하며 Node/npm, Git, packaged canonical resource를 포함한 Python을 제공한다. Home Manager의 `run`으로 dry-run을 존중하고 설치 오류가 나면 switch를 실패시킨다.
 
 ## 의존성 방향
 
@@ -78,7 +78,7 @@ agent-core source
         ↓ materialize
 runtime별 immutable output tree
         ↓ install
-config/modules/claude | config/modules/codex | config/modules/pi
+modules/claude | modules/codex | modules/pi
         ↓
 ~/.claude | ~/.codex | ~/.pi
 ```
@@ -86,14 +86,14 @@ config/modules/claude | config/modules/codex | config/modules/pi
 허용하는 의존성은 다음과 같다.
 
 ```text
-config/modules/* -> agent-core package와 render interface
+modules/* -> agent-core package와 render interface
 flake packages, apps, checks -> agent-core
 ```
 
 다음 의존성은 만들지 않는다.
 
 ```text
-agent-core source -> config/modules/* 경로
+agent-core source -> modules/* 경로
 agent-core -> 개인 memory 또는 runtime state
 agent-core -> 암묵적인 runtime 홈 경로
 runtime A -> runtime B의 session 또는 credentials
@@ -173,7 +173,7 @@ Pi는 operating invariant를 `APPEND_SYSTEM.md`로 분리한다. `AGENTS.md`에�
 
 ### OMP
 
-OMP는 shared skill 소비자로만 등록한다. OMP용 문서 renderer나 legacy skill output은 만들지 않는다. [OMP 모듈](../config/modules/omp/README.md)을 단독으로 활성화해도 공통 activation이 `~/.agents/skills`를 설치·갱신하며, OMP의 `agents` provider가 이를 `agents:user`로 발견한다.
+OMP는 shared skill 소비자로만 등록한다. OMP용 문서 renderer나 legacy skill output은 만들지 않는다. [OMP 모듈](../modules/omp/README.md)을 단독으로 활성화해도 공통 activation이 `~/.agents/skills`를 설치·갱신하며, OMP의 `agents` provider가 이를 `agents:user`로 발견한다.
 
 `skill_targets.shared.runtimes`는 소비 runtime 목록이다. 설치 adapter의 `--agent codex pi`는 pinned Skills CLI에서 공통 설치 경로를 선택하는 인자이므로 그대로 유지한다. OMP 전용 복사본이나 symlink는 만들지 않는다.
 
@@ -194,7 +194,7 @@ Runtime module은 `render.nix`가 만든 immutable tree에서 필요한 파일�
 
 ## Skill 설치와 복구
 
-OpenClaw는 공통 지침과 skill 설치 대상에 포함하지 않는다. 기존 integration과 session recorder의 제거 절차는 [OpenClaw migration](../config/modules/openclaw/README.md#removing-the-shared-agent-integration)을 따른다. 기존 설치 파일, ownership 기록과 backup은 자동 삭제하지 않는다. OpenClaw target을 포함한 이전 설치 영수증을 복구하려면 해당 영수증을 생성한 이전 installer revision을 사용한다.
+OpenClaw는 공통 지침과 skill 설치 대상에 포함하지 않는다. 기존 integration과 session recorder의 제거 절차는 [OpenClaw migration](../modules/openclaw/README.md#removing-the-shared-agent-integration)을 따른다. 기존 설치 파일, ownership 기록과 backup은 자동 삭제하지 않는다. OpenClaw target을 포함한 이전 설치 영수증을 복구하려면 해당 영수증을 생성한 이전 installer revision을 사용한다.
 
 정상 운영에서는 사용자가 Home Manager/NixOS switch를 실행하면 활성 agent 전체의 skill이 함께 설치되거나 갱신된다. 각 외부 source의 최신 full SHA는 한 작업에서 한 번 결정하여 모든 target에 공통으로 사용한다. 성공한 switch 뒤에 별도 설치 명령은 필요하지 않다. 직접 연결 명령을 실행하는 방식은 격리 probe, 복구와 명시적 SHA 재현에 사용한다. 이 명령에는 Node, npm, Git와 network 접근이 필요하다. Activation은 `XDG_STATE_HOME`을 Home Manager의 `xdg.stateHome`으로 설정하므로 직접 설치와 복구에도 같은 값을 사용한다. 아래 예시는 기본값이며 `xdg.stateHome`을 변경했다면 그 경로를 지정한다. 다음 `probe`는 임시 HOME에서 설치를 검증하고, 기존 host의 skill이나 credential을 변경하지 않는다. 영수증 파일은 새 경로여야 한다.
 

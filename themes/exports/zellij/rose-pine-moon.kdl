@@ -1,0 +1,130 @@
+// Auto-generated from themes/core/rose-pine-moon.yaml
+// Template: zellij-theme-template v1
+themes {
+    rose-pine-moon {
+        text_unselected {
+            base 224 222 244
+            background 42 39 63
+            emphasis_0 234 154 151
+            emphasis_1 196 167 231
+            emphasis_2 62 143 176
+            emphasis_3 235 111 146
+        }
+        text_selected {
+            base 224 222 244
+            background 68 65 90
+            emphasis_0 234 154 151
+            emphasis_1 62 143 176
+            emphasis_2 156 207 216
+            emphasis_3 235 111 146
+        }
+        ribbon_selected {
+            base 35 33 54
+            background 62 143 176
+            emphasis_0 246 193 119
+            emphasis_1 234 154 151
+            emphasis_2 235 111 146
+            emphasis_3 196 167 231
+        }
+        ribbon_unselected {
+            base 224 222 244
+            background 110 106 134
+            emphasis_0 235 111 146
+            emphasis_1 224 222 244
+            emphasis_2 196 167 231
+            emphasis_3 235 111 146
+        }
+        table_title {
+            base 62 143 176
+            background 35 33 54
+            emphasis_0 234 154 151
+            emphasis_1 196 167 231
+            emphasis_2 62 143 176
+            emphasis_3 235 111 146
+        }
+        table_cell_selected {
+            base 224 222 244
+            background 68 65 90
+            emphasis_0 234 154 151
+            emphasis_1 62 143 176
+            emphasis_2 156 207 216
+            emphasis_3 235 111 146
+        }
+        table_cell_unselected {
+            base 224 222 244
+            background 42 39 63
+            emphasis_0 234 154 151
+            emphasis_1 196 167 231
+            emphasis_2 62 143 176
+            emphasis_3 235 111 146
+        }
+        list_selected {
+            base 224 222 244
+            background 68 65 90
+            emphasis_0 234 154 151
+            emphasis_1 62 143 176
+            emphasis_2 156 207 216
+            emphasis_3 235 111 146
+        }
+        list_unselected {
+            base 224 222 244
+            background 42 39 63
+            emphasis_0 234 154 151
+            emphasis_1 196 167 231
+            emphasis_2 62 143 176
+            emphasis_3 235 111 146
+        }
+        frame_selected {
+            base 62 143 176
+            background 35 33 54
+            emphasis_0 234 154 151
+            emphasis_1 196 167 231
+            emphasis_2 235 111 146
+            emphasis_3 35 33 54
+        }
+        frame_unselected {
+            base 86 82 110
+            background 35 33 54
+            emphasis_0 144 140 170
+            emphasis_1 86 82 110
+            emphasis_2 35 33 54
+            emphasis_3 35 33 54
+        }
+        frame_highlight {
+            base 234 154 151
+            background 35 33 54
+            emphasis_0 235 111 146
+            emphasis_1 234 154 151
+            emphasis_2 234 154 151
+            emphasis_3 234 154 151
+        }
+        exit_code_success {
+            base 62 143 176
+            background 35 33 54
+            emphasis_0 196 167 231
+            emphasis_1 57 53 82
+            emphasis_2 235 111 146
+            emphasis_3 68 65 90
+        }
+        exit_code_error {
+            base 235 111 146
+            background 35 33 54
+            emphasis_0 234 154 151
+            emphasis_1 35 33 54
+            emphasis_2 35 33 54
+            emphasis_3 35 33 54
+        }
+        multiplayer_user_colors {
+            player_1 235 111 146
+            player_2 62 143 176
+            player_3 156 207 216
+            player_4 246 193 119
+            player_5 196 167 231
+            player_6 233 162 162
+            player_7 178 104 133
+            player_8 232 166 168
+            player_9 155 137 183
+            player_10 91 157 188
+        }
+    }
+}

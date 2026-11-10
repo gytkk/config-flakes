@@ -1,0 +1,27 @@
+# Auto-generated from themes/core/ayu-mirage.yaml
+# Template: herdr-theme-template v1
+
+[theme]
+name = "terminal"
+auto_switch = false
+
+[theme.custom]
+accent = "#409fff"
+panel_bg = "#282E3B"
+sidebar_bg = "#1F2430"
+active_row_bg = "#494c53"
+selection_bg = "#409FFF"
+surface0 = "#1F2430"
+surface1 = "#282E3B"
+surface_dim = "#171B24"
+overlay0 = "#bcbcb8"
+overlay1 = "#CCCAC2"
+text = "#CCCAC2"
+subtext0 = "#bcbcb8"
+mauve = "#dfbfff"
+green = "#D5FF80"
+yellow = "#FFCC66"
+red = "#F28779"
+blue = "#73D0FF"
+teal = "#95E6CB"
+peach = "#F29E74"
