@@ -4,6 +4,23 @@
 
 Only the default profile's settings file is managed. Authentication, databases, sessions, caches, and named profiles remain device-local. Pi settings and extensions are not imported, and this module does not install shared instructions or skills. Do not put credentials or machine-specific paths in the shared YAML. Settings saved by OMP can change the checkout file; review those changes before committing.
 
+## MCP
+
+MCP servers remain device-local in `~/.omp/agent/mcp.json`; this module does not manage that file. To use Context7 without importing Claude configuration, keep `claude` and `claude-plugins` in `disabledProviders` and register the server directly:
+
+```json
+{
+  "mcpServers": {
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
+    }
+  }
+}
+```
+
+Merge this entry into any existing server map rather than replacing it. Anonymous access works with lower rate limits; authenticated setup is described in [Context7's MCP documentation](https://context7.com/docs/resources/all-clients). Keep credentials out of the checkout. Run `/mcp reload` and `/mcp list` in OMP to load and inspect the server.
+
 ## Status line
 
 The layout follows the Pi footer using OMP's built-in segments:
