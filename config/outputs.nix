@@ -125,7 +125,7 @@ let
             nix build .#nixosConfigurations.pylv-sepia.config.system.build.toplevel
           '';
     in
-    systemPkgs.writeShellScriptBin "ws" ''
+    systemPkgs.writeShellScriptBin "config-flakes" ''
       cat <<'EOF'
       This flake does not expose a single real build target by default.
       Use an explicit attribute instead.
@@ -150,7 +150,7 @@ let
   defaultApps = builtins.mapAttrs (system: _: {
     default = {
       type = "app";
-      program = "${defaultPackages.${system}.default}/bin/ws";
+      program = "${defaultPackages.${system}.default}/bin/config-flakes";
     };
     agent-core = {
       type = "app";

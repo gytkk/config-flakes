@@ -22,7 +22,7 @@ Running status green has a 1.8:1 sRGB contrast target against sidebar and active
 
 The prefix shortcuts remain available: `c` creates a tab, `Shift+x` closes a tab, `p` / `n` focuses the previous / next tab, and `Shift+,` / `Shift+.` focuses the previous / next agent. `Ctrl+Space`, then `Shift+s`, opens the workspace picker.
 
-`Ctrl+Space`, then `Shift+n`, opens an fzf directory picker populated by zoxide. The new workspace starts in the selected directory and uses its final directory name as the label, such as `keycult-trackball` for `~/ws/workspace/keycult-trackball`. Existing workspace labels remain unchanged.
+`Ctrl+Space`, then `Shift+n`, opens an fzf directory picker populated by zoxide. The new workspace starts in the selected directory and uses its final directory name as the label, such as `keycult-trackball` for `~/keycult-trackball`. Existing workspace labels remain unchanged.
 
 `Alt+t` and `Alt+w` are handled by Herdr without Windows Terminal overrides. Outside Herdr, these keys retain their shell or application behavior.
 

@@ -52,17 +52,18 @@ Connect ChatGPT to `https://mcp.openclaw.ai/mcp`, then use the Gateway sign-in f
 
 OpenClaw owns its instructions, skills, plugins, and session state independently of Codex, Claude Code, and Pi. The shared `agent-core`, `config/modules/agent-skills`, and `agent-session-record` integrations target the coding agents only. Manage OpenClaw skills through its own workspace and configuration.
 
-## Task routing in the monorepo
+## Task routing across repositories
 
-Use `~/ws` as the project checkout and Git root. Read its root `AGENTS.md` first, then the target subtree instructions:
+Configuration work uses the `gytkk/config-flakes` checkout at `~/ws`. Read its root `AGENTS.md` first, then the relevant configuration instructions:
 
-- Former `nix-flakes` configuration edits belong in `~/ws/config/`. Read `config/AGENTS.md`; run flake commands from `~/ws`, not from `config/`. OpenClaw host integration belongs in `config/modules/openclaw/`.
-- Coding-agent shared rules, adapters, and skills belong in `~/ws/agent-core/`. Read `agent-core/README.md`; these sources target Codex, Claude Code, and Pi, not OpenClaw.
-- Keyboard assets belong in `~/ws/workspace/keyboards/`; trackball work belongs in `~/ws/workspace/keycult-trackball/` with its own `AGENTS.md`. Resolve other former repositories by inspecting the checkout rather than assuming a matching subtree.
+- Home Manager and NixOS edits belong in `~/ws/config/`. Read `config/AGENTS.md`; run flake commands from `~/ws`, not from `config/`. OpenClaw host integration belongs in `config/modules/openclaw/`.
+- Coding-agent shared rules, adapters, and skills belong in `~/ws/agent-core/`. Read `agent-core/README.md`; these sources target coding agents, not OpenClaw.
+- Applications use the private `gytkk/menu` and `gytkk/trading-agent` repositories, normally checked out at `~/menu` and `~/trading-agent`.
+- Hardware work uses the private `gytkk/keyboards` and `gytkk/keycult-trackball` repositories, normally checked out at `~/keyboards` and `~/keycult-trackball`. Read each project's own instructions and run commands from its root. The former application and hardware subtrees are no longer part of the configuration checkout.
 
-The private OpenClaw workspace checkout at `~/claw-space` (`gytkk/claw-space`) is separate from the monorepo checkout. Its `AGENTS.md`, workspace skills, automation runbooks, and workspace skill validator are **not imported into this tree**. Project work targets the paths above; `agent-core/` is not authoritative for OpenClaw instructions. Follow the runtime-provided workspace location until a separately authorized migration is verified. Keep personal memory, credentials, session data, and automation state outside tracked project files.
+The private OpenClaw workspace checkout at `~/claw-space` (`gytkk/claw-space`) is independent. Its `AGENTS.md`, workspace skills, automation runbooks, and workspace skill validator are **not imported into this tree**. Project work targets the repositories above; `agent-core/` is not authoritative for OpenClaw instructions. Follow the runtime-provided workspace location until a separately authorized migration is verified. Keep personal memory, credentials, session data, and automation state outside tracked project files.
 
-The standalone `~/claw-space` checkout replaces the former `~/development/ws` location without a compatibility symlink. Preparing a checkout is not a runtime cutover: preserve local-only context, ignore rules, permissions, and delivery/deduplication state, then update workspace discovery, skill/resource paths, and installed automation commands under explicit authorization. The workspace validator belongs at `~/claw-space/scripts/validate-workspace-skills.py`, not in this monorepo. Audit active runbooks and installed jobs for old absolute paths, validate the configuration and skill discovery, and verify each affected workflow before retiring its old location. Preserve historical notes and vendor sources rather than rewriting them to look current. Moving files alone does not update running jobs or the current session context. No NixOS activation or live OpenClaw change is implied by project task routing.
+The standalone `~/claw-space` checkout replaces the former `~/development/ws` location without a compatibility symlink. Preparing a checkout is not a runtime cutover: preserve local-only context, ignore rules, permissions, and delivery/deduplication state, then update workspace discovery, skill/resource paths, and installed automation commands under explicit authorization. The workspace validator belongs at `~/claw-space/scripts/validate-workspace-skills.py`, not in this configuration repository. Audit active runbooks and installed jobs for old absolute paths, validate the configuration and skill discovery, and verify each affected workflow before retiring its old location. Preserve historical notes and vendor sources rather than rewriting them to look current. Moving files alone does not update running jobs or the current session context. No NixOS activation or live OpenClaw change is implied by project task routing.
 
 ## Removing the shared agent integration
 

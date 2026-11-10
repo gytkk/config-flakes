@@ -19,6 +19,8 @@ echo "experimental-features = nix-command flakes" | sudo tee -a /etc/nix/nix.con
 
 Runtime checkout paths default to `~/ws`, including when evaluation runs in another worktree. Worktrees are allowed for editing and validation. Before switching from a worktree, deliberately configure its checkout path or apply the change from the main checkout so mutable links and runtime scripts point to the intended files.
 
+The GitHub repository is `gytkk/config-flakes` (formerly `gytkk/ws`); renaming the remote does not require renaming the checkout. Keep `~/ws` for installed generations. Applications and hardware projects now live in their own private repositories, linked from the [repository guide](../README.md). Root flake files, configuration CI, and supporting scripts remain here.
+
 When moving an existing checkout from `~/development/nix-flakes` to `~/ws`, keep a symlink at the old path until installed generations and stored marketplace paths no longer use it. Move each host's checkout before applying the new default, or set that host's `flakeDirectory` in `config/inventory.nix` to its actual checkout path.
 
 Configuration files live under `config/modules`, `config/themes`, and `config/secrets`; the former root paths have no compatibility symlinks. Each host must apply the current Home Manager or NixOS configuration and verify its runtime links and stored marketplace paths. Updating the checkout alone does not activate the configuration. Before rolling back to a generation that uses the former root paths, restore the corresponding compatibility symlinks or use a matching checkout layout; otherwise its configuration links and runtime commands may fail.

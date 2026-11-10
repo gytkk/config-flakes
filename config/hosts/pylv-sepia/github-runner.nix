@@ -9,7 +9,7 @@
 
   services.github-runners.ws = {
     enable = true;
-    url = "https://github.com/gytkk/ws";
+    url = "https://github.com/gytkk/config-flakes";
     tokenFile = config.age.secrets.github-runner-ws-token.path;
     extraLabels = [ "pylv-sepia" ];
     # Re-registration after a token or workDir change otherwise fails on the existing runner name.
