@@ -32,3 +32,6 @@ statusLine:
 cycleOrder:
   - default
   - task
+disabledProviders:
+  - claude
+  - claude-plugins
