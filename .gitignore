@@ -7,3 +7,6 @@ result-*
 
 # Codex critic runtime outputs
 .ai/
+
+# OMP settings write lock (resolved symlink target)
+/config/modules/omp/files/config.yml.lock
