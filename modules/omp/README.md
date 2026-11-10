@@ -1,6 +1,6 @@
 # OMP
 
-`modules.omp.enable` installs `pkgs.omp` and links `~/.omp/agent/config.yml` to `modules/omp/files/config.yml` in the checkout with `mkOutOfStoreSymlink`. The common Home Manager profile enables the module. `flakeDirectory` selects the checkout, normally `~/ws`.
+`modules.omp.enable` installs `pkgs.omp` and links `~/.omp/agent/config.yml` to `modules/omp/files/config.yml` in the checkout with `mkOutOfStoreSymlink`. The common Home Manager profile enables the module. `flakeDirectory` selects the checkout, normally `~/development/config-flakes`.
 
 Only the default profile's settings file is managed. Authentication, databases, sessions, caches, and named profiles remain device-local. Pi settings and extensions are not imported, and this module does not install shared instructions. Do not put credentials or machine-specific paths in the shared YAML. Settings saved by OMP can change the checkout file; review those changes before committing.
 

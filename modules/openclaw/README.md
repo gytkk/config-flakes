@@ -54,10 +54,10 @@ OpenClaw owns its instructions, skills, plugins, and session state independently
 
 ## Task routing across repositories
 
-Configuration work uses the `gytkk/config-flakes` checkout at `~/ws`. Read its root `AGENTS.md` first:
+Configuration work uses the `gytkk/config-flakes` checkout at `~/development/config-flakes`. Read its root `AGENTS.md` first:
 
-- Home Manager and NixOS edits belong in `~/ws/`. Read the root `AGENTS.md` and run flake commands from `~/ws`. OpenClaw host integration belongs in `modules/openclaw/`.
-- Coding-agent shared rules, adapters, and skills belong in `~/ws/agent-core/`. Read `agent-core/README.md`; these sources target coding agents, not OpenClaw.
+- Home Manager and NixOS edits belong in `~/development/config-flakes/`. Read the root `AGENTS.md` and run flake commands from `~/development/config-flakes`. OpenClaw host integration belongs in `modules/openclaw/`.
+- Coding-agent shared rules, adapters, and skills belong in `~/development/config-flakes/agent-core/`. Read `agent-core/README.md`; these sources target coding agents, not OpenClaw.
 - Applications use the private `gytkk/menu` and `gytkk/trading-agent` repositories, normally checked out at `~/menu` and `~/trading-agent`.
 - Hardware work uses the private `gytkk/keyboards` and `gytkk/keycult-trackball` repositories, normally checked out at `~/keyboards` and `~/keycult-trackball`. Read each project's own instructions and run commands from its root. The former application and hardware subtrees are no longer part of the configuration checkout.
 

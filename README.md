@@ -26,7 +26,7 @@ Application and hardware projects are maintained in separate private repositorie
 
 Each repository owns its source, history, checks, and project instructions. This repository retains the configuration flake, shared agent resources, and their supporting scripts, documentation, and CI. OpenClaw's independent workspace instructions, skills, and runbooks remain separate; see [OpenClaw task routing](modules/openclaw/README.md#task-routing-across-repositories).
 
-The GitHub repository is `gytkk/config-flakes`; the local configuration checkout remains `~/ws` to preserve installed generations' out-of-store links. Runtime paths still default to that location. Application settings belong in `modules/`; shared agent instructions and skills belong in `agent-core/`.
+The GitHub repository is `gytkk/config-flakes`. Runtime checkout paths default to `~/development/config-flakes` on every host. Keep old checkout paths available while installed generations reference them. Application settings belong in `modules/`; shared agent instructions and skills belong in `agent-core/`.
 
 Run configuration commands from the repository root, using an environment or host name from [the inventory](systems/inventory.nix):
 
@@ -51,16 +51,18 @@ sudo mkdir -p /etc/nix
 echo "experimental-features = nix-command flakes" | sudo tee -a /etc/nix/nix.conf
 ```
 
-- This repo assumes the checkout lives at `~/ws`. Several modules create out-of-store symlinks from that path.
+- Several modules create out-of-store symlinks from the environment's `flakeDirectory`, defaulting to `~/development/config-flakes`. Set an override in `systems/inventory.nix` when needed.
 - Standalone Home Manager commands evaluate without `--impure`. The checkout path still matters for modules that intentionally install out-of-store symlinks back to the repo.
 
 ## Checkout paths and migration
 
-Runtime checkout paths default to `~/ws`, including when evaluation runs in another worktree. Worktrees are allowed for editing and validation. Before switching from a worktree, deliberately configure its checkout path or apply the change from the main checkout so mutable links and runtime scripts point to the intended files.
+Runtime checkout paths default to `~/development/config-flakes`, including when evaluation runs in another worktree. Worktrees are allowed for editing and validation. Before switching from a worktree, deliberately configure its checkout path or apply the change from the main checkout so mutable links and runtime scripts point to the intended files.
+
+After moving the checkout from `~/ws`, retain `~/ws` as a symlink to `~/development/config-flakes` while installed generations or runtime metadata still reference the old path. This restores links for generations using the current flat layout. Apply the appropriate Home Manager or NixOS switch command from the new checkout to install its configured paths. If OMP has replaced its broken configuration symlink with a regular file, preserve that file with a unique `-b` backup suffix when switching Home Manager, then review the backup for settings to retain.
 
 The GitHub repository is `gytkk/config-flakes` (formerly `gytkk/ws`); renaming the remote does not require renaming the checkout. Keep `~/ws` for installed generations. Applications and hardware projects now live in their own private repositories, linked from the [repository navigation](#config-flakes). Root flake files, configuration CI, and supporting scripts remain here.
 
-When moving an existing checkout from `~/development/nix-flakes` to `~/ws`, keep a symlink at the old path until installed generations and stored marketplace paths no longer use it. Move each host's checkout before applying the new default, or set that host's `flakeDirectory` in `systems/inventory.nix` to its actual checkout path.
+If installed generations still use `~/development/nix-flakes`, preserve that path too. Move each host's checkout before applying the new default, or set that host's `flakeDirectory` in `systems/inventory.nix` to its actual checkout path.
 
 Environment composition now lives under `systems/`, while `modules`, `themes`, and `secrets` remain at the repository root. Installed generations from the previous layout still reference `~/ws/config/modules`, `~/ws/config/themes`, and `~/ws/config/secrets`, including runtime scripts and stored marketplace paths. This checkout ships no `config/` compatibility symlinks. Updating the checkout alone does not activate the new paths: each host must switch to the current Home Manager or NixOS configuration and verify its runtime links and stored marketplace paths. Before rolling back to a generation that uses the old `config/` layout, restore a matching old-layout checkout at the generation's expected path; otherwise its configuration links and runtime commands may fail.
 

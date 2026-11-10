@@ -25,7 +25,7 @@ class InventoryValidationTests(unittest.TestCase):
                 inputs = {{}};
                 nixpkgs.lib.nixosSystem = args: {{ inherit (args.specialArgs) username homeDirectory flakeDirectory; }};
                 commonOverlays = [];
-                mkFlakeDirectory = home: home + "/ws";
+                inherit (import {ROOT}/lib/home-configurations.nix {{ inputs = {{}}; systemPkgs = {{}}; }}) mkFlakeDirectory;
               }};
             in builders.mkNixOSConfig "test" ({config})'''
         return subprocess.run(
@@ -57,4 +57,14 @@ class InventoryValidationTests(unittest.TestCase):
                     self.assertEqual(result.returncode, 0, result.stderr)
                     actual = json.loads(result.stdout)
                     self.assertEqual(actual["username"], "gyutak" if name.startswith("devsisters") else "gytkk")
-                    self.assertEqual(actual["flakeDirectory"], actual["homeDirectory"] + "/ws")
+                    self.assertEqual(actual["flakeDirectory"], actual["homeDirectory"] + "/development/config-flakes")
+
+    def test_explicit_checkout_override_is_preserved(self):
+        for builder in ["home", "nixos"]:
+            with self.subTest(builder=builder):
+                result = self.evaluate(builder, '''{
+                  system = "test"; username = "test"; homeDirectory = "/home/test";
+                  profile = "pylv"; flakeDirectory = "/worktrees/config-flakes";
+                }''')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(json.loads(result.stdout)["flakeDirectory"], "/worktrees/config-flakes")
