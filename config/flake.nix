@@ -41,18 +41,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Rosé Pine themes
-    rose-pine-ghostty = {
-      url = "github:rose-pine/ghostty";
-      flake = false;
-    };
-
-    # Catppuccin themes
-    catppuccin-ghostty = {
-      url = "github:catppuccin/ghostty";
-      flake = false;
-    };
-
     # copyparty - file server
     copyparty = {
       url = "github:9001/copyparty";

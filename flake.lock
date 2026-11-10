@@ -21,26 +21,9 @@
         "type": "github"
       }
     },
-    "catppuccin-ghostty": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1787934293,
-        "narHash": "sha256-XwUwWdBLyFwfyL9/kUhJaztTj+s3JShyc15YAA2HPaY=",
-        "owner": "catppuccin",
-        "repo": "ghostty",
-        "rev": "b0b03ccee7ae8f16b13bd4fdfe267616defdb2b7",
-        "type": "github"
-      },
-      "original": {
-        "owner": "catppuccin",
-        "repo": "ghostty",
-        "type": "github"
-      }
-    },
     "config": {
       "inputs": {
         "agenix": "agenix",
-        "catppuccin-ghostty": "catppuccin-ghostty",
         "copyparty": "copyparty",
         "devsisters-wg": "devsisters-wg",
         "disko": "disko",
@@ -54,7 +37,6 @@
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-25_05": "nixpkgs-25_05",
         "nixpkgs-lsp": "nixpkgs-lsp",
-        "rose-pine-ghostty": "rose-pine-ghostty",
         "rust-overlay": "rust-overlay"
       },
       "locked": {
@@ -567,22 +549,6 @@
     "root": {
       "inputs": {
         "config": "config"
-      }
-    },
-    "rose-pine-ghostty": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1784647627,
-        "narHash": "sha256-kSxKjQUaHm/EAVogJsAFn0bqt4f0QZZz8x75HaY9ex0=",
-        "owner": "rose-pine",
-        "repo": "ghostty",
-        "rev": "d8b4ec06e0cde80fb2bfbf59021ff0a332c77388",
-        "type": "github"
-      },
-      "original": {
-        "owner": "rose-pine",
-        "repo": "ghostty",
-        "type": "github"
       }
     },
     "rust-overlay": {
