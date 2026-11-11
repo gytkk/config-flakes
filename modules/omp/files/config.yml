@@ -39,3 +39,7 @@ dev:
   autoqaConsent: denied
   autoqa: false
 extendedContext: true
+task:
+  showResolvedModelBadge: true
+error:
+  notify: "on"
