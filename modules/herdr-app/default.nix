@@ -2,11 +2,18 @@
   config,
   lib,
   pkgs,
+  username,
+  isWSL ? false,
   ...
 }:
 
 let
   cfg = config.modules.herdrApp;
+  appConfigHome =
+    if isWSL then
+      "/mnt/c/Users/${username}/.config/herdr-app"
+    else
+      "${config.xdg.configHome}/herdr-app";
 in
 {
   options.modules.herdrApp.enable = lib.mkOption {
@@ -18,7 +25,7 @@ in
   config = lib.mkIf cfg.enable {
     home.activation.herdrAppKeys = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       run ${pkgs.python3}/bin/python3 ${./install.py} ${./files} \
-        ${lib.escapeShellArg "${config.xdg.configHome}/herdr-app"}
+        ${lib.escapeShellArg appConfigHome}
     '';
     home.activation.herdrAppFileOpener =
       lib.mkIf

@@ -77,7 +77,7 @@ in
       git.enable = lib.mkDefault true;
       gksdud.enable = lib.mkDefault pkgs.stdenv.hostPlatform.isDarwin;
       herdr.enable = lib.mkDefault true;
-      herdrApp.enable = lib.mkDefault pkgs.stdenv.hostPlatform.isDarwin;
+      herdrApp.enable = lib.mkDefault (pkgs.stdenv.hostPlatform.isDarwin || isWSL);
       hunk.enable = lib.mkDefault true;
       openaiApi.enable = lib.mkDefault (
         config.modules.vim.enable || config.modules.codex.enable || config.modules.claude.enable
