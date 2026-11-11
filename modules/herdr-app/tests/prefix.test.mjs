@@ -28,7 +28,7 @@ async function fixture(mode, activate = true, result = { code: 0, stdout: "/work
         if (command === "pane.focus") state.focused = false;
       },
       exec: async () => state.result,
-      hc: async () => state.result,
+      hc: () => { throw new Error("Prefix cancellation must not send terminal input"); },
     },
   };
   const module = new vm.SourceTextModule(source, { context });
@@ -93,14 +93,23 @@ test("holding the prefix cannot send repeated control input", async () => {
   assert.equal(state.tasks.length, 0);
 });
 
-test("failed double-prefix delivery stays visible with an error instead of losing input silently", async () => {
+test("pressing the prefix again cancels and restores focus without sending terminal input", async () => {
   const { key, view, state } = await fixture();
-  state.result = { code: 1, stderr: "Terminal is no longer live", stdout: "" };
   key("space", { control: true });
   await Promise.all(state.tasks);
-  assert.equal(view.mode, "prefix");
-  assert.equal(view.busy, false);
-  assert.equal(view.error, "Terminal is no longer live");
+  assert.equal(view.mode, "idle");
+  assert.equal(state.focused, false);
+  assert.equal(state.watchCancelled, true);
+  assert.equal(state.tasks.length, 0);
+});
+
+test("the command-routed prefix also toggles off instead of reactivating", async () => {
+  const { view, state } = await fixture();
+  state.deliver("activate");
+  await setImmediate();
+  assert.equal(view.mode, "idle");
+  assert.equal(state.focused, false);
+  assert.equal(state.watchCancelled, true);
 });
 
 test("directory search preserves selection boundaries, wraps and handles an empty result", async () => {

@@ -1,6 +1,6 @@
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
-import { agents, spaces, panes, focused, theme, run, exec, hc, props, closeOverlay, openOverlay, nextCommand } from "herdr";
+import { agents, spaces, panes, focused, theme, run, exec, props, closeOverlay, openOverlay, nextCommand } from "herdr";
 
 const ACTIONS = {
   c: ["tab.new"], X: ["tab.close"], p: ["tab.prev"], n: ["tab.next"],
@@ -27,6 +27,21 @@ const HELP = [
   ["b / s / q", "Sidebar / settings / close window (keep terminals)"],
 ];
 const SHIFTED = { ",": "<", ".": ">", "/": "?", "1": "!", "2": "@", "3": "#", "4": "$", "5": "%", "6": "^", "7": "&", "8": "*", "9": "(" };
+
+function mixColors(a, b, amount) {
+  return "#" + [1, 3, 5].map(i => {
+    const from = parseInt(a.slice(i, i + 2), 16);
+    const to = parseInt(b.slice(i, i + 2), 16);
+    return Math.round(from + (to - from) * amount).toString(16).padStart(2, "0");
+  }).join("");
+}
+
+function badgeText(background) {
+  const linear = [1, 3, 5].map(i => parseInt(background.slice(i, i + 2), 16) / 255)
+    .map(c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const luminance = linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
+  return luminance > 0.179 ? "#000000" : "#ffffff";
+}
 
 function keyOf(event) {
   if (event.modifiers.platform || event.modifiers.alt || event.modifiers.control) return event.keystroke;
@@ -62,16 +77,18 @@ export default class Prefix extends View {
         for (;;) {
           const command = await nextCommand();
           if (command === "activate") {
+            if (this.mode === "prefix") {
+              this.dismiss();
+              cx.notify();
+              continue;
+            }
             this.capture();
             this.mode = "prefix";
-            this.error = "";
-            this.busy = false;
             this.handle.focus();
             this.focusWatch?.cancel();
             this.focusWatch = cx.timer.every(100, cx => {
               if (!this.handle.is_focused()) {
                 this.mode = "idle";
-                this.error = "";
                 this.focusWatch.cancel();
                 cx.notify();
               }
@@ -94,7 +111,6 @@ export default class Prefix extends View {
     if (this.overlay) closeOverlay(this.overlay);
     else {
       this.mode = "idle";
-      this.error = "";
       if (this.origin?.pane) run("pane.focus", { pane: this.origin.pane });
       else if (this.origin?.terminal) run("pane.focus", { terminal: this.origin.terminal });
     }
@@ -159,26 +175,9 @@ export default class Prefix extends View {
       return;
     }
     cx.stop_propagation();
-    if (event.is_held || this.busy) return;
+    if (event.is_held) return;
     const key = keyOf(event);
-    if (key === "escape") return this.dismiss();
-    if (key === "ctrl-space") {
-      if (!this.origin?.terminal) return this.dismiss();
-      this.busy = true;
-      cx.spawn(async cx => {
-        try {
-          const result = await hc(["keys", this.origin.terminal, "ctrl+space"]);
-          if (result.code !== 0) throw new Error(result.stderr.trim() || "Cannot send Ctrl+Space");
-          this.dismiss();
-          cx.notify();
-        } catch (error) {
-          this.error = error.message;
-          this.busy = false;
-          cx.notify();
-        }
-      });
-      return;
-    }
+    if (key === "escape" || key === "ctrl-space") return this.dismiss();
     if (ACTIONS[key]) return this.execute(...ACTIONS[key]);
     if (/^[1-9]$/.test(key)) return this.execute("tab.select", { index: Number(key) });
     const agentIndex = "!@#$%^&*(".indexOf(key);
@@ -206,10 +205,11 @@ export default class Prefix extends View {
     const t = theme();
     if (!this.overlay) {
       const active = this.mode === "prefix";
+      const prefixAccent = mixColors(t.ansi3, t.foreground, 0.2);
       const space = spaces().find(s => s.active);
       const bar = h_flex().id("tui-prefix-bar").track_focus(this.handle).size_full()
-        .px(14).gap(16).items_center().overflow_hidden().border_t(1).border_color(active ? t.accent : t.border)
-        .bg(active ? `${t.accent.slice(0, 7)}14` : t.chrome).text_color(t.foreground).text_size(12)
+        .px(14).gap(16).items_center().overflow_hidden().border_t(1).border_color(active ? prefixAccent : t.border)
+        .bg(active ? mixColors(t.chrome, prefixAccent, 0.15) : t.chrome).text_color(t.foreground).text_size(12)
         .on_key_down((event, cx) => { this.key(event, cx); cx.notify(); });
       if (active) {
         const shortcut = (key, label) => h_flex().flex_none().gap(6).items_center()
@@ -217,9 +217,8 @@ export default class Prefix extends View {
             .border_1().border_color(t.border).font_semibold().text_size(11).child(key))
           .child(div().text_size(11.5).child(label));
         bar.child(div().h(18).px(7).flex_none().flex().items_center().rounded(3)
-          .bg(t.accent).text_color(t.accent_foreground).font_semibold().text_size(10.5).child("PREFIX"));
-        if (this.error) bar.child(div().flex_1().truncate().child(this.error));
-        else bar.child(h_flex().flex_1().min_w(0).gap(18).items_center().overflow_hidden()
+          .bg(prefixAccent).text_color(badgeText(prefixAccent)).font_semibold().text_size(10.5).child("PREFIX"));
+        bar.child(h_flex().flex_1().min_w(0).gap(18).items_center().overflow_hidden()
           .child(shortcut("c", "New tab"))
           .child(shortcut("p / n", "Tabs"))
           .child(shortcut("S", "Spaces"))
@@ -250,7 +249,7 @@ export default class Prefix extends View {
       root.children(HELP.map(([key, label]) => h_flex().gap(12)
         .child(div().w(145).flex_none().font_semibold().child(key))
         .child(div().flex_1().child(label))));
-      root.child(div().child("No timeout · Ctrl+Space twice sends it to the terminal"));
+      root.child(div().child("No timeout · Ctrl+Space again cancels prefix mode"));
     } else {
       root.child(Input.new(this.input).w_full().h(36));
       const rows = this.rows();
