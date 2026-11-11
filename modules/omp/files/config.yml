@@ -9,15 +9,15 @@ modelRoles:
   commit: openai-codex/gpt-6-luna:off
 symbolPreset: nerd
 composer:
-  shape: pi
+  shape: band
 theme:
   dark: titanium
   light: light-one
 setupVersion: 3
 statusLine:
   preset: custom
-  separator: pipe
-  compactThinkingLevel: false
+  separator: powerline-thin
+  compactThinkingLevel: true
   leftSegments:
     - path
     - git
