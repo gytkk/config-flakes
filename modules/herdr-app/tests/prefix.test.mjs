@@ -6,28 +6,33 @@ import vm from "node:vm";
 
 const source = await readFile(new URL("../files/mods/tui-prefix/main.js", import.meta.url), "utf8");
 
-async function fixture(mode, activate = true, result = { code: 0, stdout: "/work/one\n/work/two\n", stderr: "" }) {
+async function fixture(mode, activate = true, result = { code: 0, stdout: "/work/one\n/work/two\n", stderr: "" }, { platform = "linux", machine = "remote" } = {}) {
   const context = vm.createContext({});
-  const state = { closed: false, stopped: 0, focused: false, commands: [], tasks: [], input: {}, result };
+  const state = { closed: false, stopped: 0, focused: false, commands: [], tasks: [], input: {}, result, executions: [], overlays: [] };
   const input = { value: () => state.query, focus() {}, on(event, handler) { state.input[event] = handler; } };
   const exports = {
     "gpui-kit": { View: class {}, div() {} },
     "gpui-base": { v_flex() {}, h_flex() {}, InputState: { new: () => input }, Input: {} },
     herdr: {
       agents: () => [],
-      spaces: () => [{ id: "space", name: "Work", machine: "remote" }],
+      spaces: () => [{ id: "space", name: "Work", machine }],
       panes: () => [],
-      focused: () => ({ space: "space", tab: "tab", pane: "pane", terminal: "remote/t1" }),
+      focused: () => ({ space: "space", tab: "tab", pane: "pane", terminal: machine ? `${machine}/t1` : "t1" }),
+      window: () => ({ platform }),
       theme: () => ({}),
       props: () => mode ? { overlay: "picker", mode } : null,
       closeOverlay() { state.closed = true; },
-      openOverlay() {},
+      openOverlay(options) { state.overlays.push(options); },
       nextCommand: () => new Promise(resolve => { state.deliver = resolve; }),
       run(command, args) {
         state.commands.push({ command, args });
         if (command === "pane.focus") state.focused = false;
       },
-      exec: async () => state.result,
+      exec: async (...args) => {
+        state.executions.push(args);
+        if (state.result instanceof Error) throw state.result;
+        return state.result;
+      },
       hc: () => { throw new Error("Prefix cancellation must not send terminal input"); },
     },
   };
@@ -147,5 +152,69 @@ test("moving focus away clears prefix state without stealing the keyboard back",
   state.watchFocus();
   assert.equal(view.mode, "idle");
   assert.equal(state.watchCancelled, true);
+  assert.equal(state.commands.length, 0);
+});
+
+test("prefix+c launches WSL only for Windows-local spaces and releases prefix focus", async () => {
+  for (const [platform, machine, wsl] of [
+    ["windows", null, true], ["windows", "remote", false],
+    ["linux", null, false], ["macos", null, false],
+  ]) {
+    const { key, view, state } = await fixture(undefined, true, undefined, { platform, machine });
+    key("c");
+    const command = JSON.parse(JSON.stringify(state.commands.at(-1)));
+    assert.deepEqual(command, {
+      command: "tab.new",
+      args: wsl ? { argv: ["wsl.exe", "--cd", "~"] } : {},
+    });
+    assert.equal(view.mode, "idle");
+    assert.equal(state.focused, false);
+  }
+});
+
+test("Windows prefix+N opens a WSL directory without passing Linux cwd to Windows core", async () => {
+  const environment = { platform: "windows", machine: null };
+  const prefix = await fixture(undefined, true, undefined, environment);
+  prefix.key("n", { shift: true });
+  assert.equal(prefix.view.mode, "idle");
+  assert.equal(prefix.state.overlays[0].props.mode, "directories");
+
+  const folder = "/home/user/한글 project's $draft; notes";
+  const { view, state, cx } = await fixture("directories", true,
+    { code: 0, stdout: `/work/other\r\n${folder}\r\n`, stderr: "" }, environment);
+  await Promise.all(state.tasks);
+  const [command, args] = state.executions[0];
+  assert.equal(command, "wsl.exe");
+  assert.deepEqual(Array.from(args), ["--cd", "~", "--exec", "sh", "-c", 'exec "$SHELL" -lc "exec zoxide query -l"']);
+  state.query = "한글";
+  state.input.change({}, cx);
+  assert.equal(view.rows()[0].label, folder);
+  state.input.submit();
+  assert.equal(state.closed, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(state.commands.at(-1))), {
+    command: "space.new",
+    args: { name: "한글 project's $draft; notes", machine: "", argv: ["wsl.exe", "--cd", folder] },
+  });
+});
+
+test("Windows remote directory selection stays on its remote machine", async () => {
+  const { state } = await fixture("directories", true, undefined, { platform: "windows", machine: "remote" });
+  await Promise.all(state.tasks);
+  assert.deepEqual(JSON.parse(JSON.stringify(state.executions)), [["zoxide", ["query", "-l"], { on: "remote" }]]);
+  state.input.submit();
+  assert.deepEqual(JSON.parse(JSON.stringify(state.commands.at(-1))), {
+    command: "space.new", args: { name: "one", machine: "remote", folder: "/work/one" },
+  });
+});
+
+test("an unavailable WSL cannot fall back to a Windows directory or create a space", async () => {
+  const { view, state } = await fixture("directories", true, new Error("WSL unavailable"),
+    { platform: "windows", machine: null });
+  await Promise.all(state.tasks);
+  assert.match(view.error, /WSL unavailable/);
+  assert.equal(view.busy, false);
+  assert.equal(state.executions.length, 1);
+  state.input.submit();
+  assert.equal(state.closed, false);
   assert.equal(state.commands.length, 0);
 });
