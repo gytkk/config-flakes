@@ -218,7 +218,7 @@ export default class Agents extends View {
       .pl(16)
       .pr(8)
       .rounded(8)
-      .h(k.activity ? 44 : 26)
+      .h(26)
       .flex_none()
       .items_center()
       .gap(0)
@@ -231,9 +231,7 @@ export default class Agents extends View {
       .children(s.lines.map(l => div().self_start().mt(-4).w(9).h(17).mr(4).flex_none()
         .when(Boolean(l), el => el.border_l(1.5).border_color(t.input))
         .when(l === "└" || l === "├", el => el.border_b(1.5).rounded_bl(6))))
-      .child(v_flex().flex_1().min_w(0).gap(1)
-        .child(div().truncate().text_color(t.muted).child([k.name, modelName].filter(Boolean).join(" · ")))
-        .when(Boolean(k.activity), el => el.child(div().truncate().text_size(10.5).text_color(t.dim).child(k.activity))))
+      .child(div().flex_1().min_w(0).truncate().text_color(t.muted).child([k.name, modelName].filter(Boolean).join(" · ")))
       .child(div().size(7).ml(8).mr(3).flex_none().rounded(4).bg(color));
   }
 
