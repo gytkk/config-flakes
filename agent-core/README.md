@@ -18,7 +18,7 @@ agent-core/
 ├── adapters/             # Runtime별 전용 지침
 ├── skills/               # Shared skill의 canonical catalog
 ├── schema/               # Runtime output golden hash
-├── nix/                  # Package와 render derivation helper
+├── nix/                  # Package・render helper와 flake check 조립
 └── tests/
 ```
 
@@ -180,6 +180,8 @@ OMP는 shared skill 소비자로만 등록한다. OMP용 문서 renderer나 lega
 ## Nix 연결
 
 `agent-core/nix/package.nix`는 wheel에 manifest와 canonical resource를 포함한 Python application을 만든다. `agent-core/nix/render.nix`는 runtime 이름을 받아 build derivation 안에서 renderer를 실행한다.
+
+루트 `outputs.nix`는 설정·패키지·앱 출력을 조립하고, agent-core 전용 검증은 `agent-core/nix/checks.nix`에 위임한다. 이 Nix 통합 계층은 시스템별 package set, 완성된 Home Manager/NixOS 설정과 activation 테스트 디렉터리를 명시적으로 받아 render 비교, golden output, source wiring과 activation 검사를 구성한다. Runtime 경로와 activation 순서의 선언은 계속 각 module이 소유하며, Python source와 renderer에는 module 의존성을 추가하지 않는다.
 
 Flake는 다음 output을 노출한다.
 
