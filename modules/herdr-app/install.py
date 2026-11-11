@@ -46,8 +46,8 @@ def status_layout(home: Path) -> dict:
         if content.get("tab") == "active":
             pane = content.setdefault("pane", {})
             pane["gap"] = 4
-            pane.setdefault("border", {"color": "border"})["width"] = 1
-            pane.setdefault("focus", {"color": "accent"})["width"] = 1
+            pane.setdefault("border", {"color": "border"})["width"] = 0.5
+            pane.setdefault("focus", {"color": "accent"})["width"] = 0.5
         pending.extend(node.get("children", []))
     if not has_status:
         raise ValueError("Herdr App layout has no compatible status block; leaving configuration unchanged")

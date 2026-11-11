@@ -48,8 +48,8 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(personal["terminal_padding"], [4, 4])
             self.assertEqual(personal["children"][0]["content"]["pane"],
                              {"gap": 4, "radius": 10, "header": {"height": 30},
-                              "border": {"width": 1, "color": "border"},
-                              "focus": {"width": 1, "color": "#123456"}})
+                              "border": {"width": 0.5, "color": "border"},
+                              "focus": {"width": 0.5, "color": "#123456"}})
             self.assertEqual(personal["children"][1]["content"]["mod"], "tui-prefix")
             self.assertEqual(personal["children"][2],
                              {"id": "work-body", "type": "row", "padding": 4, "gap": 8})
@@ -76,8 +76,8 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(reapplied["terminal_padding"], [4, 4])
             self.assertEqual(reapplied["children"][0]["content"]["pane"],
                              {"gap": 4, "radius": 6, "header": {"height": 30},
-                              "border": {"width": 1, "color": "border"},
-                              "focus": {"width": 1, "color": "#123456"}})
+                              "border": {"width": 0.5, "color": "border"},
+                              "focus": {"width": 0.5, "color": "#123456"}})
             self.assertEqual(reapplied["children"][2],
                              {"id": "work-body", "type": "row", "padding": 4, "gap": 8})
 
