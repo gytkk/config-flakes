@@ -40,7 +40,7 @@ Launch the app once before applying Home Manager. The [installer](../herdr-app/i
 
 Select the personal layout once with `herdr-app do layout.switch --name tui`. The choice persists. In that layout, `Ctrl+Space` focuses the existing bottom status line and shows **PREFIX** with a few useful shortcuts, without opening a popup or resizing the terminal. There is no timeout. A command, `Esc`, a second `Ctrl+Space`, an unknown key, or moving focus away leaves prefix mode. Unknown prefix keys are consumed, not typed into the terminal. Pressing `Ctrl+Space` again only cancels prefix mode and restores terminal focus; it does not send input to the terminal. Ordinary typing is not intercepted outside prefix mode.
 
-While prefix mode is active, the status line uses warm amber derived from the current theme's ANSI yellow/ochre mixed 8% toward its foreground. The bar blends 15% of that accent into the normal chrome color; the compact `PREFIX` badge selects black or white text for contrast. The default Paper theme gives a `#865802` badge and `#e1dacb` bar. Colors return to normal on exit and adapt to the current theme rather than using a fixed accent palette.
+While prefix mode is active, the status line uses golden amber: the current theme's ANSI yellow/ochre mixed 55% toward `#ffb300`. This amber anchor keeps the highlight visibly golden rather than brown even in themes with dark ochre. The bar blends 15% of that accent into the normal chrome color; the compact `PREFIX` badge selects black or white text for contrast. The default Paper theme gives a `#cd8c00` badge with black text and a `#ece2ca` bar. Colors return to normal on exit; the theme's ochre and chrome still influence the active colors.
 
 | After `Ctrl+Space` | Action |
 | --- | --- |
