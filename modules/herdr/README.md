@@ -47,7 +47,7 @@ herdr-app do space.new --machine wsl
 
 The connection targets the installed `Ubuntu` distribution explicitly. The login shell initializes the Nix PATH when connecting; it is not started afresh for each tab. Machine registration is mutable Windows core state, not recreated by Home Manager. Existing Windows-local spaces are not migrated or closed: select a space under the `wsl` machine to work in Linux. Leave the space name unset so Herdr follows its repository or folder instead of showing a fixed `WSL` label; clear an existing space's name to restore this automatic naming.
 
-The personal `tui` sidebar shows the machine named `wsl` first, then This computer, then the remaining machines alphabetically. Space ordering inside each machine is unchanged; this is a sidebar presentation preference, not a change to the core's machine or space identifiers.
+The personal `tui` sidebar shows This computer first, then the machine named `wsl`, then the remaining machines alphabetically. Space ordering inside each machine is unchanged; this is a sidebar presentation preference, not a change to the core's machine or space identifiers.
 
 In that space, `Alt+t` and `Ctrl+Space`, then `c`, use the WSL core's default shell and inherit the focused terminal's directory. `Ctrl+Space`, then `Shift+n`, queries zoxide on the originating machine and opens the selected directory on that same machine. Paths stay literal Linux paths; no PowerShell or per-tab `wsl.exe` wrapper is used. Menu-created tabs and splits also stay on the space's machine. Other remote machines and Windows-local spaces retain their native behavior.
 
