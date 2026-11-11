@@ -209,7 +209,7 @@ export default class Prefix extends View {
       const space = spaces().find(s => s.active);
       const bar = h_flex().id("tui-prefix-bar").track_focus(this.handle).size_full()
         .px(14).gap(16).items_center().overflow_hidden().border_t(1).border_color(active ? prefixAccent : t.border)
-        .bg(active ? mixColors(t.chrome, prefixAccent, 0.15) : t.chrome).text_color(t.foreground).text_size(12)
+        .bg(active ? mixColors(t.chrome, prefixAccent, 0.15) : t.chrome).font_family("JetBrains Mono").text_color(t.foreground).text_size(12)
         .on_key_down((event, cx) => { this.key(event, cx); cx.notify(); });
       if (active) {
         const shortcut = (key, label) => h_flex().flex_none().gap(6).items_center()
