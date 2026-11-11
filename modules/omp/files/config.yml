@@ -38,3 +38,4 @@ disabledProviders:
 dev:
   autoqaConsent: denied
   autoqa: false
+extendedContext: true
