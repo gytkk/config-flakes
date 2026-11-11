@@ -187,7 +187,7 @@ The extension removes Pi 1.4's software cursor markers while preserving the term
 
 ### Terminal title on exit
 
-Pi sets the terminal title to `π - <directory>` and does not clear it on exit, so the shell and [Herdr Auto Title](../herdr/README.md) would keep showing it. `files/extensions/terminal-title-reset.ts` sends an empty title when the TUI process exits after a quit. It writes from a process `exit` listener because Pi 1.5 rewrites the title after `session_shutdown`. Session reload, new, resume, and fork leave the title to Pi.
+Pi sets the terminal title to `π - <directory>` and does not clear it on exit, so terminal applications can keep showing it after returning to the shell. `files/extensions/terminal-title-reset.ts` sends an empty title when the TUI process exits after a quit. It writes from a process `exit` listener because Pi 1.5 rewrites the title after `session_shutdown`. Session reload, new, resume, and fork leave the title to Pi.
 
 ## On-demand tools
 

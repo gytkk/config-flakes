@@ -78,7 +78,7 @@ Only pickers and explicitly requested help open dialogs. The zoxide picker uses 
 
 In the desktop App, `Alt+[` / `Alt+]` also focus the previous / next space, including on Windows. These replace Windows' default previous / next tab bindings; `Ctrl+Shift+Tab` / `Ctrl+Tab` remain available for tab navigation.
 
-This is not a TUI plugin migration. Annotate bindings, TUI copy/resize modes, pane renaming, and editing scrollback are not mapped to unrelated App actions. App files hot-reload; no `herdr server reload-config` is needed. The integration targets App 0.1.15's mod API.
+This is not a TUI plugin migration. TUI copy/resize modes, pane renaming, and editing scrollback are not mapped to unrelated App actions. App files hot-reload; no `herdr server reload-config` is needed. The integration targets App 0.1.15's mod API.
 
 The desktop installer manages only `minimum_contrast` in `settings.json`, setting it to `3.0` while preserving other personal settings. Herdr replaces terminal text below this contrast threshold with near-white or near-black, making Claude Code's submitted prompts readable on their dark background without replacing as many ANSI colors as a `4.5` threshold. This affects all desktop terminals, not only Claude; it is a correction threshold, not a guaranteed final contrast ratio. The app hot-reloads it, including existing text. Changed settings are backed up to `settings.json.home-manager.bak`.
 
@@ -166,6 +166,19 @@ bun test modules/herdr/tests modules/codex/tests modules/claude/tests
 
 ## Apply changes
 
-Herdr, Annotate, and Auto Title updates are proposed together through the [app package review channel](../../packages/README.md#updates-and-ci). Herdr's local patches are checked before its source pin changes; Annotate uses unpatched upstream sources. Candidate PRs run Linux package CI before manual merging. An open candidate is preserved for fixes; other app updates proceed independently. After merging a candidate, pull its changes before applying Home Manager.
+Herdr updates follow the [app package update CI](../../packages/README.md#updates-and-ci). Its local patches are checked before the source pin changes, and successful updates are committed to `main` after evaluation and changed-package builds. Pull those changes before applying Home Manager.
 
 Apply Home Manager for the current environment to install the terminal config, for example `home-manager switch --flake .#devsisters-macbook`. Reload Ghostty with `Cmd+Shift+,`, then run `herdr server reload-config` to reload the running Herdr server's bindings and theme. Changes to Herdr's source configuration or shared theme exports take effect after applying Home Manager and reloading Herdr.
+
+## Retired TUI plugins
+
+Herdr Annotate and Auto Title are no longer packaged or linked. On previously configured hosts, unregister them once while the Herdr TUI server is running:
+
+```bash
+herdr plugin unlink annotate
+herdr plugin unlink herdr.auto-title
+```
+
+Repeating these commands is safe. They remove registrations without deleting saved annotations, plugin configuration, or local plugin files. They do not stop already-running plugin processes or panes; let existing work finish before stopping the old TUI server. Unlink is intentionally not a Home Manager activation step because it fails when no TUI server is running.
+
+The six Annotate prefix bindings and Home Manager's `~/.config/plannotator-tui/config.toml` link are removed. Herdr App/Core, the agent sidebar integrations, and the separate Claude/Codex Plannotator CLI integration remain unchanged.

@@ -41,42 +41,6 @@ selected_dir="$(zoxide query -l | fzf --prompt='Workspace cwd> ')" || exit 0
 "$HERDR_BIN_PATH" workspace create --cwd "$selected_dir" --label "$(basename "$selected_dir")" --focus >/dev/null
 '''
 
-[[keys.command]]
-key = "prefix+a"
-type = "plugin_action"
-command = "annotate.capture"
-description = "Annotate selected text"
-
-[[keys.command]]
-key = "prefix+shift+y"
-type = "plugin_action"
-command = "annotate.copy-context"
-description = "Copy annotations as context"
-
-[[keys.command]]
-key = "prefix+ctrl+a"
-type = "plugin_action"
-command = "annotate.copy-archive"
-description = "Copy and archive annotations"
-
-[[keys.command]]
-key = "prefix+m"
-type = "plugin_action"
-command = "annotate.manage"
-description = "Manage annotations"
-
-[[keys.command]]
-key = "prefix+o"
-type = "plugin_action"
-command = "annotate.open"
-description = "Review documents in this folder"
-
-[[keys.command]]
-key = "prefix+shift+o"
-type = "plugin_action"
-command = "annotate.last"
-description = "Review the agent's last reply"
-
 [ui]
 host_cursor = "native"
 prompt_new_tab_name = false

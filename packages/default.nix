@@ -16,8 +16,6 @@ rec {
   codex = callPackage ./apps/codex/package.nix { };
   codexbar = callPackage ./apps/codexbar/package.nix { };
   herdr = callPackage ./apps/herdr/package.nix { };
-  herdr-annotate = callPackage ./apps/herdr-annotate/package.nix { };
-  herdr-auto-title = callPackage ./apps/herdr-auto-title/package.nix { };
   herdr-core = callPackage ./apps/herdr-core/package.nix { };
   notion-cli = callPackage ./apps/notion-cli/package.nix { };
   ntn = notion-cli;
