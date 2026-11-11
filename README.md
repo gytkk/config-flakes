@@ -114,7 +114,7 @@ Home Manager modules expose `modules.<name>.enable`; `systems/base/default.nix` 
 
 The common Home Manager profile installs GitUI in every environment. Run `gitui` inside a Git repository after applying the configuration.
 
-The common profile also installs [Hunk](packages/README.md#updates-and-ci), an agent-aware diff TUI. After applying Home Manager, run `hunk diff` for local changes or `hunk show` for the latest commit. Its stable release pin follows the existing three-hour package update CI; installing those updates still requires pulling the commits and applying the configuration. The Git pager is unchanged. [Agent core](agent-core/README.md) separately installs the upstream `hunk-review` skill for Codex/Pi/OMP and Claude during Home Manager activation; it reads version-matched instructions through `hunk skill show hunk-review`.
+The common profile also installs [Hunk](modules/hunk/README.md), an agent-aware diff TUI, directly from the root nixpkgs input. After applying Home Manager, run `hunk diff` for local changes or `hunk show` for the latest commit. Its version follows the root `flake.lock`, not the three-hour app package update CI. The Git pager is unchanged. [Agent core](agent-core/README.md) separately installs the upstream `hunk-review` skill for Codex/Pi/OMP and Claude during Home Manager activation; it reads version-matched instructions through `hunk skill show hunk-review`.
 
 The [Hunk module](modules/hunk/README.md) installs `theme = "auto"` in the user configuration, selecting a light or dark theme from the terminal background at startup.
 
@@ -227,7 +227,7 @@ The [app package](packages/apps/omp/package.nix) uses OMP's official source-buil
 
 ### Cloudflare CLI
 
-The common Home Manager profile installs Cloudflare's [`cf` CLI](https://developers.cloudflare.com/cf/get-started/) from the pinned [app package](packages/README.md). It provides `cf` and `cloudflare` with a Nix-managed Node.js runtime. Wrangler and the Codex/Pi Cloudflare MCP registrations are replaced by this CLI; Claude activation removes the legacy user-scope `cloudflare` MCP registration. Restart the agents after applying the configuration.
+The common Home Manager profile installs Cloudflare's [`cf` CLI](https://developers.cloudflare.com/cf/get-started/) directly from the root nixpkgs input, with its version pinned by the root `flake.lock`. It provides `cf` and `cloudflare` with a Nix-managed Node.js runtime. Wrangler and the Codex/Pi Cloudflare MCP registrations are replaced by this CLI; Claude activation removes the legacy user-scope `cloudflare` MCP registration. Restart the agents after applying the configuration.
 
 `cf` is currently in beta. Existing Wrangler projects need the [documented migration](https://developers.cloudflare.com/cf/wrangler/) before using `cf dev`, `cf build`, or `cf deploy`.
 

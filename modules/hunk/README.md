@@ -2,7 +2,8 @@
 
 The common Home Manager profile enables `modules.hunk.enable` and installs
 [files/config.toml](files/config.toml) at `~/.config/hunk/config.toml`.
-The Hunk package remains installed by the common profile.
+The common profile installs the Hunk package directly from the root nixpkgs input;
+its version follows the root `flake.lock`, not the local app update CI.
 
 `theme = "auto"` selects `github-light-default` or `github-dark-default` from the
 terminal background at startup, falling back to dark if the terminal does not

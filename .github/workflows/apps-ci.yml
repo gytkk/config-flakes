@@ -44,7 +44,6 @@ jobs:
           bash packages/tests/update-all.sh
           bash packages/tests/check-nix-patches.sh
           bash packages/tests/herdr-core-update.sh
-          bash packages/tests/hunk-update.sh
           bash packages/tests/notion-cli-update.sh
           bash packages/tests/omp-update.sh
           bash packages/tests/pi-update.sh

@@ -4,6 +4,8 @@ Self-contained non-nixpkgs app packages used by the parent `ws` repository. The 
 
 The nested flake exports `aarch64-darwin`, `x86_64-linux`, and `aarch64-linux`. Intel Mac (`x86_64-darwin`) compatibility is not maintained.
 
+`cf`, `databricks-cli`, `hunk`, and Datadog's `datadog-pup` are installed directly from the parent configuration's root nixpkgs input. They are not exported by this catalog or either flake's local app package outputs, and the app update/build CI does not manage them. Their versions follow the root `flake.lock`; the `datadog-pup` package provides the `pup` command (nixpkgs' `pup` attribute is a different HTML-processing tool).
+
 The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its Rust and web package build and exports `nixosModules.default` for its authenticated read-only admin containers. Host configurations consume a verified, pinned product revision and supply host settings and runtime file paths. This catalog does not duplicate the product package or service definitions. Trading supervisor deployment remains separate from the read-only containers.
 
 ## Layout
@@ -11,23 +13,19 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 ```
 .
 ├── apps/
-│   ├── cf/
 │   ├── claude-code/
 │   ├── codex/
 │   ├── codexbar/
-│   ├── databricks-cli/
 │   ├── gksdud/
 │   ├── herdr/
 │   ├── herdr-annotate/
 │   ├── herdr-auto-title/
 │   ├── herdr-core/
-│   ├── hunk/
 │   ├── lspi/
 │   ├── notion-cli/
 │   ├── omp/
 │   ├── pantry/
-│   ├── pi/
-│   └── pup/
+│   └── pi/
 ├── lib/
 │   └── mk-tarball-cli.nix
 ├── default.nix
@@ -42,7 +40,6 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 │   ├── codex-check-package.sh
 │   ├── detect-changed-apps.sh
 │   ├── herdr-core-update.sh
-│   ├── hunk-update.sh
 │   ├── notion-cli-update.sh
 │   ├── omp-update.sh
 │   ├── pi-package.sh
@@ -56,28 +53,24 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 
 | App | Version |
 |-----|---------|
-| cf | 1.0.0-beta.21 |
 | claude-code | 2.1.322 |
 | codex | 0.167.0 |
 | codexbar | 0.84.0 |
-| databricks-cli | 1.19.0 |
 | gksdud | 2.1.0 |
 | herdr | 0.9.5 |
 | herdr-annotate | 0.9.9 |
 | herdr-auto-title | 0.21.0 |
 | herdr-core | 0.1.20 |
-| hunk | 0.24.1 |
 | lspi | 0.2.0 |
 | notion-cli | 0.23.28 |
 | omp | 18.18.6 |
 | pantry | main-69de978b5555 |
 | pi | 1.5.1 |
-| pup | 1.4.0 |
 
 ## Build entrypoints
 
 - `nix build ./packages#packages.<system>.ntn`
-- `nix build ./packages#packages.<system>.default` (the alphabetically first app, currently `cf`)
+- `nix build ./packages#packages.<system>.default` (the alphabetically first app, currently `claude-code`)
 - `nix run ./packages#apps.<system>.ntn`
 
 `gksdud` is exposed only on Darwin. Its signed universal app bundle supports Apple Silicon and Intel Macs running macOS 13 or later. Home Manager installs it through the [gksdud module](../modules/gksdud/README.md). Automatic startup is controlled by the app's own login-item option.
@@ -102,7 +95,7 @@ The package catalog in `default.nix` is the single source of truth for exported 
 
 ## Reusing the tarball CLI builder
 
-The catalog supplies `mkTarballCli` to package functions that request it. Use it for a release tarball containing one executable with optional documentation files. [Databricks CLI](apps/databricks-cli/package.nix) shows the basic case; [Notion CLI](apps/notion-cli/package.nix) shows a nested archive directory and additional installed files.
+The catalog supplies `mkTarballCli` to package functions that request it. Use it for a release tarball containing one executable with optional documentation files. [Notion CLI](apps/notion-cli/package.nix) shows a nested archive directory and additional installed files.
 
 | Argument | Meaning |
 | --- | --- |
@@ -118,7 +111,7 @@ The helper selects the host platform, fetches the pinned archive, disables confi
 ## Updates and CI
 
 - Run `packages/scripts/update-all.sh` from the parent repository to update every enabled package manually.
-- Both workflows use GitHub-hosted `ubuntu-latest` runners, install Nix 2.34.9 with an explicit `cachix/install-nix-action` installer URL, and install ripgrep for the updater and test scripts. The Nix pin preserves the last successful CI runtime: Nix 2.35.6's lazy source copying breaks updater reads of `nix flake metadata` paths and Hunk's bun2nix dependency import during `--no-build` evaluation. Revalidate both paths before upgrading Nix. Package builds no longer run on the production `pylv-sepia` host.
+- Both workflows use GitHub-hosted `ubuntu-latest` runners, install Nix 2.34.9 with an explicit `cachix/install-nix-action` installer URL, and install ripgrep for the updater and test scripts. The Nix pin preserves the last successful CI runtime: Nix 2.35.6's lazy source copying breaks updater reads of `nix flake metadata` paths. Revalidate source access before upgrading Nix. Package builds no longer run on the production `pylv-sepia` host.
 - `Update App Versions` checks all enabled packages, including `herdr`, `herdr-annotate`, and `herdr-auto-title`, every three hours in one serialized job. After updater patch checks, flake evaluation, and changed-package builds succeed, it synchronizes the README version table and commits the updates directly to `main` without a PR or approval step.
 - Any updater, evaluation, or build failure stops the job before publication, so no updates from that run reach `main`. A patch preflight failure is reported before that updater changes package metadata. If `main` advances during validation, the push is rejected and a later run validates updates against the new base.
 - The update job uses `GITHUB_TOKEN` with job-scoped `contents: write`. CI currently builds `x86_64-linux`; other platforms are not validated by this workflow.
@@ -130,14 +123,12 @@ The helper selects the host platform, fetches the pinned archive, disables confi
 - `omp` uses the official [OMP flake](https://github.com/can1357/oh-my-pi/blob/main/flake.nix) at an immutable Git revision. Unlike the Pi package below, it consumes the complete upstream flake, including its locked nixpkgs, Bun, bun2nix, and Rust toolchain, rather than duplicating those build dependencies in this catalog. Upstream owns the native build, runtime library handling, and install checks. Its updater tracks stable GitHub releases, validates the package version and required packaging files, and replaces the version and revision together only after validation succeeds. The existing aggregate updater and changed-package CI include OMP automatically. Run `bash packages/tests/omp-update.sh` for registration, no-op, and failure-preservation checks. Home Manager installs OMP alongside Pi; settings and authentication remain device-local. See [OMP setup](../README.md#omp).
 - OMP uses the upstream package without local patches or install-check overrides. Its status line retains upstream subscription labels and saved-reset credit details alongside quota windows.
 - To update only OMP manually, run `bash packages/apps/omp/update.sh` and `bash packages/scripts/sync-readme-versions.sh` from the repository root. Review and commit the package pin and version table, apply `home-manager switch --flake .#<environment>` (or the host's NixOS switch), then restart OMP and check `omp --version`. Updating the root `flake.lock` alone does not update this package-local pin.
-- `hunk` uses the official [Hunk flake](https://github.com/modem-dev/hunk/blob/main/nix/README.md) at an immutable stable-release revision, including its locked Bun/bun2nix toolchain and bundled TUI entrypoints. The common Home Manager profile installs it without changing the Git pager. Its executable updater participates in the existing three-hour update job; CI evaluates and builds updates before committing them to `main`. Pull those commits and apply Home Manager to install new versions. Run `bash packages/tests/hunk-update.sh` for atomic-update, no-op, and invalid-release preservation checks.
 - `pi` follows the source-build approach in upstream's [Run with Nix](https://github.com/earendil-works/pi#run-with-nix): it pins a stable release source archive and calls the official flake's `nix/package.nix` without build or install-check overrides. Like upstream's overlay, it uses the consuming catalog's nixpkgs rather than the upstream flake's nixpkgs lock. Upstream owns the workspace build, install lock, model catalog pin, platform dependencies, and install checks; this repository does not maintain a separate npm lockfile. The local `patches.nix` and `herdr-file-opener.ts` route [Pi file-link Ctrl-clicks](../modules/pi/README.md#file-links-in-herdr) to Neovim in a Herdr split. The package adds the patch and helper only to upstream's `pi-workspace-packages` derivation through its `stdenv` argument. Metadata and lockfiles remain readable from the original source without import-from-derivation; the final install-lock derivation is not patched. Home Manager installs the catalog package, so it does not need a second `nix profile add` installation. The updater validates the release version, required packaging files, and patch applicability before changing the source pin. Run `bash packages/tests/pi-update.sh` for its failure and no-op checks and `bun test packages/tests/pi-file-links.test.ts` for the file opener.
 - Pi 1.5.0 needs a version-scoped packaging workaround: the workspace install hook packs upstream's [schema package](https://github.com/earendil-works/pi/tree/v1.5.0/packages/schema) as `schema.tgz`, and the `importNpmLock` override uses that tarball alongside the other locally built Pi packages. The upstream release omits both entries, causing an `integrity` error during evaluation. The source pin and external dependency hashes remain enforced. Run `bash packages/tests/pi-package.sh` (optionally followed by a Nix system such as `x86_64-linux`) to check the real install-lock evaluation and workspace packing commands without building. `App Packages CI` runs this regression check before building changed packages.
 - `codex` installs the complete official `codex-package` bundle, including its manifest, helpers, and runtime resources. Its updater tracks bundle hashes for all four platforms. The package's install check validates the manifest, confirms that every archive member is present in the installed output, and checks required executable permissions. Bundled zsh is checked only when present, since upstream removed it in 0.163.0. Run `bash packages/tests/codex-check-package.sh` to check current and legacy bundle validation with local fixtures.
 - `App Packages CI` evaluates the nested flake and builds changed packages, including their install checks.
-- `cf` packages the official npm bundle with Node.js 26.12.1 and a pinned production dependency lockfile. Its package-local stable nixpkgs pin supplies a supported runtime for both flake entrypoints without changing other packages. The runtime source is fetched during evaluation so CI can check the package without building a source derivation. It provides both `cf` and `cloudflare`. The published development dependencies reference unpublished local archives, so packaging removes them before installing the locked runtime dependencies. Linux builds patch the bundled `workerd` and `sharp` binaries. For a manual update, refresh the source version/hash, generate `package-lock.json` from the npm tarball after removing `devDependencies`, and refresh `npmDepsHash` with `prefetch-npm-deps`. Check the published Node.js engine requirement before reusing the runtime pin. See [Cloudflare CLI setup](../README.md#cloudflare-cli) for authentication.
 - `notion-cli` tracks the stable version published at `https://ntn.dev/latest.txt`. Its updater downloads all four platform archives, verifies their official SHA-256 checksums, and updates the version and hashes together after every platform succeeds. The `ntn` alias receives the same updates through the direct channel.
 - `pantry` packages a `main` build of the Devsisters teamdev.ai CLI, versioned as `main-<12-character commit>` with no releases or tags. It is listed in `update.deny`, so aggregate updates skip it. To bump it manually, run `bash packages/apps/pantry/update.sh`, which pins the build named by the per-platform `latest/<os>-<arch>.json` manifests after confirming all four agree and each binary matches its manifest SHA-256.
-- `cf`, `databricks-cli`, `gksdud`, `lspi`, and `pup` are manually updated. They have no `update.sh`, so aggregate updates skip them. Moving a package into this catalog does not enable automatic updates.
+- `gksdud` and `lspi` are manually updated. They have no `update.sh`, so aggregate updates skip them. Moving a package into this catalog does not enable automatic updates.
 - Package outputs follow each platform's catalog. The Linux build job skips apps absent from the Linux catalog, including `gksdud`; it does not validate their macOS runtime behavior.
 - Changes to the nested catalog, flake, lockfile, shared `packages/lib/` helpers, or package build workflow select all catalog packages for CI builds. A package-local change selects that package. Parent configuration inputs, outputs, package-set wiring, and root lockfile changes do not trigger this independent package CI or widen its build selection: it uses `packages/flake.lock`, not the root lockfile. Parent integration still needs its own targeted Home Manager or NixOS evaluation. The changed-app detector is checked with `bash packages/tests/detect-changed-apps.sh`.

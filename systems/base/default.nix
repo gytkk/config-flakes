@@ -158,7 +158,7 @@ in
         rsync
         glow
         ntn
-        pup
+        datadog-pup
 
         # Git
         git

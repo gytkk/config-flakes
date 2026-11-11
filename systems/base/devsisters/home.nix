@@ -33,7 +33,7 @@
     # Ruby
     pkgs.stable-25_05.ruby_3_2
 
-    # Databricks CLI (Go 구현체, GitHub 릴리스 바이너리)
+    # Databricks CLI (root nixpkgs의 Go 구현체)
     databricks-cli
 
     # Pantry CLI (teamdev.ai 배포 도구, main 빌드 바이너리, 수동 업데이트)

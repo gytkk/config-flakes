@@ -12,22 +12,18 @@ let
   );
 in
 rec {
-  cf = callPackage ./apps/cf/package.nix { };
   claude-code = callPackage ./apps/claude-code/package.nix { };
   codex = callPackage ./apps/codex/package.nix { };
   codexbar = callPackage ./apps/codexbar/package.nix { };
-  databricks-cli = callPackage ./apps/databricks-cli/package.nix { };
   herdr = callPackage ./apps/herdr/package.nix { };
   herdr-annotate = callPackage ./apps/herdr-annotate/package.nix { };
   herdr-auto-title = callPackage ./apps/herdr-auto-title/package.nix { };
   herdr-core = callPackage ./apps/herdr-core/package.nix { };
-  hunk = callPackage ./apps/hunk/package.nix { };
   notion-cli = callPackage ./apps/notion-cli/package.nix { };
   ntn = notion-cli;
   omp = callPackage ./apps/omp/package.nix { };
   pantry = callPackage ./apps/pantry/package.nix { };
   pi = callPackage ./apps/pi/package.nix { };
-  pup = callPackage ./apps/pup/package.nix { };
 }
 // (if isDarwin then { gksdud = callPackage ./apps/gksdud/package.nix { }; } else { })
 // (
