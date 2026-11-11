@@ -30,7 +30,9 @@ class InstallTests(unittest.TestCase):
                     "focus": {"width": 4, "color": "#123456"}
                 }}},
                 {"id": "status", "content": {"mod": "workspace-status"}, "size": {"px": 28}},
-                {"id": "work-body", "type": "row", "padding": 8, "gap": 8}
+                {"id": "work-body", "type": "row", "padding": 8, "gap": 8},
+                {"id": "spaces", "content": {"mod": "spaces"}},
+                {"id": "personal", "content": {"mod": "custom-spaces"}}
             ]}
             (layouts / "main.json").write_text(json.dumps(layout))
             installer.install(ROOT / "files", home)
@@ -52,6 +54,8 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(personal["children"][2],
                              {"id": "work-body", "type": "row", "padding": 4, "gap": 8})
             self.assertEqual(json.loads((layouts / "main.json").read_text()), layout)
+            self.assertEqual(personal["children"][3]["content"]["mod"], "tui-spaces")
+            self.assertEqual(personal["children"][4]["content"]["mod"], "custom-spaces")
             personal["custom"] = "personal change"
             personal["children"][0]["content"]["pane"].update(gap=12, radius=6)
             personal["terminal_padding"] = [8, 6]

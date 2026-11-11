@@ -39,6 +39,8 @@ def status_layout(home: Path) -> dict:
             has_status = True
         if content.get("mod") == "agents":
             content["mod"] = "omp-agents"
+        if content.get("mod") == "spaces":
+            content["mod"] = "tui-spaces"
         if node.get("id") == "work-body":
             node["padding"] = 4
         if content.get("tab") == "active":

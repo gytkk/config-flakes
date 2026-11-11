@@ -68,7 +68,14 @@ node --experimental-vm-modules --test modules/herdr-app/tests/*.test.mjs
 python3 -B -m unittest discover -s modules/herdr-app/tests -p 'test_*.py'
 herdr-app check modules/herdr-app/files/mods/tui-prefix
 herdr-app check modules/herdr-app/files/mods/omp-agents
+herdr-app check modules/herdr-app/files/mods/tui-spaces
 ```
+
+### Desktop space completion indicators
+
+The personal `tui` layout replaces standard `spaces` blocks with [tui-spaces](../herdr-app/files/mods/tui-spaces/main.js). Each space shows a small blue circle on its right when at least one of its agents has an unread completed turn (`done`). The indicator uses the theme's ANSI blue in both expanded and compact sidebars. It aggregates individual agents rather than the space's priority status, so a blocked or working agent cannot hide another agent's completion. Machine-qualified space IDs keep local and remote spaces separate.
+
+Herdr owns read tracking: viewing an agent clears its `done` state; the circle remains until no unread completions remain in that space. This is not a history of all completed turns, nor an indicator for OMP metadata-only subagent rows. Installation preserves custom space mods and the shipped layout. The personal mod retains an Apache-2.0-licensed copy of App 0.1.15's Spaces implementation; review upstream changes when updating App versions.
 
 ### Desktop subagents
 
