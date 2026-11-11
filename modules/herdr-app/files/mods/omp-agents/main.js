@@ -189,7 +189,7 @@ export default class Agents extends View {
     const on = k.address === shown;
     return h_flex()
       .id(`sub-${k.address}`)
-      .pl(39)
+      .pl(16)
       .pr(8)
       .rounded(8)
       .h(26)
@@ -215,7 +215,7 @@ export default class Agents extends View {
     const modelName = k.model.slice(k.model.lastIndexOf("/") + 1);
     return h_flex()
       .id(`sub-${k.address}`)
-      .pl(39)
+      .pl(16)
       .pr(8)
       .rounded(8)
       .h(k.activity ? 44 : 26)
@@ -234,7 +234,7 @@ export default class Agents extends View {
       .child(v_flex().flex_1().min_w(0).gap(1)
         .child(div().truncate().text_color(t.muted).child([k.name, modelName].filter(Boolean).join(" · ")))
         .when(Boolean(k.activity), el => el.child(div().truncate().text_size(10.5).text_color(t.dim).child(k.activity))))
-      .child(div().ml(6).flex_none().text_size(10).text_color(color).child(phase));
+      .child(div().size(7).ml(8).mr(3).flex_none().rounded(4).bg(color));
   }
 
   // compact: a ! for blocked where a header already says "Needs you".
