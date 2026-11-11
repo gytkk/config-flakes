@@ -47,7 +47,7 @@ return {
       },
       provider_options = {
         openai = {
-          model = "gpt-6.1-terra",
+          model = "gpt-6-luna",
           api_key = require("config.ai").getOpenAIKey,
           optional = {
             -- The completion budget includes reasoning tokens.

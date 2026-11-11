@@ -38,7 +38,7 @@ Open grep pickers rerun the current search after a file is saved, after Neovim r
 
 ## Blink and Minuet
 
-Minuet requests OpenAI `gpt-6.1-terra` suggestions with `low` reasoning effort and displays them automatically as inline text for the configured coding filetypes, including Nix. The text uses the theme's `Comment` highlight and can appear while Blink's ordinary completion menu is open. Minuet loads before filetype detection so automatic suggestions also work in the first opened file. AI requests use only Minuet's inline frontend; Blink's own ghost text is disabled.
+Minuet requests OpenAI `gpt-6-luna` suggestions with no reasoning and displays them automatically as inline text for the configured coding filetypes, including Nix. The text uses the theme's `Comment` highlight and can appear while Blink's ordinary completion menu is open. Minuet loads before filetype detection so automatic suggestions also work in the first opened file. AI requests use only Minuet's inline frontend; Blink's own ghost text is disabled.
 
 - `<Tab>` accepts a visible AI suggestion and closes the Blink menu. Without an AI suggestion, it follows Blink's `super-tab` rules: accept a menu item, advance an active snippet, or fall back to ordinary Tab behavior.
 - `<C-y>` requests an inline suggestion manually when none is available, bypassing the automatic filetype restriction and throttle.

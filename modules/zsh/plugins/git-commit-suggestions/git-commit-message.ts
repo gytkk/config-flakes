@@ -72,7 +72,7 @@ export async function generate(data: CommitContext): Promise<string> {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "gpt-6.1-terra",
+      model: "gpt-6-luna",
       reasoning_effort: "none",
       max_completion_tokens: 256,
       store: false,

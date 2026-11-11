@@ -154,7 +154,7 @@ describe("commit completion", () => {
     expect(headers.get("Content-Type")).toBe("application/json");
     const payload = JSON.parse(options!.body as string);
     expect(payload).toMatchObject({
-      model: "gpt-6.1-terra", reasoning_effort: "none", max_completion_tokens: 256, store: false,
+      model: "gpt-6-luna", reasoning_effort: "none", max_completion_tokens: 256, store: false,
     });
     expect(payload.messages[0].role).toBe("developer");
     expect(payload.messages[0].content).toContain("Repository rules override global rules");
