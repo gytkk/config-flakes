@@ -10,4 +10,10 @@ in
 assert lib.assertMsg (
   package.version == version
 ) "OMP release version does not match its pinned source";
-package
+package.overrideAttrs (old: {
+  patches = (old.patches or [ ]) ++ import ./patches.nix;
+  postInstallCheck = (old.postInstallCheck or "") + ''
+    OMP_SOURCE_DIR="$PWD" bun test ${../../tests/omp-status-line.test.ts} \
+      packages/coding-agent/test/status-line-usage-refresh.test.ts
+  '';
+})

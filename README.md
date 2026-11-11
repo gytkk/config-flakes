@@ -221,7 +221,7 @@ Pi uses the official upstream Nix package definition, the generated `one-half-li
 
 ### OMP
 
-The [OMP module](modules/omp/README.md) installs `omp` alongside Pi and manages `~/.omp/agent/config.yml` through an out-of-store symlink to the checkout. Its Pi-style status line includes OMP's built-in provider quota display. Existing local settings need a backup on the first switch; credentials, sessions, databases, and named profiles remain device-local. Pi settings and extensions are not migrated.
+The [OMP module](modules/omp/README.md) installs `omp` alongside Pi and manages `~/.omp/agent/config.yml` through an out-of-store symlink to the checkout. Its [status line](modules/omp/README.md#status-line) retains provider quota usage while hiding input/output token counts, subscription labels, and saved-reset credit details. Existing local settings need a backup on the first switch; credentials, sessions, databases, and named profiles remain device-local. Pi settings and extensions are not migrated.
 
 The [app package](packages/apps/omp/package.nix) uses OMP's official source-build flake at an immutable release revision, including upstream's locked toolchain and install checks. [App updates](packages/README.md#updates-and-ci) track stable OMP releases automatically; pull the resulting commits and apply Home Manager to install them. Restart `omp` after switching, then use `/login` if authentication is needed. `Alt+A` opens Agent Hub; `/agents` manages agent definitions and model overrides.
 

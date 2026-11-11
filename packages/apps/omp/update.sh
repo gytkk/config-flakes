@@ -44,6 +44,8 @@ for file in flake.nix flake.lock nix/package.nix; do
   fi
 done
 
+bash "$SCRIPT_DIR/../../scripts/check-nix-patches.sh" "$source_path" "$SCRIPT_DIR/patches.nix"
+
 candidate=$(mktemp "$SCRIPT_DIR/.package.nix.XXXXXX")
 trap 'rm -f "$candidate"' EXIT
 cp "$PACKAGE_NIX" "$candidate"

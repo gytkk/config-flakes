@@ -1,0 +1,216 @@
+--- a/packages/tui/src/status-line/segments.ts
++++ b/packages/tui/src/status-line/segments.ts
+@@ -1231,24 +1231,14 @@
+ 	return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+ }
+ 
+-/** Expiring saved resets outrank the usable/unusable color: red within 24 hours, yellow within 7 days. */
+-function resetCreditsColor(resets: NonNullable<NonNullable<SegmentContext["usage"]>["resetCredits"]>): ThemeColor {
+-	if (resets.expiring) return resets.expiring.tier === "imminent" ? "error" : "warning";
+-	return resets.redeemableCount > 0 ? "success" : "warning";
+-}
+-
+ const usageSegment: StatusLineSegment = {
+ 	id: "usage",
+ 	render(ctx) {
+ 		const u = ctx.usage;
+-		if (!u || (!u.fiveHour && !u.daily && !u.sevenDay && !u.monthly && !u.resetCredits)) {
++		if (!u || (!u.fiveHour && !u.daily && !u.sevenDay && !u.monthly)) {
+ 			return { content: "", visible: false };
+ 		}
+ 		const parts: string[] = [];
+-		if (u.tier) {
+-			const tier = truncateToWidth(sanitizeStatusText(u.tier), TRUNCATE_LENGTHS.SHORT);
+-			if (tier) parts.push(accentFg(ctx, "accent", tier));
+-		}
+ 		if (u.fiveHour) {
+ 			parts.push(formatQuotaWindow(ctx, "5h", u.fiveHour.percent, u.fiveHour.resetMinutes, "m", "round"));
+ 		}
+@@ -1264,35 +1254,13 @@
+ 			// shows 1.88 → "1% used"; OpenCode's endpoint emits floored integers).
+ 			parts.push(formatQuotaWindow(ctx, "mo", u.monthly.percent, u.monthly.resetHours, "h", "floor"));
+ 		}
+-		if (u.resetCredits) {
+-			const resets = u.resetCredits;
+-			let resetText = `✦ ${resets.bankedCount}`;
+-			if (resets.redeemableCount !== resets.bankedCount) {
+-				resetText += ` (${resets.redeemableCount} usable)`;
+-			}
+-			if (resets.expiryHours !== undefined) {
+-				const expiring = resets.expiring ? `▲ ${resets.expiring.count} ` : "";
+-				resetText += ` ${expiring}exp ${formatUsageReset(resets.expiryHours, "h")}`;
+-			} else if (resets.expired) {
+-				resetText += " expired";
+-			}
+-			if (resets.redeemableCount === 0 && resets.unavailableReason) {
+-				const reason = truncateToWidth(sanitizeStatusText(resets.unavailableReason), TRUNCATE_LENGTHS.SHORT);
+-				if (reason) resetText += ` ${reason}`;
+-			}
+-			parts.push(theme.fg(resetCreditsColor(resets), resetText));
+-		}
+ 		const content = withIcon(theme.icon.time, parts.join(theme.sep.dot));
+ 		return { content, visible: true };
+ 	},
+ 	describe(ctx) {
+ 		const u = ctx.usage;
+-		if (!u || (!u.fiveHour && !u.daily && !u.sevenDay && !u.monthly && !u.resetCredits)) return null;
++		if (!u || (!u.fiveHour && !u.daily && !u.sevenDay && !u.monthly)) return null;
+ 		const parts: TspSpan[][] = [];
+-		if (u.tier) {
+-			const tier = sanitizeStatusText(u.tier);
+-			if (tier) parts.push([span(tier, accentToken(ctx, "accent"))]);
+-		}
+ 		if (u.fiveHour) {
+ 			parts.push(describeQuotaWindow("5h", u.fiveHour.percent, u.fiveHour.resetMinutes, "m", "round"));
+ 		}
+@@ -1301,20 +1269,6 @@
+ 			parts.push(describeQuotaWindow("7d", u.sevenDay.percent, u.sevenDay.resetHours, "h", "round"));
+ 		}
+ 		if (u.monthly) parts.push(describeQuotaWindow("mo", u.monthly.percent, u.monthly.resetHours, "h", "floor"));
+-		if (u.resetCredits) {
+-			const resets = u.resetCredits;
+-			let resetText = `✦ ${resets.bankedCount}`;
+-			if (resets.redeemableCount !== resets.bankedCount) resetText += ` (${resets.redeemableCount} usable)`;
+-			if (resets.expiryHours !== undefined) {
+-				const expiring = resets.expiring ? `▲ ${resets.expiring.count} ` : "";
+-				resetText += ` ${expiring}exp ${formatUsageReset(resets.expiryHours, "h")}`;
+-			} else if (resets.expired) resetText += " expired";
+-			if (resets.redeemableCount === 0 && resets.unavailableReason) {
+-				const reason = sanitizeStatusText(resets.unavailableReason);
+-				if (reason) resetText += ` ${reason}`;
+-			}
+-			parts.push([span(resetText, resetCreditsColor(resets))]);
+-		}
+ 		const spans: TspSpan[] = [];
+ 		for (const part of parts) {
+ 			if (spans.length > 0) spans.push(span(theme.sep.dot, "dim"));
+--- a/packages/coding-agent/test/status-line-usage-refresh.test.ts
++++ b/packages/coding-agent/test/status-line-usage-refresh.test.ts
+@@ -283,118 +283,6 @@
+ 		expect(plain(component.getTopBorder(80).content)).toContain("5h 42%");
+ 	});
+ 
+-	it("shows Claude's banked count, current availability, and expiry in the usage segment", async () => {
+-		const expiresAt = new Date(Date.now() + 48 * 3_600_000).toISOString();
+-		const reports = usageReport(25) as Array<Record<string, unknown>>;
+-		reports[0]!.resetCredits = {
+-			availableCount: 3,
+-			redeemableCount: 0,
+-			reason: "weekly cooldown",
+-			credits: [
+-				{
+-					id: "cedar",
+-					title: "Claude reset",
+-					program: "cedar_ember",
+-					remainingCount: 3,
+-					usable: false,
+-					requiresLimit: true,
+-					clears: ["anthropic:5h", "anthropic:7d"],
+-					blocking: [],
+-					usedFractions: {},
+-					expiresAt,
+-				},
+-			],
+-		};
+-		const component = new StatusLineComponent(
+-			makeSession(async () => reports),
+-			statusLineHost,
+-		);
+-		component.updateSettings({
+-			preset: "custom",
+-			leftSegments: ["usage"],
+-			rightSegments: [],
+-			separator: "powerline-thin",
+-		});
+-
+-		await refreshUsage(component);
+-
+-		const output = plain(component.getTopBorder(120).content);
+-		expect(output).toContain("✦ 3 (0 usable)");
+-		expect(output).toContain("exp 2d");
+-		expect(output).toContain("weekly cooldown");
+-	});
+-
+-	it("counts down to the warned Claude grant, not an earlier one clearing only a quiet window", async () => {
+-		const grant = (id: string, program: string, clears: string[], hours: number) => ({
+-			id,
+-			program,
+-			remainingCount: 1,
+-			usable: true,
+-			requiresLimit: false,
+-			clears,
+-			blocking: [],
+-			usedFractions: {},
+-			expiresAt: new Date(Date.now() + hours * 3_600_000).toISOString(),
+-			status: "available",
+-		});
+-		const reports = usageReport(10) as Array<Record<string, unknown>>;
+-		(reports[0]!.limits as unknown[]).push({
+-			id: "anthropic:7d",
+-			label: "Claude 7 Day",
+-			scope: { provider: "anthropic", windowId: "7d" },
+-			window: { id: "7d", label: "7d", resetsAt: Date.now() + 80 * 3_600_000 },
+-			amount: { unit: "percent", usedFraction: 0.8 },
+-		});
+-		reports[0]!.resetCredits = {
+-			availableCount: 2,
+-			redeemableCount: 1,
+-			nextCreditId: "juniper",
+-			eligible: true,
+-			credits: [
+-				grant("juniper", "juniper_tide", ["anthropic:5h"], 1),
+-				grant("cedar", "cedar_ember", ["anthropic:7d"], 6),
+-			],
+-		};
+-		const component = new StatusLineComponent(
+-			makeSession(async () => reports),
+-			statusLineHost,
+-		);
+-		component.updateSettings({
+-			preset: "custom",
+-			leftSegments: ["usage"],
+-			rightSegments: [],
+-			separator: "powerline-thin",
+-		});
+-
+-		await refreshUsage(component);
+-
+-		expect(plain(component.getTopBorder(120).content)).toContain("▲ 1 exp 6h");
+-		component.dispose();
+-	});
+-
+-	it.each([
+-		{ name: "keeps a reset beyond 7 days plain", expiresInHours: 8 * 24, text: "✦ 1 exp 8d" },
+-		{ name: "flags a reset expiring within 7 days", expiresInHours: 5 * 24, text: "✦ 1 ▲ 1 exp 5d" },
+-		{ name: "flags a reset expiring within 24 hours", expiresInHours: 6, text: "✦ 1 ▲ 1 exp 6h" },
+-	])("$name in the active account's usage segment", async ({ expiresInHours, text }) => {
+-		const state: CodexUsageState = {
+-			sevenDayPercent: 60,
+-			sevenDayResetAt: Date.now() + 80 * 3_600_000,
+-			savedResets: 1,
+-			creditExpiresAt: [Date.now() + expiresInHours * 3_600_000],
+-		};
+-		const component = new StatusLineComponent(
+-			makeCodexSession(async () => codexUsageReport(state)),
+-			statusLineHost,
+-		);
+-		component.updateSettings({ preset: "custom", leftSegments: ["usage"], rightSegments: [] });
+-
+-		await refreshUsage(component);
+-
+-		expect(plain(component.getTopBorder(120).content)).toContain(text);
+-		component.dispose();
+-	});
+-
+ 	describe("saved-reset expiry warning", () => {
+ 		let noticeDir: TempDir | undefined;
+ 
+@@ -591,8 +479,6 @@
+ 
+ 			await refreshUsage(component);
+ 
+-			// The status line keeps flagging it meanwhile.
+-			expect(plain(component.getTopBorder(120).content)).toContain("▲ 1 exp 7h");
+ 			expect(notices).toEqual([]);
+ 
+ 			await refreshUsage(component, 61 * 60_000);

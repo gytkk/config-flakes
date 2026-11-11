@@ -27,13 +27,15 @@ Merge this entry into any existing server map rather than replacing it. Anonymou
 
 ## Status line
 
-The layout follows the Pi footer using OMP's built-in segments:
+The status band uses OMP's built-in segments:
 
-- Left: working directory, Git branch/status, context usage, input/output tokens, and subagent count.
+- Left: working directory, Git branch/status, context usage, and subagent count. Input/output token counters are omitted.
 - Right: provider quota, model/thinking level, and session mode.
-- The configured separator is `pipe`; the existing `claude` composer and themes are preserved. Composer shapes can arrange the segments differently.
+- Composer shape, separators, themes, and compact thinking-level display remain independent of these segment selections.
 
 `usage` reports the active provider/account's available quota windows, including Codex's five-hour and seven-day windows and time until reset. Percentages are **used**, not remaining: `7d 8%` means 92% remains. Unlike Pi's CodexBar extension, this uses OMP's account reports and does not need CodexBar. Missing quota data hides the segment. Use `/usage` or `omp usage` for the full report. A narrow terminal can omit segments.
+
+The [local package patch](../../packages/apps/omp/status-line-quota-only.patch) hides subscription labels such as `prolite` and saved-reset credit counts, availability, and expiry from both ANSI and native status-line rendering. Quota percentages and quota-window reset countdowns remain visible; `/usage`, `omp usage`, and reset notifications retain their full data. Accounts with only hidden metadata do not leave an empty usage icon. This needs the patched executable, not just a configuration reload: apply Home Manager and restart OMP after building or updating the package.
 
 ## Agent UI
 

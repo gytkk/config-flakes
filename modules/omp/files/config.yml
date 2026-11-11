@@ -22,8 +22,6 @@ statusLine:
     - path
     - git
     - context_pct
-    - token_in
-    - token_out
     - subagents
   rightSegments:
     - usage
