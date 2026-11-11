@@ -400,6 +400,16 @@ The [Neovim module](modules/vim/README.md) configures the nightly editor with La
 - In Herdr 0.9.1, document overlays open in the server's active tab; `--deliver-to` selects the feedback recipient. When opening a review from an agent, resolve its pane with `herdr pane current --current`, focus it with `herdr agent focus <pane-id>`, then launch the review. Check the returned `tab_id` against the caller's tab.
 - Home Manager also registers [Auto Title](https://github.com/kryptamine/herdr-auto-title) from `packages/apps/herdr-auto-title` in the Nix store. `Update App Versions` tracks stable releases and pins source and Go dependency hashes; Go is needed only during the Nix build. The plugin starts with the Herdr server, so linking or reloading config does not start it. After applying Home Manager, stop the server when its running tasks can be interrupted and reopen Herdr to start the plugin or load its updated binary. Its first run renames existing panes, including manually named panes; later manual renames are preserved.
 
+### Herdr Core
+
+The common profile installs [Herdr Core](packages/README.md#updates-and-ci) (`herdr-core`, also `hc`) on every device, including `pylv-onyx`, `pylv-sepia`, and both Macs. Core is the desktop app's terminal runtime, separate from Herdr TUI and its server. Home Manager also owns `~/.local/bin/herdr-core` and `~/.local/bin/hc`, so desktop launches and non-interactive SSH connections find the Nix-managed executable.
+
+Core's stable release pin follows the existing three-hour package update CI. Pull the resulting commits and apply the configuration to install new versions; the desktop updater and `hc update` cannot replace Nix store files. To update the pin manually, run `bash packages/apps/herdr-core/update.sh` and `bash packages/scripts/sync-readme-versions.sh`.
+
+For the first migration from the upstream installer, back up the existing `~/.local/bin/herdr-core` and `~/.local/bin/hc` entries before applying, or use Home Manager's `-b before-herdr-core-nix` backup option with a standalone switch. Do not delete `~/.local/share/herdr-core` or Core's state: running terminal holders may still use the old bundle. On this MacBook, use `home-manager switch -b before-herdr-core-nix --flake .#devsisters-macbook`.
+
+After applying, restart the desktop app to refresh executable discovery. From a regular terminal outside Herdr, run `hc server restart` to hand off to the installed Core without ending running programs, then check `hc server status` for the version and `installed_by: "nix"`. The restart preserves the server's environment; do not use `server stop` for this migration. macOS keeps the upstream signed app bundle intact, but privacy permissions may need approval again after its location changes.
+
 ## tmux config
 
 - tmux is managed through `modules/tmux/default.nix`.

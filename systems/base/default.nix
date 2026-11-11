@@ -121,6 +121,10 @@ in
         "$HOME/.nix-profile/bin"
       ];
 
+      # Keep desktop and non-interactive SSH discovery on the Nix-managed Core.
+      file.".local/bin/herdr-core".source = "${pkgs.herdr-core}/bin/herdr-core";
+      file.".local/bin/hc".source = "${pkgs.herdr-core}/bin/hc";
+
       # 기본 패키지 (모든 환경에서 공통)
       packages = with pkgs; [
         # Nix
@@ -198,6 +202,7 @@ in
 
         # AI usage
         codexbar
+        herdr-core
 
         # etc
         direnv
