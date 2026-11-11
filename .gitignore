@@ -10,3 +10,7 @@ result-*
 
 # OMP settings write lock (resolved symlink target)
 /modules/omp/files/config.yml.lock
+
+# Herdr App mod checker/editor generated files
+/modules/herdr-app/files/mods/**/gpui-kit.d.ts
+/modules/herdr-app/files/mods/**/jsconfig.json
