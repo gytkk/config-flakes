@@ -1,4 +1,4 @@
-"""Merge managed shortcuts and install the personal prefix mod without owning app state."""
+"""Merge managed shortcuts, pane spacing, and the prefix mod without owning app state."""
 
 import argparse
 import json
@@ -29,13 +29,19 @@ def status_layout(home: Path) -> dict:
     target = home / "layouts/tui.json"
     layout = json.loads((target if target.exists() else home / "layouts/main.json").read_text())
     pending = [layout]
+    has_status = False
     while pending:
         node = pending.pop()
-        if node.get("id") == "status" and node.get("content", {}).get("mod") in ("workspace-status", "tui-prefix"):
-            node["content"]["mod"] = "tui-prefix"
-            return layout
+        content = node.get("content", {})
+        if node.get("id") == "status" and content.get("mod") in ("workspace-status", "tui-prefix"):
+            content["mod"] = "tui-prefix"
+            has_status = True
+        if content.get("tab") == "active":
+            content.setdefault("pane", {})["gap"] = 4
         pending.extend(node.get("children", []))
-    raise ValueError("Herdr App layout has no compatible status block; leaving configuration unchanged")
+    if not has_status:
+        raise ValueError("Herdr App layout has no compatible status block; leaving configuration unchanged")
+    return layout
 
 
 def install(source: Path, home: Path) -> None:
