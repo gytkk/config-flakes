@@ -205,7 +205,7 @@ export default class Prefix extends View {
     const t = theme();
     if (!this.overlay) {
       const active = this.mode === "prefix";
-      const prefixAccent = mixColors(t.ansi3, t.foreground, 0.2);
+      const prefixAccent = mixColors(t.ansi3, t.foreground, 0.08);
       const space = spaces().find(s => s.active);
       const bar = h_flex().id("tui-prefix-bar").track_focus(this.handle).size_full()
         .px(14).gap(16).items_center().overflow_hidden().border_t(1).border_color(active ? prefixAccent : t.border)
