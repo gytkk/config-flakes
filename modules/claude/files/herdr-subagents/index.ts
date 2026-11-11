@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { JsonlTail } from "../../../herdr/files/jsonl-tail";
 import { childTranscripts, teammateRemoved } from "./io";
-import { applyEvent, consumeChild, consumeParent, hookEvent, object, sidebarTokens, validId, type Child, type Event } from "./projection";
+import { applyEvent, consumeChild, consumeParent, hookEvent, object, sidebarTokens, snapshotChildren, validId, type Child, type Event } from "./projection";
 
 const exec = promisify(execFile);
 const SCRIPT = fileURLToPath(import.meta.url);
@@ -136,10 +136,21 @@ function processStartedAt(identity: string): number {
   return Number.isFinite(parsed) ? parsed : Date.now();
 }
 
-async function environment(): Promise<{ pane: string; binary: string; directory: string } | undefined> {
-  const pane = process.env.HERDR_PANE_ID;
-  const socket = process.env.HERDR_SOCKET_PATH;
-  if (process.env.HERDR_ENV !== "1" || !pane || !socket) return;
+type Environment = {
+  transport: "tui" | "desktop";
+  target: string;
+  socket?: string;
+  binary: string;
+  directory: string;
+};
+
+async function environment(): Promise<Environment | undefined> {
+  const pane = process.env.HERDR_ENV === "1" && process.env.HERDR_SOCKET_PATH ? process.env.HERDR_PANE_ID : undefined;
+  // A nested TUI owns its pane metadata, not the enclosing core terminal label.
+  const target = pane || process.env.HC_TERMINAL_ID;
+  if (!target) return;
+  const transport = pane ? "tui" : "desktop";
+  const socket = pane ? process.env.HERDR_SOCKET_PATH : process.env.HC_TERMINAL_SOCKET || process.env.HC_SOCKET;
   let runtimeDirectory = tmpdir();
   const configured = process.env.XDG_RUNTIME_DIR;
   if (configured && isAbsolute(configured)) {
@@ -152,10 +163,12 @@ async function environment(): Promise<{ pane: string; binary: string; directory:
       if (!["ENOENT", "ENOTDIR", "EACCES", "EPERM", "EROFS", "ELOOP", "ENAMETOOLONG"].includes(code(error) ?? "")) throw error;
     }
   }
-  const key = createHash("sha256").update(`${socket}\0${pane}`).digest("hex").slice(0, 24);
+  // Preserve the existing TUI key; core owners additionally distinguish transport.
+  const identity = pane ? `${socket}\0${target}` : `desktop\0${socket ?? ""}\0${target}`;
+  const key = createHash("sha256").update(identity).digest("hex").slice(0, 24);
   return {
-    pane,
-    binary: process.env.HERDR_BIN_PATH || "herdr",
+    transport, target, socket,
+    binary: pane ? process.env.HERDR_BIN_PATH || "herdr" : "herdr-core",
     directory: join(runtimeDirectory, `claude-herdr-subagents-${process.getuid?.() ?? "user"}`, key),
   };
 }
@@ -232,23 +245,35 @@ export async function watch(token: string): Promise<void> {
   const teamsRoot = join(resolve(process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude")), "teams");
   let paths = new Map<string, string>();
   const errors = new Map<string, string>();
-  let published = "";
+  let published: string | undefined;
   let lastPublished = 0;
   let nextProbe = 0;
   let nextScan = 0;
   let unavailableSince = 0;
-  const report = async (states: Child[]) => {
-    const tokens = sidebarTokens(states);
-    const serialized = JSON.stringify(tokens);
-    if (serialized === published && (Object.values(tokens).every((value) => value === null) || Date.now() - lastPublished < REFRESH_MS)) return;
+  const report = async (states: Child[], cleanup = false) => {
+    const now = Date.now();
+    const tokens = env.transport === "tui" ? sidebarTokens(states, now) : undefined;
+    const snapshot = env.transport === "desktop" && !cleanup
+      ? { version: 1, session: initial.generation, model: "", children: snapshotChildren(states, now) } : undefined;
+    const serialized = tokens ? JSON.stringify(tokens) : snapshot ? JSON.stringify(snapshot) : "";
+    const empty = tokens ? Object.values(tokens).every((value) => value === null) : cleanup;
+    if (serialized === published && (empty || now - lastPublished < REFRESH_MS)) return;
     await withOwnerLock(env.directory, async () => {
       if ((await json(ownerPath))?.token !== token) return;
-      const entries = Object.entries(tokens);
-      // Herdr accepts 16 keys per request; batches of 15 preserve child triplets.
-      for (let offset = 0; offset < entries.length; offset += 15) {
-        const args = ["pane", "report-metadata", env.pane, "--source", SOURCE, "--agent", "claude", "--ttl-ms", String(TTL_MS)];
-        for (const [key, value] of entries.slice(offset, offset + 15)) args.push(...(value === null ? ["--clear-token", key] : ["--token", `${key}=${value}`]));
-        await exec(env.binary, args, { timeout: 2_000 }).catch(() => { throw new Error("Herdr metadata update failed"); });
+      if (tokens) {
+        const entries = Object.entries(tokens);
+        // Herdr accepts 16 keys per request; batches of 15 preserve child triplets.
+        for (let offset = 0; offset < entries.length; offset += 15) {
+          const args = ["pane", "report-metadata", env.target, "--source", SOURCE, "--agent", "claude", "--ttl-ms", String(TTL_MS)];
+          for (const [key, value] of entries.slice(offset, offset + 15)) args.push(...(value === null ? ["--clear-token", key] : ["--token", `${key}=${value}`]));
+          await exec(env.binary, args, { timeout: 2_000 }).catch(() => { throw new Error("Herdr metadata update failed"); });
+        }
+      } else {
+        const value = snapshot ? JSON.stringify({ ...snapshot, updatedAt: now }) : "";
+        await exec(env.binary, ["label", env.target, `claude.subagents=${value}`], {
+          timeout: 2_000,
+          env: env.socket ? { ...process.env, HC_SOCKET: env.socket } : process.env,
+        }).catch(() => { throw new Error("Herdr core label update failed"); });
       }
       published = serialized;
       lastPublished = Date.now();
@@ -318,7 +343,7 @@ export async function watch(token: string): Promise<void> {
       await Bun.sleep(500);
     }
   } finally {
-    await report([]);
+    await report([], true);
   }
 }
 

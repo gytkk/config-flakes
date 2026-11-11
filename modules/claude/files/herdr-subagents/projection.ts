@@ -159,22 +159,43 @@ export function consumeParent(children: Map<string, Child>, value: unknown, sess
   }
 }
 
-export function sidebarTokens(children: Child[], now = Date.now()): Record<string, string | null> {
+function visibleChildren(children: Child[], now: number): Child[] {
   const active = children.filter((child) => child.endedAt === undefined
     && (child.stoppedAt === undefined || now - child.stoppedAt < 10_000));
   const ended = children.filter((child) => child.endedAt !== undefined && now >= child.endedAt && now - child.endedAt < 10_000)
     .sort((a, b) => b.endedAt! - a.endedAt!);
-  const candidates = [...active, ...ended];
+  return [...active, ...ended];
+}
+
+const limited = (value: string): string => {
+  const chars = Array.from(value);
+  return chars.length > 80 ? chars.slice(0, 79).join("") + "…" : chars.join("");
+};
+
+export function snapshotChildren(children: Child[], now = Date.now()) {
+  return visibleChildren(children, now).map((child) => ({
+    id: child.id,
+    name: limited(text(child.name)),
+    model: limited(text(child.model)),
+    activity: limited(text(child.activity)),
+    phase: child.phase,
+    unavailable: Boolean(child.unavailable),
+    ...(child.stoppedAt === undefined ? {} : { stoppedAt: child.stoppedAt }),
+    ...(child.endedAt === undefined ? {} : { endedAt: child.endedAt }),
+  }));
+}
+
+export function sidebarTokens(children: Child[], now = Date.now()): Record<string, string | null> {
+  const candidates = visibleChildren(children, now);
   const visible = candidates.length > 7 ? candidates.slice(0, 6) : candidates;
-  const limit = (value: string) => { const chars = Array.from(value); return chars.length > 80 ? chars.slice(0, 79).join("") + "…" : chars.join(""); };
   const icons = { running: "●", stopping: "○", completed: "✓", failed: "×", interrupted: "■" };
   const tokens: Record<string, string | null> = {};
   for (let index = 0; index < 7; index++) {
     const child = visible[index];
     tokens[`subagent_${index + 1}_status`] = child ? child.unavailable ? "○" : icons[child.phase] : null;
-    tokens[`subagent_${index + 1}`] = child ? limit(`${text(child.name)} / ${text(child.model) || "model unknown"}`) : null;
+    tokens[`subagent_${index + 1}`] = child ? limited(`${text(child.name)} / ${text(child.model) || "model unknown"}`) : null;
     const activity = text(child?.activity);
-    tokens[`subagent_${index + 1}_activity`] = child && activity ? limit(`|  ${child.unavailable ? "Last message: " : ""}${activity}`) : null;
+    tokens[`subagent_${index + 1}_activity`] = child && activity ? limited(`|  ${child.unavailable ? "Last message: " : ""}${activity}`) : null;
   }
   if (candidates.length > 7) {
     tokens.subagent_7_status = "…";

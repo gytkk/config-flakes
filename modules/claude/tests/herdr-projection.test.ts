@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { applyEvent, consumeChild, consumeParent, hookEvent, resultEvent, sidebarTokens, type Child } from "../files/herdr-subagents/projection";
+import { applyEvent, consumeChild, consumeParent, hookEvent, resultEvent, sidebarTokens, snapshotChildren, type Child } from "../files/herdr-subagents/projection";
 
 const sessionId = "parent";
 const stamp = (at: number) => new Date(at).toISOString();
@@ -140,5 +140,29 @@ describe("Claude child projection", () => {
     const children = Array.from({ length: 9 }, (_, index) => ({ ...child, id: String(index) }));
     expect(sidebarTokens(children, 2000)).toMatchObject({ subagent_7_status: "…", subagent_7: "+3 more", subagent_7_activity: null });
     expect(sidebarTokens([], 2000).subagent_1).toBeNull();
+  });
+
+  test("desktop snapshots share visibility windows without TUI overflow and preserve uncertain phases", () => {
+    const { children, child } = running();
+    child.unavailable = true;
+    child.name = "\u001b[31m" + "한".repeat(100);
+    child.model = "model\n" + "m".repeat(100);
+    child.activity = "\u001b[32mProgress\t" + "a".repeat(100);
+    const others = Array.from({ length: 9 }, (_, index) => ({ ...child, id: `other-${index}` }));
+    expect(snapshotChildren([child, ...others], 2000)).toHaveLength(10);
+    const projected = snapshotChildren([child], 2000)[0];
+    expect(projected).toMatchObject({ id: "child", phase: "running", unavailable: true });
+    for (const value of [projected.name, projected.model, projected.activity]) {
+      expect(Array.from(value)).toHaveLength(80);
+      expect(value).not.toMatch(/[\u0000-\u001f]/);
+    }
+    applyEvent(children, { kind: "stop", id: "child", at: 2000 });
+    expect(snapshotChildren([child], 11999)[0]).toMatchObject({ phase: "stopping", stoppedAt: 2000 });
+    expect(snapshotChildren([child], 12000)).toEqual([]);
+    consumeChild(child, assistant(13000, [{ type: "text", text: "Resumed" }]), sessionId);
+    expect(snapshotChildren([child], 13000)[0]).toMatchObject({ phase: "running", activity: "Resumed" });
+    applyEvent(children, { kind: "result", id: "child", at: 14000, phase: "completed" });
+    expect(snapshotChildren([child], 23999)[0]).toMatchObject({ phase: "completed", endedAt: 14000, unavailable: true });
+    expect(snapshotChildren([child], 24000)).toEqual([]);
   });
 });

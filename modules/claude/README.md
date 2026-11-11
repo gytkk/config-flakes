@@ -45,9 +45,9 @@ The [Claude-specific instructions](../../agent-core/adapters/claude.md#response-
 
 ## Herdr subagent sidebar
 
-Inside Herdr, Claude's Agents entry displays native subagents with a status icon, name, and actual model, followed by an excerpt of the latest assistant message in the generated Herdr theme's secondary text color. Before a message is available, the activity can show the tool name. Thinking blocks, tool arguments, and tool results are not displayed. Children share the parent's pane; this integration does not create terminal panes.
+Inside Herdr TUI, Claude's Agents entry displays native subagents with a status icon, name, and actual model, followed by an excerpt of the latest assistant message in the generated Herdr theme's secondary text color. Before a message is available, the activity can show the tool name. Thinking blocks, tool arguments, and tool results are not displayed. Children share the parent's pane; this integration does not create terminal panes.
 
-[settings.json](files/settings.json) connects `SessionStart`, `SubagentStart`, `SubagentStop`, `PostToolUse` for `Agent`, and `SessionEnd` to `~/.local/bin/claude-herdr-subagents`. The [helper](files/herdr-subagents/index.ts) runs one watcher per Herdr pane and reads the current session's parent and child JSONL records. Background children continue to be watched after the parent finishes responding. Agent results supply task descriptions; until a result is available, the name is the agent type and a short ID. Resuming the same child updates its existing row.
+[settings.json](files/settings.json) connects `SessionStart`, `SubagentStart`, `SubagentStop`, `PostToolUse` for `Agent`, and `SessionEnd` to `~/.local/bin/claude-herdr-subagents`. The [helper](files/herdr-subagents/index.ts) runs one watcher per Herdr TUI pane or Desktop core terminal and reads the current session's parent and child JSONL records. Background children continue to be watched after the parent finishes responding. Agent results supply task descriptions; until a result is available, the name is the agent type and a short ID. Resuming the same child updates its existing row.
 
 JSONL reads use the [shared reader](../herdr/README.md#shared-jsonl-reader) also used by the Codex watcher. Nix packages the watcher and shared file together; transcript discovery and state projection remain in the Claude module.
 
@@ -62,6 +62,17 @@ Apply Home Manager for the current environment, run `herdr server reload-config`
 ```bash
 bun test modules/herdr/tests modules/claude/tests
 ```
+
+### Herdr Desktop
+
+The same watcher feeds the [personal Desktop Agents mod](../herdr/README.md#desktop-subagents). Outside a valid TUI pane, `HC_TERMINAL_ID` selects the parent core terminal and `HC_TERMINAL_SOCKET` takes precedence over `HC_SOCKET`. The watcher publishes a versioned `claude.subagents` label; inside a TUI pane it reports only TUI metadata, because multiple TUI panes can share one core terminal.
+
+Desktop shows all visible children, without the TUI's seven-slot limit. Each row contains the name, actual model when known, and a state-colored dot; its tooltip contains the state and latest activity. Waiting for stop confirmation or unavailable transcript data uses a neutral dot, never a confirmed-completion indicator. Clicking a child focuses the parent Claude terminal.
+
+Snapshots refresh every five seconds and expire after fifteen seconds without updates. Stopped and confirmed terminal rows follow the same ten-second hiding policy as TUI. Session replacement changes the snapshot identity, and only the owning watcher may update or clear its label. Session end or process exit clears the label. Core labels persist on disk: after a crash, activity excerpts can remain stored until replaced or cleared even though stale rows are hidden. Remote reporters and the desktop need synchronized clocks.
+
+Apply Home Manager on the reporter and desktop hosts, select the personal `tui` layout, and start a new Claude session. App mods hot-reload; Desktop does not need `herdr server reload-config`. The existing Claude hooks are reused without an additional marketplace plugin.
+
 
 ## Skills and plugins
 

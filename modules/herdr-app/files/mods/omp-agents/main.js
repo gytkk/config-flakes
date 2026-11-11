@@ -1,6 +1,6 @@
-// Personal fork of Herdr App 0.1.15's Agents mod, with OMP metadata children.
+// Personal fork of Herdr App 0.1.15's Agents mod, with runtime metadata children.
 // Source: ~/.config/herdr-app/mods/agents/main.js, shipped by Herdr (herdr.dev).
-// Upstream Apache-2.0 license preserved in LICENSE; modifications add OMP display.
+// Upstream Apache-2.0 license preserved in LICENSE; modifications add metadata display.
 // Cross-mod code imports are unsupported; keep this explicit versioned copy.
 // Native terminal children, navigation, pinning and the incumbent layout stay intact.
 
@@ -55,7 +55,7 @@ const RANK = { blocked: 4, done: 3, working: 2, idle: 1 };
 // A sub-agent without a pane isn't in agents(): its raw word, error counting as
 // blocked. It's never done: it reports to its parent, and the parent's done is the news.
 const kidStatus = (k, listed) => {
-  if (k.omp) return k.status;
+  if (k.metadata) return k.status;
   const s = listed.get(k.address) ?? k.status;
   return s === "error" ? "blocked" : s === "done" ? "idle" : s;
 };
@@ -90,7 +90,7 @@ export default class Agents extends View {
     this.pendingPins = JSON.parse(localStorage.getItem("pins") ?? "[]");
     if (!this.pendingPins.length) localStorage.removeItem("pins");
     this.migratingPins = new Set();
-    // Metadata must expire even when core and OMP are otherwise idle.
+    // Metadata must expire even when core and the agent runtimes are otherwise idle.
     cx.timer.every(1000, (cx) => cx.notify());
   }
 
@@ -171,7 +171,7 @@ export default class Agents extends View {
 
   // Live sub-agents of `addr`, depth first, each with the tree lines in front of it.
   tree(all, addr, lead = []) {
-    const kids = [...all.filter((k) => k.parent === addr && k.state === "live"), ...(this.ompChildren?.get(addr) ?? [])];
+    const kids = [...all.filter((k) => k.parent === addr && k.state === "live"), ...(this.metadataChildren?.get(addr) ?? [])];
     return kids.flatMap((k, i) => {
       const last = i === kids.length - 1;
       return [
@@ -183,7 +183,7 @@ export default class Agents extends View {
 
   subRow(t, s, shown, compact) {
     const k = s.t;
-    if (k.omp) return this.ompRow(t, s);
+    if (k.metadata) return this.metadataRow(t, s);
     const st = kidStatus(k, this.listed);
     const pic = icon(k.program, 14, t.foreground);
     const on = k.address === shown;
@@ -208,10 +208,11 @@ export default class Agents extends View {
       .child(this.status(t, { status: st }, compact));
   }
 
-  ompRow(t, s) {
+  metadataRow(t, s) {
     const k = s.t;
-    const phase = { running: "Running", completed: "Completed", failed: "Failed", aborted: "Aborted" }[k.phase];
-    const color = k.phase === "aborted" ? t.dim : (t[k.status] ?? t.dim);
+    const phase = { running: "Running", stopping: "Stopping", completed: "Completed", failed: "Failed", aborted: "Aborted", interrupted: "Interrupted" }[k.phase];
+    const state = k.unavailable ? `State unavailable (last known: ${phase})` : phase;
+    const color = k.unavailable || ["stopping", "aborted", "interrupted"].includes(k.phase) ? t.dim : (t[k.status] ?? t.dim);
     const modelName = k.model.slice(k.model.lastIndexOf("/") + 1);
     return h_flex()
       .id(`sub-${k.address}`)
@@ -225,7 +226,7 @@ export default class Agents extends View {
       .text_size(12.5)
       .cursor_pointer()
       .hover(el => el.bg(t.hover))
-      .tooltip([k.name, k.model, phase, k.activity, "Focus parent OMP session"].filter(Boolean).join("\n"))
+      .tooltip([k.name, k.model, state, k.activity, `Focus parent ${k.runtime === "claude" ? "Claude Code" : "OMP"} session`].filter(Boolean).join("\n"))
       // This is metadata, not a core terminal: never peek, keep or focus its UI key.
       .on_click(() => run("pane.focus", { terminal: k.parent }))
       .children(s.lines.map(l => div().self_start().mt(-4).w(9).h(17).mr(4).flex_none()
@@ -257,7 +258,7 @@ export default class Agents extends View {
     this.migratePins(all);
     const shown = focused()?.agent;
     const now = Date.now();
-    this.ompChildren = metadataChildren(all, now);
+    this.metadataChildren = metadataChildren(all, now);
     this.track(list, now);
     // A kept sub-agent (one with a pane) is in agents() too: where a tree shows
     // it, it gets no row of its own, unless it's pinned.
@@ -267,8 +268,8 @@ export default class Agents extends View {
     for (const a of list) tabCounts.set(a.tab, (tabCounts.get(a.tab) ?? 0) + 1);
     const byPriority = sort.id === "priority";
     // Only real terminal children participate in the incumbent priority ranking.
-    // OMP metadata must not turn the parent's status or priority into its child's.
-    const urgency = new Map(list.map((a) => [a.address, Math.max(this.rank(a), ...this.tree(all, a.address).filter(s => !s.t.omp).map((s) => RANK[kidStatus(s.t, this.listed)] ?? 0))]));
+    // Metadata must not turn the parent's status or priority into its child's.
+    const urgency = new Map(list.map((a) => [a.address, Math.max(this.rank(a), ...this.tree(all, a.address).filter(s => !s.t.metadata).map((s) => RANK[kidStatus(s.t, this.listed)] ?? 0))]));
     const rankOf = (a) => urgency.get(a.address);
     if (byPriority) list = [...list].sort((x, y) => rankOf(y) - rankOf(x) || this.since(y) - this.since(x) || y.seq - x.seq);
     const pinned = list.filter((a) => a.pinned);

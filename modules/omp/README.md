@@ -68,7 +68,7 @@ The same event/state reducer feeds the [personal Desktop Agents mod](../herdr/RE
 
 Desktop snapshots retain all visible children rather than the TUI's seven slots. Each session replacement gets a new identity; queued writes are serialized before replacement and shutdown deletion. Refresh and expiry are five and fifteen seconds, respectively, and settled children disappear after five seconds. Core labels are persistent state: activity excerpts can remain on disk after a crash until replaced or cleared, even though the UI hides stale snapshots. Remote reporters and the desktop need synchronized clocks for timestamp-based expiry.
 
-Apply Home Manager on the reporter's host and the desktop host, select the personal `tui` layout, and restart OMP to load the extension. Desktop does not need `herdr server reload-config`. Other runtimes' TUI reporters are not converted by this integration.
+Apply Home Manager on the reporter's host and the desktop host, select the personal `tui` layout, and restart OMP to load the extension. Desktop does not need `herdr server reload-config`. [Claude Code](../claude/README.md#herdr-desktop) also reports Desktop subagents; Pi/Codex TUI reporters are not converted by this integration.
 
 ## Apply
 
