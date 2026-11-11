@@ -2,11 +2,14 @@ modelRoles:
   default: openai-codex/gpt-6-astra:high
   memory: openai-codex/gpt-6-astra:high
   image: openai-codex/gpt-image-2
-  smol: openai-codex/gpt-6.1-terra:auto
+  smol: openai-codex/gpt-6-luna:off
   task: openai-codex/gpt-6.1-sol:high
   advisor: openai-codex/gpt-6-astra:xhigh
   plan: openai-codex/gpt-6-astra:high
   commit: openai-codex/gpt-6-luna:off
+  vision: openai-codex/gpt-6.1-terra
+  web: openai-codex/gpt-6.1-sol
+  judge: openai-codex/gpt-6-luna
 symbolPreset: nerd
 composer:
   shape: band
