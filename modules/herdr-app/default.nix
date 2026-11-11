@@ -12,7 +12,7 @@ in
   options.modules.herdrApp.enable = lib.mkOption {
     type = lib.types.bool;
     default = false;
-    description = "Manage Herdr App shortcuts and the TUI-style prefix mod";
+    description = "Manage Herdr App shortcuts, prefix mode, and OMP subagent display";
   };
 
   config = lib.mkIf cfg.enable {

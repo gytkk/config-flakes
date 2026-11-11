@@ -44,19 +44,27 @@ The layout follows the Pi footer using OMP's built-in segments:
 
 ## Herdr Agents sidebar
 
-When OMP and Herdr are enabled, Home Manager installs Herdr's bundled OMP parent-state extension and [the local metadata extension](files/extensions/herdr-subagents.ts). The parent reports working, idle, and blocked states, including tool approvals and `ask`; metadata never changes the parent lifecycle. Both extensions ignore nested OMP shells and headless child sessions.
+When OMP and Herdr TUI are enabled, Home Manager installs Herdr's bundled OMP parent-state extension. The [local metadata extension](files/extensions/herdr-subagents.ts) is installed when either Herdr TUI or Herdr App is enabled. The parent reports working, idle, and blocked states, including tool approvals and `ask`; metadata never changes the parent lifecycle. Nested OMP shells and headless child sessions cannot publish over their parent.
 
-The [Herdr sidebar](../herdr/README.md#subagents) shows the parent's current model and native task/eval subagents, including background and nested children. Child rows show the stable OMP name, resolved model, and recent intent or assistant text; tool arguments and reasoning are not displayed. Progress supplies the actual model, including fallback changes, rather than the requested model role.
+The [Herdr TUI sidebar](../herdr/README.md#subagents) shows the parent's current model and native task/eval subagents whose events reach the extension, including background children. Child rows show the stable OMP name, resolved model, and recent intent or assistant text; tool arguments and reasoning are not displayed. Progress supplies the actual model, including fallback changes, rather than the requested model role.
 
 Running (`●`), completed (`✓`), interrupted (`■`), and failed (`×`) runs use the same colors as the other integrations. Terminal rows remain for five seconds. Seven children fit; overflow shows six plus a count, prioritizing running children. Parent turn completion does not remove background children. Follow-up runs reset their old activity; session replacement and shutdown clear the metadata. Reports refresh every five seconds and expire after fifteen seconds if the reporter stops.
 
-This integration targets OMP 18.18.2's `task:subagent:lifecycle` and `task:subagent:progress` events. It does not import OMP's private agent registry or scan transcripts. After an extension reload, already-running children appear on their next progress event; no event-history snapshot is available.
+The event contract targets OMP 18.18.2's `task:subagent:lifecycle` and `task:subagent:progress` events and remains compatible with 18.18.6. Delivered nested frames are handled, but OMP 18.18.6 publishes deeper descendants on a separate root observability bus that its public extension API does not expose; complete nested-tree visibility is not guaranteed. This integration does not import OMP's private registry or scan transcripts. After an extension reload, already-running children appear on their next progress event; no event-history snapshot is available.
 
 Apply Home Manager, run `herdr server reload-config`, and restart OMP inside Herdr. `herdr integration status` should list OMP as current. No Herdr server restart is required for these extension/config changes.
 
 ```bash
 bun test modules/omp/tests
 ```
+
+### Herdr Desktop
+
+The same event/state reducer feeds the [personal Desktop Agents mod](../herdr/README.md#desktop-subagents). Outside a valid TUI pane, the extension identifies its parent using `HC_TERMINAL_ID` and publishes a versioned JSON snapshot to that core terminal's `omp.subagents` label. `HC_TERMINAL_SOCKET` takes precedence over `HC_SOCKET`, preventing a terminal ID from being resolved on the wrong core. Inside a TUI pane, only the TUI transport runs: several TUI panes can share one core terminal.
+
+Desktop snapshots retain all visible children rather than the TUI's seven slots. Each session replacement gets a new identity; queued writes are serialized before replacement and shutdown deletion. Refresh and expiry are five and fifteen seconds, respectively, and settled children disappear after five seconds. Core labels are persistent state: activity excerpts can remain on disk after a crash until replaced or cleared, even though the UI hides stale snapshots. Remote reporters and the desktop need synchronized clocks for timestamp-based expiry.
+
+Apply Home Manager on the reporter's host and the desktop host, select the personal `tui` layout, and restart OMP to load the extension. Desktop does not need `herdr server reload-config`. Other runtimes' TUI reporters are not converted by this integration.
 
 ## Apply
 

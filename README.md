@@ -386,6 +386,7 @@ The [Neovim module](modules/vim/README.md) configures the nightly editor with La
 
 - Herdr is managed through `modules/herdr/default.nix` and enabled by default. See the [Herdr module README](modules/herdr/README.md) for terminal shortcuts and how to apply them, and [agent detection](modules/herdr/README.md#agent-detection) for the exclusion of Claude maintenance commands during Home Manager activation.
 - The separately installed desktop App uses [the Herdr App integration](modules/herdr/README.md#herdr-app-shortcuts): matching direct shortcuts and a `tui` layout whose bottom status line handles `Ctrl+Space` without a prefix popup or timeout. `modules/herdr-app` merges the keys and installs the personal mod while preserving unrelated App settings.
+- That personal layout also installs [Desktop subagent display](modules/herdr/README.md#desktop-subagents): OMP task/eval children appear below their parent with model, activity, and lifecycle state, without creating terminals. The TUI reporter is reused with a separate Core-label transport; other runtimes' TUI metadata does not automatically appear in the App.
 - Home Manager generates read-only `~/.config/herdr/config.toml` from `modules/herdr/files/config.toml` and the selected `themes/exports/herdr` theme. Edit these sources and apply Home Manager; Herdr's UI cannot persist settings to the generated file.
 - The configured prefix is `Ctrl+Space`.
 - `Ctrl+Space`, then `Shift+n`, opens a popup that selects a previously visited directory with `zoxide` and `fzf`, then creates and focuses a workspace there.

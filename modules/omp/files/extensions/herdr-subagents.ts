@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 const SLOT_COUNT = 7;
 const TERMINAL_MS = 5_000;
 const REFRESH_MS = 5_000;
@@ -16,6 +18,7 @@ export type Child = {
 
 type Context = {
   hasUI: boolean;
+  readonly agent?: { kind: "main" | "sub" };
   readonly model?: { id: string };
   ui: { notify(message: string, type: "warning"): void };
 };
@@ -102,48 +105,89 @@ export function sidebarTokens(children: Map<string, Child>, now = Date.now()): R
 }
 
 export default function (omp: API): void {
-  const pane = process.env.HERDR_PANE_ID;
-  if (process.env.HERDR_ENV !== "1" || !pane || !process.env.HERDR_SOCKET_PATH || process.env.OMPCODE === "1") return;
+  if (process.env.OMPCODE === "1") return;
+  const pane = process.env.HERDR_ENV === "1" && process.env.HERDR_SOCKET_PATH ? process.env.HERDR_PANE_ID : undefined;
+  // A TUI can contain several panes inside one core terminal; its pane
+  // identity is more specific and must not compete for a shared core label.
+  const terminal = pane ? undefined : process.env.HC_TERMINAL_ID;
+  if (!pane && !terminal) return;
   const binary = process.env.HERDR_BIN_PATH || "herdr";
+  // Core 0.1.20 injects the endpoint with its terminal identity. HC_SOCKET may
+  // point elsewhere; never resolve this terminal's address on that other core.
+  const socket = process.env.HC_TERMINAL_SOCKET || process.env.HC_SOCKET;
   const children = new Map<string, Child>();
+  // A replaced session's late progress is not a new run. A genuine follow-up
+  // explicitly emits started before reusing its stable child name.
+  const retired = new Set<string>();
   let context: Context | undefined;
   let active = false;
+  let session = "";
+  let generation = 0;
   let refresh: ReturnType<typeof setInterval> | undefined;
   let scheduled: ReturnType<typeof setTimeout> | undefined;
   let subscriptions: Array<() => void> = [];
-  let pending: Record<string, string | null> | undefined;
+  type Publication = { generation: number; tokens: Record<string, string | null>; desktop: string; desktopKey: string };
+  let pending: Publication | undefined;
   let sending: Promise<void> | undefined;
-  let lastPublished = "";
-  let publishedAt = 0;
-  let warned = false;
+  const published = new Map<string, { generation: number; key: string; at: number }>();
+  const warned = new Set<string>();
 
+  const execute = async (command: string, args: string[]): Promise<void> => {
+    const result = await omp.exec(command, args, { timeout: 2_000 });
+    if (result.code !== 0 || result.killed) throw new Error(text(result.stderr) || `Herdr exited with code ${result.code}`);
+  };
+  const report = async (target: string, key: string, send: () => Promise<void>): Promise<void> => {
+    const current = generation;
+    const previous = published.get(target);
+    if (previous?.generation === current && previous.key === key && Date.now() - previous.at < REFRESH_MS) return;
+    try {
+      await send();
+      if (current !== generation) return;
+      published.set(target, { generation: current, key, at: Date.now() });
+      warned.delete(target);
+    } catch (error) {
+      if (!warned.has(target)) context?.ui.notify(`Herdr subagents: ${error instanceof Error ? error.message : String(error)}`, "warning");
+      warned.add(target);
+    }
+  };
   const publish = (): Promise<void> => {
-    pending = { ...sidebarTokens(children), omp_model: active ? limited(text(context?.model?.id)) || null : null };
+    const now = Date.now();
+    const model = active ? limited(text(context?.model?.id)) : "";
+    const visible = active ? [...children.values()]
+      .filter(child => child.endedAt === undefined || now - child.endedAt < TERMINAL_MS)
+      .map(child => ({ ...child, model: limited(child.model), activity: limited(child.activity) })) : [];
+    const desktop = active ? { version: 1, session, model, children: visible } : undefined;
+    pending = {
+      generation,
+      tokens: { ...sidebarTokens(children, now), omp_model: model || null },
+      desktop: desktop ? JSON.stringify({ ...desktop, updatedAt: now }) : "",
+      desktopKey: JSON.stringify(desktop) || "",
+    };
     if (sending) return sending;
     sending = (async () => {
       while (pending) {
         const snapshot = pending;
         pending = undefined;
-        const serialized = JSON.stringify(snapshot);
-        if (serialized === lastPublished && Date.now() - publishedAt < REFRESH_MS) continue;
-        try {
-          const entries = Object.entries(snapshot);
+        // One serial queue owns both transports, including session replacement
+        // and deletion. An old in-flight write always precedes its replacement.
+        if (pane) await report("tui", JSON.stringify(snapshot.tokens), async () => {
+          const entries = Object.entries(snapshot.tokens);
           // Herdr limits requests to 16 keys; 15 keeps each child's triplet together.
           for (let offset = 0; offset < entries.length; offset += 15) {
+            if (snapshot.generation !== generation) return;
             const args = ["pane", "report-metadata", pane, "--source", SOURCE, "--agent", "omp", "--ttl-ms", String(TTL_MS)];
             for (const [key, value] of entries.slice(offset, offset + 15)) {
               args.push(...(value === null ? ["--clear-token", key] : ["--token", `${key}=${value}`]));
             }
-            const result = await omp.exec(binary, args, { timeout: 2_000 });
-            if (result.code !== 0 || result.killed) throw new Error(text(result.stderr) || `Herdr exited with code ${result.code}`);
+            await execute(binary, args);
           }
-          lastPublished = serialized;
-          publishedAt = Date.now();
-          warned = false;
-        } catch (error) {
-          if (!warned) context?.ui.notify(`Herdr subagents: ${error instanceof Error ? error.message : String(error)}`, "warning");
-          warned = true;
-        }
+        });
+        if (terminal && snapshot.generation === generation) await report("desktop", snapshot.desktopKey, async () => {
+          // Core labels are free-form strings, with no per-value/row cap in
+          // Registry::label (v0.1.20); key= removes only our label.
+          const args = ["label", terminal, `omp.subagents=${snapshot.desktop}`];
+          await execute(socket ? "env" : "herdr-core", socket ? [`HC_SOCKET=${socket}`, "herdr-core", ...args] : args);
+        });
       }
     })().finally(() => { sending = undefined; });
     return sending;
@@ -162,19 +206,37 @@ export default function (omp: API): void {
     scheduled = undefined;
     for (const unsubscribe of subscriptions) unsubscribe();
     subscriptions = [];
+    for (const id of children.keys()) retired.add(id);
     children.clear();
   };
 
   const start: Handler = async (_event, ctx) => {
-    if (!ctx.hasUI) return;
+    const wasActive = active;
     stop();
+    const current = ++generation;
+    active = ctx.hasUI && ctx.agent?.kind !== "sub";
     context = ctx;
-    active = true;
+    if (!active) {
+      if (wasActive) await publish();
+      return;
+    }
+    session = randomUUID();
     subscriptions = [
-      omp.events.on("task:subagent:lifecycle", value => { applyLifecycle(children, value); schedule(); }),
-      omp.events.on("task:subagent:progress", value => { applyProgress(children, value); schedule(); }),
+      omp.events.on("task:subagent:lifecycle", value => {
+        if (current !== generation || !active) return;
+        const event = record(value);
+        const id = text(event?.id);
+        if (event?.status === "started") retired.delete(id);
+        else if (retired.has(id)) return;
+        applyLifecycle(children, value); schedule();
+      }),
+      omp.events.on("task:subagent:progress", value => {
+        if (current !== generation || !active) return;
+        if (retired.has(text(record(record(value)?.progress)?.id))) return;
+        applyProgress(children, value); schedule();
+      }),
     ];
-    // Also expires terminal rows and observes idle model switches through the context getter.
+    // Expires settled rows promptly; unchanged snapshots refresh every 5s.
     refresh = setInterval(() => { void publish(); }, 1_000);
     refresh.unref?.();
     await publish();
@@ -188,9 +250,10 @@ export default function (omp: API): void {
   });
   omp.on("session_shutdown", async () => {
     if (!active) return;
+    const current = ++generation;
     active = false;
     stop();
     await publish();
-    context = undefined;
+    if (current === generation) context = undefined;
   });
 }

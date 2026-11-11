@@ -1,4 +1,4 @@
-"""Merge managed shortcuts, pane spacing, and the prefix mod without owning app state."""
+"""Merge managed shortcuts, personal mods, and layout without owning app state."""
 
 import argparse
 import json
@@ -37,6 +37,8 @@ def status_layout(home: Path) -> dict:
         if node.get("id") == "status" and content.get("mod") in ("workspace-status", "tui-prefix"):
             content["mod"] = "tui-prefix"
             has_status = True
+        if content.get("mod") == "agents":
+            content["mod"] = "omp-agents"
         if node.get("id") == "work-body":
             node["padding"] = 4
         if content.get("tab") == "active":
@@ -64,7 +66,7 @@ def install(source: Path, home: Path) -> None:
         current.setdefault(section, {}).update(bindings)
     # Install the action's mod before publishing the shortcut that opens it.
     for path in sorted((source / "mods").rglob("*")):
-        if path.is_file() and path.name in {"main.js", "mod.json"}:
+        if path.is_file() and (path.suffix == ".js" or path.name in {"mod.json", "LICENSE"}):
             replace(home / path.relative_to(source), path.read_bytes())
     replace(home / "layouts/tui.json", (json.dumps(layout, indent=2) + "\n").encode())
     if replace(keys_path, (json.dumps(current, indent=2, ensure_ascii=False) + "\n").encode()):
