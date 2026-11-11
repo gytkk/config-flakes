@@ -5,7 +5,7 @@
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { agents, spaces, machines, panes, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
+import { agents, spaces, machines, panes, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout, nextCommand } from "herdr";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -76,6 +76,14 @@ export default class Spaces extends View {
     cx.timer.every(15000, cx => this.refreshMachines(cx));
     // Refresh only when the refs could have changed (see `due`).
     cx.timer.every(250, (cx) => this.checkNew(cx));
+    cx.spawn(async () => {
+      for (;;) {
+        const match = /^select-([1-9])$/.exec(await nextCommand());
+        if (!match) continue;
+        const row = this.spaceGroups().flatMap(group => group.rows)[Number(match[1]) - 1];
+        if (row) run("space.select", { id: row.w.id });
+      }
+    });
   }
 
   checkNew(cx) {
@@ -299,26 +307,39 @@ export default class Spaces extends View {
     return out.filter(r => this.shown.has(r.w.id));
   }
 
+  // One ordering for machine headers, numbered shortcuts, and compact row labels.
+  spaceGroups() {
+    const rows = this.ordered();
+    const remote = [...new Set([...rows.map(r => r.w.machine).filter(Boolean), ...this.machines.map(m => m.name), ...Object.keys(this.reconnecting)])].sort();
+    const names = remote.includes("wsl")
+      ? [null, "wsl", ...remote.filter(m => m !== "wsl")]
+      : [null, ...remote];
+    let shortcutIndex = 0;
+    return names.map(machine => ({
+      machine,
+      rows: rows.filter(r => (r.w.machine ?? null) === machine)
+        .map(r => ({ ...r, shortcutIndex: shortcutIndex++ })),
+    }));
+  }
+
   // The rows, under a header per machine once one isn't this computer.
   grouped(t, collapsed) {
-    const rows = this.ordered();
+    const groups = this.spaceGroups();
     // Aggregate agents, not space.status: blocked would otherwise hide done.
     const done = new Set();
     for (const agent of agents()) if (agent.status === "done") done.add(agent.space);
     const draw = (r) => (collapsed ? this.compact(r, t, done.has(r.w.id)) : this.row(r, t, done.has(r.w.id)));
-    const remote = [...new Set([...rows.map(r => r.w.machine).filter(Boolean), ...this.machines.map(m => m.name), ...Object.keys(this.reconnecting)])].sort();
     const loading = m => {
       const layout = machines().find(k => k.name === m)?.layout;
       return layout === "loading" || (!layout && this.machines.some(k => k.name === m && k.state === "connected"))
         || spaces().some(s => (s.machine ?? null) === m && !this.shown.has(s.id));
     };
     const loadingRow = m => h_flex().id(`machine-loading-${m ?? "local"}`).h(28).flex_none().px(collapsed ? 0 : 8).items_center().when(collapsed, el => el.justify_center()).text_size(12).text_color(t.dim).child(collapsed ? "…" : "Loading…");
-    if (!remote.length) return loading(null) && !rows.length ? [loadingRow(null)] : rows.map(draw);
-    const machineNames = remote.includes("wsl")
-      ? [null, "wsl", ...remote.filter(m => m !== "wsl")]
-      : [null, ...remote];
-    return machineNames.flatMap((m) => {
-      const mine = rows.filter((r) => (r.w.machine ?? null) === m);
+    if (groups.length === 1) {
+      const rows = groups[0].rows;
+      return loading(null) && !rows.length ? [loadingRow(null)] : rows.map(draw);
+    }
+    return groups.flatMap(({ machine: m, rows: mine }) => {
       const repair = this.reconnecting[m];
       const machine = this.machines.find(k => k.name === m) ?? repair?.machine;
       const connected = !m || machine?.state === "connected";
@@ -452,7 +473,7 @@ export default class Spaces extends View {
       );
   }
 
-  compact({ w, i }, t, done) {
+  compact({ w, shortcutIndex }, t, done) {
     return railCell(h_flex()
       .id(`space-${w.id}`)
       .relative()
@@ -464,7 +485,7 @@ export default class Spaces extends View {
       .when(w.active, (el) => el.bg(t.selected))
       .when(!w.active, (el) => el.hover((s) => s.bg(t.hover)))
       .on_click(() => run("space.select", { id: w.id }))
-      .child(div().text_color(w.active ? t.foreground : t.muted).child(String(i + 1)))
+      .child(div().text_color(w.active ? t.foreground : t.muted).child(String(shortcutIndex + 1)))
       .child(done
         ? completionDot(t, w.id).absolute().right(3)
         : div().absolute().right(5).text_color(tone(t, w.status)).child(glyph(w.status))));

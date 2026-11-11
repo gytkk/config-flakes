@@ -32,6 +32,24 @@
     "alt-9": "space.select:9"
   },
   "layout:tui": {
-    "ctrl-space": "tui-prefix.activate"
+    "ctrl-space": "tui-prefix.activate",
+    "cmd-1": "tui-spaces.select-1",
+    "alt-1": "tui-spaces.select-1",
+    "cmd-2": "tui-spaces.select-2",
+    "alt-2": "tui-spaces.select-2",
+    "cmd-3": "tui-spaces.select-3",
+    "alt-3": "tui-spaces.select-3",
+    "cmd-4": "tui-spaces.select-4",
+    "alt-4": "tui-spaces.select-4",
+    "cmd-5": "tui-spaces.select-5",
+    "alt-5": "tui-spaces.select-5",
+    "cmd-6": "tui-spaces.select-6",
+    "alt-6": "tui-spaces.select-6",
+    "cmd-7": "tui-spaces.select-7",
+    "alt-7": "tui-spaces.select-7",
+    "cmd-8": "tui-spaces.select-8",
+    "alt-8": "tui-spaces.select-8",
+    "cmd-9": "tui-spaces.select-9",
+    "alt-9": "tui-spaces.select-9"
   }
 }
