@@ -20,5 +20,16 @@ in
       run ${pkgs.python3}/bin/python3 ${./install.py} ${./files} \
         ${lib.escapeShellArg "${config.xdg.configHome}/herdr-app"}
     '';
+    home.activation.herdrAppFileOpener =
+      lib.mkIf
+        (pkgs.stdenv.hostPlatform.isDarwin && config.modules.omp.enable && config.programs.neovim.enable)
+        (
+          lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            run ${pkgs.python3}/bin/python3 ${./install-file-opener.py} \
+              ${./file-opener.py} ${pkgs.python3}/bin/python3 \
+              ${lib.escapeShellArg "${config.home.profileDirectory}/bin/nvim"} \
+              ${lib.escapeShellArg "${config.home.homeDirectory}/Applications/OMP Neovim.app"}
+          ''
+        );
   };
 }

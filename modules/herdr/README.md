@@ -71,6 +71,26 @@ herdr-app check modules/herdr-app/files/mods/omp-agents
 herdr-app check modules/herdr-app/files/mods/tui-spaces
 ```
 
+### OMP file links in Neovim
+
+On macOS, enabling OMP, Herdr App, and Neovim installs `~/Applications/OMP Neovim.app` as the handler for `omp-nvim:` links. This does not change Finder's file associations, the default browser, or Herdr's shipped code. The [OMP launcher](../omp/default.nix) adds the custom file-link scheme only when the current local Core terminal belongs to an App pane; SSH, Herdr TUI, and ordinary terminal launches keep their existing links.
+
+Cmd-click an OMP-generated file hyperlink to open text or source code in a new right-hand Neovim pane. Later clicks from the same originating pane reuse that editor and honor line/column positions. Switching files preserves unsaved buffers. Closing the editor lets the next click create a fresh pane; a closed origin is rejected rather than targeting whichever pane is focused. Images, PDFs, other non-text files, and directories retain macOS's default opener, and web links remain unchanged. Content MIME detection, not the filename extension alone, distinguishes text from binary files.
+
+The [router](../herdr-app/file-opener.py) validates the local computer and origin pane, passes filenames as data, and uses Neovim RPC rather than typing shell commands. Its private `/tmp/omp-nvim-<uid>` directory holds editor sockets and per-origin pane records. This is a local desktop integration: it does not retrieve remote files or change plain paths that Herdr detects independently of OMP hyperlinks.
+
+Apply Home Manager and start a new OMP process. Existing OMP sessions read their link scheme only at startup; reloading extensions is not enough. The [installer](../herdr-app/install-file-opener.py) registers only this custom scheme and keeps the preceding managed application as `.home-manager.bak` when replacing it. Before a Home Manager switch, the installed handler can be exercised by launching from this checkout:
+
+```bash
+python3 modules/herdr-app/file-opener.py launch "$(command -v omp)"
+```
+
+The file-opening regression check uses real isolated Neovim processes and temporary files, including literal filenames and modified-buffer preservation:
+
+```bash
+python3 -B -m unittest discover -s modules/herdr-app/tests -p test_file_opener.py -v
+```
+
 ### Desktop space completion indicators
 
 The personal `tui` layout replaces standard `spaces` blocks with [tui-spaces](../herdr-app/files/mods/tui-spaces/main.js). Each space shows a small blue circle on its right when at least one of its agents has an unread completed turn (`done`). The indicator uses the theme's ANSI blue in both expanded and compact sidebars. It aggregates individual agents rather than the space's priority status, so a blocked or working agent cannot hide another agent's completion. Machine-qualified space IDs keep local and remote spaces separate.

@@ -8,6 +8,8 @@ Auto-QA tool issue reporting is disabled in the shared configuration: `dev.autoq
 
 OMP is a consumer of [agent-core's shared skill target](../../agent-core/README.md#omp). Enabling OMP alone triggers [shared skill activation](../agent-skills/README.md) during Home Manager switch, even with Codex and Pi disabled. OMP discovers the installed `~/.agents/skills` pool as `agents:user`; no OMP-specific copy or extra provider configuration is needed with the managed settings. After applying the configuration, restart OMP and check `omp skill list --json`.
 
+On macOS with Herdr App and Neovim enabled, the package is wrapped for [file links in a right-hand Neovim pane](../herdr/README.md#omp-file-links-in-neovim). Only OMP started inside a local App pane receives the custom file-link environment. Text/code links reuse an editor for that origin; other files keep their default opener. Apply Home Manager and restart OMP to enable the launcher; existing sessions retain their original link targets.
+
 ## MCP
 
 MCP servers remain device-local in `~/.omp/agent/mcp.json`; this module does not manage that file. To use Context7 without importing Claude configuration, keep `claude` and `claude-plugins` in `disabledProviders` and register the server directly:
