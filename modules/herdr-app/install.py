@@ -37,11 +37,13 @@ def status_layout(home: Path) -> dict:
         if node.get("id") == "status" and content.get("mod") in ("workspace-status", "tui-prefix"):
             content["mod"] = "tui-prefix"
             has_status = True
+        if node.get("id") == "work-body":
+            node["padding"] = 4
         if content.get("tab") == "active":
             pane = content.setdefault("pane", {})
             pane["gap"] = 4
-            pane.setdefault("border", {"color": "border"})["width"] = 4
-            pane.setdefault("focus", {"color": "accent"})["width"] = 4
+            pane.setdefault("border", {"color": "border"})["width"] = 1
+            pane.setdefault("focus", {"color": "accent"})["width"] = 1
         pending.extend(node.get("children", []))
     if not has_status:
         raise ValueError("Herdr App layout has no compatible status block; leaving configuration unchanged")
