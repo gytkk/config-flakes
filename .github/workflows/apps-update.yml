@@ -24,6 +24,8 @@ jobs:
         with:
           ref: main
       - uses: cachix/install-nix-action@v31
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.34.9/install
       - uses: actions/setup-node@v6
         with:
           node-version: 24
