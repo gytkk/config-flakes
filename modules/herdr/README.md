@@ -76,6 +76,8 @@ While prefix mode is active, the status line uses golden amber: the current them
 
 Only pickers and explicitly requested help open dialogs. The zoxide picker uses a native filter rather than fzf and queries the originating space's machine. Agent numbers follow the App API's space/tab/pane order, not its priority-sorted sidebar. Direct `Cmd+[/]`, `Cmd+Shift+[/]`, `Cmd+1..9`, `Cmd+t/w`, `Alt+t/w`, and `Ctrl+Tab` / `Ctrl+Shift+Tab` match the TUI actions above across layouts. Prefix mode is scoped to `tui`; other layouts keep normal `Ctrl+Space` input.
 
+In the desktop App, `Alt+[` / `Alt+]` also focus the previous / next space, including on Windows. These replace Windows' default previous / next tab bindings; `Ctrl+Shift+Tab` / `Ctrl+Tab` remain available for tab navigation.
+
 This is not a TUI plugin migration. Annotate bindings, TUI copy/resize modes, pane renaming, and editing scrollback are not mapped to unrelated App actions. App files hot-reload; no `herdr server reload-config` is needed. The integration targets App 0.1.15's mod API.
 
 The desktop installer manages only `minimum_contrast` in `settings.json`, setting it to `3.0` while preserving other personal settings. Herdr replaces terminal text below this contrast threshold with near-white or near-black, making Claude Code's submitted prompts readable on their dark background without replacing as many ANSI colors as a `4.5` threshold. This affects all desktop terminals, not only Claude; it is a correction threshold, not a guaranteed final contrast ratio. The app hot-reloads it, including existing text. Changed settings are backed up to `settings.json.home-manager.bak`.

@@ -2,6 +2,8 @@
   "global": {
     "cmd-[": "space.prev",
     "cmd-]": "space.next",
+    "alt-[": "space.prev",
+    "alt-]": "space.next",
     "cmd-shift-[": "agent.prev",
     "cmd-shift-]": "agent.next",
     "cmd-t": "tab.new",
