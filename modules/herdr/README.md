@@ -32,6 +32,41 @@ In Herdr 0.9.1, closing a tab terminates its panes. Closing the last tab also cl
 
 [Windows Terminal's config](../windows-terminal/files/herdr-keybindings.json) forwards `Ctrl+Tab`, `Ctrl+Shift+Tab`, and `Alt+1..9`. Its next/previous tab actions retain their existing `User.herdrNextWorkspace` and `User.herdrPreviousWorkspace` IDs so activation replaces the previously managed actions.
 
+## Herdr App shortcuts
+
+[The desktop module](../herdr-app/default.nix) manages shortcuts for the separately installed Herdr App; it does not install or update the app or herdr-core. It is enabled by default on macOS. The TUI configuration and server remain independent.
+
+Launch the app once before applying Home Manager. The [installer](../herdr-app/install.py) merges [managed keys](../herdr-app/files/keys.json) into the existing desktop key file, installs the personal [prefix mod](../herdr-app/files/mods/tui-prefix/main.js), and creates the `tui` layout from the installed `main` layout if missing. It changes only that layout's status block on later applications, preserving its other edits and leaving the shipped layout untouched. Changed files retain their previous contents in `.home-manager.bak` files; unrelated keys, settings, and session state are preserved. Home Manager dry-run does not run the installer.
+
+Select the personal layout once with `herdr-app do layout.switch --name tui`. The choice persists. In that layout, `Ctrl+Space` focuses the existing bottom status line and shows **PREFIX** with a few useful shortcuts, without opening a popup or resizing the terminal. There is no timeout. A command, `Esc`, an unknown key, or moving focus away leaves prefix mode. Unknown prefix keys are consumed, not typed into the terminal. Pressing `Ctrl+Space` twice sends it to the originating terminal. Ordinary typing is not intercepted outside prefix mode.
+
+While prefix mode is active, the status line uses a subtle tint derived from the current theme's accent, an accent-colored `PREFIX` badge with contrasting text, and grouped keycaps. It returns to the normal chrome colors on exit. No accent color is hardcoded, so both light and dark themes follow Herdr's current palette.
+
+| After `Ctrl+Space` | Action |
+| --- | --- |
+| `c`, `Shift+x`, `Shift+t` | New, close, rename tab |
+| `p`, `n`, `1..9` | Previous, next, numbered tab |
+| `Shift+s`, `Shift+n` | Space picker; create a space from zoxide history |
+| `Shift+w`, `Shift+d`, `Shift+g` | Rename space, close space, create worktree |
+| `Shift+a`, `<`, `>` | Agent picker, previous agent, next agent |
+| `Shift+1..9` | Agent in space/tab/pane order, as numbered in the agent picker |
+| `h/j/k/l`, `Shift+h/j/k/l` | Focus or swap panes |
+| `Tab`, `Shift+Tab` | Next or previous pane |
+| `v`, `-`, `x`, `z` | Split right, split down, close pane, zoom |
+| `b`, `s`, `q`, `?` | Toggle sidebar, settings, close window without ending terminals, prefix help |
+
+Only pickers and explicitly requested help open dialogs. The zoxide picker uses a native filter rather than fzf and queries the originating space's machine. Agent numbers follow the App API's space/tab/pane order, not its priority-sorted sidebar. Direct `Cmd+[/]`, `Cmd+Shift+[/]`, `Cmd+1..9`, `Cmd+t/w`, `Alt+t/w`, and `Ctrl+Tab` / `Ctrl+Shift+Tab` match the TUI actions above across layouts. Prefix mode is scoped to `tui`; other layouts keep normal `Ctrl+Space` input.
+
+This is not a TUI plugin migration. Annotate bindings, TUI copy/resize modes, pane renaming, and editing scrollback are not mapped to unrelated App actions. App files hot-reload; no `herdr server reload-config` is needed. The integration targets App 0.1.15's mod API.
+
+Checks from the repository root:
+
+```bash
+node --experimental-vm-modules --test modules/herdr-app/tests/prefix.test.mjs
+python3 -B -m unittest discover -s modules/herdr-app/tests -p 'test_*.py'
+herdr-app check modules/herdr-app/files/mods/tui-prefix
+```
+
 ## Agent detection
 
 When both Pi and Herdr modules are enabled, the [Pi parent status integration](../pi/README.md#herdr-parent-status) reports working, idle, and blocked states through Herdr's bundled extension. Home Manager installs the version matched to the pinned Herdr package. Pi's model and subagent display metadata does not set the parent lifecycle state.
