@@ -54,17 +54,13 @@ def status_layout(home: Path) -> dict:
     return layout
 
 
-def install(source: Path, home: Path, *, windows: bool = False) -> None:
+def install(source: Path, home: Path) -> None:
     keys_path = home / "keys.json"
     if not keys_path.exists():
         print(f"Herdr App keys not found; launch the app once, then apply again: {keys_path}")
         return
     current = json.loads(keys_path.read_text())
     managed = json.loads((source / "keys.json").read_text())
-    if windows:
-        overrides = json.loads((source / "keys-windows.json").read_text())
-        for section, bindings in overrides.items():
-            managed.setdefault(section, {}).update(bindings)
     if not isinstance(current, dict) or any(not isinstance(section, dict) for section in current.values()):
         raise ValueError(f"Expected keybinding section objects in {keys_path}")
     layout = status_layout(home)
@@ -87,6 +83,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("home", type=Path)
-    parser.add_argument("--windows", action="store_true", help="Apply Windows-specific shortcut overrides")
     args = parser.parse_args()
-    install(args.source, args.home, windows=args.windows)
+    install(args.source, args.home)

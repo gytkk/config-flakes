@@ -6,7 +6,7 @@ import vm from "node:vm";
 
 const source = await readFile(new URL("../files/mods/tui-prefix/main.js", import.meta.url), "utf8");
 
-async function fixture(mode, activate = true, result = { code: 0, stdout: "/work/one\n/work/two\n", stderr: "" }, { platform = "linux", machine = "remote" } = {}) {
+async function fixture(mode, activate = true, result = { code: 0, stdout: "/work/one\n/work/two\n", stderr: "" }, { machine = "remote" } = {}) {
   const context = vm.createContext({});
   const state = { closed: false, stopped: 0, focused: false, commands: [], tasks: [], input: {}, result, executions: [], overlays: [] };
   const input = { value: () => state.query, focus() {}, on(event, handler) { state.input[event] = handler; } };
@@ -18,7 +18,6 @@ async function fixture(mode, activate = true, result = { code: 0, stdout: "/work
       spaces: () => [{ id: "space", name: "Work", machine }],
       panes: () => [],
       focused: () => ({ space: "space", tab: "tab", pane: "pane", terminal: machine ? `${machine}/t1` : "t1" }),
-      window: () => ({ platform }),
       theme: () => ({}),
       props: () => mode ? { overlay: "picker", mode } : null,
       closeOverlay() { state.closed = true; },
@@ -155,25 +154,8 @@ test("moving focus away clears prefix state without stealing the keyboard back",
   assert.equal(state.commands.length, 0);
 });
 
-test("prefix+c launches WSL only for Windows-local spaces and releases prefix focus", async () => {
-  for (const [platform, machine, wsl] of [
-    ["windows", null, true], ["windows", "remote", false],
-    ["linux", null, false], ["macos", null, false],
-  ]) {
-    const { key, view, state } = await fixture(undefined, true, undefined, { platform, machine });
-    key("c");
-    const command = JSON.parse(JSON.stringify(state.commands.at(-1)));
-    assert.deepEqual(command, {
-      command: "tab.new",
-      args: wsl ? { argv: ["wsl.exe", "--cd", "~"] } : {},
-    });
-    assert.equal(view.mode, "idle");
-    assert.equal(state.focused, false);
-  }
-});
-
-test("Windows prefix+N opens a WSL directory without passing Linux cwd to Windows core", async () => {
-  const environment = { platform: "windows", machine: null };
+test("prefix+N preserves the WSL machine and literal Linux directory when creating a space", async () => {
+  const environment = { machine: "wsl" };
   const prefix = await fixture(undefined, true, undefined, environment);
   prefix.key("n", { shift: true });
   assert.equal(prefix.view.mode, "idle");
@@ -183,9 +165,7 @@ test("Windows prefix+N opens a WSL directory without passing Linux cwd to Window
   const { view, state, cx } = await fixture("directories", true,
     { code: 0, stdout: `/work/other\r\n${folder}\r\n`, stderr: "" }, environment);
   await Promise.all(state.tasks);
-  const [command, args] = state.executions[0];
-  assert.equal(command, "wsl.exe");
-  assert.deepEqual(Array.from(args), ["--cd", "~", "--exec", "sh", "-c", 'exec "$SHELL" -lc "exec zoxide query -l"']);
+  assert.deepEqual(JSON.parse(JSON.stringify(state.executions)), [["zoxide", ["query", "-l"], { on: "wsl" }]]);
   state.query = "한글";
   state.input.change({}, cx);
   assert.equal(view.rows()[0].label, folder);
@@ -193,25 +173,15 @@ test("Windows prefix+N opens a WSL directory without passing Linux cwd to Window
   assert.equal(state.closed, true);
   assert.deepEqual(JSON.parse(JSON.stringify(state.commands.at(-1))), {
     command: "space.new",
-    args: { name: "한글 project's $draft; notes", machine: "", argv: ["wsl.exe", "--cd", folder] },
+    args: { name: "한글 project's $draft; notes", machine: "wsl", folder },
   });
 });
 
-test("Windows remote directory selection stays on its remote machine", async () => {
-  const { state } = await fixture("directories", true, undefined, { platform: "windows", machine: "remote" });
+test("an unavailable machine cannot fall back to a local directory or create a space", async () => {
+  const { view, state } = await fixture("directories", true, new Error("machine unavailable"),
+    { machine: "wsl" });
   await Promise.all(state.tasks);
-  assert.deepEqual(JSON.parse(JSON.stringify(state.executions)), [["zoxide", ["query", "-l"], { on: "remote" }]]);
-  state.input.submit();
-  assert.deepEqual(JSON.parse(JSON.stringify(state.commands.at(-1))), {
-    command: "space.new", args: { name: "one", machine: "remote", folder: "/work/one" },
-  });
-});
-
-test("an unavailable WSL cannot fall back to a Windows directory or create a space", async () => {
-  const { view, state } = await fixture("directories", true, new Error("WSL unavailable"),
-    { platform: "windows", machine: null });
-  await Promise.all(state.tasks);
-  assert.match(view.error, /WSL unavailable/);
+  assert.match(view.error, /machine unavailable/);
   assert.equal(view.busy, false);
   assert.equal(state.executions.length, 1);
   state.input.submit();

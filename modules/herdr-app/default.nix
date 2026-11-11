@@ -25,7 +25,7 @@ in
   config = lib.mkIf cfg.enable {
     home.activation.herdrAppKeys = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       run ${pkgs.python3}/bin/python3 ${./install.py} ${./files} \
-        ${lib.escapeShellArg appConfigHome} ${lib.optionalString isWSL "--windows"}
+        ${lib.escapeShellArg appConfigHome}
     '';
     home.activation.herdrAppFileOpener =
       lib.mkIf

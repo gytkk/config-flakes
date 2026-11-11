@@ -1,6 +1,6 @@
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
-import { agents, spaces, panes, focused, theme, window, run, exec, props, closeOverlay, openOverlay, nextCommand } from "herdr";
+import { agents, spaces, panes, focused, theme, run, exec, props, closeOverlay, openOverlay, nextCommand } from "herdr";
 
 const ACTIONS = {
   c: ["tab.new"], X: ["tab.close"], p: ["tab.prev"], n: ["tab.next"],
@@ -103,7 +103,6 @@ export default class Prefix extends View {
   capture() {
     this.origin = focused();
     this.machine = spaces().find(s => s.id === this.origin?.space)?.machine ?? "";
-    this.wsl = window().platform === "windows" && !this.machine;
     this.agentRows = agents().map(a => ({ label: `${a.program?.name ?? "Agent"} · ${a.title || a.address}`, command: "agent.focus", args: { terminal: a.address } }));
   }
 
@@ -149,9 +148,7 @@ export default class Prefix extends View {
     this.busy = true;
     cx.spawn(async cx => {
       try {
-        const result = this.wsl
-          ? await exec("wsl.exe", ["--cd", "~", "--exec", "sh", "-c", 'exec "$SHELL" -lc "exec zoxide query -l"'])
-          : await exec("zoxide", ["query", "-l"], { on: this.machine || null });
+        const result = await exec("zoxide", ["query", "-l"], { on: this.machine || null });
         if (result.code !== 0) throw new Error(result.stderr.trim() || "zoxide query failed");
         this.items = result.stdout.split(/\r?\n/).filter(Boolean).map(folder => ({
           label: folder,
@@ -159,7 +156,7 @@ export default class Prefix extends View {
           args: {
             name: folder.replace(/\/$/, "").split("/").pop() || folder,
             machine: this.machine,
-            ...(this.wsl ? { argv: ["wsl.exe", "--cd", folder] } : { folder }),
+            folder,
           },
         }));
       } catch (error) {
@@ -185,7 +182,6 @@ export default class Prefix extends View {
     if (event.is_held) return;
     const key = keyOf(event);
     if (key === "escape" || key === "ctrl-space") return this.dismiss();
-    if (key === "c" && this.wsl) return this.execute("tab.new", { argv: ["wsl.exe", "--cd", "~"] });
     if (ACTIONS[key]) return this.execute(...ACTIONS[key]);
     if (/^[1-9]$/.test(key)) return this.execute("tab.select", { index: Number(key) });
     const agentIndex = "!@#$%^&*(".indexOf(key);
