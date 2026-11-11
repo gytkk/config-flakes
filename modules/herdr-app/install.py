@@ -28,6 +28,7 @@ def replace(path: Path, content: bytes) -> bool:
 def status_layout(home: Path) -> dict:
     target = home / "layouts/tui.json"
     layout = json.loads((target if target.exists() else home / "layouts/main.json").read_text())
+    layout["terminal_padding"] = [4, 4]
     pending = [layout]
     has_status = False
     while pending:
@@ -37,7 +38,10 @@ def status_layout(home: Path) -> dict:
             content["mod"] = "tui-prefix"
             has_status = True
         if content.get("tab") == "active":
-            content.setdefault("pane", {})["gap"] = 4
+            pane = content.setdefault("pane", {})
+            pane["gap"] = 4
+            pane.setdefault("border", {"color": "border"})["width"] = 4
+            pane.setdefault("focus", {"color": "accent"})["width"] = 4
         pending.extend(node.get("children", []))
     if not has_status:
         raise ValueError("Herdr App layout has no compatible status block; leaving configuration unchanged")

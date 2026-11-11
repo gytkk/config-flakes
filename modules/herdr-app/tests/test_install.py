@@ -22,9 +22,11 @@ class InstallTests(unittest.TestCase):
             settings.write_text('{"zoom": 0.9}')
             layouts = home / "layouts"
             layouts.mkdir()
-            layout = {"id": "root", "custom": "keep", "children": [
+            layout = {"id": "root", "custom": "keep", "terminal_padding": [14, 12], "children": [
                 {"id": "main", "content": {"tab": "active", "pane": {
-                    "gap": 8, "radius": 10, "header": {"height": 30}
+                    "gap": 8, "radius": 10, "header": {"height": 30},
+                    "border": {"width": 1, "color": "border"},
+                    "focus": {"width": 2, "color": "#123456"}
                 }}},
                 {"id": "status", "content": {"mod": "workspace-status"}, "size": {"px": 28}}
             ]}
@@ -36,12 +38,18 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(settings.read_text(), '{"zoom": 0.9}')
             personal = json.loads((layouts / "tui.json").read_text())
             self.assertEqual(personal["custom"], "keep")
+            self.assertEqual(personal["terminal_padding"], [4, 4])
             self.assertEqual(personal["children"][0]["content"]["pane"],
-                             {"gap": 4, "radius": 10, "header": {"height": 30}})
+                             {"gap": 4, "radius": 10, "header": {"height": 30},
+                              "border": {"width": 4, "color": "border"},
+                              "focus": {"width": 4, "color": "#123456"}})
             self.assertEqual(personal["children"][1]["content"]["mod"], "tui-prefix")
             self.assertEqual(json.loads((layouts / "main.json").read_text()), layout)
             personal["custom"] = "personal change"
             personal["children"][0]["content"]["pane"].update(gap=12, radius=6)
+            personal["terminal_padding"] = [8, 6]
+            personal["children"][0]["content"]["pane"]["border"]["width"] = 2
+            personal["children"][0]["content"]["pane"]["focus"]["width"] = 3
             (layouts / "tui.json").write_text(json.dumps(personal))
             backup = home / "keys.json.home-manager.bak"
             self.assertEqual(json.loads(backup.read_text()), original)
@@ -51,8 +59,11 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(json.loads(backup.read_text()), original)
             reapplied = json.loads((layouts / "tui.json").read_text())
             self.assertEqual(reapplied["custom"], "personal change")
+            self.assertEqual(reapplied["terminal_padding"], [4, 4])
             self.assertEqual(reapplied["children"][0]["content"]["pane"],
-                             {"gap": 4, "radius": 6, "header": {"height": 30}})
+                             {"gap": 4, "radius": 6, "header": {"height": 30},
+                              "border": {"width": 4, "color": "border"},
+                              "focus": {"width": 4, "color": "#123456"}})
 
     def test_invalid_keys_leave_existing_mod_and_configuration_untouched(self):
         with tempfile.TemporaryDirectory() as directory:
