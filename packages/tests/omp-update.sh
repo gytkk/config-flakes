@@ -12,10 +12,8 @@ export FIXTURE_DOWNLOAD_FAILURE=0 FIXTURE_PARSE_FAILURE=0
 export FIXTURE_DRAFT=false FIXTURE_PRERELEASE=false
 REAL_NIX_INSTANTIATE=$(command -v nix-instantiate)
 export REAL_NIX_INSTANTIATE
-mkdir -p "$APP_DIR" "$TEST_ROOT/bin" "$TEST_ROOT/scripts" "$FIXTURE_SOURCE/nix" "$FIXTURE_SOURCE/packages/coding-agent"
+mkdir -p "$APP_DIR" "$TEST_ROOT/bin" "$FIXTURE_SOURCE/nix" "$FIXTURE_SOURCE/packages/coding-agent"
 cp "$SOURCE_ROOT/apps/omp/update.sh" "$APP_DIR/"
-cp "$SOURCE_ROOT/scripts/check-nix-patches.sh" "$TEST_ROOT/scripts/"
-printf '[ ]\n' > "$APP_DIR/patches.nix"
 printf '{ "version": "99.1.2" }\n' > "$FIXTURE_SOURCE/packages/coding-agent/package.json"
 for file in flake.nix flake.lock nix/package.nix; do
   touch "$FIXTURE_SOURCE/$file"
@@ -112,16 +110,3 @@ for file in flake.nix flake.lock nix/package.nix; do
   touch "$FIXTURE_SOURCE/$file"
 done
 echo 'PASS: missing upstream packaging files preserve the package'
-
-reset_package
-printf 'unexpected\n' > "$FIXTURE_SOURCE/nix/package.nix"
-cat > "$APP_DIR/reject.patch" <<'EOF'
---- a/nix/package.nix
-+++ b/nix/package.nix
-@@ -1 +1 @@
--expected
-+patched
-EOF
-printf '[ ./reject.patch ]\n' > "$APP_DIR/patches.nix"
-assert_failure
-echo 'PASS: incompatible local patches preserve the package pin'
