@@ -1,0 +1,10 @@
+{
+  "global": {
+    "alt-t": {
+      "command": "tab.new",
+      "args": {
+        "argv": ["wsl.exe", "--cd", "~"]
+      }
+    }
+  }
+}
