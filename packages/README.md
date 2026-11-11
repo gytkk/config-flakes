@@ -118,6 +118,7 @@ The helper selects the host platform, fetches the pinned archive, disables confi
 ## Updates and CI
 
 - Run `packages/scripts/update-all.sh` from the parent repository to update every enabled package manually.
+- Both workflows use GitHub-hosted `ubuntu-latest` runners, install Nix with `cachix/install-nix-action`, and install ripgrep for the updater and test scripts. Package builds no longer run on the production `pylv-sepia` host.
 - `Update App Versions` checks all enabled packages, including `herdr`, `herdr-annotate`, and `herdr-auto-title`, every three hours in one serialized job. After updater patch checks, flake evaluation, and changed-package builds succeed, it synchronizes the README version table and commits the updates directly to `main` without a PR or approval step.
 - Any updater, evaluation, or build failure stops the job before publication, so no updates from that run reach `main`. A patch preflight failure is reported before that updater changes package metadata. If `main` advances during validation, the push is rejected and a later run validates updates against the new base.
 - The update job uses `GITHUB_TOKEN` with job-scoped `contents: write`. CI currently builds `x86_64-linux`; other platforms are not validated by this workflow.

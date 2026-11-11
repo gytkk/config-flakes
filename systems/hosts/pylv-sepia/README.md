@@ -162,16 +162,21 @@ verified; remove them only as a separate cleanup step.
 
 ## GitHub Actions runner
 
-`github-runner.nix` registers a self-hosted runner for `gytkk/config-flakes` with the default `self-hosted`, `Linux`, and `X64` labels plus `pylv-sepia`. The `github-runner-ws.service` unit runs jobs as a dynamically allocated user with `nix`, `rustup`, `gcc`, and the command-line tools that the repository workflows expect on its `PATH`, and the host's one-build-at-a-time Nix limit also applies to jobs. Because NixOS has no `apt-get`, add any new workflow tool to `extraPackages` in `github-runner.nix`. The unit also sets the nix-ld variables so that binaries downloaded by actions such as `actions/setup-node` can run. The job workspace and `HOME`, including the rustup toolchains and Cargo build output, live in the `github-runner/ws` cache directory on the root disk because the module's default runtime directory under `/run` is a small tmpfs shared with every service. Because the unit uses `DynamicUser`, systemd stores that directory at `/var/cache/private/github-runner/ws` and links `/var/cache/github-runner/ws` to it. The runner uses the real path because `actions/checkout` attaches its credentials with an `includeIf.gitdir:` entry, and git compares that entry against the resolved repository path. systemd mounts `DynamicUser` directories `noexec` inside the service, so the unit lists the work directory in `ExecPaths=` to let jobs run downloaded actions and rustup toolchains. The unit's memory is capped at 8 GiB (`MemoryMax=`) because the host has no swap and also runs production containers. A job that exceeds the cap fails when the kernel kills its largest process, and `OOMPolicy=continue` keeps the runner listening for the next job. The service empties this directory on every start, and changing its path triggers a new runner registration. A new registration replaces the existing `ws` runner on GitHub instead of failing on the duplicate name. Configuration workflow jobs select it with `runs-on: [self-hosted, pylv-sepia]` and run one at a time.
+`gytkk/config-flakes` package CI and updates run on GitHub-hosted `ubuntu-latest`
+runners, not this production host. The former self-hosted runner's 8 GiB limit
+did not cover builds in `nix-daemon.service`, so CI could exhaust host memory.
 
-The runner authenticates with a fine-grained PAT restricted to `gytkk/config-flakes` with `Administration: Read and write`, stored in `secrets/github-runner-ws-token.age` for the administrator and this host. The file must contain the token without a trailing newline. Create or rotate it from `secrets/` with `agx -e github-runner-ws-token.age`, then rebuild; a changed token triggers a new runner registration.
-
-The repository rename preserves its GitHub identity and registered runner. The `ws` runner name, service, cache directory, and encrypted-secret name intentionally remain stable; they are host resource identifiers, not repository URLs. The new URL takes effect on the next NixOS activation. Standalone project workflows belong to their project repositories rather than this repository-scoped runner.
+After pulling the migration, stop the old runner before applying the NixOS
+configuration that removes its service and decrypted token:
 
 ```bash
-sudo systemctl status github-runner-ws.service
-sudo journalctl --unit github-runner-ws.service
+sudo systemctl stop github-runner-ws.service
+sudo nixos-rebuild switch --flake .#pylv-sepia
 ```
+
+Remove the obsolete `ws` runner registration in the repository's GitHub Actions
+settings and revoke its dedicated PAT. Existing runner cache/state is not deleted
+by this migration.
 
 ## Ghost
 
@@ -471,7 +476,6 @@ home.packages = with pkgs; [
 | `configuration.nix` | NixOS system configuration and host module imports |
 | `ghost.nix` | Ghost container, loopback nginx origin, and local backups |
 | `menu.nix` | Menu static site origin and deployment integration |
-| `github-runner.nix` | GitHub Actions self-hosted runner for `gytkk/config-flakes` |
 | `disk-config.nix` | Disk partitioning configuration (disko) |
 | `hardware-configuration.nix` | Auto-generated hardware configuration |
 

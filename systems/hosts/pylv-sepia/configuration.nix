@@ -15,7 +15,6 @@
     ./trading-agent.nix
     ./astro-blog-legacy.nix
     ./menu.nix
-    ./github-runner.nix
     ../../../modules/nixos
   ];
 

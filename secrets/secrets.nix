@@ -43,9 +43,6 @@ in
   # Cloudflare Tunnel token for pylv-sepia
   "cloudflare-tunnel-sepia-token.age".publicKeys = sepiaRecipients;
 
-  # GitHub Actions self-hosted runner PAT for gytkk/config-flakes on pylv-sepia
-  "github-runner-ws-token.age".publicKeys = sepiaRecipients;
-
   # Discord bot token for openclaw
   "discord-bot-token.age".publicKeys = onyxRecipients;
 
