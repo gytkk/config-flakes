@@ -4,6 +4,8 @@
 
 Only the default profile's settings file is managed. Authentication, databases, sessions, caches, and named profiles remain device-local. Pi settings and extensions are not imported, and this module does not install shared instructions. Do not put credentials or machine-specific paths in the shared YAML. Settings saved by OMP can change the checkout file; review those changes before committing.
 
+Auto-QA tool issue reporting is disabled in the shared configuration: `dev.autoqa: false` and `dev.autoqaConsent: denied`. This disables automatic report recording and upload; it does not delete existing reports locally or from the collector. Do not enable the `PI_AUTO_QA` or `PI_AUTO_QA_PUSH` environment overrides if reports must remain disabled.
+
 OMP is a consumer of [agent-core's shared skill target](../../agent-core/README.md#omp). Enabling OMP alone triggers [shared skill activation](../agent-skills/README.md) during Home Manager switch, even with Codex and Pi disabled. OMP discovers the installed `~/.agents/skills` pool as `agents:user`; no OMP-specific copy or extra provider configuration is needed with the managed settings. After applying the configuration, restart OMP and check `omp skill list --json`.
 
 ## MCP

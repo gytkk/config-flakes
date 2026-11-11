@@ -35,3 +35,6 @@ cycleOrder:
 disabledProviders:
   - claude
   - claude-plugins
+dev:
+  autoqaConsent: denied
+  autoqa: false
