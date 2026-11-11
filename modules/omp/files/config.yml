@@ -12,7 +12,7 @@ composer:
   shape: band
 theme:
   dark: titanium
-  light: light-mint
+  light: light-github
 setupVersion: 3
 statusLine:
   preset: custom
