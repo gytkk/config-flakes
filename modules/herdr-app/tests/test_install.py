@@ -19,7 +19,8 @@ class InstallTests(unittest.TestCase):
             keys = home / "keys.json"
             keys.write_text(json.dumps(original))
             settings = home / "settings.json"
-            settings.write_text('{"zoom": 0.9}')
+            original_settings = {"zoom": 0.9, "minimum_contrast": 1.0, "sounds": {"enabled": True}}
+            settings.write_text(json.dumps(original_settings))
             layouts = home / "layouts"
             layouts.mkdir()
             layout = {"id": "root", "custom": "keep", "terminal_padding": [14, 12], "children": [
@@ -36,7 +37,10 @@ class InstallTests(unittest.TestCase):
             merged = json.loads(keys.read_text())
             self.assertEqual(merged["global"]["cmd-e"], "app.palette")
             self.assertEqual(merged["terminal"], original["terminal"])
-            self.assertEqual(settings.read_text(), '{"zoom": 0.9}')
+            self.assertEqual(json.loads(settings.read_text()),
+                             {**original_settings, "minimum_contrast": 3.0})
+            self.assertEqual(json.loads((home / "settings.json.home-manager.bak").read_text()),
+                             original_settings)
             personal = json.loads((layouts / "tui.json").read_text())
             self.assertEqual(personal["custom"], "keep")
             self.assertEqual(personal["terminal_padding"], [4, 4])
@@ -58,8 +62,10 @@ class InstallTests(unittest.TestCase):
             backup = home / "keys.json.home-manager.bak"
             self.assertEqual(json.loads(backup.read_text()), original)
             changed = keys.stat().st_mtime_ns
+            settings_changed = settings.stat().st_mtime_ns
             installer.install(ROOT / "files", home)
             self.assertEqual(keys.stat().st_mtime_ns, changed)
+            self.assertEqual(settings.stat().st_mtime_ns, settings_changed)
             self.assertEqual(json.loads(backup.read_text()), original)
             reapplied = json.loads((layouts / "tui.json").read_text())
             self.assertEqual(reapplied["custom"], "personal change")

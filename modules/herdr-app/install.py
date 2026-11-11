@@ -1,4 +1,4 @@
-"""Merge managed shortcuts, personal mods, and layout without owning app state."""
+"""Merge managed shortcuts, contrast, personal mods, and layout into app state."""
 
 import argparse
 import json
@@ -62,6 +62,9 @@ def install(source: Path, home: Path) -> None:
     if not isinstance(current, dict) or any(not isinstance(section, dict) for section in current.values()):
         raise ValueError(f"Expected keybinding section objects in {keys_path}")
     layout = status_layout(home)
+    settings_path = home / "settings.json"
+    settings = json.loads(settings_path.read_text()) if settings_path.exists() else {}
+    settings["minimum_contrast"] = 3.0
     for section, bindings in managed.items():
         current.setdefault(section, {}).update(bindings)
     # Install the action's mod before publishing the shortcut that opens it.
@@ -69,6 +72,7 @@ def install(source: Path, home: Path) -> None:
         if path.is_file() and (path.suffix == ".js" or path.name in {"mod.json", "LICENSE"}):
             replace(home / path.relative_to(source), path.read_bytes())
     replace(home / "layouts/tui.json", (json.dumps(layout, indent=2) + "\n").encode())
+    replace(settings_path, (json.dumps(settings, indent=2) + "\n").encode())
     if replace(keys_path, (json.dumps(current, indent=2, ensure_ascii=False) + "\n").encode()):
         print(f"Updated Herdr App shortcuts: {keys_path}")
 

@@ -59,6 +59,8 @@ Only pickers and explicitly requested help open dialogs. The zoxide picker uses 
 
 This is not a TUI plugin migration. Annotate bindings, TUI copy/resize modes, pane renaming, and editing scrollback are not mapped to unrelated App actions. App files hot-reload; no `herdr server reload-config` is needed. The integration targets App 0.1.15's mod API.
 
+The desktop installer manages only `minimum_contrast` in `settings.json`, setting it to `3.0` while preserving other personal settings. Herdr replaces terminal text below this contrast threshold with near-white or near-black, making Claude Code's submitted prompts readable on their dark background without replacing as many ANSI colors as a `4.5` threshold. This affects all desktop terminals, not only Claude; it is a correction threshold, not a guaranteed final contrast ratio. The app hot-reloads it, including existing text. Changed settings are backed up to `settings.json.home-manager.bak`.
+
 Checks from the repository root:
 
 ```bash
