@@ -35,10 +35,10 @@ describe("prompt statusline", () => {
     expect(line()).not.toContain("/bg");
     expect(line()).not.toContain("tokens");
     expect(line()).not.toContain("↓");
-    expect(line()).toContain("---------- 9% (⏳ 2026-11-05 03:00) │ test-model · high · fast(off)");
+    expect(line()).toEndWith("---------- 9% (⏳ 2026-11-05 03:00) │ test-model · high─");
     statuses.set("codex-fast-mode", "on");
     statuses.set("custom", "other extension");
-    expect(line()).toContain("fast(on)");
+    expect(line()).toEndWith("test-model · high · fast─");
     expect(line()).toContain("other extension");
     statuses.set("codex-usage", "weekly unavailable (/codex-usage)");
     expect(line()).toContain("weekly unavailable");
@@ -48,18 +48,21 @@ describe("prompt statusline", () => {
     expect(line(80)).toContain("11%");
   });
 
-  test("omits fast mode when its provider is absent and follows model changes", () => {
+  test("shows fast only when enabled and follows model changes", () => {
     const { statuses, ctx, line } = fixture();
     statuses.delete("codex-fast-mode");
-    expect(line()).not.toContain("fast(");
+    expect(line()).not.toContain("fast");
     statuses.set("codex-fast-mode", "off");
-    expect(line()).toContain("fast(off)");
+    expect(line()).toEndWith("test-model · high─");
+    statuses.set("codex-fast-mode", "on");
+    expect(line()).toEndWith("test-model · high · fast─");
     ctx.model = { ...ctx.model, id: "another-model", provider: "anthropic" };
     expect(line()).toContain("another-model");
-    expect(line()).not.toContain("fast(");
+    expect(line()).not.toContain("fast");
     ctx.model.provider = "openai";
-    statuses.set("codex-fast-mode", "on");
-    expect(line()).toContain("fast(on)");
+    expect(line()).toEndWith("another-model · high · fast─");
+    statuses.set("codex-fast-mode", "off");
+    expect(line()).toEndWith("another-model · high─");
   });
 
   test.each([

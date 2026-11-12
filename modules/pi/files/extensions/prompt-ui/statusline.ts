@@ -47,8 +47,8 @@ export function createStatusLine(
 
     const modelParts = [accent(sanitizeStatusText(ctx.model?.id ?? "no-model"))];
     if (ctx.model?.reasoning) modelParts.push(styleStatus(ctx.thinkingLevel ?? "off", CLAUDE_ANSI.brightOrange));
-    if (ctx.model?.provider === "openai" && process.env.PI_SUBAGENT_CHILD !== "1" && statuses.has(STATE_TYPE)) modelParts.push(styleStatus(
-      `fast(${statuses.get(STATE_TYPE) === "on" ? "on" : "off"})`, CLAUDE_ANSI.brightOrange,
+    if (ctx.model?.provider === "openai" && process.env.PI_SUBAGENT_CHILD !== "1" && statuses.get(STATE_TYPE) === "on") modelParts.push(styleStatus(
+      "fast", CLAUDE_ANSI.brightOrange,
     ));
     let model = modelParts.join(border(" · "));
     const contextUsage = ctx.getContextUsage();

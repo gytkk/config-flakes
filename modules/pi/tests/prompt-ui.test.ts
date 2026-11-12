@@ -83,9 +83,11 @@ test.each([
 describe("prompt UI", () => {
   test.each(["before", "after"] as const)("reads fast mode statuses with the provider loaded %s the UI", async (order) => {
     const editor = createEditor("tui", [], order)!;
-    expect(editor.render(180)[0]).toContain("fast(off)");
+    expect(editor.render(180)[0]).not.toContain("fast");
     await editor.fast("on");
-    expect(editor.render(180)[0]).toContain("fast(on)");
+    expect(editor.render(180)[0]).toContain("\x1b[1;33mfast\x1b[0m");
+    await editor.fast("off");
+    expect(editor.render(180)[0]).not.toContain("fast");
     expect(editor.footer!.render(180)).toEqual([]);
   });
 
@@ -94,7 +96,7 @@ describe("prompt UI", () => {
     const line = editor.render(180)[0];
     expect(line).toContain("test-model");
     expect(line).toContain("11%");
-    expect(line).not.toContain("fast(");
+    expect(line).not.toContain("fast");
     expect(line).not.toContain("weekly");
   });
 
