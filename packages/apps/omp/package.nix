@@ -1,8 +1,8 @@
 { lib, stdenv }:
 
 let
-  version = "18.18.9";
-  rev = "50da2d357039404a81d7c64622740ce13e4c54b4";
+  version = "18.19.0";
+  rev = "04cd1a7549a02d62ad1d24826198d52507595683";
   # Reuse upstream's locked Bun, Rust, and bun2nix toolchain with its package checks.
   upstream = builtins.getFlake "github:can1357/oh-my-pi/${rev}";
   package = upstream.packages.${stdenv.hostPlatform.system}.omp;

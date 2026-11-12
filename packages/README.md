@@ -63,7 +63,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 | herdr-core | 0.1.20 |
 | lspi | 0.2.0 |
 | notion-cli | 0.23.29 |
-| omp | 18.18.9 |
+| omp | 18.19.0 |
 | pantry | main-69de978b5555 |
 | pi | 1.5.2 |
 
