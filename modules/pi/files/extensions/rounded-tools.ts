@@ -30,7 +30,8 @@ class RoundedFrame implements Component {
     if (!this.inset) return lines.map((line) => fill(truncateToWidth(line, width, "")));
     const contrast = this.theme.appearance === "light" ? rgbColor(0, 0, 0) : rgbColor(255, 255, 255);
     const color = mixColors(this.theme.colors[this.background], contrast, 0.15, "srgb");
-    const border = (text: string) => this.theme.style(text, { fg: color, bg: this.background });
+    // Terminal backgrounds cover whole cells, so leave border cells unpainted to avoid square protrusions.
+    const border = (text: string) => "\x1b[49m" + this.theme.style(text, { fg: color });
     return [
       border(`╭${"─".repeat(innerWidth)}╮`),
       ...lines.map((line) => {
