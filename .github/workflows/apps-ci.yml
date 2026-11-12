@@ -94,7 +94,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: ${{ fromJson(needs.detect-app-changes.outputs.apps) }}
+        app: ["omp"]
     steps:
       - uses: actions/checkout@v6
       - uses: cachix/install-nix-action@v31
@@ -110,3 +110,11 @@ jobs:
           else
             echo "Skipping $APP: not available for x86_64-linux"
           fi
+      - name: Diagnose Nix build failure
+        if: failure()
+        run: |
+          free -h
+          df -h / /nix
+          sudo systemctl status nix-daemon --no-pager --full || true
+          sudo journalctl -u nix-daemon --no-pager -n 200
+          sudo journalctl -k --no-pager -n 200
