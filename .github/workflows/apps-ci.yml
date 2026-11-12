@@ -94,9 +94,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: ["omp"]
+        app: ${{ fromJson(needs.detect-app-changes.outputs.apps) }}
     steps:
       - uses: actions/checkout@v6
+      - name: Free disk space for Nix builds
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet
+          df -h /
       - uses: cachix/install-nix-action@v31
         with:
           install_url: https://releases.nixos.org/nix/nix-2.29.1/install

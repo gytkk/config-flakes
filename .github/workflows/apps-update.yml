@@ -23,9 +23,13 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: main
+      - name: Free disk space for Nix builds
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet
+          df -h /
       - uses: cachix/install-nix-action@v31
         with:
-          install_url: https://releases.nixos.org/nix/nix-2.34.9/install
+          install_url: https://releases.nixos.org/nix/nix-2.29.1/install
       - uses: actions/setup-node@v6
         with:
           node-version: 24
@@ -59,6 +63,15 @@ jobs:
           while IFS= read -r app; do
             nix build "./packages#packages.x86_64-linux.$app" --no-link
           done < "$RUNNER_TEMP/changed-apps"
+
+      - name: Diagnose Nix build failure
+        if: failure()
+        run: |
+          free -h
+          df -h / /nix
+          sudo systemctl status nix-daemon --no-pager --full || true
+          sudo journalctl -u nix-daemon --no-pager -n 200
+          sudo journalctl -k --no-pager -n 200
 
       - name: Sync README version table
         run: packages/scripts/sync-readme-versions.sh
