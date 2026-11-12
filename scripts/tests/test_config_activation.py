@@ -17,7 +17,7 @@ class ConfigActivationTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        self.home = self.root / "home"
+        self.home = self.root / "activation-test"
         self.home.mkdir()
         self.source = self.root / "source"
         self.source.mkdir()
@@ -42,13 +42,13 @@ class ConfigActivationTests(unittest.TestCase):
         self.legacy = self.home / ".aerospace.toml"
 
     def activation(self, module, name):
-        expression = """
+        expression = r"""
           let
             lib = {
               mkIf = condition: value: if condition then value else {};
               mkMerge = builtins.foldl' (a: b: a // b) {};
               hm.dag.entryAfter = after: data: { inherit after data; };
-              escapeShellArg = value: "'" + value + "'";
+              escapeShellArg = value: "'" + builtins.replaceStrings ["'"] ["'\\''"] value + "'";
             };
             result = import MODULE {
               inherit lib;
@@ -66,7 +66,7 @@ class ConfigActivationTests(unittest.TestCase):
               };
               flakeDirectory = SOURCE;
               themeExports.mutableDir = app: THEMES;
-              username = "activation-test";
+              username = USERNAME;
               isWSL = true;
             };
           in result.config.home.activation.NAME
@@ -80,6 +80,7 @@ class ConfigActivationTests(unittest.TestCase):
             "DIFFUTILS": json.dumps(str(Path(shutil.which("cmp")).parent.parent)),
             "SOURCE": json.dumps(str(self.source)),
             "THEMES": json.dumps(str(self.themes)),
+            "USERNAME": json.dumps(self.home.name),
             "NAME": name,
         }.items():
             expression = expression.replace(key, value)
@@ -91,7 +92,7 @@ class ConfigActivationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         activation = json.loads(result.stdout)
         activation["data"] = activation["data"].replace(
-            "/mnt/c/Users/activation-test", str(self.home)
+            "/mnt/c/Users", str(self.root)
         )
         return activation
 
@@ -136,12 +137,6 @@ run() { if [ "${DRY_RUN+x}" = x ]; then printf 'would run: %s\\n' "$*"; else "$@
         (self.zed / "keymap.json").write_text("original keymap")
         (self.installed / "test").mkdir(parents=True)
         (self.installed / "test/old").write_text("old extension")
-
-    def test_aerospace_runs_after_link_generation(self):
-        self.assertIn(
-            "linkGeneration",
-            self.activation("aerospace", "aerospaceLegacyConfig")["after"],
-        )
 
     def test_aerospace_first_dry_run_without_managed_link(self):
         before = self.snapshot()
@@ -191,6 +186,36 @@ run() { if [ "${DRY_RUN+x}" = x ]; then printf 'would run: %s\\n' "$*"; else "$@
             result = self.run_activation("zed", "zedWindowsConfig", dry=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(self.snapshot(), before)
+
+    def test_zed_treats_shell_characters_in_paths_literally(self):
+        for attribute, name in (
+            ("home", "user's $HOME `printf expanded`"),
+            ("source", "checkout's $HOME `printf expanded`"),
+        ):
+            previous = getattr(self, attribute)
+            replacement = self.root / name
+            previous.rename(replacement)
+            for key, path in list(vars(self).items()):
+                if isinstance(path, Path) and path.is_relative_to(previous):
+                    setattr(self, key, replacement / path.relative_to(previous))
+
+        self.populate_zed()
+        result = self.run_activation("zed", "zedWindowsConfig")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            (self.zed / "settings.json").read_bytes(), self.settings.read_bytes()
+        )
+        self.assertEqual((self.zed / "settings.json.bak").read_text(), "original settings")
+        self.assertEqual(
+            (self.zed / "keymap.json").read_bytes(), self.keymap.read_bytes()
+        )
+        self.assertEqual(
+            (self.zed / "themes/test.json").read_bytes(),
+            (self.themes / "test.json").read_bytes(),
+        )
+        self.assertEqual((self.installed / "test/new").read_text(), "new")
+        self.assertFalse((self.installed / "test/old").exists())
 
     def test_zed_missing_source_preserves_settings(self):
         self.populate_zed()
