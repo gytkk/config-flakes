@@ -35,6 +35,7 @@ function styleStatus(text: string, ansi: string): string {
 export function createStatusLine(
   ctx: ExtensionContext,
   footerData: ReadonlyFooterDataProvider,
+  getGitStatus: () => string = () => "",
 ): (width: number, hiddenLines?: number) => string {
   return (width, hiddenLines = 0) => {
     if (width <= 0) return "";
@@ -77,9 +78,10 @@ export function createStatusLine(
     const scroll = hiddenLines > 0 ? border(`↑ ${hiddenLines} more`) : "";
     const cwd = sanitizeStatusText(formatCwd(ctx.sessionManager.getCwd()));
     const branch = sanitizeStatusText(footerData.getGitBranch() ?? "");
+    const gitStatus = branch ? sanitizeStatusText(getGitStatus()) : "";
     const cap = (text: string) => theme.style(text, { fg: theme.colors.userMessageBg });
     const identity = (limit: number) => cap("\uE0B6") + theme.bg("userMessageBg",
-      ` ${accent(truncateToWidth(cwd, limit, "…"))}${branch ? border(" › ") + theme.fg("text", branch) : ""} `,
+      ` ${accent(truncateToWidth(cwd, limit, "…"))}${branch ? border(" › ") + theme.fg("text", branch) + (gitStatus ? " " + theme.fg("muted", gitStatus) : "") : ""} `,
     ) + cap("\uE0B0");
     let location = identity(visibleWidth(cwd));
     const extras = [...statuses].filter(([key]) => ![STATE_TYPE, "codex-usage", "bg", "bg-selection"].includes(key))

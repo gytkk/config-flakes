@@ -56,6 +56,7 @@ function createEditor(mode = "tui", commands: string[] = [], fastOrder?: "before
     },
   };
   const pi = {
+    exec: async () => ({ stdout: "", stderr: "", code: 0, killed: false }),
     getCommands: () => commands.map((name) => ({ name })),
     on: (event: string, handler: Function) => { if (event === "session_start") handlers.push(handler); },
     registerCommand: (_name: string, command: { handler: Function }) => { fastCommand = command.handler; },

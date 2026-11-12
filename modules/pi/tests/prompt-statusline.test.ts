@@ -3,7 +3,7 @@ import { CURSOR_MARKER, visibleWidth } from "@earendil-works/pi-tui";
 import { createStatusLine } from "../files/extensions/prompt-ui/statusline";
 
 describe("prompt statusline", () => {
-  function fixture() {
+  function fixture(gitStatus = "") {
     const statuses = new Map([["codex-fast-mode", "off"], ["codex-usage", "---------- 9% (⏳ 3d 14h)"]]);
     const ctx = {
       model: { id: "test-model", provider: "openai", reasoning: true, contextWindow: 1_000_000 },
@@ -23,7 +23,7 @@ describe("prompt statusline", () => {
       } },
     };
     const data = { getGitBranch: () => "main", getExtensionStatuses: () => statuses };
-    const render = createStatusLine(ctx as never, data as never);
+    const render = createStatusLine(ctx as never, data as never, () => gitStatus);
     const line = (width = 300) => render(width).replace(/\x1b\[[0-9;]*m/g, "");
     return { statuses, ctx, data, render, line };
   }
@@ -46,6 +46,16 @@ describe("prompt statusline", () => {
     expect(line()).not.toContain("⏳");
     expect(line(80)).toContain("test-model");
     expect(line(80)).toContain("11%");
+  });
+
+  test("puts Git counts after the branch inside its segment and preserves width bounds", () => {
+    const { line, render, data } = fixture("*12 +4 ?13");
+    expect(line()).toContain(" › main *12 +4 ?13 \uE0B0");
+    expect(line().match(/\*12/g)).toHaveLength(1);
+    for (let width = 0; width <= 320; width++) expect(visibleWidth(render(width))).toBeLessThanOrEqual(width);
+    data.getGitBranch = () => "";
+    expect(line()).not.toContain("*12");
+    expect(fixture().line()).toContain(" › main \uE0B0");
   });
 
   test("shows fast only when enabled and follows model changes", () => {
