@@ -15,8 +15,11 @@ let
   nvimThemeExports = config.lib.file.mkOutOfStoreSymlink (themeExports.mutableDir "nvim");
   openAIKeySecretName = "openai-api-key";
   usesSystemAgenix = osConfig != null;
+  # Without the OpenAI API module no key is declared; config.ai reports an empty path on first use.
   openAIKeySecretPath =
-    if usesSystemAgenix then
+    if !config.modules.openaiApi.enable then
+      ""
+    else if usesSystemAgenix then
       osConfig.age.secrets.${openAIKeySecretName}.path
     else
       config.age.secrets.${openAIKeySecretName}.path;

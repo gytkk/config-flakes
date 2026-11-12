@@ -21,6 +21,9 @@ local automaticFiletypes = {
   "zsh",
 }
 
+-- The vim module sets an empty key path when no OpenAI key is declared; AI is manual-only there.
+local hasOpenAIKey = vim.g.openai_api_key_path ~= ""
+
 return {
   {
     "milanglacier/minuet-ai.nvim",
@@ -42,7 +45,7 @@ return {
       },
       blink = { enable_auto_complete = false },
       virtualtext = {
-        auto_trigger_ft = automaticFiletypes,
+        auto_trigger_ft = hasOpenAIKey and automaticFiletypes or {},
         show_on_completion_menu = true,
       },
       provider_options = {
