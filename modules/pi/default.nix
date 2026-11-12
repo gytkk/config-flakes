@@ -11,6 +11,18 @@ let
   cfg = config.modules.pi;
   agentCoreOutput = import ../../agent-core/nix/render.nix { inherit pkgs; } { runtime = "pi"; };
   mkSymlink = path: config.lib.file.mkOutOfStoreSymlink "${flakeDirectory}/modules/pi/${path}";
+  lspExtension = pkgs.applyPatches {
+    name = "pi-lsp-refactor-0.1.7";
+    src = pkgs.fetchzip {
+      url = "https://registry.npmjs.org/pi-lsp/-/pi-lsp-0.1.7.tgz";
+      sha256 = "12fhprz6y7i5skrf136b6ip7jnz930ms18cm5gci00m025zyb64b";
+    };
+    patches = [ ./lsp-refactor.patch ];
+    postPatch = ''
+      cp -r ${./files/extensions/lsp-refactor} extensions/pi-lsp/refactor
+      echo 'export { default } from "./pi-lsp/index";' > extensions/index.ts
+    '';
+  };
   syncSettings = pkgs.writeShellScript "pi-sync-settings" ''
     export PATH=${
       lib.makeBinPath (
@@ -50,6 +62,7 @@ in
       ".pi/agent/themes/one-half-light.json".source = themeExports.file "pi" "one-half-light.json";
       ".pi/agent/extensions/codex-fast-mode.ts".source = mkSymlink "files/extensions/codex-fast-mode.ts";
       ".pi/agent/extensions/codex-usage.ts".source = mkSymlink "files/extensions/codex-usage.ts";
+      ".pi/agent/extensions/pi-lsp".source = "${lspExtension}/extensions";
       ".pi/agent/extensions/hardware-cursor-only.ts".source =
         mkSymlink "files/extensions/hardware-cursor-only.ts";
       ".pi/agent/extensions/herdr-agent-state.ts" = lib.mkIf config.modules.herdr.enable {

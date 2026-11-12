@@ -16,7 +16,10 @@
   },
   "packages": [
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
-    "npm:pi-lsp@0.1.7",
+    {
+      "source": "npm:pi-lsp@0.1.7",
+      "extensions": []
+    },
     "npm:pi-bg-bash@0.5.1",
     "npm:pi-web-access@0.46.0",
     {

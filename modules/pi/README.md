@@ -250,6 +250,62 @@ finishing a change. `pi-lsp` is a third-party package that runs configured
 binaries with the permissions of the Pi process, so update its version pin only
 after reviewing the new source and release notes.
 
+### Semantic rename and code actions
+
+`/lsp-refactor` explicitly enables `lsp_rename`, `lsp_code_actions`, and
+`lsp_apply_edit` for the current session. They are inactive by default and add no
+prompt snippets or guidelines. Ask for a refactoring after enabling them; review
+the returned diff before authorizing apply. All positions use **zero-based lines
+and UTF-16 character offsets**, matching the existing navigation tools.
+
+- `lsp_rename({ path, line, character, newName })` uses the server's rename
+  preparation when supported and returns a multi-file preview, not a mutation.
+- `lsp_code_actions({ path, line, character, endLine?, endCharacter?, only? })`
+  lists actions at a range. The end defaults to the start; `only` accepts LSP
+  kinds such as `quickfix` or `source.organizeImports`.
+- `lsp_code_actions({ actionId })` resolves a listed action when necessary and
+  previews its edit.
+- `lsp_apply_edit({ previewId })` applies exactly that preview. Tokens are
+  in-memory, session-local, single-use, and cleared on session replacement,
+  shutdown, or reload. Listing actions replaces the previous action list.
+  Only the latest eight previews are retained.
+
+Preview does not write files. Apply locks affected files using Pi's shared
+mutation queue, checks file identity/content and available document versions,
+then stages replacements preserving file modes. A stale file rejects the whole
+edit before writing. Failed writes attempt guarded rollback without overwriting
+subsequent user edits. External editors do not share these locks: there is still
+a final check-to-rename race, and a process crash is not a cross-file transaction.
+Successful edits synchronize already-open documents on the existing LSP clients.
+
+Only UTF-16 text edits to existing UTF-8 files inside the selected server's
+project root are supported. Invalid/overlapping ranges, symlink escapes,
+unsupported server capabilities, and mixed resource operations are rejected.
+Servers such as gopls can report version zero for unopened on-disk documents;
+these use disk snapshot checks rather than a client document version.
+Command-bearing actions are listed as unavailable: executing arbitrary server
+commands cannot guarantee a side-effect-free preview, even when an action also
+contains an edit. File creation, deletion, and file moves are not supported.
+Use the editor for these operations. Previews over 40 KB are refused rather than
+applying an edit whose complete diff was not displayed.
+
+The implementation is in `modules/pi/files/extensions/lsp-refactor/`.
+`modules/pi/lsp-refactor.patch` adds the refactoring interface to the **same**
+manager/client pool used by pi-lsp's existing diagnostics and navigation.
+`modules/pi/default.nix` fetches and patches immutable pi-lsp 0.1.7 source;
+the npm package remains pinned in `modules/pi/files/settings.json` for its
+runtime dependencies, with its original extension disabled to prevent duplicate
+servers and tool registrations. Update both pins and revalidate the patch when
+upgrading pi-lsp. No installed npm source is modified.
+
+Apply Home Manager and restart Pi to install the patched extension and disable
+the original together. `/reload` alone does not install this change. On first
+startup, allow Pi's normal package installation to finish before using LSP.
+Run `bun test modules/pi/tests/lsp-workspace-edit.test.ts` for filesystem safety
+cases. A live smoke check should rename a symbol used in another file, apply an
+organize-imports action, inspect the result through `lsp_hover`, and verify that
+editing a file between preview and apply rejects the stale edit.
+
 ## MCP integration
 
 `files/mcp.json` configures Pi's built-in MCP extension with:
