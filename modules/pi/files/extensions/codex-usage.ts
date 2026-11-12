@@ -97,7 +97,8 @@ export function formatWeeklyUsage(usage: WeeklyUsage, now = Date.now()): string 
   const filled = Math.floor(usage.remainingPercent / 10);
   const bar = "#".repeat(filled) + "-".repeat(10 - filled);
   const remaining = `${bar} ${Number(usage.remainingPercent.toFixed(1))}%`;
-  const reset = usage.resetsAt === undefined ? "unknown" : formatResetTime(usage.resetsAt);
+  const hours = usage.resetsAt === undefined ? undefined : Math.floor((usage.resetsAt - now) / 3_600_000);
+  const reset = hours === undefined ? "unknown" : `${Math.floor(hours / 24)}d ${hours % 24}h`;
   return `${remaining} (⏳ ${reset})`;
 }
 

@@ -85,15 +85,25 @@ describe("CodexBar weekly data", () => {
   ])("renders a ten-cell remaining-quota bar at %s percent", (remainingPercent, bar) => {
     const usage = { ...parseWeeklyUsage(payload()), remainingPercent };
     const text = formatWeeklyUsage(usage, NOW);
-    expect(text).toBe(`${bar} ${remainingPercent}% (⏳ 2026-11-04 18:00)`);
+    expect(text).toBe(`${bar} ${remainingPercent}% (⏳ 2d 15h)`);
     expect(text).not.toContain("Codex");
   });
 
   test("formats reset boundaries without inventing a reset or new quota", () => {
     const data = parseWeeklyUsage(payload());
-    expect(formatWeeklyUsage(data, NOW)).toBe("---------- 9% (⏳ 2026-11-04 18:00)");
-    expect(formatWeeklyUsage({ ...data, resetsAt: NOW + 3_600_000 }, NOW)).toContain("2026-11-02 04:00");
-    expect(formatWeeklyUsage({ ...data, resetsAt: NOW + 1 }, NOW)).toContain("2026-11-02 03:00");
+    expect(formatWeeklyUsage(data, NOW)).toBe("---------- 9% (⏳ 2d 15h)");
+    for (const [milliseconds, expected] of [
+      [86 * 3_600_000 + 59 * 60_000, "3d 14h"],
+      [24 * 3_600_000, "1d 0h"],
+      [24 * 3_600_000 - 1, "0d 23h"],
+      [3_600_000, "0d 1h"],
+      [3_600_000 - 1, "0d 0h"],
+      [1, "0d 0h"],
+    ] as const) {
+      expect(formatWeeklyUsage({ ...data, resetsAt: NOW + milliseconds }, NOW))
+        .toBe(`---------- 9% (⏳ ${expected})`);
+    }
+    expect(formatWeeklyUsage({ ...data, resetsAt: NOW - 1 }, NOW)).toContain("awaiting fresh usage");
     expect(formatWeeklyUsage({ ...data, resetsAt: NOW }, NOW)).toContain("awaiting fresh usage");
     expect(formatWeeklyUsage({ ...data, resetsAt: undefined }, NOW)).toBe("---------- 9% (⏳ unknown)");
     expect(formatWeeklyUsage(data, NOW + 600_001)).toContain("stale data");
@@ -107,12 +117,18 @@ test.each([
   ["America/Los_Angeles", "2026-11-04T18:00:00Z", "2026-11-04 10:00"],
   ["America/Los_Angeles", "2026-07-04T18:00:00Z", "2026-07-04 11:00"],
   ["Asia/Kolkata", "2026-11-04T18:00:00Z", "2026-11-04 23:30"],
-])("uses the host time zone %s for %s", (timeZone, timestamp, expected) => {
+])("keeps the countdown timezone-independent and detailed reset local in %s for %s", async (timeZone, timestamp, expected) => {
   process.env.TZ = timeZone;
   const resetsAt = Date.parse(timestamp);
-  const now = resetsAt - 60_000;
+  const now = resetsAt - 86 * 3_600_000;
   const usage = { remainingPercent: 33, resetsAt, updatedAt: now };
-  expect(formatWeeklyUsage(usage, now)).toBe(`###------- 33% (⏳ ${expected})`);
+  expect(formatWeeklyUsage(usage, now)).toBe("###------- 33% (⏳ 3d 14h)");
+  setSystemTime(now);
+  const stdout = payload({ usedPercent: 67, resetsAt: timestamp })
+    .replace(new Date(NOW).toISOString(), new Date(now).toISOString());
+  const f = fixture("tui", mock(async () => ({ ...success(), stdout })));
+  await f.command();
+  expect(f.ctx.ui.notify.mock.calls[0][0]).toContain(`Reset: ${expected}`);
 });
 
 describe("Codex usage lifecycle", () => {
@@ -126,7 +142,7 @@ describe("Codex usage lifecycle", () => {
       "codexbar", ["usage", "--provider", "codex", "--source", "oauth", "--json", "--no-credits"],
       { timeout: 30_000, signal: expect.any(AbortSignal) },
     ]);
-    expect(f.statuses.get("codex-usage")).toBe("---------- 9% (⏳ 2026-11-04 18:00)");
+    expect(f.statuses.get("codex-usage")).toBe("---------- 9% (⏳ 2d 15h)");
     expect(f.ctx.ui.notify.mock.calls[0][0]).toContain("Codex CLI account, not Pi login");
     expect(f.ctx.ui.notify.mock.calls[0][0]).toContain("Reset: 2026-11-04 18:00");
     await f.command();
@@ -151,7 +167,7 @@ describe("Codex usage lifecycle", () => {
     tick();
     await f.command();
     expect(f.exec).toHaveBeenCalledTimes(2);
-    expect(f.statuses.get("codex-usage")).toContain("2026-11-04 18:00");
+    expect(f.statuses.get("codex-usage")).toBe("---------- 9% (⏳ 2d 14h)");
     f.stop();
     expect(clear).toHaveBeenCalledWith(timer);
     expect(f.statuses.size).toBe(0);

@@ -4,7 +4,7 @@ import { createStatusLine } from "../files/extensions/prompt-ui/statusline";
 
 describe("prompt statusline", () => {
   function fixture() {
-    const statuses = new Map([["codex-fast-mode", "off"], ["codex-usage", "---------- 9% (⏳ 2026-11-05 03:00)"]]);
+    const statuses = new Map([["codex-fast-mode", "off"], ["codex-usage", "---------- 9% (⏳ 3d 14h)"]]);
     const ctx = {
       model: { id: "test-model", provider: "openai", reasoning: true, contextWindow: 1_000_000 },
       thinkingLevel: "high",
@@ -35,7 +35,7 @@ describe("prompt statusline", () => {
     expect(line()).not.toContain("/bg");
     expect(line()).not.toContain("tokens");
     expect(line()).not.toContain("↓");
-    expect(line()).toEndWith("---------- 9% (⏳ 2026-11-05 03:00) │ test-model · high");
+    expect(line()).toEndWith("---------- 9% (⏳ 3d 14h) │ test-model · high");
     statuses.set("codex-fast-mode", "on");
     statuses.set("custom", "other extension");
     expect(line()).toEndWith("test-model · high · fast");
@@ -68,7 +68,7 @@ describe("prompt statusline", () => {
   test.each([
     ["---------- 0% (⏳ unknown)", ""],
     ["#--------- 10% (⏳ unknown)", "#"],
-    ["#######--- 79% (⏳ 2026-11-05 03:00)", "#######"],
+    ["#######--- 79% (⏳ 3d 14h)", "#######"],
     ["########## 100% (⏳ unknown)", "##########"],
     ["weekly unavailable (/codex-usage)", ""],
   ])("colors only the filled quota cells green: %s", (usage, filled) => {
@@ -140,7 +140,7 @@ describe("prompt statusline", () => {
 
   test("bounds real ANSI and wide text at every width, including selected tasks", () => {
     const { statuses, render } = fixture();
-    statuses.set("codex-usage", "#######--- 79% (⏳ 2026-11-05 03:00)");
+    statuses.set("codex-usage", "#######--- 79% (⏳ 3d 14h)");
     for (const selected of [false, true]) {
       if (selected) statuses.set("bg-selection", "selected");
       for (let width = 0; width <= 320; width++) {
