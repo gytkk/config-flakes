@@ -1,6 +1,6 @@
 # Pi LSP와 AST 기능을 pi-lens로 통합
 
-상태: 격리 worktree에 구현하고 Linux 검사를 실행한 검토 후보. 실제 Home Manager 적용은 하지 않았다. 기준은 2026-11-12, Pi 1.5.2, pi-lens 4.4.12다. 아래 기능 계약 중 Nix hover의 유효 응답과 Rust 실행 검증은 남아 있으며, 독립 검토 전 완료로 승인하지 않는다. 자동 수정과 명시적 AST apply가 연결된 upstream 제약 때문에 보수적인 초기 수정 정책을 유지한다.
+상태: 독립 리뷰와 Linux 격리 검사를 거쳐 구현을 main에 통합했다. 실제 Home Manager 적용은 하지 않았다. 기준은 2026-11-12, Pi 1.5.2, pi-lens 4.4.12다. 부모 세션에서 실제 package와 언어 서버 검사를 다시 실행했으며, Nix hover의 유효 응답과 Rust 실행, macOS 및 실제 TUI 검증은 여전히 남아 있다. 자동 수정과 명시적 AST apply가 연결된 upstream 제약 때문에 보수적인 초기 수정 정책을 유지한다.
 
 ## 목표와 완료 조건
 
