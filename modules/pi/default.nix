@@ -62,6 +62,7 @@ in
       ".pi/agent/themes/one-half-light.json".source = themeExports.file "pi" "one-half-light.json";
       ".pi/agent/extensions/codex-fast-mode.ts".source = mkSymlink "files/extensions/codex-fast-mode.ts";
       ".pi/agent/extensions/codex-usage.ts".source = mkSymlink "files/extensions/codex-usage.ts";
+      ".pi/agent/extensions/rounded-tools.ts".source = mkSymlink "files/extensions/rounded-tools.ts";
       ".pi/agent/extensions/pi-lsp".source = "${lspExtension}/extensions";
       ".pi/agent/extensions/prompt-ui".source = mkSymlink "files/extensions/prompt-ui";
       ".pi/agent/extensions/herdr-agent-state.ts" = lib.mkIf config.modules.herdr.enable {
