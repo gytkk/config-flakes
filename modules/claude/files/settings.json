@@ -31,7 +31,7 @@
     ],
     "defaultMode": "acceptEdits"
   },
-  "model": "fable",
+  "model": "opus",
   "enableAllProjectMcpServers": true,
   "hooks": {
     "SessionStart": [
