@@ -95,7 +95,7 @@ function expectOneFrame(lines: string[], width: number) {
 test("registers a renderer resolver without overriding tools or execution", () => {
   let resolver!: ToolRendererResolver;
   const registerMessageRenderer = mock(() => {});
-  roundedTools({ registerToolRenderer: (value: ToolRendererResolver) => { resolver = value; }, registerMessageRenderer } as never);
+  roundedTools({ on() {}, registerToolRenderer: (value: ToolRendererResolver) => { resolver = value; }, registerMessageRenderer } as never);
   expect(registerMessageRenderer).toHaveBeenCalledWith("pi-lsp-diagnostics", expect.any(Function));
   const next = mock(() => ({ renderCall: () => new Text("custom", 0, 0) }));
   expect(resolver("mcp__late_tool", next)?.renderShell).toBe("self");

@@ -1,0 +1,200 @@
+--- a/packages/coding-agent/src/core/extensions/types.ts
++++ b/packages/coding-agent/src/core/extensions/types.ts
+@@ -1602,6 +1602,14 @@
+ 	theme: Theme,
+ ) => Component | undefined;
+
++/** Decorate a rendered custom message in the TUI, including default Markdown rendering. */
++export type MessageRendererWrapper = (
++	component: Component,
++	message: CustomMessage<unknown>,
++	options: MessageRenderOptions,
++	theme: Theme,
++) => Component;
++
+ export type EntryRenderer<T = unknown> = (
+ 	entry: CustomEntry<T>,
+ 	options: EntryRenderOptions,
+@@ -1760,6 +1768,9 @@
+ 	/** Register a custom renderer for CustomMessageEntry. */
+ 	registerMessageRenderer<T = unknown>(customType: string, renderer: MessageRenderer<T>): void;
+
++	/** Decorate all custom messages after rendering, in extension registration order. TUI-only. */
++	registerMessageRendererWrapper(wrapper: MessageRendererWrapper): void;
++
+ 	/**
+ 	 * Register a transformer for Markdown before Pi renders it in interactive mode. By default it runs on user,
+ 	 * assistant and thinking Markdown; `options.messageTypes` selects the surfaces instead.
+@@ -2324,6 +2335,7 @@
+ 	handlers: Map<string, HandlerFn[]>;
+ 	tools: Map<string, RegisteredTool>;
+ 	messageRenderers: Map<string, MessageRenderer>;
++	messageRendererWrappers?: MessageRendererWrapper[];
+ 	toolRenderers?: ToolRendererResolver[];
+ 	markdownTransformer?: MarkdownTransformerRegistration;
+ 	entryRenderers?: Map<string, EntryRenderer>;
+--- a/packages/coding-agent/src/core/extensions/loader.ts
++++ b/packages/coding-agent/src/core/extensions/loader.ts
+@@ -33,6 +33,7 @@
+ 	MarkdownTransformer,
+ 	MarkdownTransformerOptions,
+ 	MessageRenderer,
++	MessageRendererWrapper,
+ 	ProviderConfig,
+ 	RegisteredCommand,
+ 	ToolDefinition,
+@@ -362,6 +363,12 @@
+ 			extension.messageRenderers.set(customType, renderer as MessageRenderer);
+ 		},
+
++		registerMessageRendererWrapper(wrapper: MessageRendererWrapper): void {
++			assertActive();
++			extension.messageRendererWrappers ??= [];
++			extension.messageRendererWrappers.push(wrapper);
++		},
++
+ 		registerMarkdownTransformer(transformer: MarkdownTransformer, options?: MarkdownTransformerOptions): void {
+ 			assertActive();
+ 			extension.markdownTransformer = {
+--- a/packages/coding-agent/src/core/extensions/runner.ts
++++ b/packages/coding-agent/src/core/extensions/runner.ts
+@@ -66,6 +66,7 @@
+ 	MessageEndEvent,
+ 	MessageEndEventResult,
+ 	MessageRenderer,
++	MessageRendererWrapper,
+ 	ProjectTrustContext,
+ 	ProjectTrustEvent,
+ 	ProjectTrustEventResult,
+@@ -789,6 +790,11 @@
+ 		return undefined;
+ 	}
+
++	/** Custom-message decorators in extension load order, then registration order. */
++	getMessageRendererWrappers(): MessageRendererWrapper[] {
++		return this.extensions.flatMap((extension) => extension.messageRendererWrappers ?? []);
++	}
++
+ 	/** Markdown transformers in extension load order; each one leaves Markdown of unregistered surfaces unchanged. */
+ 	getMarkdownTransformers(): MarkdownTransformer[] {
+ 		return this.extensions.flatMap((ext): MarkdownTransformer[] => {
+--- a/packages/coding-agent/src/core/extensions/index.ts
++++ b/packages/coding-agent/src/core/extensions/index.ts
+@@ -124,6 +124,7 @@
+ 	MessageEndEvent,
+ 	MessageEndEventResult,
+ 	MessageRenderer,
++	MessageRendererWrapper,
+ 	MessageRenderOptions,
+ 	MessageStartEvent,
+ 	MessageUpdateEvent,
+--- a/packages/coding-agent/src/index.ts
++++ b/packages/coding-agent/src/index.ts
+@@ -131,6 +131,7 @@
+ 	MessageEndEvent,
+ 	MessageEndEventResult,
+ 	MessageRenderer,
++	MessageRendererWrapper,
+ 	MessageRenderOptions,
+ 	MessageStartEvent,
+ 	MessageUpdateEvent,
+--- a/packages/coding-agent/src/modes/interactive/components/custom-message.ts
++++ b/packages/coding-agent/src/modes/interactive/components/custom-message.ts
+@@ -1,7 +1,7 @@
+ import type { TextContent } from "@earendil-works/pi-ai";
+ import type { Component } from "@earendil-works/pi-tui";
+ import { Box, Container, Markdown, type MarkdownTheme, Spacer, Text } from "@earendil-works/pi-tui";
+-import type { MarkdownTransformer, MessageRenderer } from "../../../core/extensions/types.ts";
++import type { MarkdownTransformer, MessageRenderer, MessageRendererWrapper } from "../../../core/extensions/types.ts";
+ import type { CustomMessage } from "../../../core/messages.ts";
+ import { getMarkdownTheme, theme } from "../theme/theme.ts";
+ import { keyHint, keyText } from "./keybinding-hints.ts";
+@@ -22,6 +22,7 @@
+ 	private markdownTransformers: readonly MarkdownTransformer[];
+ 	private messageId?: string;
+ 	private timestamp?: string;
++	private wrappers: readonly MessageRendererWrapper[];
+
+ 	constructor(
+ 		message: CustomMessage<unknown>,
+@@ -31,6 +32,7 @@
+ 		markdownTransformers: readonly MarkdownTransformer[] = [],
+ 		messageId?: string,
+ 		timestamp?: string,
++		wrappers: readonly MessageRendererWrapper[] = [],
+ 	) {
+ 		super();
+ 		this.message = message;
+@@ -40,6 +42,7 @@
+ 		this.markdownTransformers = markdownTransformers;
+ 		this.messageId = messageId;
+ 		this.timestamp = timestamp;
++		this.wrappers = wrappers;
+
+ 		this.addChild(new Spacer(1));
+
+@@ -86,8 +89,8 @@
+ 				);
+ 				if (component) {
+ 					// Custom renderer provides its own styled component
+-					this.customComponent = component;
+-					this.addChild(component);
++					this.customComponent = this.wrap(component);
++					this.addChild(this.customComponent);
+ 					return;
+ 				}
+ 			} catch {
+@@ -96,7 +99,6 @@
+ 		}
+
+ 		// Default rendering uses our box
+-		this.addChild(this.box);
+ 		this.box.clear();
+ 		this.box.setPaddingX(this.outputPad);
+
+@@ -134,5 +136,27 @@
+ 				},
+ 			),
+ 		);
++		this.customComponent = this.wrap(this.box);
++		this.addChild(this.customComponent);
++	}
++
++	private wrap(component: Component): Component {
++		for (const wrapper of this.wrappers) {
++			try {
++				component = wrapper(
++					component,
++					this.message,
++					{ expanded: this._expanded, outputPad: this.outputPad, keyText, keyHint },
++					theme,
++				);
++			} catch (error) {
++				const fallback = new Container();
++				const reason = String(error instanceof Error ? error.message : error).replace(/[\r\n\t]/g, " ");
++				fallback.addChild(new Text(theme.fg("warning", `Custom message wrapper failed: ${reason}`), 0, 0));
++				fallback.addChild(component);
++				component = fallback;
++			}
++		}
++		return component;
+ 	}
+ }
+--- a/packages/coding-agent/src/modes/interactive/interactive-mode.ts
++++ b/packages/coding-agent/src/modes/interactive/interactive-mode.ts
+@@ -4032,6 +4032,7 @@
+ 			case "custom": {
+ 				if (message.display) {
+ 					const renderer = this.session.extensionRunner.getMessageRenderer(message.customType);
++					const wrappers = this.session.extensionRunner.getMessageRendererWrappers();
+ 					const component = new CustomMessageComponent(
+ 						message,
+ 						renderer,
+@@ -4040,6 +4041,7 @@
+ 						this.getMarkdownTransformers(),
+ 						options?.messageId,
+ 						options?.timestamp,
++						wrappers,
+ 					);
+ 					component.setExpanded(this.toolOutputExpanded);
+ 					this.chatContainer.addChild(component);

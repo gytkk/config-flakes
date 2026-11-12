@@ -9,7 +9,7 @@ export FIXTURE_SOURCE="$TEST_ROOT/source"
 export FIXTURE_TAG="v99.1.2"
 export FIXTURE_DOWNLOAD_FAILURE="0"
 mkdir -p "$APP_DIR" "$TEST_ROOT/bin" "$FIXTURE_SOURCE/nix" "$FIXTURE_SOURCE/packages/coding-agent/install-lock"
-cp "$SOURCE_ROOT/apps/pi/"{update.sh,patches.nix,herdr-file-links.patch} "$APP_DIR/"
+cp "$SOURCE_ROOT/apps/pi/"{update.sh,patches.nix,herdr-file-links.patch,message-renderer-wrappers.patch} "$APP_DIR/"
 mkdir -p "$TEST_ROOT/scripts" "$FIXTURE_SOURCE/packages/coding-agent/src/utils"
 cp "$SOURCE_ROOT/scripts/check-nix-patches.sh" "$TEST_ROOT/scripts/"
 cat > "$FIXTURE_SOURCE/packages/coding-agent/src/utils/open-browser.ts" <<'EOF'
@@ -40,6 +40,37 @@ cat > "$FIXTURE_SOURCE/packages/tui/src/tui-alt-screen.ts" <<'EOF'
 					// URL activation is best-effort.
 				}
 EOF
+# Populate the wrapper patch's old-side contexts; rendering behavior has its own runtime suite.
+uv run --no-project python - "$APP_DIR/message-renderer-wrappers.patch" "$FIXTURE_SOURCE" <<'PY'
+import pathlib
+import re
+import sys
+
+files = {}
+path = None
+index = None
+for line in pathlib.Path(sys.argv[1]).read_text().splitlines():
+    if line.startswith("--- a/"):
+        path = line.removeprefix("--- a/")
+        files.setdefault(path, [])
+        index = None
+    elif match := re.match(r"@@ -(\d+)", line):
+        index = int(match[1]) - 1
+    elif index is not None and (line.startswith((" ", "-")) or not line):
+        text = line[1:] if line else ""
+        lines = files[path]
+        while len(lines) < index:
+            lines.append("")
+        if index < len(lines):
+            assert lines[index] == text, (path, index)
+        else:
+            lines.append(text)
+        index += 1
+for path, lines in files.items():
+    target = pathlib.Path(sys.argv[2]) / path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("\n".join(lines) + "\n")
+PY
 printf '{ "version": "99.1.2" }\n' > "$FIXTURE_SOURCE/packages/coding-agent/package.json"
 for file in nix/package.nix nix/model-catalog.json packages/coding-agent/install-lock/package-lock.json package-lock.json; do
   touch "$FIXTURE_SOURCE/$file"
@@ -136,3 +167,9 @@ reset_package
 perl -0pi -e 's/this.openUrl\(clickedUrl\)/this.renamedOpener(clickedUrl)/' "$FIXTURE_SOURCE/packages/tui/src/tui-alt-screen.ts"
 assert_failure
 echo 'PASS: incompatible mouse activation patch preserves the package'
+
+perl -0pi -e 's/this.renamedOpener\(clickedUrl\)/this.openUrl(clickedUrl)/' "$FIXTURE_SOURCE/packages/tui/src/tui-alt-screen.ts"
+reset_package
+perl -0pi -e 's/import type \{ MarkdownTransformer, MessageRenderer \}/import type { RenamedTransformer, MessageRenderer }/' "$FIXTURE_SOURCE/packages/coding-agent/src/modes/interactive/components/custom-message.ts"
+assert_failure
+echo 'PASS: incompatible custom-message wrapper patch preserves the package'

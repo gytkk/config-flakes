@@ -1,4 +1,4 @@
-import type { ExtensionAPI, MessageRenderer, Theme, ThemeBg, ToolRenderers } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, MessageRenderer, MessageRendererWrapper, Theme, ThemeBg, ToolRenderers } from "@earendil-works/pi-coding-agent";
 import { Box, Container, Text, mixColors, rgbColor, truncateToWidth, visibleWidth, type Component, type TuiMouseEvent } from "@earendil-works/pi-tui";
 
 type CallContext = Parameters<NonNullable<ToolRenderers["renderCall"]>>[2];
@@ -141,7 +141,14 @@ const diagnosticsMessage: MessageRenderer<{ summary?: string; path?: string }> =
   const content = new Box(options.outputPad, 0);
   content.addChild(diagnosticsTitle(message.details?.path, theme));
   content.addChild(diagnosticsBody(text, options.expanded, options.keyHint("app.tools.expand", "to expand"), theme));
-  return new RoundedFrame(content, theme, "toolSuccessBg");
+  return content;
+};
+
+const roundMessage: MessageRendererWrapper = (component, message, _options, theme) => {
+  if (component instanceof RoundedFrame) return component;
+  const content = new Container();
+  content.addChild(component);
+  return new RoundedFrame(content, theme, message.customType === "pi-lsp-diagnostics" ? "toolSuccessBg" : "customMessageBg");
 };
 
 export function roundToolRenderers(name: string, base: ToolRenderers = {}): ToolRenderers {
@@ -208,5 +215,16 @@ export function roundToolRenderers(name: string, base: ToolRenderers = {}): Tool
 
 export default function (pi: ExtensionAPI) {
   pi.registerToolRenderer((name, next) => roundToolRenderers(name, next()));
-  pi.registerMessageRenderer("pi-lsp-diagnostics", diagnosticsMessage);
+  const supportsMessageWrappers = typeof pi.registerMessageRendererWrapper === "function";
+  pi.registerMessageRenderer<{ summary?: string; path?: string }>("pi-lsp-diagnostics", (message, options, theme) => {
+    const component = diagnosticsMessage(message, options, theme)!;
+    return supportsMessageWrappers ? component : roundMessage(component, message, options, theme);
+  });
+  if (supportsMessageWrappers) {
+    pi.registerMessageRendererWrapper(roundMessage);
+  } else {
+    pi.on("session_start", (_event, ctx) => {
+      if (ctx.mode === "tui") ctx.ui.notify("Apply Home Manager and restart Pi to frame all extension messages. Tool and LSP frames remain available.", "warning");
+    });
+  }
 }

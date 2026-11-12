@@ -22,6 +22,7 @@ function tool(text: string) {
 function notice(summary?: string, content: string | ReturnType<typeof textResult>["content"] = "") {
   let renderer!: MessageRenderer;
   roundedTools({
+    on() {},
     registerToolRenderer() {},
     registerMessageRenderer(name: string, value: MessageRenderer) {
       expect(name).toBe("pi-lsp-diagnostics");
