@@ -5,7 +5,7 @@ import fastMode, { createStatusLine } from "../files/extensions/codex-fast-mode"
 
 describe("prompt statusline", () => {
   function fixture() {
-    const statuses = new Map([["codex-usage", "---------- weekly 9% left | reset 2026-11-05 03:00"]]);
+    const statuses = new Map([["codex-usage", "---------- 9% (⏳ 2026-11-05 03:00)"]]);
     const ctx = {
       model: { id: "test-model", provider: "openai", reasoning: true, contextWindow: 1_000_000 },
       thinkingLevel: "high",
@@ -36,7 +36,7 @@ describe("prompt statusline", () => {
     expect(line()).not.toContain("/bg");
     expect(line()).not.toContain("tokens");
     expect(line()).not.toContain("↓");
-    expect(line()).toContain("---------- weekly 9% left | reset 2026-11-05 03:00 │ test-model · high · fast(off)");
+    expect(line()).toContain("---------- 9% (⏳ 2026-11-05 03:00) │ test-model · high · fast(off)");
     statuses.set("codex-fast-mode", "on");
     statuses.set("custom", "other extension");
     expect(line()).toContain("fast(on)");
@@ -44,7 +44,7 @@ describe("prompt statusline", () => {
     statuses.set("codex-usage", "weekly unavailable (/codex-usage)");
     expect(line()).toContain("weekly unavailable");
     statuses.clear();
-    expect(line()).not.toContain("weekly");
+    expect(line()).not.toContain("⏳");
     expect(line(80)).toContain("test-model");
     expect(line(80)).toContain("11%");
   });
@@ -79,7 +79,7 @@ describe("prompt statusline", () => {
   test("separates the meter from the right-hand statuses with a padded divider", () => {
     const { line } = fixture();
     for (const width of [80, 160, 220, 300]) {
-      expect(line(width)).toMatch(/[━─%M] │ (?:---------- weekly|test-model)/);
+      expect(line(width)).toMatch(/[━─%M] │ (?:---------- 9%|test-model)/);
     }
   });
 
