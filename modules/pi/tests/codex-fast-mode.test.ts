@@ -8,12 +8,12 @@ describe("prompt statusline", () => {
     const statuses = new Map([["codex-usage", "---------- weekly 9% left | reset 2026-11-05 03:00"]]);
     const commands = ["bg"];
     const ctx = {
-      model: { id: "test-model", provider: "openai", reasoning: true },
+      model: { id: "test-model", provider: "openai", reasoning: true, contextWindow: 1_000_000 },
       thinkingLevel: "high",
       sessionManager: {
         getCwd: () => "/workspace/한글-project",
       },
-      getContextUsage: () => ({ percent: 11 }),
+      getContextUsage: () => ({ percent: 11, contextWindow: 1_000_000 }),
       ui: { theme: {
         colors: { userMessageBg: "#edf0f3" },
         style: (text: string, { fg }: { fg: string }) => {
@@ -82,6 +82,21 @@ describe("prompt statusline", () => {
     for (const width of [80, 160, 220, 300]) {
       expect(line(width)).toMatch(/[━─%] │ \/bg \(0\)/);
     }
+  });
+
+  test("shows the effective context limit, including before usage is known", () => {
+    const { ctx, line } = fixture();
+    expect(line()).toContain("11% / 1M");
+    expect(line(80)).toContain("11% / 1M");
+    ctx.getContextUsage = () => ({ percent: 25, contextWindow: 272_000 });
+    expect(line()).toContain("25% / 272K");
+    ctx.getContextUsage = () => undefined as never;
+    expect(line()).toContain("?% / 1M");
+    ctx.model.contextWindow = 1_050_000;
+    expect(line()).toContain("?% / 1.05M");
+    ctx.model = undefined as never;
+    expect(line()).toContain("?%");
+    expect(line()).not.toContain("?% /");
   });
 
   test("bounds real ANSI and wide text at every width, including selected tasks", () => {

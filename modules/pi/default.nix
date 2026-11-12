@@ -44,6 +44,7 @@ in
       ".pi/agent/agents/reviewer.md".source = mkSymlink "agents/reviewer.md";
       ".pi/agent/lsp.json".source = mkSymlink "files/lsp.json";
       ".pi/agent/mcp.json".source = mkSymlink "files/mcp.json";
+      ".pi/agent/models.json".source = mkSymlink "files/models.json";
       ".pi/web-search.json".source = mkSymlink "files/web-search.json";
       ".pi/agent/themes/claude-like.json".source = mkSymlink "files/themes/claude-like.json";
       ".pi/agent/themes/one-half-light.json".source = themeExports.file "pi" "one-half-light.json";

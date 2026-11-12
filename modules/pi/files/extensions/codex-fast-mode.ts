@@ -9,6 +9,7 @@ import { sep } from "node:path";
 const STATE_TYPE = "codex-fast-mode";
 const DEFAULT_ENABLED = false;
 const ANSI_RESET = "\x1b[0m";
+const contextWindowFormat = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 2 });
 
 const CLAUDE_ANSI = {
   red: "\x1b[31m",
@@ -86,11 +87,15 @@ export function createStatusLine(
       `fast(${statuses.get(STATE_TYPE) === "on" ? "on" : "off"})`, CLAUDE_ANSI.brightOrange,
     ));
     let model = modelParts.join(border(" · "));
-    const percent = ctx.getContextUsage()?.percent;
+    const contextUsage = ctx.getContextUsage();
+    const percent = contextUsage?.percent;
+    const contextWindow = contextUsage?.contextWindow ?? ctx.model?.contextWindow;
     const bounded = percent == null ? undefined : Math.max(0, Math.min(100, percent));
     const contextColor = bounded === undefined ? CLAUDE_ANSI.dim
       : bounded >= 90 ? CLAUDE_ANSI.red : bounded >= 70 ? CLAUDE_ANSI.yellow : CLAUDE_ANSI.cyan;
-    const contextLabel = styleStatus(bounded === undefined ? "?%" : `${Math.floor(bounded)}%`, contextColor);
+    const contextLabel = styleStatus(bounded === undefined ? "?%" : `${Math.floor(bounded)}%`, contextColor)
+      + (contextWindow != null && Number.isFinite(contextWindow) && contextWindow > 0
+        ? border(` / ${contextWindowFormat.format(contextWindow)}`) : "");
     let minimumMeterWidth = Math.max(12, visibleWidth(contextLabel) + 2);
     const renderMeter = (meterWidth: number) => {
       const label = meterWidth >= visibleWidth(contextLabel) + 2 ? ` ${contextLabel} ` : contextLabel;
