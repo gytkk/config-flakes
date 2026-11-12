@@ -1,6 +1,6 @@
 # Pi prompt UI를 pi-powerline-footer로 전환
 
-상태: 구현 대기. 사용자가 선택한 UI 전환의 스펙이며, 문서 작성 단계에서는 설정이나 설치 상태를 변경하지 않는다. 조사 기준은 2026-11-12, Pi 1.5.2, pi-powerline-footer 0.22.0이다.
+상태: 알려진 마우스 제약을 수용하고 통합. Pi 1.5.2와 pi-powerline-footer 0.22.0의 실제 component 검사에서 마우스 좌표 회귀를 확인했으며, 사용자가 2026-11-12에 이 제약을 수용하고 통합하도록 승인했다. 회귀 검사는 실패 상태로 유지하고, 실제 Home Manager 적용과 남은 TUI 검증은 별도로 수행한다.
 
 ## 목표와 완료 조건
 
@@ -87,3 +87,21 @@ uv run --no-project scripts/check-paths.py modules/pi/README.md docs/pi-extensio
 Home Manager 적용은 사용자가 수행하고 새 Pi session에서 확인한다. Package 추가와 로컬 prompt 설치 제거를 함께 적용해 두 editor가 경쟁하는 중간 상태를 피한다. Reload만으로 Nix 설치 선언이 바뀌었다고 판단하지 않는다.
 
 복구는 이 작업의 package, Powerline 설정, display 전용 변경과 prompt 설치 선언만 되돌린다. Shell 전환이 이미 끝났다면 과거 `/bg` UI를 재도입하지 않는다. 다른 사용자 설정과 전환 결과를 보존한다. 이 작업의 검증된 변경만 커밋하고 push하지 않으며 자동 검사와 실제 UI 확인 결과를 구분해 보고한다.
+
+## 검증 상태와 수용한 제약
+
+- 정확한 npm 0.22.0 release의 README, config parser, preset, editor/input 구현을 확인했다. Nix package 선택, default/above 배치, welcome off, native compact, bash shortcut null/completions false, zero delayed send, auto follow-up false와 workingVibe off를 설정했다.
+- 로컬 prompt 구현과 그 전용 검사를 제거했다. Usage provider는 수정하지 않았고 fast provider는 표시값과 model-select 재발행만 변경했다. Shell과 Lens는 각 스펙에 따라 독립적으로 전환했으며, 질문 package와 subagent 정책, 범용 rounded-tools는 유지했다.
+- `modules/pi/tests/powerline-integration.test.ts`는 실제 upstream component를 사용한다. 독립된 상태·입력 검사는 통과했지만 mouse 회귀 검사는 일반 assertion으로 실패를 유지한다. Width 40, padding 1, `abcdefghij`의 화면상 `d`를 클릭하면 base Pi는 x=4 → col=3, Powerline은 x=7 → col=6이다. 기대값은 col=3이다.
+- 원인은 release `index.ts`의 렌더링 경로에서 세 열의 prefix를 추가하지만 `BashModeEditor`가 상속한 Pi `handleMouse`의 좌표를 변환하지 않는 것이다. 로컬 renderer/patch 또는 다른 pin으로 우회하지 않았다. 설정에서 해당 변환을 제공하는 문서화된 옵션도 확인되지 않았다.
+- 독립 worktree에서 발견한 마우스 회귀를 부모 세션에서도 재현했다. Shell과 Lens를 함께 통합한 전체 suite는 199 pass, 1 fail이며, 유일한 실패는 수용한 마우스 회귀다. 세 패키지와 status provider, rounded-tools를 함께 로드했을 때 중복 도구·명령은 없었다. 자동 검사는 실제 TUI에서 overlay를 동시에 사용하는 검증을 대신하지 않는다.
+- 실제 terminal의 한국어 IME, mouse selection, 좁은 Herdr pane, 설치된 질문·shell overlay와 rounded-tools의 동시 표시 및 focus 복원은 미검증이다. Headless cursor-marker/input 검사나 Node/jiti 성공으로 이 조건을 대체하지 않는다. Home Manager 적용, 인증/실사용 세션 접근은 하지 않았다.
+
+재현은 unpacked npm release를 임시 디렉터리에 준비한 뒤 다음 명령으로 한다. Runner는 release를 임시 복사하고 설치된 Pi 의존성을 연결한다. Package directory를 지정하지 않으면 prerequisite 오류로 실패한다. 필요한 mouse 검사를 skip하거나 expected failure로 바꾸지 않는다.
+
+```bash
+PI_POWERLINE_PACKAGE_DIR=/path/to/unpacked/package \
+  bash modules/pi/tests/run.sh powerline-integration.test.ts
+```
+
+사용자는 마우스 위치 오류가 남아 있는 0.22.0의 통합을 승인했다. 이는 회귀가 해결됐다는 뜻이 아니며, 실패하는 검사를 skip하거나 기대 실패로 바꾸지 않는다. 실제 사용자 환경 적용은 사용자가 수행한다.

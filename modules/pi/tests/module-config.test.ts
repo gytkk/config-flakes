@@ -18,6 +18,7 @@ test("activation settings combine general settings with the explicit package sel
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
     { source: "npm:pi-lens@4.4.12", skills: [], prompts: [] },
     { source: "npm:pi-interactive-shell@0.18.0", skills: [], prompts: [] },
+    "npm:pi-powerline-footer@0.22.0",
     "npm:pi-web-access@0.46.0",
     { source: "npm:pi-subagents@0.84.0", skills: [], prompts: [] },
   ]);
@@ -36,9 +37,25 @@ test("Lens owns the canonical config and runtime installs are disabled", () => {
   expect(moduleConfig.enabled.legacyLspConfig).toBe(false);
 });
 
+test("Powerline defaults keep optional execution features off and status providers separate", () => {
+  expect(settings.powerline).toEqual({
+    preset: "default", placement: "above", welcome: false,
+    queue: { compactPromptMode: "native" }, sendDelayMs: 0, autoFollowUp: false,
+    customItems: [
+      { id: "weekly", statusKey: "codex-usage", position: "right" },
+      { id: "fast", statusKey: "codex-fast-mode", position: "right", color: "warning" },
+    ],
+  });
+  expect(settings.bashMode).toEqual({ toggleShortcut: null, completions: false });
+  expect(settings.workingVibe).toBe("off");
+  expect(settings.editorPaddingX).toBe(1);
+  expect(settings.outputPad).toBe(1);
+  expect(settings.showHardwareCursor).toBe(true);
+});
+
 test("local extension names map to their existing checkout source", () => {
   const sources = moduleConfig.enabled.extensionSources as Record<string, string>;
-  for (const name of ["codex-fast-mode.ts", "codex-usage.ts", "rounded-tools.ts", "prompt-ui", "herdr-subagents.ts", "terminal-title-reset.ts"]) {
+  for (const name of ["codex-fast-mode.ts", "codex-usage.ts", "rounded-tools.ts", "herdr-subagents.ts", "terminal-title-reset.ts"]) {
     expect(sources[`${prefix}${name}`]).toBeDefined();
   }
   expect(sources[`${prefix}pi-lsp`]).toBeUndefined();
@@ -50,6 +67,7 @@ test("local extension names map to their existing checkout source", () => {
   }
   expect(sources[`${prefix}subagent/config.json`]).toBe("/checkout/modules/pi/files/extensions/subagent/config.json");
   expect(sources[`${prefix}lsp-refactor`]).toBeUndefined();
+  expect(sources[`${prefix}prompt-ui`]).toBeUndefined();
 });
 
 test("disabling Herdr removes only its official state extension", () => {

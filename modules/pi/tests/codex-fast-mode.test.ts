@@ -27,14 +27,37 @@ describe("OpenAI fast mode", () => {
     const setStatus = mock(() => {});
     const tuiCtx = { ...ctx, mode: "tui", ui: { ...ctx.ui, setStatus } };
     handlers.get("session_start")!({}, tuiCtx);
-    expect(setStatus).toHaveBeenLastCalledWith("codex-fast-mode", "off");
+    expect(setStatus).toHaveBeenLastCalledWith("codex-fast-mode", undefined);
     await command("on", tuiCtx);
-    expect(setStatus).toHaveBeenLastCalledWith("codex-fast-mode", "on");
+    expect(setStatus).toHaveBeenLastCalledWith("codex-fast-mode", "fast");
     handlers.get("session_start")!({}, {
       ...tuiCtx,
       sessionManager: { getBranch: () => [{ type: "custom", customType: "codex-fast-mode", data: { enabled: true } }] },
     });
-    expect(setStatus).toHaveBeenLastCalledWith("codex-fast-mode", "on");
+    expect(setStatus).toHaveBeenLastCalledWith("codex-fast-mode", "fast");
+  });
+
+  test("hides the label for other providers and children without changing the saved toggle", async () => {
+    const setStatus = mock(() => {});
+    const tuiCtx = { ...ctx, mode: "tui", model: { provider: "openai" }, ui: { ...ctx.ui, setStatus } };
+    await command("on", tuiCtx);
+    tuiCtx.model.provider = "anthropic";
+    handlers.get("model_select")!({}, tuiCtx);
+    expect(setStatus).toHaveBeenLastCalledWith("codex-fast-mode", undefined);
+    tuiCtx.model.provider = "openai";
+    handlers.get("model_select")!({}, tuiCtx);
+    expect(setStatus).toHaveBeenLastCalledWith("codex-fast-mode", "fast");
+    const previous = process.env.PI_SUBAGENT_CHILD;
+    try {
+      process.env.PI_SUBAGENT_CHILD = "1";
+      handlers.get("model_select")!({}, tuiCtx);
+      expect(setStatus).toHaveBeenLastCalledWith("codex-fast-mode", undefined);
+    } finally {
+      if (previous === undefined) delete process.env.PI_SUBAGENT_CHILD;
+      else process.env.PI_SUBAGENT_CHILD = previous;
+    }
+    expect(appendEntry).toHaveBeenCalledTimes(1);
+    expect(appendEntry).toHaveBeenCalledWith("codex-fast-mode", { enabled: true });
   });
 
   test("starts disabled and resets to disabled for a new session", async () => {

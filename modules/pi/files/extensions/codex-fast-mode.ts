@@ -27,7 +27,7 @@ function supportsFastMode(ctx: ExtensionContext): boolean {
 export default function(pi: ExtensionAPI) {
   let enabled = DEFAULT_ENABLED;
   const publish = (ctx: ExtensionContext): void => {
-    if (ctx.mode === "tui") ctx.ui.setStatus(STATE_TYPE, enabled ? "on" : "off");
+    if (ctx.mode === "tui") ctx.ui.setStatus(STATE_TYPE, enabled && supportsFastMode(ctx) ? "fast" : undefined);
   };
   const setEnabled = (next: boolean, ctx: ExtensionContext): void => {
     enabled = next;
@@ -43,6 +43,8 @@ export default function(pi: ExtensionAPI) {
     }
     publish(ctx);
   });
+
+  pi.on("model_select", (_event, ctx) => publish(ctx));
 
   pi.on("before_provider_request", (event, ctx) => {
     if (!enabled || !supportsFastMode(ctx)) return;

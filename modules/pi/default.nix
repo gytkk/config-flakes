@@ -24,6 +24,7 @@ let
       skills = [ ];
       prompts = [ ];
     }
+    "npm:pi-powerline-footer@0.22.0"
     "npm:pi-web-access@0.46.0"
     {
       source = "npm:pi-subagents@0.84.0";
@@ -36,7 +37,6 @@ let
     "codex-fast-mode.ts" = mkSymlink "files/extensions/codex-fast-mode.ts";
     "codex-usage.ts" = mkSymlink "files/extensions/codex-usage.ts";
     "rounded-tools.ts" = mkSymlink "files/extensions/rounded-tools.ts";
-    "prompt-ui" = mkSymlink "files/extensions/prompt-ui";
     "phase-tasks" = mkSymlink "files/extensions/phase-tasks";
     "python-kernel" = mkSymlink "files/extensions/python-kernel";
     "session-artifacts" = mkSymlink "files/extensions/session-artifacts";
