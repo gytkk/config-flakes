@@ -50,6 +50,40 @@ describe("prompt statusline", () => {
     expect(line(80)).toContain("11%");
   });
 
+  test("centers the percentage across the entire context meter", () => {
+    const { ctx, line } = fixture();
+    const usage = ctx.getContextUsage();
+    ctx.getContextUsage = () => ({ ...usage, percent: 51 });
+    for (const width of [160, 220, 300]) {
+      const meter = /([━─]+)\s*51%(?: \/ \S+)?\s*([━─]+)/.exec(line(width));
+      expect(meter).not.toBeNull();
+      expect(Math.abs(visibleWidth(meter![1]) - visibleWidth(meter![2]))).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test("scales the filled line to the full meter width behind its centered label", () => {
+    const { ctx, line } = fixture();
+    const usage = ctx.getContextUsage();
+    for (const percent of [0, 25, 51, 75, 100]) {
+      ctx.getContextUsage = () => ({ ...usage, percent });
+      const meter = /([━─]+) (\d+%(?: \/ \S+)?) ([━─]+)/.exec(line(300))!;
+      expect(meter).not.toBeNull();
+      const leftWidth = meter[1].length;
+      const rightStart = leftWidth + meter[2].length + 2;
+      const meterWidth = rightStart + meter[3].length;
+      const filled = Math.floor(meterWidth * percent / 100);
+      for (let i = 0; i < leftWidth; i++) expect(meter[1][i]).toBe(i < filled ? "━" : "─");
+      for (let i = 0; i < meter[3].length; i++) expect(meter[3][i]).toBe(rightStart + i < filled ? "━" : "─");
+    }
+  });
+
+  test("separates the meter from background tasks with a padded divider", () => {
+    const { line } = fixture();
+    for (const width of [80, 160, 220, 300]) {
+      expect(line(width)).toMatch(/[━─%] │ \/bg \(0\)/);
+    }
+  });
+
   test("bounds real ANSI and wide text at every width, including selected tasks", () => {
     const { statuses, render } = fixture();
     for (const selected of [false, true]) {

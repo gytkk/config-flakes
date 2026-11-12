@@ -91,8 +91,19 @@ export function createStatusLine(
     const contextColor = bounded === undefined ? CLAUDE_ANSI.dim
       : bounded >= 90 ? CLAUDE_ANSI.red : bounded >= 70 ? CLAUDE_ANSI.yellow : CLAUDE_ANSI.cyan;
     const contextLabel = styleStatus(bounded === undefined ? "?%" : `${Math.floor(bounded)}%`, contextColor);
-    const filled = Math.floor((bounded ?? 0) / 10);
-    let context = styleStatus("━".repeat(filled), contextColor) + border("─".repeat(10 - filled)) + contextLabel;
+    let minimumMeterWidth = Math.max(12, visibleWidth(contextLabel) + 2);
+    const renderMeter = (meterWidth: number) => {
+      const label = meterWidth >= visibleWidth(contextLabel) + 2 ? ` ${contextLabel} ` : contextLabel;
+      const labelWidth = visibleWidth(label);
+      const leftWidth = Math.floor((meterWidth - labelWidth) / 2);
+      const rightStart = leftWidth + labelWidth;
+      const filled = Math.floor(meterWidth * (bounded ?? 0) / 100);
+      const segment = (start: number, length: number) => {
+        const used = Math.max(0, Math.min(length, filled - start));
+        return styleStatus("━".repeat(used), contextColor) + border("─".repeat(length - used));
+      };
+      return segment(0, leftWidth) + label + segment(rightStart, meterWidth - rightStart);
+    };
     const scroll = hiddenLines > 0 ? border(`↑ ${hiddenLines} more`) : "";
     const cwd = sanitizeStatusText(formatCwd(ctx.sessionManager.getCwd()));
     const branch = sanitizeStatusText(footerData.getGitBranch() ?? "");
@@ -105,9 +116,11 @@ export function createStatusLine(
       .map(([, value]) => sanitizeStatusText(value)).filter(Boolean);
     let usage = sanitizeStatusText(statuses.get("codex-usage") ?? "");
     const contentWidth = width - 2;
-    const left = () => join([location, context, scroll]);
+    const left = () => join([location, scroll]);
     const right = () => join([bg, ...extras, usage, model]);
-    const occupied = () => visibleWidth(left()) + visibleWidth(right()) + 1;
+    const surroundingWidth = () => visibleWidth(left()) + visibleWidth(right())
+      + (left() ? visibleWidth(separator) : 0) + (right() ? visibleWidth(separator) : 0);
+    const occupied = () => surroundingWidth() + minimumMeterWidth;
 
     if (occupied() > contentWidth) location = identity(Math.min(20, visibleWidth(cwd)));
     if (occupied() > contentWidth) {
@@ -116,20 +129,20 @@ export function createStatusLine(
     }
     while (occupied() > contentWidth && extras.length) extras.pop();
     if (occupied() > contentWidth) location = "";
-    if (occupied() > contentWidth) context = contextLabel;
+    if (occupied() > contentWidth) minimumMeterWidth = visibleWidth(contextLabel);
     if (occupied() > contentWidth && !selected) bg = "";
     if (occupied() > contentWidth) {
-      const spare = Math.max(0, contentWidth - visibleWidth(join([context, scroll, bg])) - 4);
+      const spare = Math.max(0, contentWidth - occupied() + visibleWidth(model));
       model = truncateToWidth(model, spare, "…");
     }
     if (occupied() > contentWidth) {
       return accent("╭") + (selected ? CURSOR_MARKER : "")
-        + truncateToWidth(join([bg, context, scroll, model]), width - 1, "");
+        + truncateToWidth(join([bg, contextLabel, scroll, model]), width - 1, "");
     }
     const rightText = right();
     const markedRight = selected ? rightText.replace(bg, CURSOR_MARKER + bg) : rightText;
-    const gap = contentWidth - visibleWidth(left()) - visibleWidth(rightText);
-    return accent("╭") + left() + border("─".repeat(gap)) + markedRight + border("─");
+    const meter = renderMeter(contentWidth - surroundingWidth());
+    return accent("╭") + join([left(), meter, markedRight]) + border("─");
   };
 }
 
