@@ -95,6 +95,8 @@ Every leaf in each template role group is required, in template order.
 Exporters derive app-specific colors from this complete context; omitted
 canonical roles do not fall back to palette colors or exporter defaults.
 
+Duplicate mapping keys are rejected in both canonical themes and overrides, including repeated scalar, mapping, or block-text entries. An ambiguous input fails before generation replaces any exports.
+
 ## Role Naming Conventions
 
 ### General naming rules

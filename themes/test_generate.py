@@ -85,6 +85,21 @@ class GenerateTest(unittest.TestCase):
         self.assertEqual(result.stdout, "")
         self.assertEqual(self.export_snapshot(), before)
 
+    def test_duplicate_theme_key_preserves_all_exports(self) -> None:
+        before = self.seed_old_exports()
+        path = self.root / "core" / "one-half-light.yaml"
+        path.write_text(
+            path.read_text().replace(
+                "variant: light", "variant: dark\n  variant: light"
+            )
+        )
+
+        result = self.run_generator("one-half-light")
+
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("duplicate mapping key: variant", result.stderr)
+        self.assertEqual(self.export_snapshot(), before)
+
     def test_later_theme_render_failure_preserves_all_exports(self) -> None:
         before = self.seed_old_exports()
         path = self.root / "overrides" / "zed" / "ayu-mirage.yaml"

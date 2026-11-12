@@ -90,6 +90,8 @@ def parse_yaml_subset(text: str) -> dict[str, Any]:
         key, rest = content.split(":", 1)
         key = key.strip()
         rest = rest.strip()
+        if key in parent:
+            raise ParseError(f"line {i + 1}: duplicate mapping key: {key}")
 
         if rest in {">", ">-", "|", "|-"}:
             block_indent = None
