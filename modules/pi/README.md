@@ -48,7 +48,7 @@ Supporting files such as `modules/pi/files/extensions/subagent/config.json` rema
 - `openai/gpt-6-astra` with `high` thinking
 - the generated `one-half-light` theme
 - a startup header without the loaded-resource listing
-- Powerline's default preset above the editor, with one-column editor and output padding (`editorPaddingX: 1`, `outputPad: 1`)
+- Powerline's default preset with a path-first custom layout and pipe separators above the editor, with one-column editor and output padding (`editorPaddingX: 1`, `outputPad: 1`)
 - the hardware terminal cursor for IME positioning
 - prompt-cache notices, with cache warming left at Pi's default `"streaming"` mode
 
@@ -259,7 +259,7 @@ Apply Home Manager and restart Pi to install the extension. To try it before app
 
 ### Prompt and cursor rendering
 
-`pi-powerline-footer@0.22.0` is the sole managed editor/footer owner. Its `default` preset places the primary status bar above the editor. It shows model, thinking, working-directory basename, Git branch and staged (`+`), unstaged (`*`), and untracked (`?`) counts, effective context usage, cache tokens, and cost/subscription information. The package owns Git querying and cache invalidation (default status TTL one second); there is no local Git polling loop. Its counting, failure presentation, responsive overflow, glyphs, and colors replace the former local renderer's conventions. At narrow widths, segments move to a secondary row or are omitted. No full-width context meter, exact quota position, `╰─` prompt, or selectable `/bg (N)` input item is retained.
+`pi-powerline-footer@0.22.0` is the sole managed editor/footer owner. Its `default` preset supplies colors and segment defaults, with a custom layout above the editor and pipe separators. The layout orders the full working-directory path (home abbreviated as `~`), Git branch and staged (`+`), unstaged (`*`), and untracked (`?`) counts, effective context usage, extension statuses, weekly quota, model, thinking, and fast mode. Cache tokens and cost/subscription information are omitted. The `right` group follows the left group rather than aligning to the terminal's right edge; the empty `secondary` group does not prevent responsive overflow. The package owns Git querying and cache invalidation (default status TTL one second); there is no local Git polling loop. Its counting, failure presentation, responsive overflow, glyphs, and colors replace the former local renderer's conventions. At narrow widths, segments move to a secondary row or are omitted. No full-width context meter, exact quota position, `╰─` prompt, or selectable `/bg (N)` input item is retained.
 
 Fast mode and CodexBar retrieval remain independent status providers. `powerline.customItems` promotes `codex-usage` and `codex-fast-mode` into dedicated items, hiding missing values and excluding them from the aggregate extension-status segment to avoid duplicates. Powerline works without either provider. Authentication, usage refresh/failure/stale handling, fast-mode payloads, child exclusion, and saved session toggles remain provider-owned.
 

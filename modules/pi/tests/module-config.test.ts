@@ -40,6 +40,12 @@ test("Lens owns the canonical config and runtime installs are disabled", () => {
 test("Powerline defaults keep optional execution features off and status providers separate", () => {
   expect(settings.powerline).toEqual({
     preset: "default", placement: "above", welcome: false,
+    separator: "pipe", path: { mode: "full" },
+    layout: {
+      left: ["path", "git", "context_pct"],
+      right: ["extension_statuses", "custom:weekly", "model", "thinking", "custom:fast"],
+      secondary: [],
+    },
     queue: { compactPromptMode: "native" }, sendDelayMs: 0, autoFollowUp: false,
     customItems: [
       { id: "weekly", statusKey: "codex-usage", position: "right" },

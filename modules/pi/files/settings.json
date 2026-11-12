@@ -75,6 +75,15 @@
   "powerline": {
     "preset": "default",
     "placement": "above",
+    "separator": "pipe",
+    "path": {
+      "mode": "full"
+    },
+    "layout": {
+      "left": ["path", "git", "context_pct"],
+      "right": ["extension_statuses", "custom:weekly", "model", "thinking", "custom:fast"],
+      "secondary": []
+    },
     "welcome": false,
     "queue": {
       "compactPromptMode": "native"

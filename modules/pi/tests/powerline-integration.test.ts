@@ -171,6 +171,16 @@ test("Powerline 0.22.0 renders provider statuses and preserves native input path
   expect(initial).not.toContain("fast");
   await command("fast", "on");
   expect(text().match(/fast/g)).toHaveLength(1);
+  ctx.ui.setStatus("layout-fixture", "extension fixture");
+  const ordered = text();
+  const items = ["~/fixture-project", "main", "272k", "extension fixture", "79%", "Fixture Model", "think:high", "fast"];
+  const positions = items.map(item => ordered.indexOf(item));
+  expect(positions.every(position => position >= 0)).toBe(true);
+  expect(positions.every((position, index) => index === 0 || position > positions[index - 1])).toBe(true);
+  expect(ordered).toMatch(/[│|]/);
+  expect(ordered).not.toContain("(sub)");
+  expect(ordered).not.toContain("cache");
+  ctx.ui.setStatus("layout-fixture", undefined);
   ctx.model = { ...ctx.model, name: "Other Model", provider: "anthropic", contextWindow: 200000 };
   await emit("model_select");
   expect(text()).toContain("Other Model");
