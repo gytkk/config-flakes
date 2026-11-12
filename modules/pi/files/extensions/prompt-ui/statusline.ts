@@ -11,6 +11,7 @@ const CLAUDE_ANSI = {
   green: "\x1b[32m",
   yellow: "\x1b[33m",
   cyan: "\x1b[36m",
+  purple: "\x1b[35m",
   dim: "\x1b[2m",
   brightOrange: "\x1b[1;33m",
 } as const;
@@ -46,7 +47,7 @@ export function createStatusLine(
     if (width < 4) return accent("╭") + border("─".repeat(width - 1));
 
     const modelParts = [accent(sanitizeStatusText(ctx.model?.id ?? "no-model"))];
-    if (ctx.model?.reasoning) modelParts.push(styleStatus(ctx.thinkingLevel ?? "off", CLAUDE_ANSI.brightOrange));
+    if (ctx.model?.reasoning) modelParts.push(styleStatus(ctx.thinkingLevel ?? "off", CLAUDE_ANSI.purple));
     if (ctx.model?.provider === "openai" && process.env.PI_SUBAGENT_CHILD !== "1" && statuses.get(STATE_TYPE) === "on") modelParts.push(styleStatus(
       "fast", CLAUDE_ANSI.brightOrange,
     ));
@@ -85,7 +86,7 @@ export function createStatusLine(
       .map(([, value]) => sanitizeStatusText(value)).filter(Boolean);
     let usage = sanitizeStatusText(statuses.get("codex-usage") ?? "")
       .replace(/^#+/, (filled) => styleStatus(filled, CLAUDE_ANSI.green));
-    const contentWidth = width - 2;
+    const contentWidth = width - 1;
     const left = () => join([location, scroll]);
     const right = () => join([...extras, usage, model]);
     const surroundingWidth = () => visibleWidth(left()) + visibleWidth(right())
@@ -108,6 +109,6 @@ export function createStatusLine(
       return accent("╭") + truncateToWidth(join([contextLabel, scroll, model]), width - 1, "");
     }
     const meter = renderMeter(contentWidth - surroundingWidth());
-    return accent("╭") + join([left(), meter, right()]) + border("─");
+    return accent("╭") + join([left(), meter, right()]);
   };
 }

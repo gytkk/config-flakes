@@ -35,10 +35,10 @@ describe("prompt statusline", () => {
     expect(line()).not.toContain("/bg");
     expect(line()).not.toContain("tokens");
     expect(line()).not.toContain("↓");
-    expect(line()).toEndWith("---------- 9% (⏳ 2026-11-05 03:00) │ test-model · high─");
+    expect(line()).toEndWith("---------- 9% (⏳ 2026-11-05 03:00) │ test-model · high");
     statuses.set("codex-fast-mode", "on");
     statuses.set("custom", "other extension");
-    expect(line()).toEndWith("test-model · high · fast─");
+    expect(line()).toEndWith("test-model · high · fast");
     expect(line()).toContain("other extension");
     statuses.set("codex-usage", "weekly unavailable (/codex-usage)");
     expect(line()).toContain("weekly unavailable");
@@ -53,16 +53,16 @@ describe("prompt statusline", () => {
     statuses.delete("codex-fast-mode");
     expect(line()).not.toContain("fast");
     statuses.set("codex-fast-mode", "off");
-    expect(line()).toEndWith("test-model · high─");
+    expect(line()).toEndWith("test-model · high");
     statuses.set("codex-fast-mode", "on");
-    expect(line()).toEndWith("test-model · high · fast─");
+    expect(line()).toEndWith("test-model · high · fast");
     ctx.model = { ...ctx.model, id: "another-model", provider: "anthropic" };
     expect(line()).toContain("another-model");
     expect(line()).not.toContain("fast");
     ctx.model.provider = "openai";
-    expect(line()).toEndWith("another-model · high · fast─");
+    expect(line()).toEndWith("another-model · high · fast");
     statuses.set("codex-fast-mode", "off");
-    expect(line()).toEndWith("another-model · high─");
+    expect(line()).toEndWith("another-model · high");
   });
 
   test.each([
@@ -80,6 +80,13 @@ describe("prompt statusline", () => {
     } else {
       expect(render(300)).not.toContain("\x1b[32m");
     }
+  });
+
+  test("colors effort purple and keeps fast orange", () => {
+    const { statuses, render } = fixture();
+    statuses.set("codex-fast-mode", "on");
+    expect(render(300)).toContain("\x1b[35mhigh\x1b[0m");
+    expect(render(300)).toContain("\x1b[1;33mfast\x1b[0m");
   });
 
   test("centers the percentage across the entire context meter", () => {
