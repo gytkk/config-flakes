@@ -348,6 +348,8 @@ home-manager switch --flake .#pylv-denim
 home-manager switch --flake .#pylv-onyx
 
 home-manager switch --flake .#pylv-sepia
+
+home-manager switch --flake .#devsisters-jari
 ```
 
 ### Build without switching
@@ -355,6 +357,33 @@ home-manager switch --flake .#pylv-sepia
 ```bash
 home-manager build --flake .#devsisters-macbook
 ```
+
+### jari workers
+
+`devsisters-jari` installs the common tools, Zsh, Git, and Neovim configuration on a Devsisters jari worker (Ubuntu on aarch64, user `jari`). A worker keeps its disk across sleep and wake, but every new worker starts without Nix or dotfiles. Run the [bootstrap script](systems/base/jari/bootstrap.sh) once per worker; rerunning it is safe:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/gytkk/config-flakes/main/systems/base/jari/bootstrap.sh | bash
+```
+
+The script installs Nix when `/nix` is missing, clones this repository to `/workspace/repos/gytkk/config-flakes` unless that checkout already exists, builds `devsisters-jari`, and activates it. Existing unmanaged files such as the stock `~/.bashrc` and `~/.profile` are kept with a `.pre-home-manager` suffix. It needs no SSH key and fetches no private input. Afterwards, apply changes with `home-manager switch --flake .#devsisters-jari` from that checkout.
+
+The checkout must stay at `/workspace/repos/gytkk/config-flakes`, where jari clones `gytkk/config-flakes`: the environment's `flakeDirectory` in `systems/inventory.nix` points there instead of the `~/development/config-flakes` default, and the Neovim and theme links resolve into it.
+
+jari starts shell tabs as `/bin/bash -l` and agents read `~/.bashrc` without a login shell, so [the jari profile](systems/base/jari/home.nix) manages bash as the entry point:
+
+- Before the interactive guard, `~/.bashrc` reorders `PATH` to jari's `/opt/jari/bin`, `/opt/jari-cli/node_modules/.bin`, and `/opt/node/bin`, then the Nix profiles, then the rest. jari's pinned agent CLIs and its `gh` wrapper therefore keep precedence over Nix packages. Zsh applies the same order.
+- Interactive login shells on a terminal hand over to the Nix-installed Zsh. A shell with `NO_ZSH_HANDOFF=1` in its environment stays in bash, and `bash` typed inside Zsh stays bash.
+- New agent sessions and new shell tabs pick up the change; running ones keep their environment.
+
+The profile deliberately leaves these to jari or off:
+
+- Claude Code, Codex, Pi, OMP, Herdr, and agent session recording. jari pins the agent CLIs under `/opt` and keeps rewriting their settings in `~/.claude` and `~/.codex`, so no agent settings, instructions, or shared skills are installed.
+- tmux. Every jari tab runs under jari's own tmux server, which reads the default tmux configuration and must match the system tmux client.
+- GitHub credentials and `~/.gitconfig`. Git uses the credential helper from jari's `/etc/gitconfig`; Home Manager only writes `~/.config/git/config`, and values jari wrote to `~/.gitconfig` take precedence.
+- `kc2aws`, `wg-cli`, and agenix secrets. A worker has neither an SSH key for the private flake inputs nor an age identity, so the OpenAI key is unavailable: `with-openai` and AI commit subjects are not installed, and Neovim's AI suggestions are manual-only and report the missing key.
+- Scheduled Nix garbage collection. The `jari` user has no systemd user session; run `nix-collect-garbage --delete-older-than 14d` when needed.
+- GUI modules (Ghostty, Zed, Windows Terminal) and the `ko_KR.UTF-8` locale, which workers do not ship; the environment uses `C.UTF-8`.
 
 ## NixOS
 

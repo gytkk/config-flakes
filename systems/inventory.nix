@@ -44,4 +44,14 @@
     profile = "devsisters";
     homeModules = [ ./base/devsisters/session-mining.nix ];
   };
+
+  # jari worker (Ubuntu on aarch64). jari clones repositories under /workspace/repos.
+  "devsisters-jari" = {
+    kind = "home-only";
+    system = "aarch64-linux";
+    username = "jari";
+    homeDirectory = "/home/jari";
+    profile = "jari";
+    flakeDirectory = "/workspace/repos/gytkk/config-flakes";
+  };
 }

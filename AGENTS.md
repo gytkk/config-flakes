@@ -93,6 +93,7 @@ secrets/secrets.nix               # Agenix recipient configuration
 Defined in `systems/inventory.nix` (single source of truth). `kind` field determines build type:
 
 - **devsisters-macbook / devsisters-macstudio**: ARM64 macOS, devsisters base, home-only
+- **devsisters-jari**: ARM64 Linux (Ubuntu jari worker), jari base, home-only. Checkout at `/workspace/repos/gytkk/config-flakes`; see [jari workers](README.md#jari-workers) before changing its shell, PATH, tmux, or agent settings
 - **pylv-denim**: x86_64 Linux/WSL, pylv base, home-only
 - **pylv-sepia**: x86_64 Linux/NixOS server, pylv base (with Disko, agenix, copyparty)
 - **pylv-onyx**: x86_64 Linux/NixOS, pylv base (with niri, DankMaterialShell, user-managed OpenClaw)
@@ -102,7 +103,8 @@ Defined in `systems/inventory.nix` (single source of truth). `kind` field determ
 1. **`systems/base/default.nix`**: Common config. core modules, standard dev packages, programs
 2. **`systems/base/devsisters/home.nix`**: vault, kc2aws, wg-cli, ruby, databricks-cli, pantry, custom scripts
 3. **`systems/base/pylv/home.nix`**: Minimal (inherits base)
-4. **`systems/base/pylv/sepia.nix`**: Home Manager additions for `pylv-sepia`; system configuration lives in `systems/hosts/pylv-sepia/configuration.nix`
+4. **`systems/base/jari/home.nix`**: Tools, shell, Git, and editor for jari workers; agent runtimes, tmux, GUI modules, private inputs, and agenix secrets stay off
+5. **`systems/base/pylv/sepia.nix`**: Home Manager additions for `pylv-sepia`; system configuration lives in `systems/hosts/pylv-sepia/configuration.nix`
 
 ### Module System
 

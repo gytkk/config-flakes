@@ -26,12 +26,15 @@ let
             url = "https://github.com/VSCodium/vscodium/releases/download/1.143.17232/VSCodium-${
               if final.stdenv.hostPlatform.isDarwin then
                 "darwin-arm64-1.143.17232.zip"
+              else if final.stdenv.hostPlatform.isAarch64 then
+                "linux-arm64-1.143.17232.tar.gz"
               else
                 "linux-x64-1.143.17232.tar.gz"
             }";
             hash =
               {
                 aarch64-darwin = "sha256-rej14Ov0fl6p4keIRPFQxo5D3vGStvi+BdAynSXsCRc=";
+                aarch64-linux = "sha256-nycK4kJWGBKs0Cvpz1wTyEjaNZs1Yyet/kS4FalTIwk=";
                 x86_64-linux = "sha256-yhiVqgQL2RoJxwnXnqx4YtjBqgI3/cJbUD3uuLzYfv0=";
               }
               .${system};
