@@ -1,6 +1,6 @@
 # Pi LSP와 AST 기능을 pi-lens로 통합
 
-상태: 구현 대기. 사용자가 선택한 통합의 스펙이며, 문서 작성 단계에서는 설정이나 설치 상태를 변경하지 않는다. 조사 기준은 2026-11-12, Pi 1.5.2, pi-lens 4.4.12다. 자동 수정과 명시적 AST apply가 연결된 upstream 제약 때문에 이 문서는 보수적인 초기 수정 정책을 별도로 명시한다.
+상태: 격리 worktree에 구현하고 Linux 검사를 실행한 검토 후보. 실제 Home Manager 적용은 하지 않았다. 기준은 2026-11-12, Pi 1.5.2, pi-lens 4.4.12다. 아래 기능 계약 중 Nix hover의 유효 응답과 Rust 실행 검증은 남아 있으며, 독립 검토 전 완료로 승인하지 않는다. 자동 수정과 명시적 AST apply가 연결된 upstream 제약 때문에 보수적인 초기 수정 정책을 유지한다.
 
 ## 목표와 완료 조건
 
@@ -79,6 +79,41 @@ uv run --no-project scripts/check-paths.py modules/pi/README.md docs/pi-extensio
 ```
 
 추가한 Lens integration 검사와 영향받은 rounded-tools 및 custom-message 검사를 실행한다. Nix formatting과 최종 configuration 검증은 `modules/pi/README.md`를 따른다. 오래된 `PI_LSP_PACKAGE_DIR` fixture가 skip되었다는 결과를 Lens 검증으로 대신하지 않는다. 서버 기능과 process 수명은 설정 snapshot만으로 검증하지 않는다.
+
+## 구현 및 검증 기록 (2026-11-12)
+
+- `modules/pi/default.nix`는 Lens 4.4.12만 LSP/AST 제공자로 선택하고 bundled skill/prompt를 제외한다. `modules/pi/files/lens.json`을 canonical machine-global 위치에 연결한다. 두 runtime install 차단 환경 변수, format/autofix/warning-fix/test/startup-scan OFF, minimal startup과 비-LSP dispatch runner 거부 목록을 실제 4.4.12 schema/loader로 확인했다.
+- Python은 `ty server` override와 Jedi fallback 거부로 유지한다. TypeScript catalog의 별도 tsserver 탐색이 Nix wrapper를 찾지 못하는 unavailable 결과를 확인한 뒤, `typescript-language-server --stdio` launcher override로 Nix가 제공하는 tsserver를 사용했다. 다른 서버 실행 파일과 `pkgs.ast-grep`는 그대로다.
+- 원래 명시한 patched source, patch, 설정, 로컬 LSP refactoring/AST 구현과 그 전용 테스트를 제거했다. 범용 rounded frame은 유지하고 옛 diagnostics parser/renderer만 제거했다. 새 integration 검사는 `modules/pi/tests/lens.test.ts`, `modules/pi/tests/fixtures/lens.mjs`, `modules/pi/tests/fixtures/lens-stalled-server.mjs`에 있다. Canonical Pi 지침과 그 Pi-only renderer hash만 의도한 기능 차이에 맞춰 갱신했다.
+
+### 실행 증거
+
+검사는 x86_64 Linux, Node 24.21.0, Bun 1.4.4, 설치된 Pi 1.5.2에서 실행했다. npm exact-release tarball의 설정 schema, configuration/environment/QA 문서, navigation/AST source와 dependency lifecycle을 읽었다. Scratch 설치의 dependency 16개, ast-grep platform binary 복사 postinstall, upstream install-selftest 12 passed / 0 failed를 확인했다. Selftest 자체는 host-provided import에서 멈추는 제한이 있으므로, 전체 extension 로드는 별도의 실제 Pi Node/jiti 검사로 확인했다. 저장소 dependency pin이나 global install은 추가하지 않았다.
+
+| 검사 | 관측 결과 |
+| --- | --- |
+| 생성 settings + Node/jiti loader | Lens 한 번, rounded-tools 한 번; 옛 LSP/AST 도구 없음; bundled skill/prompt 없음 |
+| 자동 변경/실행 | 기본 정책에서 fixture bytes 유지, test sentinel 미생성, installer/formatter/추가 analyzer 실행 없음. 읽기 전용 `npm config get prefix` 발견은 설치로 세지 않음 |
+| 프로젝트 override | Disposable `.pi-lens.json`의 autofix true가 실제 AST apply를 허용함. 이어서 CLI no-autofix가 다시 거부함. Global 기본값은 강제 정책이 아님. Format/warning-fix의 project provenance도 확인했으며, 이 fixture의 format은 CLI로 차단함 |
+| Diagnostics | 실제 edit/write hook feedback과 명시 조회; TypeScript/Go/ty/Nix의 의도적 오류 및 수정 후 clean 확인 |
+| Navigation | TypeScript/Go/ty hover·definition·references 유효 응답. Nix definition/references 유효 응답; hover는 advertised support에도 빈 결과라 유효 응답 검증 미완료 |
+| Rename | TypeScript multi-file preview/apply; preview 후 변경은 유지한 채 새 요청을 적용함. Apply 요청 중 mutation queue를 잡고 바꾼 파일은 stale로 거부하고 다른 파일 bytes 유지 |
+| Code actions / AST | 실제 TypeScript codeAction 목록; AST search/outline/replacement preview, 기본 정책의 apply 거부, package renderer의 rounded frame 및 expansion |
+| 실패 서버 | 존재하지 않는 binary는 no_server/unconfirmed, 응답하지 않는 fixture LSP는 hover timeout 및 diagnostics timedOut/unconfirmed. 0개를 clean으로 오인하지 않음 |
+| Lifecycle | 실제 SDK `/reload`, new-session 교체, quit 후 fixture가 시작한 서버 8개 모두 종료 확인. Provider turn 없이 real registered execute와 Pi hook dispatcher를 구동함 |
+| 설정 평가 | pylv-denim의 canonical Lens config와 두 install 차단 변수, old LSP/AST 설치 부재, rounded 유지 확인. `nix flake check --no-build --offline` 성공; aarch64-darwin은 host 비호환으로 생략됨 |
+
+Full suite 명령은 `PI_SUBAGENT_CHILD=0 PI_LENS_PACKAGE_DIR=/tmp/lens-migration-inspect/install/node_modules/pi-lens bash modules/pi/tests/run.sh`였고 **254 passed / 0 failed**였다. 자식 실행 환경을 그대로 상속한 첫 full suite는 parent-only UI test 54개가 실패했다. 원인을 child marker로 확인하고 테스트 프로세스에만 `PI_SUBAGENT_CHILD=0`을 지정해 통과했으며, 제품의 delegation 정책은 바꾸지 않았다. 이 설정은 실제 자식 실행을 parent로 바꾸는 우회가 아니라 mock/fixture test의 parent UI 조건이다.
+
+Focused module-config/extension-loading/rounded-tools/custom-message suite는 **28 passed / 0 failed**, settings sync는 **6 PASS**, agent-core pytest는 **37 passed**, `agent-core check`는 성공했다. Nix formatting, JSON 및 기본/추가 문서 경로 검사도 통과했다. 변경 surface를 제외한 질문, shell, prompt/Powerline, delegation, MCP, 모델, Python kernel과 server packages는 유지한다.
+
+### 미검증과 적용 경계
+
+- **필수 잔여 증거:** Nix hover는 빈 응답이어서 유효 hover 기능을 확인하지 못했다. Rust는 PATH의 rustup shim에서 rust-analyzer 실행 파일을 찾지 못했으며, component를 설치하지 않았다. 둘을 검증 완료로 표시하지 않는다.
+- JSON/JSONC, CSS/SCSS/Less, HTML/HTM, Lua, Bash, Terraform/tfvars, YAML, Markdown, TOML 등 나머지 route는 effective catalog와 거부 목록을 대조했지만 실제 서버 질의는 하지 않았다. `.zsh`는 설치하지 않은 shuck으로 바뀌며 `.markdown`은 catalog route가 없다. 전체 route/root 차이는 `modules/pi/README.md`에 기록했다.
+- Fixture는 provider 호출을 하지 않고 scratch auth/models 경로만 사용한다. 최종 harness는 process.env 전체 상속 대신 PATH/LANG과 명시적인 격리 HOME/agent/Lens/cache 변수만 전달하고, Pi offline 및 `allowModelNetwork: false`를 명시한다. 기존 rustup toolchain 경로는 실행 가능 여부의 읽기 전용 확인에만 사용한다. Project trust yes는 테스트가 만든 disposable settings/project에만 설정하며, 실제 trust 설정을 수정하지 않는다.
+- `effective_config`는 값이 아닌 provenance를 보고하며, 4.4.12에서는 runtime에서 무시할 global-only project 입력도 project 출처로 표시할 수 있다. Snapshot만으로 강제 정책이나 실행을 검증했다고 주장하지 않는다. Private project 설정은 스캔하지 않았으므로 사용자 적용 전 scoped 정책 충돌 확인이 남는다.
+- macOS, 실제 대화형 사용자의 TUI 조작, provider가 수행하는 실제 모델 turn과 Home Manager 적용은 검증하지 않았다. Independent reviewer의 승인과 필요한 언어 증거가 남는다. 빌드, deploy, push 또는 live server/cache 정리는 하지 않았다.
 
 ## 적용과 복구
 

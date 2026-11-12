@@ -11,13 +11,13 @@ let
   cfg = config.modules.pi;
   agentCoreOutput = import ../../agent-core/nix/render.nix { inherit pkgs; } { runtime = "pi"; };
   mkSymlink = path: config.lib.file.mkOutOfStoreSymlink "${flakeDirectory}/modules/pi/${path}";
-  lspExtension = import ./extensions/pi-lsp.nix { inherit pkgs; };
 
   extensionPackages = [
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0"
     {
-      source = "npm:pi-lsp@0.1.7";
-      extensions = [ ]; # Keep npm dependencies; load only the patched local extension below.
+      source = "npm:pi-lens@4.4.12";
+      skills = [ ];
+      prompts = [ ];
     }
     {
       source = "npm:pi-interactive-shell@0.18.0";
@@ -36,11 +36,9 @@ let
     "codex-fast-mode.ts" = mkSymlink "files/extensions/codex-fast-mode.ts";
     "codex-usage.ts" = mkSymlink "files/extensions/codex-usage.ts";
     "rounded-tools.ts" = mkSymlink "files/extensions/rounded-tools.ts";
-    "pi-lsp" = "${lspExtension}/extensions";
     "prompt-ui" = mkSymlink "files/extensions/prompt-ui";
     "phase-tasks" = mkSymlink "files/extensions/phase-tasks";
     "python-kernel" = mkSymlink "files/extensions/python-kernel";
-    "ast-transform" = mkSymlink "files/extensions/ast-transform";
     "session-artifacts" = mkSymlink "files/extensions/session-artifacts";
     "agent-hub" = mkSymlink "files/extensions/agent-hub";
     "herdr-subagents.ts" = mkSymlink "files/extensions/herdr-subagents.ts";
@@ -86,6 +84,12 @@ in
       pkgs.ast-grep
     ];
 
+    # Nix supplies binaries; Lens must not install servers or analysis tools.
+    home.sessionVariables = {
+      PI_LENS_DISABLE_LSP_INSTALL = "1";
+      PI_LENS_DISABLE_TOOL_INSTALL = "1";
+    };
+
     home.file = extensionFiles // {
       ".pi/agent/AGENTS.md".source = "${agentCoreOutput}/AGENTS.md";
       ".pi/agent/APPEND_SYSTEM.md".source = "${agentCoreOutput}/APPEND_SYSTEM.md";
@@ -93,7 +97,7 @@ in
       ".pi/agent/agents/reviewer.md".source = mkSymlink "agents/reviewer.md";
       ".pi/agent/agents/worker.md".source = mkSymlink "agents/worker.md";
       ".pi/agent/interactive-shell.json".source = mkSymlink "files/interactive-shell.json";
-      ".pi/agent/lsp.json".source = mkSymlink "files/lsp.json";
+      ".pi-lens/config.json".source = mkSymlink "files/lens.json";
       ".pi/agent/mcp.json".source = mkSymlink "files/mcp.json";
       ".pi/agent/models.json".source = mkSymlink "files/models.json";
       ".pi/web-search.json".source = mkSymlink "files/web-search.json";

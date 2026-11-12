@@ -28,6 +28,9 @@ let
     {
       settings = builtins.fromJSON (builtins.readFile settingsPath);
       interactiveShellSource = config.home.file.".pi/agent/interactive-shell.json".source;
+      sessionVariables = config.home.sessionVariables;
+      lensConfigSource = config.home.file.".pi-lens/config.json".source;
+      legacyLspConfig = builtins.hasAttr ".pi/agent/lsp.json" config.home.file;
       extensionSources = lib.mapAttrs (_: file: file.source) (
         lib.filterAttrs (name: _: lib.hasPrefix ".pi/agent/extensions/" name) config.home.file
       );

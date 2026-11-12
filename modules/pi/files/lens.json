@@ -1,0 +1,50 @@
+{
+  "lsp": {
+    "enabled": true,
+    "serverOverrides": {
+      "python": { "command": ["ty", "server"] },
+      "typescript": { "command": ["typescript-language-server", "--stdio"] }
+    },
+    "disabledServers": ["python-jedi", "opengrep", "ast-grep", "zizmor", "typos", "fallow"]
+  },
+  "format": { "enabled": false },
+  "autofix": { "enabled": false },
+  "actionableWarnings": { "enabled": false, "autoFix": { "enabled": false } },
+  "tests": { "enabled": false },
+  "startup": { "mode": "minimal", "scans": { "enabled": false } },
+  "opengrep": { "enabled": false },
+  "astGrep": { "enabled": false },
+  "zizmor": { "enabled": false },
+  "typos": { "enabled": false },
+  "fallow": { "enabled": false },
+  "knip": { "enabled": false },
+  "jscpd": { "enabled": false },
+  "madge": { "enabled": false },
+  "gitleaks": { "enabled": false },
+  "govulncheck": { "enabled": false },
+  "deadCode": { "enabled": false },
+  "complexity": { "enabled": false },
+  "readGuard": { "enabled": false },
+  "contextInjection": { "requirePreExistingFixes": false },
+  "tools": {
+    "analyze": { "enabled": false },
+    "project_scan": { "enabled": false },
+    "rebuild": { "enabled": false },
+    "project_report": { "enabled": false },
+    "module_report": { "enabled": false }
+  },
+  "dispatch": {
+    "disabledRunners": [
+      "ast-grep-napi", "actionlint",
+      "biome-check-json", "cpp-check", "credo", "cue-vet", "dart-analyze",
+      "detekt", "dotnet-build", "elixir-check", "eslint", "fact-rules",
+      "gleam-check", "go-vet", "golangci-lint", "hadolint", "helm-lint",
+      "helm-render", "htmlhint", "javac", "ktlint", "markdownlint", "mypy",
+      "oxlint", "php-lint", "phpstan", "prisma-validate", "psscriptanalyzer",
+      "pyright", "rubocop", "ruff-lint", "rust-clippy", "spotbugs", "shellcheck",
+      "fish-indent", "shfmt", "spellcheck", "sqlfluff", "stylelint", "swiftlint",
+      "taplo", "terragrunt", "tflint", "trivy-config", "vale", "tree-sitter",
+      "yamllint", "zig-check"
+    ]
+  }
+}

@@ -16,7 +16,7 @@ test("activation settings combine general settings with the explicit package sel
   expect(general).toEqual(baseSettings);
   expect(packages).toEqual([
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
-    { source: "npm:pi-lsp@0.1.7", extensions: [] },
+    { source: "npm:pi-lens@4.4.12", skills: [], prompts: [] },
     { source: "npm:pi-interactive-shell@0.18.0", skills: [], prompts: [] },
     "npm:pi-web-access@0.46.0",
     { source: "npm:pi-subagents@0.84.0", skills: [], prompts: [] },
@@ -30,15 +30,22 @@ test("interactive shell uses managed lean, deferred, local-only configuration", 
   expect(shellConfig).toEqual({ defer: true, toolSchema: "lean", jev: { enabled: false } });
 });
 
-test("local extension names map to their existing checkout or patched source", () => {
+test("Lens owns the canonical config and runtime installs are disabled", () => {
+  expect(moduleConfig.enabled.sessionVariables).toEqual({ PI_LENS_DISABLE_LSP_INSTALL: "1", PI_LENS_DISABLE_TOOL_INSTALL: "1" });
+  expect(moduleConfig.enabled.lensConfigSource).toBe("/checkout/modules/pi/files/lens.json");
+  expect(moduleConfig.enabled.legacyLspConfig).toBe(false);
+});
+
+test("local extension names map to their existing checkout source", () => {
   const sources = moduleConfig.enabled.extensionSources as Record<string, string>;
   for (const name of ["codex-fast-mode.ts", "codex-usage.ts", "rounded-tools.ts", "prompt-ui", "herdr-subagents.ts", "terminal-title-reset.ts"]) {
     expect(sources[`${prefix}${name}`]).toBeDefined();
   }
-  expect(sources[`${prefix}pi-lsp`]).toMatch(/^\/nix\/store\/[^/]+-pi-lsp-refactor-0\.1\.7\/extensions$/);
+  expect(sources[`${prefix}pi-lsp`]).toBeUndefined();
+  expect(sources[`${prefix}ast-transform`]).toBeUndefined();
   expect(sources[`${prefix}herdr-agent-state.ts`]).toBe("/herdr/src/integration/assets/pi/herdr-agent-state.ts");
   for (const [target, source] of Object.entries(sources)) {
-    if (target === `${prefix}pi-lsp` || target === `${prefix}herdr-agent-state.ts`) continue;
+    if (target === `${prefix}herdr-agent-state.ts`) continue;
     expect(source).toBe(`/checkout/modules/pi/files/extensions/${target.slice(prefix.length)}`);
   }
   expect(sources[`${prefix}subagent/config.json`]).toBe("/checkout/modules/pi/files/extensions/subagent/config.json");

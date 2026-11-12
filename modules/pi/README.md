@@ -12,7 +12,7 @@ symlinks.
 | `modules/pi/files/settings.json` and `modules/pi/default.nix` | `~/.pi/agent/settings.json` | General settings and package selection merged into a device-local writable file |
 | `files/web-search.json` | `~/.pi/web-search.json` | Web Access defaults |
 | `modules/pi/files/interactive-shell.json` | `~/.pi/agent/interactive-shell.json` | Lean, on-demand shell tools; semantic transmission disabled |
-| `files/lsp.json` | `~/.pi/agent/lsp.json` | LSP server routes and diagnostics settings |
+| `modules/pi/files/lens.json` | `~/.pi-lens/config.json` | Lens policy and LSP launcher overrides |
 | `files/mcp.json` | `~/.pi/agent/mcp.json` | Native MCP server configuration |
 | `modules/pi/files/models.json` | `~/.pi/agent/models.json` | Context-window overrides for the configured OpenAI chat models |
 | `agent-core/rules/` and `agent-core/adapters/pi.md` | `~/.pi/agent/AGENTS.md` | Generated shared and Pi-specific instructions |
@@ -39,7 +39,7 @@ The module also installs:
 - `extensionPackages` lists Pi package sources, version pins, and resource filters in Pi's settings format. It supplies the generated `packages` setting; do not duplicate that key in `modules/pi/files/settings.json`.
 - `localExtensions` maps installed extension names to checkout-backed or patched sources. Home Manager creates their links under `~/.pi/agent/extensions/`. The conditional Herdr state integration is declared beside this list.
 
-Supporting files such as `modules/pi/files/extensions/subagent/config.json` remain separate from the extension entry points. `modules/pi/extensions/pi-lsp.nix` owns the LSP fetch and patch implementation; the selection lists show both its local entry point and the npm dependency package whose original extension is disabled. These lists do not enumerate Pi's built-in extensions or resources added by project settings or command-line arguments.
+Supporting files such as `modules/pi/files/extensions/subagent/config.json` remain separate from the extension entry points. Lens loads only from its pinned npm package; there is no local LSP or AST implementation or patched-source loader. These lists do not enumerate Pi's built-in extensions or resources added by project settings or command-line arguments.
 
 ## Main settings
 
@@ -92,8 +92,8 @@ The `extensionPackages` list in `modules/pi/default.nix` is intentionally versio
 | Package | Version | Purpose |
 | --- | --- | --- |
 | `@juicesharp/rpiv-ask-user-question` | `2.15.0` | Structured user questions |
-| `pi-lsp` | `0.1.7` | Lazy language-server diagnostics and navigation |
 | `pi-interactive-shell` | `0.18.0` | Interactive PTY overlay, background dispatch, and completion notifications |
+| `pi-lens` | `4.4.12` | LSP diagnostics/navigation, semantic rename, AST search and replacement preview |
 | `pi-web-access` | `0.46.0` | Web search, source checks, and content fetching |
 | `pi-subagents` | `0.84.0` | Foreground-first delegated Pi sessions |
 
@@ -284,11 +284,11 @@ Pi renders native image attachments below the text frame. Custom renderers that 
 
 The extension also frames every displayed custom message, including background Bash output/completion, subagent results and notices, web-search messages, and future custom message types. It wraps the existing renderer (or Pi's default Markdown renderer) rather than replacing the message body, so custom controls, links, expansion, and explicit inner colors remain intact. Assistant/user messages, user-entered shell commands, dialogs, and custom entries registered through `registerEntryRenderer` are separate surfaces and are not changed.
 
-Both `lsp_diagnostics` calls and automatic `pi-lsp-diagnostics` notices use this frame. They collapse to two content rows: the tool name and path, then severity counts and an expansion hint. Server availability warnings retain their reason instead of being presented as a clean result. `Ctrl+O` (or the configured tool-expansion key) reveals the received diagnostic text; upstream omissions remain labeled as additional diagnostics. Narrow panes truncate the summary instead of wrapping it. Display compaction does not change tool results, stored notice data, or model context.
+Lens owns its tool and diagnostic rendering. The generic frame delegates to Lens's compact renderer and preserves expanded results; no legacy diagnostics payload parser or dedicated notice renderer remains. Missing servers and unconfirmed diagnostics retain their upstream explanation, not a fabricated clean summary.
 
 The local `packages/apps/pi/message-renderer-wrappers.patch` adds `pi.registerMessageRendererWrapper(wrapper)`. Its TUI-only callback receives `(component, message, options, theme)` and returns a component. Wrappers run after the original renderer or its default fallback, in extension load order and then registration order. Expansion, theme changes, and history restoration rebuild the wrapped component. A throwing wrapper shows a warning and preserves the preceding component; the hook does not alter session data, model context, or non-TUI output.
 
-Apply Home Manager to install the patched Pi package and the updated `modules/pi/lsp-refactor.patch`, then restart Pi. `/reload` cannot load a package-level API change. Until the patched Pi is installed, this extension retains tool/LSP frames and shows an upgrade warning; other custom messages keep their prior appearance. The patch removes pi-lsp's original notice renderer so this extension is the sole renderer for that message type; `/reload` alone cannot replace the previously installed patch. Run `bash modules/pi/tests/run.sh rounded-tools.test.ts lsp-diagnostics-rendering.test.ts custom-message-frames.test.ts` to check the installed Pi renderers, compact diagnostics and expansion, mouse coordinates and file links, narrow panes, theme changes, image placement, and Node/jiti discovery. For a live check, expand a `read` result, inspect an `edit` diff and a codemode result, and confirm that image attachments remain below the frame.
+Apply Home Manager to install the patched Pi package, then restart Pi. `/reload` cannot load a package-level API change. On older Pi, tool frames remain available and an upgrade warning explains why custom messages are not framed. Run `bash modules/pi/tests/run.sh rounded-tools.test.ts custom-message-frames.test.ts` for generic rendering, expansion, links, mouse coordinates, narrow panes, theme changes, and image placement. The Lens integration test also renders a real package replacement preview inside the frame.
 
 ## Background shell tasks
 
@@ -324,100 +324,70 @@ PI_INTERACTIVE_SHELL_PACKAGE_DIR=/path/to/pi-interactive-shell \
 
 The Linux test uses real PTYs, disposable HOME/agent/project directories, package-generated notifications, and native overlay input/rendering, without a model or external semantic service. It checks quiet dispatch through actual success/failure exits, input, takeover/attach/stop, reload and replacement cleanup, native bash results, rounded frames, and artifact boundaries. The test explicitly skips without the package prerequisite; a skip is not migration completion. macOS and user Home Manager application require separate verification.
 
-## LSP diagnostics
+## Lens: diagnostics, navigation, and AST
 
-`pi-lsp` starts a configured language server only after a matching file is
-written, edited, or passed to an LSP navigation tool. After a successful
-built-in `edit` or `write`, diagnostics for that file are appended to the tool
-result so the model can correct problems in the same turn. The package also
-provides `lsp_diagnostics`, `lsp_hover`, `lsp_definition`, `lsp_references`,
-and `lsp_symbols` tools.
+`npm:pi-lens@4.4.12` replaces patched pi-lsp, the local semantic-refactoring implementation and the local AST extension. It loads once through the package manifest; bundled skills and prompts are filtered out. Use `pi_lens_activate_tools` when the package's situational navigation/AST tools are inactive. Nix still supplies all server binaries through `modules/lsp/default.nix` and retains `pkgs.ast-grep`. No server package, Pi version, or other extension dependency is changed.
 
-`files/lsp.json` configures the following servers from `modules/lsp`, plus
-`rust-analyzer` installed in the active rustup toolchain. The LSP module also installs Pyright for other consumers, but Pi's Python route uses only `ty`:
+### Policy and configuration ownership
 
-- `nixd`, `gopls`, and `typescript-language-server`
-- the JSON, CSS, and HTML servers from `vscode-langservers-extracted`
-- `lua-language-server`, `bash-language-server`, and `terraform-ls`
-- `ty`, `yaml-language-server`, `marksman`, and `taplo`
-- `rust-analyzer`
+`modules/pi/files/lens.json` is linked to the canonical machine-global `~/.pi-lens/config.json`, with server configuration under `lsp`. The old agent-directory LSP configuration is no longer installed. Lens owns connections, root discovery, diagnostics, tool schemas, and rendering; there is no compatibility wrapper for old names or preview tokens.
 
-Server processes are scoped by configured project root markers and stop when
-the Pi session shuts down. Generated output, dependency directories, and
-language-specific build directories are excluded where applicable. Missing
-binaries produce diagnostics warnings instead of causing Pi startup to fail.
+The module exports `PI_LENS_DISABLE_LSP_INSTALL=1` and `PI_LENS_DISABLE_TOOL_INSTALL=1`. These stop Lens runtime installs, not Pi's npm package installation or npm dependency lifecycle scripts. The exact release contains prebuilt JavaScript and bundled grammars; its dependencies include ast-grep CLI/N-API native platform packages. The registry install does not run Lens's Git-source `prepare` build/grammar download. The inspected dependency postinstall copies the packaged ast-grep platform binaries. The isolated Linux install/self-test exercised that script and native binary, not a global install.
 
-LSP output is targeted feedback, not the authoritative project check. Continue
-to run the repository's formatter, tests, type checker, or build before
-finishing a change. `pi-lsp` is a third-party package that runs configured
-binaries with the permissions of the Pi process, so update its version pin only
-after reviewing the new source and release notes.
+Automatic format, autofix, warning autofix, tests, startup scans, auxiliary scanners and unrelated analysis tools are off. Non-LSP dispatch runners are explicitly denied, leaving the LSP runner; startup is minimal. The list is tied to 4.4.12 and must be audited on a Lens upgrade. Lens's new read-before-edit monitor is not enabled as an additional permission policy; ordinary Pi approval and project trust remain in force. Lens may still emit its own advisory notices. Diagnostics and explicit tools are not a substitute for repository checks.
+
+**Machine defaults are not enforcement.** Nearest project settings can override `format.enabled`, `autofix.enabled`, and `actionableWarnings.autoFix.enabled` in both directions. Before adopting Lens in a project, inspect that project's scoped configuration and resolve conflicts before editing. No private projects were scanned during this migration. Explicit `--no-autoformat --no-autofix` flags win over project mutation settings; they do not disable semantic rename. Do not enable autofix to regain AST apply without separate approval. `tests.enabled` and startup controls are global-only runtime controls. `effective_config` reports provenance, not values or proof of runtime enforcement (4.4.12 can report a project source even for a global-only input). Project trust gates launcher overrides; it is not a sandbox.
+
+### Diagnostics and routes
+
+Successful edit/write calls receive Lens feedback. For an explicit fresh file query use `lens_diagnostics({ path, source: "lsp" })`. A missing, silent, or timed-out server is unavailable/unconfirmed, **not clean**, even when an upstream tool result has `isError: false`. Review its text and details. Navigation uses `lsp_navigation({ operation, path, line, character })`; lines and character offsets are **one-based**. Lens subtracts one for LSP coordinates; for these UTF-16 servers, character offsets count UTF-16 code units, not bytes. Use the loaded schema rather than the removed tools' zero-based parameters.
+
+| Former route | Lens catalog / managed difference |
+| --- | --- |
+| Nix | `nix` / nixd; catalog seeks flake.nix, unlike the old flake-or-Git markers |
+| Go | `go` / gopls; workspace-priority go.work, go.mod/go.sum, then Git |
+| TS/JS, including JSX/TSX and module suffixes | `typescript`; launcher override uses Nix's typescript-language-server wrapper and its bundled tsserver instead of Lens's project/managed tsserver discovery |
+| Python and stubs | `python`; launcher override is `ty server`, with Jedi fallback denied; Pyright remains installed for other consumers |
+| JSON/JSONC, CSS/SCSS/Less, HTML/HTM | `json`, `css`, `html`; existing vscode servers, catalog package/config roots with fallback |
+| Lua | `lua` / lua-language-server; catalog roots |
+| Shell | `bash` handles sh/bash; zsh now routes to `shuck`, **not supplied here**, rather than incorrectly treating zsh as Bash |
+| Terraform / tfvars | `terraform` / terraform-ls; Terraform lock/directory markers, catalog fallback |
+| YAML | `yaml` / yaml-language-server; yamllint/pyproject then Git roots |
+| Markdown | `marksman`; md (and upstream mdx) supported; old `.markdown` suffix has **no catalog route** |
+| TOML | `toml` / taplo; pyproject/Cargo/taplo then Git roots |
+| Rust | `rust` / rust-analyzer from the active toolchain; needs Cargo.toml, not merely Git or a detached file |
+
+The remaining built-in catalog stays upstream-owned; this is not an allowlist of all languages Lens can recognize. Root, dialect, exclusion and timing policies are not identical to the removed per-server configuration. No new language-server binary is installed to fill the zsh or other gaps.
 
 ### Semantic rename and code actions
 
-`lsp_rename`, `lsp_code_actions`, and `lsp_apply_edit` are available by default,
-like the existing LSP navigation tools. No slash command or enable step is needed:
-ask for a refactoring directly, review the returned diff, then authorize apply.
-Tool definitions are always available to the model; they add no prompt snippets
-or guidelines. Language servers still start only when needed. All positions use
-**zero-based lines and UTF-16 character offsets**, matching the navigation tools.
+Use `lsp_navigation` with `operation: "rename"`, `newName` and `apply: false` for an explicitly requested rename. Its default text preview summarizes affected files and edit counts; `view: "json"` exposes the edit envelope for review. Only after review and authorization use `apply: true`. Apply requests the server **again**: there is no single-use preview ID, complete stored-diff guarantee, or byte-fixed preview transaction. Re-preview after intervening changes. The isolated TypeScript test confirmed that a change between preview and apply is retained and apply succeeds; a concurrent change during the apply request is refused as stale before mutation. This is narrower than the old snapshot contract, not equivalent protection.
 
-- `lsp_rename({ path, line, character, newName })` uses the server's rename
-  preparation when supported and returns a multi-file preview, not a mutation.
-- `lsp_code_actions({ path, line, character, endLine?, endCharacter?, only? })`
-  lists actions at a range. The end defaults to the start; `only` accepts LSP
-  kinds such as `quickfix` or `source.organizeImports`.
-- `lsp_code_actions({ actionId })` resolves a listed action when necessary and
-  previews its edit.
-- `lsp_apply_edit({ previewId })` applies exactly that preview. Tokens are
-  in-memory, session-local, single-use, and cleared on session replacement,
-  shutdown, or reload. Listing actions replaces the previous action list.
-  Only the latest eight previews are retained.
+`operation: "codeAction"` lists actions. It does not reproduce the removed select/resolve/preview-ID/apply workflow, and `apply: true` does not turn that operation into an action executor. Apply approved changes through ordinary edits or an editor. Upstream `executeCommand` and `rename_file` existence does not grant permission to run server commands or move files; those require separate authorization.
 
-Preview does not write files. Apply locks affected files using Pi's shared
-mutation queue, checks file identity/content and available document versions,
-then stages replacements preserving file modes. A stale file rejects the whole
-edit before writing. Failed writes attempt guarded rollback without overwriting
-subsequent user edits. External editors do not share these locks: there is still
-a final check-to-rename race, and a process crash is not a cross-file transaction.
-Successful edits synchronize already-open documents on the existing LSP clients.
+### AST contract and functional reductions
 
-Only UTF-16 text edits to existing UTF-8 files inside the selected server's
-project root are supported. Invalid/overlapping ranges, symlink escapes,
-unsupported server capabilities, and mixed resource operations are rejected.
-Servers such as gopls can report version zero for unopened on-disk documents;
-these use disk snapshot checks rather than a client document version.
-Command-bearing actions are listed as unavailable: executing arbitrary server
-commands cannot guarantee a side-effect-free preview, even when an action also
-contains an edit. File creation, deletion, and file moves are not supported.
-Use the editor for these operations. Previews over 40 KB are refused rather than
-applying an edit whose complete diff was not displayed.
+Use `ast_grep_search`, `ast_grep_outline`, and `ast_grep_replace` with explicit, bounded `paths`. Replacement takes `pattern`, `rewrite`, `lang`, and `apply: false`. It matches syntax, not symbol identity. Unlike the removed explicit-file-only API, Lens also accepts directory/glob scopes, so bound the request deliberately.
 
-The implementation is in `modules/pi/files/extensions/lsp-refactor/`.
-`modules/pi/lsp-refactor.patch` adds the refactoring interface to the **same**
-manager/client pool used by pi-lsp's existing diagnostics and navigation.
-`modules/pi/extensions/pi-lsp.nix` fetches and patches immutable pi-lsp 0.1.7 source;
-the npm package remains pinned in `modules/pi/default.nix` for its
-runtime dependencies, with its original extension disabled to prevent duplicate
-servers and tool registrations. Update both pins and revalidate the patch when
-upgrading pi-lsp. No installed npm source is modified.
+**AST apply is disabled in this initial migration.** 4.4.12 refuses `ast_grep_replace({ ..., apply: true })` under `autofix.enabled: false`, even after a preview. Its preview's generic suggestion to use apply does not override policy. Use approved ordinary edits or an editor instead. The old `ast_apply`/`ast_discard`, single-use token, exact stored bytes and session-local snapshot guarantees are gone. Do not add a compatibility layer or patch Lens to restore them.
 
-Apply Home Manager and restart Pi to install the patched extension and disable the original together. `/reload` alone does not install this change. On first startup, allow Pi's normal package installation to finish before using LSP.
+### Applying and verifying
 
-Run `bash modules/pi/tests/run.sh lsp-workspace-edit.test.ts lsp-refactor.test.ts` for filesystem safety and tool-flow tests. These tests use temporary files and an injected backend to cover preview/apply, action resolution, stale edits, session invalidation, cancellation, and synchronization failures. A live smoke check should rename a symbol used in another file, apply an organize-imports action, inspect the result through `lsp_hover`, and verify that editing a file between preview and apply rejects the stale edit.
+Close Pi, apply Home Manager yourself, refresh the shell environment and start a new Pi session. Do not deploy old LSP/AST and Lens together. Existing unmanaged Lens config can conflict with the new managed link: review/back up it before switching; do not overwrite or delete user state automatically. `/reload` cannot install a changed package selection, config link or environment. Rollback restores this migration's removed sources and package/config declarations from Git without reverting independent question, shell or prompt changes. No Home Manager switch or live-server/cache cleanup was performed by the migration tests.
+
+See [the migration specification](../../docs/pi-extension-migrations/lens.md) for validation evidence and remaining host/language gaps.
 
 ## Task, analysis, and artifact extensions
 
-These four extensions have independent entry points and do not replace Pi's built-in tools or its JavaScript `codemode`. Home Manager installs their directories together with Python and ast-grep. Apply Home Manager, then restart Pi; `/reload` alone does not install newly declared extension paths or binaries.
+These three extensions have independent entry points and do not replace Pi's built-in tools or its JavaScript `codemode`. Home Manager installs their directories together with Python (ast-grep remains available for Lens and direct use). Apply Home Manager, then restart Pi; `/reload` alone does not install newly declared extension paths or binaries.
 
 | Extension | Model tools | Interactive commands | Purpose |
 | --- | --- | --- | --- |
 | `modules/pi/files/extensions/phase-tasks/` | `task_list` | `/tasks` | Phase-aware work tracking with current-branch restoration |
 | `modules/pi/files/extensions/python-kernel/` | `python_cell` | `/python status`, `/python reset` | Persistent Python cells, captured output, and images |
-| `modules/pi/files/extensions/ast-transform/` | `ast_search`, `ast_preview`, `ast_apply`, `ast_discard` | Model tools | Structural search and previewed, snapshot-checked rewrites |
 | `modules/pi/files/extensions/session-artifacts/` | `artifact` | `/artifacts` | Durable text snapshots with listing, paging, and search |
 
-Python execution has the same filesystem and network permissions as Pi; it is not a sandbox. AST previews require an explicit scope and do not modify files until applied. Artifact storage is local and can retain sensitive command output; register only material appropriate to keep with the session.
+Python execution has the same filesystem and network permissions as Pi; it is not a sandbox. Lens AST policy is described above. Artifact storage is local and can retain sensitive command output; register only material appropriate to keep with the session.
 
 ### Phased tasks
 
@@ -431,12 +401,6 @@ Snapshots belong to the current session branch and restore on resume, fork, relo
 
 Python exceptions fail the tool while preserving earlier mutations. Timeout, cancellation, process failure, reset, session replacement, and tree navigation discard the namespace; interrupted code is never replayed. Resume and reload start fresh rather than reconstructing historical Python state. Text output and images are bounded; discarded excess text is not an artifact. Python can allocate memory, access files/network, and launch processes with the user's privileges. Its file writes do not participate in Pi's mutation queues.
 
-### Structural transformations
-
-`ast_search` and `ast_preview` require `files`, `language`, and `pattern`; preview also requires `replacement`. Scope is 1–32 explicit existing UTF-8 files inside the working directory, not directories or globs. Search reports zero-based byte ranges and one-based lines/byte columns. Rewrites use ast-grep syntax captures, not LSP symbol identity.
-
-Preview leaves files untouched and returns a complete diff plus a token. `ast_apply` takes `previewId`, locks the scoped files, checks every snapshot, and applies the stored replacement bytes without rerunning the query. Tokens are single-use even on failure, expire after ten minutes, and are discarded on session navigation, reload, or cancellation. `ast_discard` rejects an unused proposal. Symlinks, hardlinks, stale files, overlapping edits, unsupported encoding, and oversized scopes are rejected. Guarded rollback avoids overwriting detected external edits, but external editors do not share Pi's locks: the final check-to-rename race and process crashes prevent cross-file transactional guarantees.
-
 ### Retained text artifacts
 
 `artifact` provides `register`, `list`, `read`, and literal `search`. Registration takes an explicit `path` and optional title/line range; later reads use the registered ID. Paging returns `nextOffset` and `nextColumn` so long Unicode lines can be continued. `/artifacts` opens the selector and read-only content viewer; `/artifacts register PATH`, `read ID [OFFSET]`, `search ID TEXT`, and `help` also work. The registration command treats its remaining argument as the path, without shell quoting.
@@ -445,13 +409,13 @@ Snapshots are private local copies under Pi's agent directory in `session-artifa
 
 Automatic retention recognizes Pi 1.5.2's native `bash` and `codemode` full-output metadata only after checking builtin provenance and private temporary-file paths. Interactive-shell logs are external and require explicit registration. Free-text paths are never scraped, and other directories are not scanned.
 
-Run the focused feature checks with Python and ast-grep on PATH:
+Run the focused feature checks with Python on PATH:
 
 ```bash
-bash modules/pi/tests/run.sh phase-tasks.test.ts python-kernel.test.ts ast-transform.test.ts session-artifacts.test.ts
+bash modules/pi/tests/run.sh phase-tasks.test.ts python-kernel.test.ts session-artifacts.test.ts
 ```
 
-For an interactive smoke check, use a disposable directory: initialize and advance tasks, inspect `/tasks` at narrow width, evaluate a variable across two Python cells, preview and apply a two-file structural replacement, then register a log and read it after deleting its source. `/python reset` must clear the variable, and an external edit between AST preview and apply must reject the stale proposal before changing another target.
+For an interactive smoke check, use a disposable directory: initialize and advance tasks, inspect `/tasks` at narrow width, evaluate a variable across two Python cells, register a log and read it after deleting its source. `/python reset` must clear the variable.
 
 ## MCP integration
 
@@ -478,14 +442,14 @@ The test runner requires Nix, Bun, Node.js, jq, ripgrep, and an installed Pi mat
 bash modules/pi/tests/run.sh module-config.test.ts extension-loading.test.ts subagent-profiles.test.ts
 ```
 
-The suite exercises native Node/jiti discovery for the prompt UI. The patched LSP loading check additionally requires an unmodified, already installed pi-lsp package at the configured version, with its npm dependencies available in the parent node_modules directory. Enable that check explicitly:
+The suite exercises native Node/jiti discovery. Lens integration requires an already installed exact 4.4.12 package with its dependencies; it never downloads them or reads the live agent package directory implicitly:
 
 ```bash
-PI_LSP_PACKAGE_DIR="$HOME/.pi/agent/npm/node_modules/pi-lsp" \
-  bash modules/pi/tests/run.sh extension-loading.test.ts
+PI_LENS_PACKAGE_DIR=/path/to/isolated/node_modules/pi-lens \
+  bash modules/pi/tests/run.sh lens.test.ts
 ```
 
-Without `PI_LSP_PACKAGE_DIR`, only the patched LSP loading check is skipped. It applies `modules/pi/lsp-refactor.patch` to a temporary source copy, adds the local refactoring code, and verifies discovery and single registration of the existing and refactoring tools using Pi's real loader. It does not start a language server or call a model; live server behavior still requires the LSP smoke check above.
+Without that variable the Lens test is explicitly skipped, **not verified**. It uses generated package settings with unrelated packages omitted, real Pi Node/jiti loading and SDK reload/new-session/shutdown, disposable projects and isolated HOME/agent/Lens/cache locations. Registered tool execution and Pi's real hook dispatcher are driven without a model; this is not a live model-turn test. It exercises native AST, project overrides, missing/unresponsive servers, scoped route reconciliation, real available servers, rename conflicts, expansion and process teardown. Empty navigation answers and unavailable language binaries are printed as `UNVERIFIED`, not counted as successful feature witnesses.
 
 After changing this module:
 
@@ -505,9 +469,7 @@ After changing this module:
    pi list
    ```
 
-6. In Pi, edit a supported disposable file and confirm that its LSP diagnostics
-   are appended to the tool result. Also verify `lsp_hover` or `lsp_symbols` on
-   that file.
+6. In Pi, edit a supported disposable file and confirm that its LSP diagnostics are appended to the tool result. Also verify `lsp_navigation` hover or documentSymbol on that file.
 7. Verify `/fast status`, MCP discovery, structured questions, and the
    web-access tools relevant to the change.
 8. In a fresh session, verify `web_enable` and `subagents_enable`, then activate each and confirm that the corresponding tools appear. Verify `/mcp`, `pi mcp list`, and a read-only MCP call through `codemode`, with no extension-loading warnings.

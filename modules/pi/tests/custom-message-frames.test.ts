@@ -43,7 +43,7 @@ function expectFrame(row: CustomMessageComponent, width = 70) {
   for (const line of lines) expect(visibleWidth(line)).toBeLessThanOrEqual(width);
 }
 
-test("older Pi keeps tool/LSP rendering available and reports the required upgrade", () => {
+test("older Pi keeps tool rendering available and reports the required upgrade", () => {
   let start!: (event: unknown, ctx: unknown) => void;
   const renderer = mock(() => {});
   roundedTools({ registerToolRenderer() {}, registerMessageRenderer: renderer,
@@ -54,7 +54,7 @@ test("older Pi keeps tool/LSP rendering available and reports the required upgra
   expect(notify).not.toHaveBeenCalled();
   start({}, { mode: "tui", ui: { notify } });
   expect(notify).toHaveBeenCalledWith(expect.stringContaining("restart Pi"), "warning");
-  expect(renderer).toHaveBeenCalledTimes(1);
+  expect(renderer).not.toHaveBeenCalled();
 });
 
 describe.skipIf(!patched)("patched custom-message wrapper hook", () => {
@@ -108,23 +108,6 @@ describe.skipIf(!patched)("patched custom-message wrapper hook", () => {
     expect(component(wrappers, "hidden", () => new Container()).render(60)).toEqual([""]);
     const graphic = "\x1b_Ga=T,f=100;AAAA\x1b\\";
     expect(component(wrappers, "image", () => ({ render: () => [graphic], invalidate() {} })).render(60)).toEqual(["", graphic]);
-  });
-
-  test("LSP summaries get exactly one frame and stored content remains unchanged", async () => {
-    const runner = await load();
-    const data = { ...message("pi-lsp-diagnostics", ""), details: { path: "file.ts", summary: "LSP diagnostics:\n\n⚠️ ts:\nfile.ts:1:1 - error: example" } };
-    const original = JSON.stringify(data);
-    const row = new CustomMessageComponent(data, runner.getMessageRenderer(data.customType), undefined, 1, [], undefined, undefined, runner.getMessageRendererWrappers());
-    expectFrame(row);
-    expect(plain(row.render(70)).join("\n")).toContain("1 error");
-    for (let i = 0; i < 3; i++) { row.invalidate(); expectFrame(row); }
-    initTheme("dark", false);
-    row.invalidate();
-    expectFrame(row);
-    row.setExpanded(true);
-    expect(plain(row.render(70)).join("\n")).toContain("file.ts:1:1 - error: example");
-    expect(JSON.stringify(data)).toBe(original);
-    expect((await load()).getMessageRendererWrappers()).toHaveLength(1);
   });
 
   test("registered wrappers compose in load order and failures retain the message", async () => {
