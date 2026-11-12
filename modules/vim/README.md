@@ -46,7 +46,7 @@ Minuet requests OpenAI `gpt-6-luna` suggestions with no reasoning and displays t
 - Minuet uses a 6,000-character context window, a 900ms throttle, a 180ms debounce, and a 4-second timeout.
 - Requests use OpenAI Fast mode at its Fast mode token rate, with a 1,024-token limit shared by reasoning and visible output. Automatic requests can run while an LSP menu is open. Actual API quality, latency, and usage require live verification.
 
-Store the API key in `secrets/openai-api-key.age`. NixOS decrypts it under `/run/agenix/openai-api-key`; home-only environments use Home Manager agenix through the [OpenAI API module](../openai-api/README.md). The vim module supplies the decrypted path as `vim.g.openai_api_key_path`.
+Store the API key in `secrets/openai-api-key.age`. NixOS decrypts it under `/run/agenix/openai-api-key`; home-only environments use Home Manager agenix through the [OpenAI API module](../openai-api/README.md). The vim module supplies the decrypted path as `vim.g.openai_api_key_path`. Environments without the OpenAI API module, such as `devsisters-jari`, receive an empty path: automatic suggestions stay off, and a manual `<C-y>` request reports the missing key.
 
 ```bash
 EDITOR=vim agx -e openai-api-key.age

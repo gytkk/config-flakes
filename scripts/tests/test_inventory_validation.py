@@ -6,6 +6,14 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 
+# Environments whose user or checkout is fixed by the platform they run on.
+IDENTITY_OVERRIDES = {
+    "devsisters-jari": {
+        "username": "jari",
+        "flakeDirectory": "/workspace/repos/gytkk/config-flakes",
+    },
+}
+
 
 class InventoryValidationTests(unittest.TestCase):
     def evaluate(self, builder, config):
@@ -56,8 +64,12 @@ class InventoryValidationTests(unittest.TestCase):
                     result = self.evaluate(builder, config)
                     self.assertEqual(result.returncode, 0, result.stderr)
                     actual = json.loads(result.stdout)
-                    self.assertEqual(actual["username"], "gyutak" if name.startswith("devsisters") else "gytkk")
-                    self.assertEqual(actual["flakeDirectory"], actual["homeDirectory"] + "/development/config-flakes")
+                    expected = {
+                        "username": "gyutak" if name.startswith("devsisters") else "gytkk",
+                        "flakeDirectory": actual["homeDirectory"] + "/development/config-flakes",
+                    } | IDENTITY_OVERRIDES.get(name, {})
+                    self.assertEqual(actual["username"], expected["username"])
+                    self.assertEqual(actual["flakeDirectory"], expected["flakeDirectory"])
 
     def test_explicit_checkout_override_is_preserved(self):
         for builder in ["home", "nixos"]:
