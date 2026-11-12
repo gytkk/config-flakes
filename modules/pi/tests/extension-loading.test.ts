@@ -51,6 +51,7 @@ function load(agent: string, cwd: string) {
   return loaded.extensions as Array<{ path: string; tools: string[]; commands: string[]; messageRenderers: string[] }>;
 }
 
+const todoPackage = process.env.PI_RPIV_TODO_PACKAGE_DIR;
 const questionPackage = process.env.PI_RPIV_QUESTION_PACKAGE_DIR;
 test.skipIf(!questionPackage)("loads the pinned rpiv-mono questionnaire once without the umbrella package", async () => {
   const source = resolve(questionPackage!);
@@ -106,10 +107,13 @@ test.skipIf(!lensPackage || !shellPackage)("migration packages coexist without d
     await symlink(join(moduleRoot, "files/extensions", name), join(agent, "extensions", name));
   }
   if (questionPackage) await symlink(resolve(questionPackage), join(agent, "extensions/questionnaire"));
+  if (todoPackage) await symlink(resolve(todoPackage), join(agent, "extensions/rpiv-todo"));
   const extensions = load(agent, cwd);
-  expect(extensions).toHaveLength(questionPackage ? 7 : 6);
+  expect(extensions).toHaveLength(6 + Number(!!questionPackage) + Number(!!todoPackage));
   const tools = extensions.flatMap(extension => extension.tools);
   if (questionPackage) expect(tools.filter(name => name === "ask_user_question")).toHaveLength(1);
+  if (todoPackage) expect(tools.filter(name => name === "todo")).toHaveLength(1);
+  expect(tools).not.toContain("task_list");
   const commands = extensions.flatMap(extension => extension.commands);
   expect(new Set(tools).size).toBe(tools.length);
   expect(new Set(commands).size).toBe(commands.length);
@@ -117,6 +121,8 @@ test.skipIf(!lensPackage || !shellPackage)("migration packages coexist without d
   for (const name of ["bash", "bash_output", "lsp_hover", "ast_apply"]) expect(tools).not.toContain(name);
   expect(commands).not.toContain("powerline");
   expect(commands).not.toContain("bg");
+  expect(commands).not.toContain("tasks");
+  if (todoPackage) expect(commands).toContain("todos");
 }, 60_000);
 
 test.skipIf(!shellPackage)("loads interactive shell once alongside rounded tools without replacing bash", async () => {

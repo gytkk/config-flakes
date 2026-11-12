@@ -16,6 +16,7 @@ test("activation settings combine general settings with the explicit package sel
   expect(general).toEqual(baseSettings);
   expect(packages).toEqual([
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
+    { source: "npm:@juicesharp/rpiv-todo@2.15.0", skills: [], prompts: [] },
     { source: "npm:pi-lens@4.4.12", skills: [], prompts: [] },
     { source: "npm:pi-interactive-shell@0.18.0", skills: [], prompts: [] },
     "npm:pi-web-access@0.46.0",
@@ -50,6 +51,7 @@ test("local extension names map to their existing checkout source", () => {
   }
   expect(sources[`${prefix}pi-lsp`]).toBeUndefined();
   expect(sources[`${prefix}ast-transform`]).toBeUndefined();
+  expect(sources[`${prefix}phase-tasks`]).toBeUndefined();
   expect(sources[`${prefix}herdr-agent-state.ts`]).toBe("/herdr/src/integration/assets/pi/herdr-agent-state.ts");
   for (const [target, source] of Object.entries(sources)) {
     if (target === `${prefix}herdr-agent-state.ts`) continue;

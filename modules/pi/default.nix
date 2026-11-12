@@ -15,6 +15,11 @@ let
   extensionPackages = [
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0"
     {
+      source = "npm:@juicesharp/rpiv-todo@2.15.0";
+      skills = [ ];
+      prompts = [ ];
+    }
+    {
       source = "npm:pi-lens@4.4.12";
       skills = [ ];
       prompts = [ ];
@@ -37,7 +42,6 @@ let
     "codex-fast-mode.ts" = mkSymlink "files/extensions/codex-fast-mode.ts";
     "codex-usage.ts" = mkSymlink "files/extensions/codex-usage.ts";
     "rounded-tools.ts" = mkSymlink "files/extensions/rounded-tools.ts";
-    "phase-tasks" = mkSymlink "files/extensions/phase-tasks";
     "python-kernel" = mkSymlink "files/extensions/python-kernel";
     "session-artifacts" = mkSymlink "files/extensions/session-artifacts";
     "agent-hub" = mkSymlink "files/extensions/agent-hub";

@@ -92,6 +92,7 @@ The `extensionPackages` list in `modules/pi/default.nix` is intentionally versio
 | Package | Version | Purpose |
 | --- | --- | --- |
 | [`@juicesharp/rpiv-ask-user-question`](https://github.com/juicesharp/rpiv-mono/tree/main/packages/rpiv-ask-user-question) | `2.15.0` | Structured user questions from rpiv-mono |
+| [`@juicesharp/rpiv-todo`](https://github.com/juicesharp/rpiv-mono/tree/main/packages/rpiv-todo) | `2.15.0` | Task list, dependencies and live widget |
 | `pi-interactive-shell` | `0.18.0` | Interactive PTY overlay, background dispatch, and completion notifications |
 | `pi-lens` | `4.4.12` | LSP diagnostics/navigation, semantic rename, AST search and replacement preview |
 | `pi-web-access` | `0.46.0` | Web search, source checks, and content fetching |
@@ -286,7 +287,7 @@ The managed `@juicesharp/rpiv-ask-user-question@2.15.0` is already published fro
 
 Use `ask_user_question` with the package's existing `questions`, `header`, `multiSelect`, and `options[].label`, `description`, and optional `preview` fields. Terminal questions retain the custom-answer row, multi-question review, notes, and Escape cancellation. RPC uses native select/input dialogs with reduced presentation; headless runs remove the tool from the active set. The extension makes no model calls of its own. The module does not select the optional i18n extension. Without that SDK, UI chrome uses its English fallback; user-authored Korean questions and answers are separate from localization.
 
-`rpiv-todo`, `rpiv-advisor`, and other siblings are not installed implicitly. The existing `phase-tasks` and pi-subagents contracts remain unchanged. The earlier pi-ask-user replacement is not selected; its investigation is retained in [the question migration specification](../../docs/pi-extension-migrations/ask-user.md).
+`rpiv-todo` is selected separately as the task tracker. `rpiv-advisor` and other siblings are not installed implicitly, and the pi-subagents contract remains unchanged. The earlier pi-ask-user replacement is not selected; its investigation is retained in [the question migration specification](../../docs/pi-extension-migrations/ask-user.md).
 
 ## Rounded tool and extension-message frames
 
@@ -391,21 +392,23 @@ See [the migration specification](../../docs/pi-extension-migrations/lens.md) fo
 
 ## Task, analysis, and artifact extensions
 
-These three extensions have independent entry points and do not replace Pi's built-in tools or its JavaScript `codemode`. Home Manager installs their directories together with Python (ast-grep remains available for Lens and direct use). Apply Home Manager, then restart Pi; `/reload` alone does not install newly declared extension paths or binaries.
+These extensions have independent entry points and do not replace Pi's built-in tools or its JavaScript `codemode`. Pi loads rpiv-todo from the selected npm package; Home Manager installs the local Python and artifact extensions and their required binaries. Apply Home Manager, then restart Pi; `/reload` alone does not change the managed package selection or extension links.
 
 | Extension | Model tools | Interactive commands | Purpose |
 | --- | --- | --- | --- |
-| `modules/pi/files/extensions/phase-tasks/` | `task_list` | `/tasks` | Phase-aware work tracking with current-branch restoration |
+| `@juicesharp/rpiv-todo` | `todo` | `/todos` | Task tracking with dependencies and current-branch restoration |
 | `modules/pi/files/extensions/python-kernel/` | `python_cell` | `/python status`, `/python reset` | Persistent Python cells, captured output, and images |
 | `modules/pi/files/extensions/session-artifacts/` | `artifact` | `/artifacts` | Durable text snapshots with listing, paging, and search |
 
 Python execution has the same filesystem and network permissions as Pi; it is not a sandbox. Lens AST policy is described above. Artifact storage is local and can retain sensitive command output; register only material appropriate to keep with the session.
 
-### Phased tasks
+### Tasks
 
-`task_list` accepts `init`, `start`, `done`, `drop`, `append`, `remove`, and `view`. Initialize with `phases: [{ name, tasks: ["task name"] }]`, then explicitly start a pending task. Only one task runs at a time; completing, abandoning, or removing it promotes the next pending task. Targets use stable IDs or unambiguous exact names. Replacing an existing plan requires `replace: true`. The compact widget shows current or next work and disappears when no unfinished tasks remain; `/tasks` opens a read-only, scrollable tree.
+`todo` accepts `create`, `update`, `list`, `get`, `delete`, and `clear`. Tasks have a numeric ID, `subject`, optional `description`, `activeForm`, `owner`, `metadata`, and `blockedBy` dependencies. The states are `pending`, `in_progress`, `completed`, and `deleted`; deletion retains a tombstone. Missing dependencies and cycles are rejected. Dependencies record relationships, not permission to launch work or an automatic scheduler. Update statuses explicitly: completing a task does not start the next one, and the package's single-active-task guidance is not a state-machine constraint.
 
-Snapshots belong to the current session branch and restore on resume, fork, reload, and tree navigation. Task tracking does not automatically trigger another model turn. Limits are 32 phases, 200 tasks, and a 32 KB snapshot.
+`/todos` shows tasks grouped by status. A widget above the editor shows progress; `Ctrl+Shift+T` toggles collapse. Completed rows disappear from the widget on the next agent turn but remain in task state and `/todos`. Defaults allow 12 content rows plus a spacer; optional `maxWidgetLines` and `collapseKey` settings live in the package-owned XDG config file. This module installs no config override. Each mutation appends a snapshot to the current session branch, including calls through codemode. Session lifecycle handlers replay that branch after reload, resume, tree navigation and compaction. The package makes no model calls.
+
+The former `phase-tasks` extension is no longer installed, so `task_list` and `/tasks` are not provided by this module. Its source under `modules/pi/files/extensions/phase-tasks/`, tests, and existing session entries are preserved for rollback; no state is deleted or converted. RPIV starts with its own list and has no phase hierarchy. Close Pi before applying Home Manager so the old managed extension link is removed; restart into a fresh session to load `todo`. To roll back, remove the RPIV package selection and restore the phase-tasks installation entry before applying again, without enabling both trackers.
 
 ### Python cells
 
@@ -424,10 +427,13 @@ Automatic retention recognizes Pi 1.5.2's native `bash` and `codemode` full-outp
 Run the focused feature checks with Python on PATH:
 
 ```bash
-bash modules/pi/tests/run.sh phase-tasks.test.ts python-kernel.test.ts session-artifacts.test.ts
+PI_RPIV_TODO_PACKAGE_DIR=/path/to/isolated/rpiv-todo \
+  bash modules/pi/tests/run.sh rpiv-todo.test.ts python-kernel.test.ts session-artifacts.test.ts
 ```
 
-For an interactive smoke check, use a disposable directory: initialize and advance tasks, inspect `/tasks` at narrow width, evaluate a variable across two Python cells, register a log and read it after deleting its source. `/python reset` must clear the variable.
+The RPIV test requires the exact selected package with its runtime dependencies; it performs no downloads and is skipped when `PI_RPIV_TODO_PACKAGE_DIR` is absent. It exercises the actual Node/jiti-loaded tool and widget with Pi's in-memory session manager: mutations, cycle rejection, replay hooks, session isolation, collapse and width bounds. It does not establish a live model turn or full TUI interaction. The retained `phase-tasks.test.ts` checks only the inactive rollback source.
+
+For an interactive smoke check, use a disposable directory: create and update todos, inspect `/todos` and collapse the widget at narrow width, evaluate a variable across two Python cells, register a log and read it after deleting its source. `/python reset` must clear the variable.
 
 ## MCP integration
 
@@ -464,7 +470,7 @@ bash modules/pi/tests/run.sh module-config.test.ts extension-loading.test.ts pro
 
 The prompt mouse regression must pass: clicking the displayed character must select that character, not a column shifted by the prompt prefix. Node/jiti discovery is checked separately from headless component rendering/input.
 
-When `PI_INTERACTIVE_SHELL_PACKAGE_DIR` and `PI_LENS_PACKAGE_DIR` are supplied, the loader suite also checks their coexistence with the local prompt UI, status providers, and rounded-tools without duplicate tools or commands. Supplying `PI_RPIV_QUESTION_PACKAGE_DIR` includes the questionnaire in that check. This is loading evidence, not simultaneous live overlay/focus verification.
+When `PI_INTERACTIVE_SHELL_PACKAGE_DIR` and `PI_LENS_PACKAGE_DIR` are supplied, the loader suite also checks their coexistence with the local prompt UI, status providers, and rounded-tools without duplicate tools or commands. Supplying `PI_RPIV_QUESTION_PACKAGE_DIR` includes the questionnaire; `PI_RPIV_TODO_PACKAGE_DIR` includes the task package and checks that no legacy `task_list` or `/tasks` is registered. This is loading evidence, not simultaneous live overlay/focus verification.
 
 Lens integration requires an already installed exact 4.4.12 package with its dependencies; it never downloads them or reads the live agent package directory implicitly:
 
