@@ -4,6 +4,7 @@ import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/pr
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { settings } from "./module-config";
 
 const moduleRoot = fileURLToPath(new URL("../", import.meta.url));
 const piEntry = fileURLToPath(import.meta.resolve("@earendil-works/pi-coding-agent"));
@@ -66,7 +67,6 @@ test("discovers prompt-ui once, without loading its helpers as extensions", asyn
 const lspPackage = process.env.PI_LSP_PACKAGE_DIR;
 test.skipIf(!lspPackage)("loads patched pi-lsp with npm dependencies and registers refactoring once", async () => {
   const source = resolve(lspPackage!);
-  const settings = JSON.parse(await readFile(join(moduleRoot, "files/settings.json"), "utf8"));
   const pin = settings.packages.find((pkg: { source?: string }) => pkg.source?.startsWith("npm:pi-lsp@"));
   expect(pin.extensions).toEqual([]);
   const manifest = JSON.parse(await readFile(join(source, "package.json"), "utf8"));

@@ -14,20 +14,6 @@
       }
     }
   },
-  "packages": [
-    "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
-    {
-      "source": "npm:pi-lsp@0.1.7",
-      "extensions": []
-    },
-    "npm:pi-bg-bash@0.5.1",
-    "npm:pi-web-access@0.46.0",
-    {
-      "source": "npm:pi-subagents@0.84.0",
-      "skills": [],
-      "prompts": []
-    }
-  ],
   "subagents": {
     "defaultModel": "openai/gpt-6.1-sol",
     "defaultThinking": "medium",

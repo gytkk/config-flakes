@@ -28,6 +28,8 @@ fi
 # Real copies keep Bun's module resolution inside the isolated test tree.
 temporary=$(mktemp -d)
 trap 'rm -rf "$temporary"' EXIT
+export PI_TEST_MODULE_CONFIG="$temporary/module-config.json"
+nix eval --impure --json --file "$module_root/tests/module-config.nix" > "$PI_TEST_MODULE_CONFIG"
 cp -R "$module_root" "$temporary/pi"
 ln -s "$PI_TEST_NODE_MODULES" "$temporary/pi/node_modules"
 export PI_CODING_AGENT_DIR="$temporary/agent"

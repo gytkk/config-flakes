@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { settings } from "./module-config";
 
 const moduleRoot = new URL("../", import.meta.url);
 const read = (path: string) => readFileSync(new URL(path, moduleRoot), "utf8");
-const settings = JSON.parse(read("files/settings.json"));
 const rollout = JSON.parse(read("files/extensions/subagent/config.json"));
 
 // These profiles intentionally use only scalar frontmatter and comma-separated lists.

@@ -9,7 +9,7 @@ symlinks.
 
 | Repository path | Runtime path | Purpose |
 | --- | --- | --- |
-| `files/settings.json` | `~/.pi/agent/settings.json` | Common settings merged into a device-local writable file |
+| `modules/pi/files/settings.json` and `modules/pi/default.nix` | `~/.pi/agent/settings.json` | General settings and package selection merged into a device-local writable file |
 | `files/web-search.json` | `~/.pi/web-search.json` | Web Access defaults |
 | `files/lsp.json` | `~/.pi/agent/lsp.json` | LSP server routes and diagnostics settings |
 | `files/mcp.json` | `~/.pi/agent/mcp.json` | Native MCP server configuration |
@@ -27,9 +27,18 @@ The module also installs:
 - `pkgs.pi`
 - `pkgs.mcp-nixos`
 
-`settings.json` is a private, writable regular file on each machine, not a checkout symlink. Home Manager merges the common settings from `files/settings.json` into it before linking the new generation; common top-level keys take precedence, while other local keys are preserved. Pi creates `deviceId` on first ChatGPT login and keeps it, `trackingId`, and `lastChangelogVersion` local. The sync rejects these fields in common settings. Existing symlink installations are migrated without writing their local state back to the checkout.
+`settings.json` is a private, writable regular file on each machine, not a checkout symlink. Nix combines the general settings in `modules/pi/files/settings.json` with the `extensionPackages` selection in `modules/pi/default.nix` to generate the common settings. Home Manager merges these into the local file before linking the new generation; common top-level keys take precedence, while other local keys are preserved. Pi creates `deviceId` on first ChatGPT login and keeps it, `trackingId`, and `lastChangelogVersion` local. The sync rejects these fields in common settings. Existing symlink installations are migrated without writing their local state back to the checkout.
 
-`/settings` and package commands modify only the local settings file. Changes to keys managed by the common file last until the next Home Manager application; edit the repository file to make them common defaults. Close Pi before applying Home Manager to avoid concurrent settings writes. Other mutable configuration still uses out-of-store symlinks. Generated instructions and common settings change only after applying Home Manager.
+`/settings` and package commands modify only the local settings file. Changes to managed keys last until the next Home Manager application; edit `modules/pi/files/settings.json` for general defaults or `extensionPackages` in `modules/pi/default.nix` for package selection. Close Pi before applying Home Manager to avoid concurrent settings writes. Other mutable configuration still uses out-of-store symlinks. Generated instructions and common settings change only after applying Home Manager.
+
+## Extension selection
+
+`modules/pi/default.nix` declares the managed global extension selection in two places:
+
+- `extensionPackages` lists Pi package sources, version pins, and resource filters in Pi's settings format. It supplies the generated `packages` setting; do not duplicate that key in `modules/pi/files/settings.json`.
+- `localExtensions` maps installed extension names to checkout-backed or patched sources. Home Manager creates their links under `~/.pi/agent/extensions/`. The conditional Herdr state integration is declared beside this list.
+
+Supporting files such as `modules/pi/files/extensions/subagent/config.json` remain separate from the extension entry points. `modules/pi/extensions/pi-lsp.nix` owns the LSP fetch and patch implementation; the selection lists show both its local entry point and the npm dependency package whose original extension is disabled. These lists do not enumerate Pi's built-in extensions or resources added by project settings or command-line arguments.
 
 ## Main settings
 
@@ -77,7 +86,7 @@ ordinary searches return directly without opening the curator. Requests that
 need human source selection can still set `workflow: "summary-review"` or use
 `/curator` explicitly.
 
-The package list is intentionally version-pinned:
+The `extensionPackages` list in `modules/pi/default.nix` is intentionally version-pinned:
 
 | Package | Version | Purpose |
 | --- | --- | --- |
@@ -305,8 +314,8 @@ applying an edit whose complete diff was not displayed.
 The implementation is in `modules/pi/files/extensions/lsp-refactor/`.
 `modules/pi/lsp-refactor.patch` adds the refactoring interface to the **same**
 manager/client pool used by pi-lsp's existing diagnostics and navigation.
-`modules/pi/default.nix` fetches and patches immutable pi-lsp 0.1.7 source;
-the npm package remains pinned in `modules/pi/files/settings.json` for its
+`modules/pi/extensions/pi-lsp.nix` fetches and patches immutable pi-lsp 0.1.7 source;
+the npm package remains pinned in `modules/pi/default.nix` for its
 runtime dependencies, with its original extension disabled to prevent duplicate
 servers and tool registrations. Update both pins and revalidate the patch when
 upgrading pi-lsp. No installed npm source is modified.
@@ -334,10 +343,10 @@ The integrated prompt statusline uses the active Pi theme for its background, pa
 
 ## Verification
 
-The test runner requires Bun, Node.js, jq, ripgrep, and an installed Pi matching the version in `packages/apps/pi/package.nix`. It locates the Nix-installed runtime through `pi` on PATH; for another installation layout, set `PI_TEST_NODE_MODULES` to that runtime's node_modules directory. It copies the module to a temporary directory, links the installed dependencies there, and uses a temporary Pi agent directory. It does not install dependencies or change the checkout, credentials, or live settings. Pass test filenames to run a subset:
+The test runner requires Nix, Bun, Node.js, jq, ripgrep, and an installed Pi matching the version in `packages/apps/pi/package.nix`. It locates the Nix-installed runtime through `pi` on PATH; for another installation layout, set `PI_TEST_NODE_MODULES` to that runtime's node_modules directory. It evaluates `modules/pi/tests/module-config.nix` with the root flake's pinned Nixpkgs and Home Manager libraries to obtain the generated common settings and extension links for both Herdr conditions, without building packages. It copies the module to a temporary directory, links the installed dependencies there, and uses a temporary Pi agent directory. It does not install dependencies or change the checkout, credentials, or live settings. Pass test filenames to run a subset:
 
 ```bash
-bash modules/pi/tests/run.sh prompt-ui.test.ts prompt-statusline.test.ts codex-fast-mode.test.ts
+bash modules/pi/tests/run.sh module-config.test.ts extension-loading.test.ts subagent-profiles.test.ts
 ```
 
 The suite exercises native Node/jiti discovery for the prompt UI. The patched LSP loading check additionally requires an unmodified, already installed pi-lsp package at the configured version, with its npm dependencies available in the parent node_modules directory. Enable that check explicitly:

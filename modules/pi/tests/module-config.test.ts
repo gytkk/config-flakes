@@ -1,0 +1,63 @@
+import { expect, test } from "bun:test";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import baseSettings from "../files/settings.json";
+import { moduleConfig, settings } from "./module-config";
+
+const prefix = ".pi/agent/extensions/";
+
+test("activation settings combine general settings with the explicit package selection", () => {
+  expect(baseSettings).not.toHaveProperty("packages");
+  const { packages, ...general } = settings;
+  expect(general).toEqual(baseSettings);
+  expect(packages).toEqual([
+    "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
+    { source: "npm:pi-lsp@0.1.7", extensions: [] },
+    "npm:pi-bg-bash@0.5.1",
+    "npm:pi-web-access@0.46.0",
+    { source: "npm:pi-subagents@0.84.0", skills: [], prompts: [] },
+  ]);
+  expect(moduleConfig.enabled.activation).toEqual({ before: ["linkGeneration"], after: ["writeBoundary"] });
+});
+
+test("local extension names map to their existing checkout or patched source", () => {
+  const sources = moduleConfig.enabled.extensionSources as Record<string, string>;
+  for (const name of ["codex-fast-mode.ts", "codex-usage.ts", "rounded-tools.ts", "prompt-ui", "herdr-subagents.ts", "terminal-title-reset.ts"]) {
+    expect(sources[`${prefix}${name}`]).toBeDefined();
+  }
+  expect(sources[`${prefix}pi-lsp`]).toMatch(/^\/nix\/store\/[^/]+-pi-lsp-refactor-0\.1\.7\/extensions$/);
+  expect(sources[`${prefix}herdr-agent-state.ts`]).toBe("/herdr/src/integration/assets/pi/herdr-agent-state.ts");
+  for (const [target, source] of Object.entries(sources)) {
+    if (target === `${prefix}pi-lsp` || target === `${prefix}herdr-agent-state.ts`) continue;
+    expect(source).toBe(`/checkout/modules/pi/files/extensions/${target.slice(prefix.length)}`);
+  }
+  expect(sources[`${prefix}subagent/config.json`]).toBe("/checkout/modules/pi/files/extensions/subagent/config.json");
+  expect(sources[`${prefix}lsp-refactor`]).toBeUndefined();
+});
+
+test("disabling Herdr removes only its official state extension", () => {
+  const { [`${prefix}herdr-agent-state.ts`]: state, ...otherSources } = moduleConfig.enabled.extensionSources;
+  expect(state).toBeDefined();
+  expect(moduleConfig.disabled.extensionSources).toEqual(otherSources);
+  expect(moduleConfig.disabled.settings).toEqual(settings);
+});
+
+test("generated settings replace managed packages while preserving device-local metadata", () => {
+  const root = mkdtempSync(join(tmpdir(), "pi-module-settings-"));
+  try {
+    const common = join(root, "common.json");
+    const local = join(root, "settings.json");
+    writeFileSync(common, JSON.stringify(settings));
+    writeFileSync(local, JSON.stringify({ deviceId: "test-device", localSetting: true, packages: ["npm:local-only"] }));
+    const result = spawnSync("bash", [fileURLToPath(new URL("../files/sync-settings.sh", import.meta.url)), common, local], { encoding: "utf8" });
+    if (result.error) throw result.error;
+    expect(result.stderr).toBe("");
+    expect(result.status).toBe(0);
+    expect(JSON.parse(readFileSync(local, "utf8"))).toEqual({ ...settings, deviceId: "test-device", localSetting: true });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
