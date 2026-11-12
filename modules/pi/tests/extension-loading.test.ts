@@ -64,6 +64,25 @@ test("discovers prompt-ui once, without loading its helpers as extensions", asyn
   expect(extensions.flatMap((extension) => extension.commands)).toEqual(["fast"]);
 }, 60_000);
 
+const shellPackage = process.env.PI_INTERACTIVE_SHELL_PACKAGE_DIR;
+test.skipIf(!shellPackage)("loads interactive shell once alongside rounded tools without replacing bash", async () => {
+  const source = resolve(shellPackage!);
+  const pin = settings.packages.find((pkg: { source?: string }) => pkg.source?.startsWith("npm:pi-interactive-shell@"));
+  const manifest = JSON.parse(await readFile(join(source, "package.json"), "utf8"));
+  expect(`npm:${manifest.name}@${manifest.version}`).toBe(pin.source);
+  expect(pin.skills).toEqual([]);
+  expect(pin.prompts).toEqual([]);
+  const { agent, cwd } = await fixture();
+  await cp(join(moduleRoot, "files/interactive-shell.json"), join(agent, "interactive-shell.json"));
+  await symlink(source, join(agent, "extensions/interactive-shell"));
+  await symlink(join(moduleRoot, "files/extensions/rounded-tools.ts"), join(agent, "extensions/rounded-tools.ts"));
+  const extensions = load(agent, cwd);
+  expect(extensions).toHaveLength(2);
+  const tools = extensions.flatMap(extension => extension.tools);
+  expect(tools.sort()).toEqual(["enable_interactive_shell", "interactive_shell"]);
+  expect(extensions.flatMap(extension => extension.commands)).not.toContain("bg");
+}, 60_000);
+
 const lspPackage = process.env.PI_LSP_PACKAGE_DIR;
 test.skipIf(!lspPackage)("loads patched pi-lsp with npm dependencies and registers refactoring once", async () => {
   const source = resolve(lspPackage!);

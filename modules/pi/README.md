@@ -11,6 +11,7 @@ symlinks.
 | --- | --- | --- |
 | `modules/pi/files/settings.json` and `modules/pi/default.nix` | `~/.pi/agent/settings.json` | General settings and package selection merged into a device-local writable file |
 | `files/web-search.json` | `~/.pi/web-search.json` | Web Access defaults |
+| `modules/pi/files/interactive-shell.json` | `~/.pi/agent/interactive-shell.json` | Lean, on-demand shell tools; semantic transmission disabled |
 | `files/lsp.json` | `~/.pi/agent/lsp.json` | LSP server routes and diagnostics settings |
 | `files/mcp.json` | `~/.pi/agent/mcp.json` | Native MCP server configuration |
 | `modules/pi/files/models.json` | `~/.pi/agent/models.json` | Context-window overrides for the configured OpenAI chat models |
@@ -51,7 +52,7 @@ Supporting files such as `modules/pi/files/extensions/subagent/config.json` rema
 - the hardware terminal cursor for IME positioning
 - prompt-cache notices, with cache warming left at Pi's default `"streaming"` mode
 
-Pi uses the default fullscreen mode and built-in keybindings: `Home` and `Ctrl+A` move to the input line's start, while `Ctrl+Home` moves to the top of the fullscreen conversation. The module does not install a keybindings file; its editor extension adds conditional background-task navigation described below.
+Pi uses the default fullscreen mode and built-in keybindings: `Home` and `Ctrl+A` move to the input line's start, while `Ctrl+Home` moves to the top of the fullscreen conversation. The module does not install a keybindings file.
 
 ### File links in Herdr
 
@@ -92,7 +93,7 @@ The `extensionPackages` list in `modules/pi/default.nix` is intentionally versio
 | --- | --- | --- |
 | `@juicesharp/rpiv-ask-user-question` | `2.15.0` | Structured user questions |
 | `pi-lsp` | `0.1.7` | Lazy language-server diagnostics and navigation |
-| `pi-bg-bash` | `0.5.1` | Background shell tasks, live output, and completion notifications |
+| `pi-interactive-shell` | `0.18.0` | Interactive PTY overlay, background dispatch, and completion notifications |
 | `pi-web-access` | `0.46.0` | Web search, source checks, and content fetching |
 | `pi-subagents` | `0.84.0` | Foreground-first delegated Pi sessions |
 
@@ -257,13 +258,13 @@ Apply Home Manager and restart Pi to install the extension. To try it before app
 
 ### Prompt and cursor rendering
 
-`modules/pi/files/extensions/prompt-ui/index.ts` owns the editor and the empty footer. It connects the input behavior in `modules/pi/files/extensions/prompt-ui/editor.ts` to the renderer in `modules/pi/files/extensions/prompt-ui/statusline.ts`. Only the directory entry point loads as an extension. Fast mode and usage retrieval remain separate extensions that publish through Pi's status API. The UI works without either provider. It shows `fast` beside the thinking level only when fast mode is enabled for an OpenAI parent session; otherwise it omits the label and its separator. The statusline shows working directory, Git branch, model, thinking level, fast-mode state, context usage, and extension statuses; it does not aggregate cumulative input/output tokens. The working directory and branch share a subtle theme-backed background with a rounded Powerline left cap and an arrow-shaped right cap, followed by the context meter. The caps use the same color as the segment background and require a font with Powerline glyphs, such as a Nerd Font. Other extension statuses, weekly quota, and the model appear on the right, with no trailing border after the model group. The thinking level uses terminal-palette purple; the enabled `fast` label retains its orange accent. Background tasks appear on the input row instead. The context meter occupies the remaining width, centers its percentage label, and scales its filled line across that full width. A padded vertical divider separates the meter from the right-hand status group. At narrower widths, the renderer shortens the path and quota, then omits secondary statuses and the location before shortening essential context and model information. A selected `/bg` item retains a visible marker and hardware cursor on the input row even in a very narrow pane.
+`modules/pi/files/extensions/prompt-ui/index.ts` owns the editor and the empty footer. It connects the input behavior in `modules/pi/files/extensions/prompt-ui/editor.ts` to the renderer in `modules/pi/files/extensions/prompt-ui/statusline.ts`. Only the directory entry point loads as an extension. Fast mode and usage retrieval remain separate extensions that publish through Pi's status API. The UI works without either provider. It shows `fast` beside the thinking level only when fast mode is enabled for an OpenAI parent session; otherwise it omits the label and its separator. The statusline shows working directory, Git branch, model, thinking level, fast-mode state, context usage, and extension statuses; it does not aggregate cumulative input/output tokens. The working directory and branch share a subtle theme-backed background with a rounded Powerline left cap and an arrow-shaped right cap, followed by the context meter. The caps use the same color as the segment background and require a font with Powerline glyphs, such as a Nerd Font. Other extension statuses, weekly quota, and the model appear on the right, with no trailing border after the model group. The thinking level uses terminal-palette purple; the enabled `fast` label retains its orange accent. The context meter occupies the remaining width, centers its percentage label, and scales its filled line across that full width. A padded vertical divider separates the meter from the right-hand status group. At narrower widths, the renderer shortens the path and quota, then omits secondary statuses and the location before shortening essential context and model information.
 
 Git file counts appear immediately after the branch, for example `main *12 +4 ?13`: `*` counts unstaged tracked paths (including unresolved conflicts), `+` counts staged paths, and `?` counts individual untracked files. A partially staged file contributes to both `*` and `+`; renames count once per category. Zero counts and clean repositories add no text. The prompt polls Git asynchronously every two seconds after each query finishes, including while idle, without refreshing the index. Queries have a five-second timeout and a 4 MiB output limit; failed or incomplete queries show `git!` instead of stale counts and report a warning. Shutdown, session replacement, and `/reload` cancel polling and pending queries. Non-TUI sessions do not poll. The counts share the branch segment and disappear with it when space is insufficient. Run `bash modules/pi/tests/run.sh prompt-git-status.test.ts prompt-statusline.test.ts prompt-ui.test.ts` for count parsing, polling lifecycle, and rendering checks.
 
 The first visible input row starts with `╰─` followed by one space instead of a boxed input area. Built-in editor padding reserves three columns for the marker and gap, so neither is part of submitted text. Very narrow terminals reduce the padding to leave room for input. At three or four columns it uses only `╰`; below three columns it omits the marker. The editor keeps Pi's wrapping, history, autocomplete, and mouse positioning. Hidden input lines retain scroll hints. The bottom border is omitted when no lines are hidden below; autocomplete retains a blank separator so its mouse coordinates remain unchanged.
 
-The extension removes Pi's software cursor markers while preserving the terminal cursor used for IME positioning. It is paired with `showHardwareCursor: true` in `modules/pi/files/settings.json`. Review it when updating Pi if cursor rendering or IME positioning changes. Apply Home Manager and restart Pi when migrating from the former hardware-cursor-only extension so the old entry point is removed and the prompt UI directory is installed together. After that migration, `/reload` picks up checkout-backed prompt UI edits. Check a narrow pane, multiline Korean input, autocomplete, and Down/Enter task selection after reloading.
+The extension removes Pi's software cursor markers while preserving the terminal cursor used for IME positioning. It is paired with `showHardwareCursor: true` in `modules/pi/files/settings.json`. Review it when updating Pi if cursor rendering or IME positioning changes. Apply Home Manager and restart Pi when migrating from the former hardware-cursor-only extension so the old entry point is removed and the prompt UI directory is installed together. After that migration, `/reload` picks up checkout-backed prompt UI edits. Check a narrow pane, multiline Korean input, autocomplete, and cursor positioning after reloading.
 
 ### Terminal title on exit
 
@@ -271,9 +272,9 @@ Pi sets the terminal title to `π - <directory>` and does not clear it on exit, 
 
 ## On-demand tools
 
-Fresh sessions use the packages' own `web_enable` and `subagents_enable` tools to activate the full web and delegation tools when needed. Package commands such as `/run` remain available. Native MCP uses Pi's `codemode` tool without declaring every server tool to the model. The module does not install a custom `enable_tools` tool or `/tool-profile` command.
+Fresh sessions use the packages' own `enable_interactive_shell`, `web_enable`, and `subagents_enable` tools to activate shell, web, and delegation tools when needed. Package commands such as `/run` remain available. Native MCP uses Pi's `codemode` tool without declaring every server tool to the model. The module does not install a custom `enable_tools` tool or `/tool-profile` command.
 
-When migrating an existing installation, apply Home Manager to remove its managed `~/.pi/agent/extensions/tool-profiles` symlink, then restart Pi. New sessions use the default activation state; resumed sessions may retain tools already activated in their transcript.
+When migrating an existing installation, apply Home Manager to remove its managed `~/.pi/agent/extensions/tool-profiles` symlink, then restart Pi. New sessions use the default activation state; resumed web/delegation tools may retain transcript activation, while interactive-shell resets its deferred tool on every session start.
 
 ## Rounded tool and extension-message frames
 
@@ -291,13 +292,37 @@ Apply Home Manager to install the patched Pi package and the updated `modules/pi
 
 ## Background shell tasks
 
-`pi-bg-bash` replaces Pi's model-facing `bash` tool, not the system Bash executable, login shell, or user-entered `!` commands. Ordinary calls still wait for exit; `background: true` returns a task ID immediately, and completion sends the agent the exit state and recent output. `Ctrl+Shift+B` moves running foreground tool calls to the background when the terminal supports modified keys. Elapsed time alone does not trigger that transition.
+Pi's built-in `bash` handles short non-interactive commands, including its native exit and timeout results. `pi-interactive-shell` loads only its extension (bundled skills and prompts are excluded), without overriding `bash`. The managed `modules/pi/files/interactive-shell.json` selects `defer: true`, `toolSchema: "lean"`, and `jev.enabled: false`. Call `enable_interactive_shell` when needed; `interactive_shell` becomes available on the next turn. Reload, new, resumed, and forked sessions reset activation. A CLI tool allowlist must include both names.
 
-Use `/bg` to view task state, runtime, and commands. The first visible input row shows `/bg (N)` right-aligned only when the command is available and at least one task is running. The display uses unused space without reducing the editor's wrapping width or moving its mouse targets. It hides when it would overlap input text or the cursor, and while autocomplete is open. `N` is the number of running tasks reported by pi-bg-bash's status, excluding finished tasks. A zero, absent, or unrecognized count hides the item and clears its selection. The parser in `modules/pi/files/extensions/prompt-ui/editor.ts` isolates the dependency on pi-bg-bash's `bg: N` display format. When tasks are running, from an empty input with autocomplete closed, press Down to highlight `/bg (N)` in the terminal palette's purple, Enter to open `/bg`, or Up/Escape to return to the input. The editor publishes selection through the `bg-selection` status and highlights the right-aligned item without adding a row or duplicating the package's `bg: N` status. Typing or pasting leaves the selection and edits the input normally. Nonempty input retains normal cursor and history navigation. In `/bg`, press Enter for live output, `x` to stop a task after confirmation, and Escape to go back. The agent can use `bash_tasks`, `bash_output`, `bash_kill`, and `bash_watch` to inspect or manage tasks. Output watches are optional; completion notifications do not require them.
+For long builds and tests, use a raw command in background dispatch:
 
-Tasks survive `/reload`, but quitting Pi or switching sessions stops them. Logs are private files under `$XDG_STATE_HOME/pi-bg/` (default `~/.local/state/pi-bg/`), with seven-day cleanup and a 100 MiB per-task limit. The package does not honor Pi's `shellPath` or `shellCommandPrefix`; neither is configured by this module. Do not combine it with another extension that replaces `bash` or registers `/bg` or `Ctrl+Shift+B`.
+```javascript
+interactive_shell({
+  command: "npm test",
+  mode: "dispatch",
+  background: true,
+  handsFree: { autoExitOnQuiet: false }
+});
+```
 
-After installing the pinned package, run `/reload` or restart Pi. Verify with a disposable background command that prints a line, waits briefly, and exits; inspect it in `/bg` and confirm its completion notification. This shell-task extension does not enable background subagent delegation.
+The explicit quiet opt-out is required: upstream dispatch otherwise stops supervision after a 15-second startup grace and 8-second quiet threshold. Silence is not process completion. Wait for the package's completion notification and inspect its exit code and `completionReason`; do not rerun the command or poll to recover results. Monitor mode is only for a concrete output/state condition. Semantic supervision and selected-output transmission remain disabled; do not opt into them in tool calls.
+
+For input-driven CLIs, use the interactive overlay and send `input` with `submit: true` (or named `inputKeys`) against the returned session ID. The user can type to take over a monitored overlay, use Ctrl+G to return monitoring control, Ctrl+B to background, Ctrl+T to transfer output, or Ctrl+Q for the session menu. `/attach` lists retained sessions; `/attach <id>` opens one, and `/dismiss <id>` stops/removes it. The package owns the background widget and overlay; there is no `/bg` compatibility UI or Down/Enter task shortcut.
+
+Timeout, local supervision cancellation, actual process exit, and process-tree termination are different outcomes. `kill: true` reports cancellation and attempted termination, not confirmed exit. Running background tasks survive `/reload`; quitting Pi or replacing the session attempts cleanup. Do not promise survival after Pi exits. Headless completion saves terminal output under Pi's agent cache (`cache/interactive-shell`); the notification names the file, and a later session-ID query can point to it even when the active session is gone. Upstream prunes saved logs older than 24 hours on later writes. Use `artifact` with an explicit log path for durable retention. Native bash automatic artifact retention keeps its existing provenance and private-temp-path checks.
+
+Shell support grants no new delegation authority. Continue using the current pi-subagents contract for authorized parallel/background children, worktrees, and explicit follow-ups. Package `/spawn`, structured spawn, or shell-launched agent CLIs are not alternate delegation routes. This is guidance, not a sandbox.
+
+Before applying, let existing bg tasks finish or ask the user whether to stop them; do not migrate IDs or kill live user tasks. The user applies Home Manager with Pi closed, then starts a fresh session. Roll back only this shell package/configuration, guidance, and bg UI change if needed, preserving other migrations.
+
+Run the shell integration with an isolated installation of exactly 0.18.0 and its dependencies:
+
+```bash
+PI_INTERACTIVE_SHELL_PACKAGE_DIR=/path/to/pi-interactive-shell \
+  bash modules/pi/tests/run.sh interactive-shell.test.ts extension-loading.test.ts
+```
+
+The Linux test uses real PTYs, disposable HOME/agent/project directories, package-generated notifications, and native overlay input/rendering, without a model or external semantic service. It checks quiet dispatch through actual success/failure exits, input, takeover/attach/stop, reload and replacement cleanup, native bash results, rounded frames, and artifact boundaries. The test explicitly skips without the package prerequisite; a skip is not migration completion. macOS and user Home Manager application require separate verification.
 
 ## LSP diagnostics
 
@@ -418,7 +443,7 @@ Preview leaves files untouched and returns a complete diff plus a token. `ast_ap
 
 Snapshots are private local copies under Pi's agent directory in `session-artifacts/<origin-session-hash>/`. They survive source deletion and shutdown. Branch-local index entries restore on resume and fork; forks can still reference the originating session's files. No automatic deletion occurs, including when a session is deleted. Close Pi before manually removing unneeded owner directories, and check fork references first. Limits are 2 MiB per source, 20,000 snapshot lines, and 64 files/32 MiB per originating session. Cancelled registration can leave an unindexed retained snapshot that counts toward this quota.
 
-Automatic retention recognizes Pi 1.5.2's native `bash` and `codemode` full-output metadata only after checking builtin provenance and private temporary-file paths. The managed `pi-bg-bash` override is excluded; register its logs explicitly. Free-text paths are never scraped, and other directories are not scanned.
+Automatic retention recognizes Pi 1.5.2's native `bash` and `codemode` full-output metadata only after checking builtin provenance and private temporary-file paths. Interactive-shell logs are external and require explicit registration. Free-text paths are never scraped, and other directories are not scanned.
 
 Run the focused feature checks with Python and ast-grep on PATH:
 
@@ -443,7 +468,7 @@ Cloudflare operations use the `cf` CLI installed by the common Home Manager prof
 
 Pi selects the generated `one-half-light` theme from `themes/exports/pi/one-half-light.json`. The module also installs `claude-like` as an alternative. The built-in `system` theme remains available in `/settings` to derive colors from the terminal's background and ANSI palette.
 
-The integrated prompt statusline uses the active Pi theme for its background, path, model, and thin rules. Context and task-selection accents use standard ANSI colors from the terminal palette.
+The integrated prompt statusline uses the active Pi theme for its background, path, model, and thin rules. Context accents use standard ANSI colors from the terminal palette.
 
 ## Verification
 

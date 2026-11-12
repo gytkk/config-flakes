@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import baseSettings from "../files/settings.json";
+import shellConfig from "../files/interactive-shell.json";
 import { moduleConfig, settings } from "./module-config";
 
 const prefix = ".pi/agent/extensions/";
@@ -16,11 +17,17 @@ test("activation settings combine general settings with the explicit package sel
   expect(packages).toEqual([
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
     { source: "npm:pi-lsp@0.1.7", extensions: [] },
-    "npm:pi-bg-bash@0.5.1",
+    { source: "npm:pi-interactive-shell@0.18.0", skills: [], prompts: [] },
     "npm:pi-web-access@0.46.0",
     { source: "npm:pi-subagents@0.84.0", skills: [], prompts: [] },
   ]);
   expect(moduleConfig.enabled.activation).toEqual({ before: ["linkGeneration"], after: ["writeBoundary"] });
+});
+
+test("interactive shell uses managed lean, deferred, local-only configuration", () => {
+  expect(moduleConfig.enabled.interactiveShellSource).toBe("/checkout/modules/pi/files/interactive-shell.json");
+  expect(moduleConfig.disabled.interactiveShellSource).toBe(moduleConfig.enabled.interactiveShellSource);
+  expect(shellConfig).toEqual({ defer: true, toolSchema: "lean", jev: { enabled: false } });
 });
 
 test("local extension names map to their existing checkout or patched source", () => {

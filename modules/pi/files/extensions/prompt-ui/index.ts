@@ -9,9 +9,7 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_start", (_event, ctx) => {
     disposeFooter();
     if (ctx.mode !== "tui") return;
-    ctx.ui.setStatus("bg-selection", undefined);
     let renderStatusLine: ReturnType<typeof createStatusLine> | undefined;
-    let getBackgroundStatus = (): string | undefined => undefined;
     ctx.ui.setFooter((tui, _theme, footerData) => {
       let gitStatus = "";
       renderStatusLine = createStatusLine(ctx, footerData, () => gitStatus);
@@ -20,7 +18,6 @@ export default function (pi: ExtensionAPI) {
         gitStatus = status;
         tui.requestRender();
       }, (message) => ctx.ui.notify(message, "warning"));
-      getBackgroundStatus = () => footerData.getExtensionStatuses().get("bg");
       const unsubscribe = footerData.onBranchChange(() => tui.requestRender());
       let disposed = false;
       const dispose = () => {
@@ -42,10 +39,6 @@ export default function (pi: ExtensionAPI) {
         borderColor: (text) => ctx.ui.theme.fg("dim", text),
       }, keybindings);
       editor.renderStatusLine = (width, hiddenLines) => renderStatusLine?.(width, hiddenLines) ?? "";
-      editor.getBackgroundStatus = () => getBackgroundStatus();
-      editor.matchesBackgroundKey = (data, action) => keybindings.matches(data, action);
-      editor.hasBackgroundCommand = () => pi.getCommands().some((command) => command.name === "bg");
-      editor.onBackgroundSelectionChange = (selected) => ctx.ui.setStatus("bg-selection", selected ? "selected" : undefined);
       return editor;
     });
   });

@@ -24,7 +24,7 @@ export function safeDisplay(text: string): string {
 }
 // Pi 1.5.2: bash details.truncation + fullOutputPath; codemode details.calls +
 // fullOutputPath. Only native providers and their exact private temp naming
-// contracts qualify. In particular pi-bg-bash is NOT treated as native bash.
+// contracts qualify. External shell logs require explicit registration.
 export function automaticSource(toolName: string, details: unknown, source: string | undefined): string | undefined {
   if (source !== "builtin" || !details || typeof details !== "object") return;
   const d = details as { fullOutputPath?: unknown; truncation?: { truncated?: unknown }; calls?: unknown };

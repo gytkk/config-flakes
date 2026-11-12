@@ -148,26 +148,13 @@ describe("prompt statusline", () => {
     expect(line()).not.toContain("?% /");
   });
 
-  test("bounds real ANSI and wide text at every width, including selected tasks", () => {
+  test("bounds real ANSI and wide text at every width", () => {
     const { statuses, render } = fixture();
     statuses.set("codex-usage", "#######--- 79% (⏳ 3d 14h)");
-    for (const selected of [false, true]) {
-      if (selected) statuses.set("bg-selection", "selected");
-      for (let width = 0; width <= 320; width++) {
-        expect(visibleWidth(render(width))).toBeLessThanOrEqual(width);
-        expect(render(width)).not.toContain(CURSOR_MARKER);
-      }
+    for (let width = 0; width <= 320; width++) {
+      expect(visibleWidth(render(width))).toBeLessThanOrEqual(width);
+      expect(render(width)).not.toContain(CURSOR_MARKER);
     }
-  });
-
-  test("leaves background task display and selection to the input row", () => {
-    const { statuses, line } = fixture();
-    statuses.set("bg", "bg: 3");
-    statuses.set("bg-selection", "selected");
-    expect(line()).not.toContain("/bg");
-    expect(line()).not.toContain("bg: 3");
-    expect(line()).not.toContain("selected");
-    expect(line()).not.toContain(CURSOR_MARKER);
   });
 
   test("keeps scroll hints and handles missing context, long branches, and theme changes", () => {

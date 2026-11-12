@@ -19,7 +19,11 @@ let
       source = "npm:pi-lsp@0.1.7";
       extensions = [ ]; # Keep npm dependencies; load only the patched local extension below.
     }
-    "npm:pi-bg-bash@0.5.1"
+    {
+      source = "npm:pi-interactive-shell@0.18.0";
+      skills = [ ];
+      prompts = [ ];
+    }
     "npm:pi-web-access@0.46.0"
     {
       source = "npm:pi-subagents@0.84.0";
@@ -88,6 +92,7 @@ in
       ".pi/agent/agents/researcher.md".source = mkSymlink "agents/researcher.md";
       ".pi/agent/agents/reviewer.md".source = mkSymlink "agents/reviewer.md";
       ".pi/agent/agents/worker.md".source = mkSymlink "agents/worker.md";
+      ".pi/agent/interactive-shell.json".source = mkSymlink "files/interactive-shell.json";
       ".pi/agent/lsp.json".source = mkSymlink "files/lsp.json";
       ".pi/agent/mcp.json".source = mkSymlink "files/mcp.json";
       ".pi/agent/models.json".source = mkSymlink "files/models.json";

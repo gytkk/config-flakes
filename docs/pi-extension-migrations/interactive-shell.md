@@ -1,6 +1,6 @@
 # Pi background shell을 pi-interactive-shell로 전환
 
-상태: 구현 대기. 사용자가 선택한 패키지 전환의 스펙이며, 문서 작성 단계에서는 설정이나 설치 상태를 변경하지 않는다. 조사 기준은 2026-11-12, Pi 1.5.2, pi-interactive-shell 0.18.0이다.
+상태: 구현됨. Pi 1.5.2와 pi-interactive-shell 0.18.0의 Linux 격리 PTY 검사에서 27초 무출력 후 성공/실패, 패키지 완료 알림과 로그, 입력 및 overlay takeover/attach/stop, reload와 session shutdown hook, native bash/artifact 경계를 확인했다. 모델 없이 실제 배포본과 Pi loader/renderer를 실행한 fixture 검사이며, 사용자 Home Manager 적용과 macOS 검증은 별도다. 조사 기준은 2026-11-12다.
 
 ## 목표와 완료 조건
 
@@ -32,7 +32,7 @@
 
 Timeout, 사용자의 감독 중단, 실제 process exit, process-tree 종료는 별개의 결과로 취급한다. Stop 이후에는 패키지가 확인한 상태만 보고하고, 취소 요청을 보냈다는 사실을 종료 확인으로 바꾸지 않는다. `/reload`에서는 패키지가 작업을 유지하고 다른 session shutdown에서는 정리하는 계약을 실제 배포본으로 확인한다. Pi 종료 후에도 작업이 유지된다고 약속하지 않는다.
 
-Shell 기능의 도입은 background subagent, `/spawn` 기반의 별도 위임, worktree, 중첩 위임을 허용하지 않는다. 현재 subagent 계약을 유지한다. 일반 shell 자체가 agent CLI를 실행할 수 있으므로 이 지침을 보안 격리라고 표현하지 않는다.
+Shell 기능의 도입은 위임 권한을 추가하지 않는다. 기준 commit 2699454a의 현재 subagent 계약을 유지한다: 승인된 작업 안에서 병렬/background child, 독립 worktree와 명시적 follow-up은 허용하며 중첩 위임과 자동 resume 등은 계속 제한한다. `/spawn`, structured spawn 또는 shell의 agent CLI 실행을 별도 위임 경로로 사용하지 않는다. 일반 shell 자체가 agent CLI를 실행할 수 있으므로 이 지침을 보안 격리라고 표현하지 않는다.
 
 ## 구성과 변경 범위
 
@@ -75,7 +75,7 @@ uv run --no-project scripts/check-paths.py
 uv run --no-project scripts/check-paths.py modules/pi/README.md docs/pi-extension-migrations/interactive-shell.md
 ```
 
-추가한 shell integration 검사와 영향받은 prompt/artifact 테스트도 실행한다. Nix formatting과 최종 configuration 검증은 `modules/pi/README.md`를 따른다. Linux/WSL PTY 또는 실제 알림을 검증할 수 없으면 해당 항목을 미검증으로 보고하고 전환 완료로 표시하지 않는다. macOS 검증 결과는 별도로 기록하며 Linux 결과로 대신하지 않는다.
+추가한 shell integration은 `PI_INTERACTIVE_SHELL_PACKAGE_DIR`에 의존성을 갖춘 정확한 0.18.0 임시 설치 경로를 지정하고 `bash modules/pi/tests/run.sh interactive-shell.test.ts`로 실행한다. 이 검사는 Linux 전용이며, 의존성이 없어서 skip된 결과는 PTY 검증으로 세지 않는다. 영향받은 prompt/artifact 테스트도 실행한다. Nix formatting과 최종 configuration 검증은 `modules/pi/README.md`를 따른다. Linux/WSL PTY 또는 실제 알림을 검증할 수 없으면 해당 항목을 미검증으로 보고하고 전환 완료로 표시하지 않는다. macOS 검증 결과는 별도로 기록하며 Linux 결과로 대신하지 않는다.
 
 ## 적용과 복구
 

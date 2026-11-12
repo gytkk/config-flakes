@@ -84,7 +84,7 @@ export function createStatusLine(
       ` ${accent(truncateToWidth(cwd, limit, "…"))}${branch ? border(" › ") + theme.fg("text", branch) + (gitStatus ? " " + theme.fg("muted", gitStatus) : "") : ""} `,
     ) + cap("\uE0B0");
     let location = identity(visibleWidth(cwd));
-    const extras = [...statuses].filter(([key]) => ![STATE_TYPE, "codex-usage", "bg", "bg-selection"].includes(key))
+    const extras = [...statuses].filter(([key]) => ![STATE_TYPE, "codex-usage"].includes(key))
       .map(([, value]) => sanitizeStatusText(value)).filter(Boolean);
     let usage = sanitizeStatusText(statuses.get("codex-usage") ?? "")
       .replace(/^#+/, (filled) => styleStatus(filled, CLAUDE_ANSI.green));

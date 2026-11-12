@@ -27,6 +27,7 @@ let
     in
     {
       settings = builtins.fromJSON (builtins.readFile settingsPath);
+      interactiveShellSource = config.home.file.".pi/agent/interactive-shell.json".source;
       extensionSources = lib.mapAttrs (_: file: file.source) (
         lib.filterAttrs (name: _: lib.hasPrefix ".pi/agent/extensions/" name) config.home.file
       );

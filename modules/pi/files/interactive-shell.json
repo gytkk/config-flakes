@@ -1,0 +1,7 @@
+{
+  "defer": true,
+  "toolSchema": "lean",
+  "jev": {
+    "enabled": false
+  }
+}
