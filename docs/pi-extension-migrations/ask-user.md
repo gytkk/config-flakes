@@ -1,6 +1,6 @@
 # Pi 질문 도구를 pi-ask-user로 전환
 
-상태: 전환 보류, 대안 검토. Pi 1.5.2와 pi-ask-user 0.17.2의 격리 검사에서 Herdr 이벤트는 정상적으로 시작·해제됐지만 native blocked metadata 누락을 재현했다. 사용자가 2026-11-12에 다른 패키지 조사를 요청했으므로 main의 기존 RPIV 선택은 유지한다. 구현 후보와 검증은 `pi-migration/ask-user` branch의 커밋 c5cc2444에 보존하며, 아래 요구사항을 완화하거나 대체 패키지를 승인 없이 설치하지 않는다.
+상태: pi-ask-user 전환은 채택하지 않고 rpiv-mono의 질문 도구를 유지한다. 사용자가 2026-11-12에 [rpiv-mono](https://github.com/juicesharp/rpiv-mono/tree/main/packages/rpiv-ask-user-question)의 질문 도구를 선택했으며, 기존 pin인 `@juicesharp/rpiv-ask-user-question@2.15.0`이 이미 이 저장소에서 배포된 npm latest임을 확인했다. 패키지 이름이나 버전을 바꿀 필요는 없고 monorepo 전체도 설치하지 않는다. 아래는 채택하지 않은 pi-ask-user 0.17.2의 전환 명세다. 해당 후보에서 발견한 native blocked metadata 누락과 검증은 `pi-migration/ask-user` branch의 커밋 c5cc2444에 보존한다.
 
 ## 목표와 완료 조건
 

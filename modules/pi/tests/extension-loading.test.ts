@@ -41,7 +41,7 @@ function load(agent: string, cwd: string) {
     }));
   `, piEntry, cwd], {
     cwd, encoding: "utf8", timeout: 30_000,
-    env: { ...process.env, HOME: dirname(agent), XDG_CACHE_HOME: join(dirname(agent), "cache"), PI_CODING_AGENT_DIR: agent, JITI_FS_CACHE: "0", PI_SUBAGENT_CHILD: "0" },
+    env: { ...process.env, HOME: dirname(agent), XDG_CONFIG_HOME: join(dirname(agent), "config"), XDG_CACHE_HOME: join(dirname(agent), "cache"), PI_CODING_AGENT_DIR: agent, JITI_FS_CACHE: "0", PI_SUBAGENT_CHILD: "0" },
   });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`Pi loader exited ${result.status}: ${result.stderr}\n${result.stdout}`);
@@ -50,6 +50,27 @@ function load(agent: string, cwd: string) {
   expect(loaded.warnings).toEqual([]);
   return loaded.extensions as Array<{ path: string; tools: string[]; commands: string[]; messageRenderers: string[] }>;
 }
+
+const questionPackage = process.env.PI_RPIV_QUESTION_PACKAGE_DIR;
+test.skipIf(!questionPackage)("loads the pinned rpiv-mono questionnaire once without the umbrella package", async () => {
+  const source = resolve(questionPackage!);
+  const manifest = JSON.parse(await readFile(join(source, "package.json"), "utf8"));
+  expect(settings.packages).toContain(`npm:${manifest.name}@${manifest.version}`);
+  expect(manifest.name).toBe("@juicesharp/rpiv-ask-user-question");
+  expect(manifest.repository).toMatchObject({
+    url: "git+https://github.com/juicesharp/rpiv-mono.git",
+    directory: "packages/rpiv-ask-user-question",
+  });
+  const { agent, cwd } = await fixture();
+  await symlink(source, join(agent, "extensions/questionnaire"));
+  await symlink(join(moduleRoot, "files/extensions/rounded-tools.ts"), join(agent, "extensions/rounded-tools.ts"));
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const extensions = load(agent, cwd);
+    expect(extensions).toHaveLength(2);
+    expect(extensions.flatMap(extension => extension.tools)).toEqual(["ask_user_question"]);
+    expect(extensions.flatMap(extension => extension.commands)).toEqual([]);
+  }
+}, 60_000);
 
 const powerlinePackage = process.env.PI_POWERLINE_PACKAGE_DIR;
 test("discovers exact Powerline once with status providers and no local prompt UI", async () => {
@@ -89,9 +110,11 @@ test.skipIf(!lensPackage || !shellPackage)("migration packages coexist without d
   for (const name of ["codex-fast-mode.ts", "codex-usage.ts", "rounded-tools.ts"]) {
     await symlink(join(moduleRoot, "files/extensions", name), join(agent, "extensions", name));
   }
+  if (questionPackage) await symlink(resolve(questionPackage), join(agent, "extensions/questionnaire"));
   const extensions = load(agent, cwd);
-  expect(extensions).toHaveLength(6);
+  expect(extensions).toHaveLength(questionPackage ? 7 : 6);
   const tools = extensions.flatMap(extension => extension.tools);
+  if (questionPackage) expect(tools.filter(name => name === "ask_user_question")).toHaveLength(1);
   const commands = extensions.flatMap(extension => extension.commands);
   expect(new Set(tools).size).toBe(tools.length);
   expect(new Set(commands).size).toBe(commands.length);

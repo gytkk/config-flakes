@@ -91,7 +91,7 @@ The `extensionPackages` list in `modules/pi/default.nix` is intentionally versio
 
 | Package | Version | Purpose |
 | --- | --- | --- |
-| `@juicesharp/rpiv-ask-user-question` | `2.15.0` | Structured user questions |
+| [`@juicesharp/rpiv-ask-user-question`](https://github.com/juicesharp/rpiv-mono/tree/main/packages/rpiv-ask-user-question) | `2.15.0` | Structured user questions from rpiv-mono |
 | `pi-interactive-shell` | `0.18.0` | Interactive PTY overlay, background dispatch, and completion notifications |
 | `pi-lens` | `4.4.12` | LSP diagnostics/navigation, semantic rename, AST search and replacement preview |
 | `pi-powerline-footer` | `0.22.0` | Editor and responsive status bars |
@@ -281,6 +281,14 @@ Fresh sessions use the packages' own `enable_interactive_shell`, `web_enable`, a
 
 When migrating an existing installation, apply Home Manager to remove its managed `~/.pi/agent/extensions/tool-profiles` symlink, then restart Pi. New sessions use the default activation state; resumed web/delegation tools may retain transcript activation, while interactive-shell resets its deferred tool on every session start.
 
+## Structured questions
+
+The managed `@juicesharp/rpiv-ask-user-question@2.15.0` is already published from [rpiv-mono](https://github.com/juicesharp/rpiv-mono/tree/main/packages/rpiv-ask-user-question). The repository move did not change its npm identity; keep the exact package pin in `modules/pi/default.nix`. Do not install the monorepo root or `@juicesharp/rpiv-pi` to obtain this one extension: the umbrella package introduces a separate workflow and sibling setup.
+
+Use `ask_user_question` with the package's existing `questions`, `header`, `multiSelect`, and `options[].label`, `description`, and optional `preview` fields. Terminal questions retain the custom-answer row, multi-question review, notes, and Escape cancellation. RPC uses native select/input dialogs with reduced presentation; headless runs remove the tool from the active set. The extension makes no model calls of its own. The module does not select the optional i18n extension. Without that SDK, UI chrome uses its English fallback; user-authored Korean questions and answers are separate from localization.
+
+`rpiv-todo`, `rpiv-advisor`, and other siblings are not installed implicitly. The existing `phase-tasks` and pi-subagents contracts remain unchanged. The earlier pi-ask-user replacement is not selected; its investigation is retained in [the question migration specification](../../docs/pi-extension-migrations/ask-user.md).
+
 ## Rounded tool and extension-message frames
 
 `modules/pi/files/extensions/rounded-tools.ts` wraps each tool's call and text result in one rounded terminal border. It uses Pi's renderer resolver without replacing tool definitions or execution. Existing renderers retain syntax highlighting, edit previews, codemode nested-call status, streaming updates, and expansion controls. Like OMP's terminal output blocks, the renderer applies the tool background to each complete framed row, including the rounded corners, horizontal rules, and side borders. This removes the unpainted band between the content and outline. The fill remains character-cell based, not a pixel-clipped rounded shape. The outline uses the same background hue, shaded 15% toward black in light themes or white in dark themes for subtle contrast. Pending, successful, and failed calls retain their theme backgrounds. Tools with their own shell retain their inner layout and explicit background colors; uncovered cells use the tool-state background. Panes narrower than five columns omit the border.
@@ -446,6 +454,8 @@ The test runner requires Nix, Bun, Node.js, jq, ripgrep, and an installed Pi mat
 ```bash
 bash modules/pi/tests/run.sh module-config.test.ts subagent-profiles.test.ts
 ```
+
+Set `PI_RPIV_QUESTION_PACKAGE_DIR` to an isolated `@juicesharp/rpiv-ask-user-question@2.15.0` package with its runtime dependencies to enable the questionnaire loader check in `extension-loading.test.ts`. It checks the monorepo package metadata, exact configured identity, single tool registration and fresh rediscovery. With all migration package directories supplied, the coexistence check includes the questionnaire too. An unset variable skips this check; loading is not evidence of live questionnaire or overlay focus behavior.
 
 Powerline tests require an explicitly supplied, unpacked `pi-powerline-footer@0.22.0` npm release directory. The runner verifies the package version in the tests, copies it into the temporary tree, and links only the installed Pi dependencies; it does not download packages. Without `PI_POWERLINE_PACKAGE_DIR`, the Powerline loader and component tests fail with a prerequisite error rather than silently skipping the required migration checks. Run them with:
 
