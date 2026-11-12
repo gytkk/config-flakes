@@ -1,14 +1,20 @@
 # OMP
 
-`modules.omp.enable` installs `pkgs.omp` and links `~/.omp/agent/config.yml` to `modules/omp/files/config.yml` in the checkout with `mkOutOfStoreSymlink`. The common Home Manager profile enables the module. `flakeDirectory` selects the checkout, normally `~/development/config-flakes`.
+`modules.omp.enable` installs `pkgs.omp` and links `~/.omp/agent/config.yml` and `~/.omp/agent/PERSONALITY.md` to their counterparts in `modules/omp/files/` with `mkOutOfStoreSymlink`. The common Home Manager profile enables the module. `flakeDirectory` selects the checkout, normally `~/development/config-flakes`.
 
-Only the default profile's settings file is managed. Authentication, databases, sessions, caches, and named profiles remain device-local. Pi settings and extensions are not imported, and this module does not install shared instructions. Do not put credentials or machine-specific paths in the shared YAML. Settings saved by OMP can change the checkout file; review those changes before committing.
+Only the default profile's settings and personality files are managed. Authentication, databases, sessions, caches, and named profiles remain device-local. Pi settings and extensions are not imported, and this module does not install shared instructions. Do not put credentials or machine-specific paths in the shared YAML. Settings saved by OMP can change the checkout file; review those changes before committing.
 
 Auto-QA tool issue reporting is disabled in the shared configuration: `dev.autoqa: false` and `dev.autoqaConsent: denied`. This disables automatic report recording and upload; it does not delete existing reports locally or from the collector. Do not enable the `PI_AUTO_QA` or `PI_AUTO_QA_PUSH` environment overrides if reports must remain disabled.
 
 OMP is a consumer of [agent-core's shared skill target](../../agent-core/README.md#omp). Enabling OMP alone triggers [shared skill activation](../agent-skills/README.md) during Home Manager switch, even with Codex and Pi disabled. OMP discovers the installed `~/.agents/skills` pool as `agents:user`; no OMP-specific copy or extra provider configuration is needed with the managed settings. After applying the configuration, restart OMP and check `omp skill list --json`.
 
 On macOS with Herdr App and Neovim enabled, the package is wrapped for [file links in a right-hand Neovim pane](../herdr/README.md#omp-file-links-in-neovim). Only OMP started inside a local App pane receives the custom file-link environment. Text/code links reuse an editor for that origin; other files keep their default opener. Apply Home Manager and restart OMP to enable the launcher; existing sessions retain their original link targets.
+
+## Personality
+
+[PERSONALITY.md](files/PERSONALITY.md) replaces OMP's default personality text while preserving its evidence-first engineering style. Korean conversation uses a cheerful tsundere character voice; accuracy, risk reporting, and verification remain unchanged, and code and documents retain their normal register. The rest of OMP's built-in engineering and tool instructions remain intact.
+
+Keep `personality` at `default` (the upstream default); `none` disables the personality file too. Restart OMP in a new session after editing the file. Other hosts receive the link on Home Manager activation; preserve any pre-existing local personality file using the backup procedure below.
 
 ## MCP
 
@@ -80,7 +86,7 @@ home-manager switch -b before-omp-module --flake .#pylv-denim
 
 Use the appropriate environment on other hosts. If that backup already exists, choose another suffix. Review each host's existing settings before switching; merge any desired differences into the shared YAML. Do not use `home.file.force` to discard local settings. NixOS users must preserve any existing conflicting file before their normal system switch.
 
-Restart OMP after activation. `readlink -f ~/.omp/agent/config.yml` should resolve to the checkout file. OMP authentication remains independent of Pi; use `/login` if needed.
+Restart OMP after activation. `readlink -f ~/.omp/agent/config.yml` and `readlink -f ~/.omp/agent/PERSONALITY.md` should resolve to their checkout files. OMP authentication remains independent of Pi; use `/login` if needed.
 
 ## Verification
 

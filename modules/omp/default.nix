@@ -38,6 +38,7 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = [ package ];
     home.file.".omp/agent/config.yml".source = mkSymlink "files/config.yml";
+    home.file.".omp/agent/PERSONALITY.md".source = mkSymlink "files/PERSONALITY.md";
     home.file.".omp/agent/extensions/herdr-omp-agent-state.ts" = lib.mkIf config.modules.herdr.enable {
       source = "${pkgs.herdr.src}/src/integration/assets/omp/herdr-agent-state.ts";
     };
