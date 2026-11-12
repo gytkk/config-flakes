@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: cachix/install-nix-action@v31
         with:
-          install_url: https://releases.nixos.org/nix/nix-2.34.9/install
+          install_url: https://releases.nixos.org/nix/nix-2.29.1/install
       - name: Install workflow tools
         run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: Test changed-app detection
@@ -99,7 +99,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: cachix/install-nix-action@v31
         with:
-          install_url: https://releases.nixos.org/nix/nix-2.34.9/install
+          install_url: https://releases.nixos.org/nix/nix-2.29.1/install
       - name: Build package
         env:
           APP: ${{ matrix.app }}
