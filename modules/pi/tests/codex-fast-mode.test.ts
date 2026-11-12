@@ -49,6 +49,23 @@ describe("prompt statusline", () => {
     expect(line(80)).toContain("11%");
   });
 
+  test.each([
+    ["---------- 0% (⏳ unknown)", ""],
+    ["#--------- 10% (⏳ unknown)", "#"],
+    ["#######--- 79% (⏳ 2026-11-05 03:00)", "#######"],
+    ["########## 100% (⏳ unknown)", "##########"],
+    ["weekly unavailable (/codex-usage)", ""],
+  ])("colors only the filled quota cells green: %s", (usage, filled) => {
+    const { statuses, render, line } = fixture();
+    statuses.set("codex-usage", usage);
+    expect(line()).toContain(usage);
+    if (filled) {
+      expect(render(300)).toContain(`\x1b[32m${filled}\x1b[0m${usage.slice(filled.length)}`);
+    } else {
+      expect(render(300)).not.toContain("\x1b[32m");
+    }
+  });
+
   test("centers the percentage across the entire context meter", () => {
     const { ctx, line } = fixture();
     const usage = ctx.getContextUsage();
@@ -100,6 +117,7 @@ describe("prompt statusline", () => {
 
   test("bounds real ANSI and wide text at every width, including selected tasks", () => {
     const { statuses, render } = fixture();
+    statuses.set("codex-usage", "#######--- 79% (⏳ 2026-11-05 03:00)");
     for (const selected of [false, true]) {
       if (selected) statuses.set("bg-selection", "selected");
       for (let width = 0; width <= 320; width++) {

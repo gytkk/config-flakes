@@ -13,6 +13,7 @@ const contextWindowFormat = new Intl.NumberFormat("en", { notation: "compact", m
 
 const CLAUDE_ANSI = {
   red: "\x1b[31m",
+  green: "\x1b[32m",
   yellow: "\x1b[33m",
   cyan: "\x1b[36m",
   dim: "\x1b[2m",
@@ -108,7 +109,8 @@ export function createStatusLine(
     let location = identity(visibleWidth(cwd));
     const extras = [...statuses].filter(([key]) => ![STATE_TYPE, "codex-usage", "bg", "bg-selection"].includes(key))
       .map(([, value]) => sanitizeStatusText(value)).filter(Boolean);
-    let usage = sanitizeStatusText(statuses.get("codex-usage") ?? "");
+    let usage = sanitizeStatusText(statuses.get("codex-usage") ?? "")
+      .replace(/^#+/, (filled) => styleStatus(filled, CLAUDE_ANSI.green));
     const contentWidth = width - 2;
     const left = () => join([location, scroll]);
     const right = () => join([...extras, usage, model]);
