@@ -1,14 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 
-mock.module("@earendil-works/pi-tui", () => ({
-  CURSOR_MARKER: "\x1b_pi:c\x07",
-  truncateToWidth: (text: string, width: number) => text.slice(0, width),
-  visibleWidth: (text: string) => text.length,
-}));
-
-const { default: fastMode, createTokenTotalsReader } = await import(
-  "../files/extensions/codex-fast-mode"
-);
+import { CURSOR_MARKER, visibleWidth } from "@earendil-works/pi-tui";
+import fastMode, { createStatusLine, createTokenTotalsReader } from "../files/extensions/codex-fast-mode";
 
 function context() {
   let entries: any[] = [];
@@ -72,73 +65,87 @@ describe("footer token totals", () => {
   });
 });
 
-describe("Codex usage footer", () => {
-  test("places usage immediately before the model on one bounded line", () => {
-    const handlers = new Map<string, Function>();
+describe("prompt statusline", () => {
+  function fixture() {
     const statuses = new Map([["codex-usage", "---------- weekly 9% left | reset 2026-11-05 03:00"]]);
-    let footer: { render: (width: number) => string[] };
     const commands = ["bg"];
-    fastMode({
-      getCommands: () => commands.map((name) => ({ name })),
-      on: (event: string, handler: Function) => handlers.set(event, handler),
-      registerCommand: () => {},
-    } as never);
-    handlers.get("session_start")!({}, {
-      mode: "tui",
-      model: { id: "test-model", provider: "openai" },
+    const ctx = {
+      model: { id: "test-model", provider: "openai", reasoning: true },
+      thinkingLevel: "high",
       sessionManager: {
-        getBranch: () => [], getEntries: () => [], getCwd: () => "/workspace",
+        getEntries: () => [], getCwd: () => "/workspace/한글-project",
         getSessionId: () => "test", getLeafId: () => null,
       },
-      getContextUsage: () => undefined,
-      ui: {
-        setFooter: (factory: Function) => {
-          footer = factory({ requestRender: () => {} }, {}, {
-            onBranchChange: () => () => {}, getGitBranch: () => "main",
-            getExtensionStatuses: () => statuses,
-          });
-        },
-      },
-    });
-    for (const width of [0, 1, 2, 10, 40, 80, 120, 200]) {
-      const lines = footer!.render(width);
-      expect(lines).toHaveLength(1);
-      expect(lines[0].length).toBeLessThanOrEqual(width);
-    }
-    const plainLine = footer!.render(200)[0].replace(/\x1b\[[0-9;]*m/g, "");
-    expect(plainLine).toContain("---------- weekly 9% left | reset 2026-11-05 03:00 | test-model");
-    expect(footer!.render(80)[0]).toContain("test-model");
-    statuses.set("codex-usage", "weekly unavailable (/codex-usage)");
-    expect(footer!.render(200)[0]).toContain("weekly unavailable");
-    statuses.clear();
-    const withoutUsage = footer!.render(80);
-    expect(withoutUsage).toHaveLength(1);
-    expect(withoutUsage[0]).not.toContain("Codex");
-    expect(withoutUsage[0]).toContain("test-model");
+      getContextUsage: () => ({ percent: 11 }),
+      ui: { theme: {
+        fg: (_: string, text: string) => `\x1b[36m${text}\x1b[39m`,
+        bg: (_: string, text: string) => `\x1b[47m${text}\x1b[49m`,
+      } },
+    };
+    const data = { getGitBranch: () => "main", getExtensionStatuses: () => statuses };
+    const render = createStatusLine({ getCommands: () => commands.map((name) => ({ name })) } as never, ctx as never, data as never);
+    const line = (width = 300) => render(width).replace(/\x1b\[[0-9;]*m/g, "");
+    return { statuses, commands, ctx, data, render, line };
+  }
 
-    const line = () => footer!.render(500)[0].replace(/\x1b\[[0-9;]*m/g, "");
-    expect(line()).toContain("tokens ↓0 ↑0 | /bg (0)");
-    statuses.set("bg", "bg: 3");
-    expect(line()).toContain("tokens ↓0 ↑0 | /bg (3)");
-    expect(line()).not.toContain("bg: 3");
-    statuses.set("bg-selection", "selected");
-    expect(line()).toContain("\x1b_pi:c\x07> /bg (3)");
-    expect(line()).not.toContain("selected");
-    for (const width of [0, 1, 2, 10, 40, 80, 200]) {
-      expect(footer!.render(width)[0].length).toBeLessThanOrEqual(width);
+  test("preserves every status and places usage immediately before the model", () => {
+    const { statuses, line } = fixture();
+    expect(line()).toStartWith("╭ /workspace/한글-project › main ");
+    expect(line()).toContain("11%");
+    expect(line()).toContain("tokens ↓0 ↑0 │ /bg (0)");
+    expect(line()).toContain("---------- weekly 9% left | reset 2026-11-05 03:00 │ test-model · high · fast(off)");
+    statuses.set("codex-fast-mode", "on");
+    statuses.set("custom", "other extension");
+    expect(line()).toContain("fast(on)");
+    expect(line()).toContain("other extension");
+    statuses.set("codex-usage", "weekly unavailable (/codex-usage)");
+    expect(line()).toContain("weekly unavailable");
+    statuses.clear();
+    expect(line()).not.toContain("weekly");
+    expect(line(80)).toContain("test-model");
+    expect(line(80)).toContain("11%");
+  });
+
+  test("bounds real ANSI and wide text at every width, including selected tasks", () => {
+    const { statuses, render } = fixture();
+    for (const selected of [false, true]) {
+      if (selected) statuses.set("bg-selection", "selected");
+      for (let width = 0; width <= 320; width++) {
+        expect(visibleWidth(render(width))).toBeLessThanOrEqual(width);
+        if (selected && width > 0) expect(render(width)).toContain(CURSOR_MARKER);
+        if (!selected) expect(render(width)).not.toContain(CURSOR_MARKER);
+      }
     }
+  });
+
+  test("updates tasks without duplicating private statuses", () => {
+    const { statuses, commands, line, render } = fixture();
+    statuses.set("bg", "bg: 3");
+    statuses.set("bg-selection", "selected");
+    expect(line()).toContain(`${CURSOR_MARKER}* /bg (3)`);
+    expect(line()).not.toContain("bg: 3");
+    expect(line()).not.toContain("selected");
+    expect(render(300)).toContain("\x1b[1;35m* /bg (3)\x1b[0m");
     statuses.delete("bg");
-    expect(line()).toContain("> /bg (0)");
-    expect(footer!.render(500)[0]).toContain("\x1b[1;35m> /bg (0)\x1b[0m");
+    expect(line()).toContain("* /bg (0)");
     statuses.delete("bg-selection");
-    expect(footer!.render(500)[0]).toContain("\x1b[2m/bg (0)\x1b[0m");
-    expect(footer!.render(500)[0]).not.toContain("\x1b[1;35m");
-    expect(line()).not.toContain("\x1b_pi:c\x07");
+    expect(line()).not.toContain(CURSOR_MARKER);
     statuses.set("bg", "unexpected status");
     expect(line()).toContain("/bg (?)");
     commands.length = 0;
     expect(line()).not.toContain("/bg");
     expect(line()).not.toContain("unexpected status");
+  });
+
+  test("keeps scroll hints and handles missing context, long branches, and theme changes", () => {
+    const { ctx, data, render } = fixture();
+    expect(render(80, 7)).toContain("↑ 7 more");
+    ctx.getContextUsage = () => undefined as never;
+    data.getGitBranch = () => "한글".repeat(100);
+    for (const width of [4, 20, 60, 100, 200]) expect(visibleWidth(render(width))).toBeLessThanOrEqual(width);
+    expect(render(80)).toContain("?%");
+    ctx.ui.theme.fg = (_, text) => `\x1b[31m${text}\x1b[39m`;
+    expect(render(80)).toContain("\x1b[31mtest-model");
   });
 });
 
@@ -162,6 +169,20 @@ describe("OpenAI fast mode", () => {
       },
       appendEntry,
     } as never);
+  });
+
+  test("publishes restored and toggled state without installing another footer", async () => {
+    const setStatus = mock(() => {});
+    const tuiCtx = { ...ctx, mode: "tui", ui: { ...ctx.ui, setStatus } };
+    handlers.get("session_start")!({}, tuiCtx);
+    expect(setStatus).toHaveBeenLastCalledWith("codex-fast-mode", "off");
+    await command("on", tuiCtx);
+    expect(setStatus).toHaveBeenLastCalledWith("codex-fast-mode", "on");
+    handlers.get("session_start")!({}, {
+      ...tuiCtx,
+      sessionManager: { getBranch: () => [{ type: "custom", customType: "codex-fast-mode", data: { enabled: true } }] },
+    });
+    expect(setStatus).toHaveBeenLastCalledWith("codex-fast-mode", "on");
   });
 
   test("starts disabled and resets to disabled for a new session", async () => {

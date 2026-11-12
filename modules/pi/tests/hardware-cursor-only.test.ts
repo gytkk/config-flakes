@@ -23,16 +23,30 @@ const keybindings = {
 function createEditor(mode = "tui", commands: string[] = []) {
   let editor: CustomEditor | undefined;
   const statuses = new Map<string, string>();
+  let footer: { render: (width: number) => string[]; dispose: () => void } | undefined;
+  let unsubscribed = false;
   hardwareCursorOnly({
     getCommands: () => commands.map((name) => ({ name })),
     on: (_event: string, handler: Function) => handler({}, {
       mode,
+      model: { id: "test-model", provider: "openai" },
+      sessionManager: {
+        getEntries: () => [], getCwd: () => "/workspace",
+        getSessionId: () => "test", getLeafId: () => null,
+      },
+      getContextUsage: () => ({ percent: 11 }),
       ui: {
+        setFooter: (factory: Function) => {
+          footer = factory(tui, {}, {
+            getGitBranch: () => "main", getExtensionStatuses: () => statuses,
+            onBranchChange: () => () => { unsubscribed = true; },
+          });
+        },
         setStatus: (key: string, value: string | undefined) => {
           if (value === undefined) statuses.delete(key);
           else statuses.set(key, value);
         },
-        theme: { fg: (_color: string, text: string) => dim(text) },
+        theme: { fg: (_color: string, text: string) => dim(text), bg: (_color: string, text: string) => text },
         setEditorComponent: (factory: Function) => {
           editor = factory(tui, theme, keybindings);
         },
@@ -40,19 +54,23 @@ function createEditor(mode = "tui", commands: string[] = []) {
     }),
   } as never);
   if (editor) editor.focused = true;
-  return editor ? Object.assign(editor, { statuses }) : undefined;
+  return editor ? Object.assign(editor, { statuses, footer, isUnsubscribed: () => unsubscribed }) : undefined;
 }
 
 describe("hardware cursor prompt", () => {
-  test("shows a fixed prompt and hardware cursor with dim borders", () => {
+  test("shows a status border and open prompt with no duplicate footer", () => {
     const editor = createEditor()!;
     editor.borderColor = (text) => `purple:${text}`;
-    const lines = editor.render(20);
-    expect(lines[0]).toBe(dim("─".repeat(20)));
-    expect(lines[1]).toStartWith(`❯ ${CURSOR_MARKER} `);
-    expect(lines[2]).toBe(dim("─".repeat(20)));
+    const lines = editor.render(80);
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toContain("test-model");
+    expect(lines[0]).toContain("11%");
+    expect(lines[1]).toStartWith(`${dim("╰─")}${CURSOR_MARKER} `);
     expect(lines.join("")).not.toContain("\x1b[7m");
-    expect(lines.every((line) => visibleWidth(line) === 20)).toBe(true);
+    expect(lines.every((line) => visibleWidth(line) === 80)).toBe(true);
+    expect(editor.footer!.render(80)).toEqual([]);
+    editor.footer!.dispose();
+    expect(editor.isUnsubscribed()).toBe(true);
   });
 
   test("preserves built-in wrapping, cursor placement, navigation, and submission", () => {
@@ -68,8 +86,9 @@ describe("hardware cursor prompt", () => {
       current.handleInput("!");
     }
     const expected = original.render(12).map(stripSoftwareCursor);
-    expected[1] = `❯${expected[1].slice(1)}`;
-    expect(editor.render(12)).toEqual(expected);
+    expected[1] = dim("╰─") + expected[1].slice(2);
+    expected.pop();
+    expect(editor.render(12).slice(1)).toEqual(expected.slice(1));
     expect(editor.getCursor()).toEqual(original.getCursor());
     for (const current of [editor, original]) {
       current.handleMouse({ type: "click", button: "left", x: 3, y: 1, width: 12 } as never);
@@ -80,10 +99,10 @@ describe("hardware cursor prompt", () => {
     const text = editor.getText();
     editor.handleInput("\r");
     expect(submitted).toBe(text);
-    expect(submitted).not.toContain("❯");
+    expect(submitted).not.toContain("╰─");
   });
 
-  test("keeps autocomplete below the dim bottom border", async () => {
+  test("keeps autocomplete rows and mouse targets below a blank separator", async () => {
     const editor = createEditor()!;
     editor.setAutocompleteProvider(new CombinedAutocompleteProvider([{ name: "help" }]));
     editor.setText("/h");
@@ -91,11 +110,13 @@ describe("hardware cursor prompt", () => {
     await Bun.sleep(0);
     expect(editor.isShowingAutocomplete()).toBe(true);
     const lines = editor.render(20);
-    expect(lines[1]).toStartWith("❯ /h");
-    expect(lines[2]).toBe(dim("─".repeat(20)));
+    expect(lines[1]).toStartWith(dim("╰─") + "/h");
+    expect(lines[2]).toBe("");
     expect(lines[3]).toContain("help");
-    expect(lines[3]).not.toContain("❯");
+    expect(lines[3]).not.toContain("╰─");
     expect(lines.every((line) => visibleWidth(line) <= 20)).toBe(true);
+    const result = editor.handleMouse({ type: "click", button: "left", x: 3, y: 3, width: 20 } as never);
+    expect(result?.handled).toBe(true);
   });
 
   test("keeps multiline paste content and places the prompt only on the first visible row", () => {
@@ -105,10 +126,9 @@ describe("hardware cursor prompt", () => {
     expect(editor.getExpandedText()).toBe(text);
     editor.setText(text);
     const lines = editor.render(20);
-    expect(lines[1]).toStartWith("❯ ");
-    expect(lines.join("").split("❯")).toHaveLength(2);
-    expect(lines[0]).toContain("more");
-    expect(lines[0]).toStartWith("\x1b[2m");
+    expect(lines[1]).toStartWith(dim("╰─"));
+    expect(lines.join("").split("╰─")).toHaveLength(2);
+    expect(editor.render(80)[0]).toContain("more");
     expect(lines.join("")).toContain(CURSOR_MARKER);
   });
 
@@ -118,7 +138,7 @@ describe("hardware cursor prompt", () => {
       if (width >= 3) editor.setText("abcde");
       const lines = editor.render(width);
       expect(lines.every((line) => visibleWidth(line) <= width)).toBe(true);
-      expect(lines[1].startsWith("❯")).toBe(width >= 3);
+      expect(lines[1].includes("╰")).toBe(width >= 3);
       expect(editor.getText()).toBe(width >= 3 ? "abcde" : "");
     }
   });
@@ -127,14 +147,18 @@ describe("hardware cursor prompt", () => {
     const editor = createEditor("tui", ["bg"])!;
     const submitted: string[] = [];
     editor.onSubmit = (text) => { submitted.push(text); };
-    expect(editor.render(80)).toHaveLength(3);
+    expect(editor.render(80)).toHaveLength(2);
     editor.handleInput("\x1b[B");
     expect(submitted).toEqual([]);
     expect(editor.getText()).toBe("");
     const lines = editor.render(80);
-    expect(lines).toHaveLength(3);
+    expect(lines).toHaveLength(2);
     expect(editor.statuses.get("bg-selection")).toBe("selected");
-    expect(lines.join("")).not.toContain(CURSOR_MARKER);
+    expect(lines[0]).toContain(CURSOR_MARKER);
+    expect(lines[1]).not.toContain(CURSOR_MARKER);
+    editor.focused = false;
+    expect(editor.render(80).join("")).not.toContain(CURSOR_MARKER);
+    editor.focused = true;
     editor.handleInput("\x1b[B");
     editor.handleInput("\r");
     expect(submitted).toEqual(["/bg"]);

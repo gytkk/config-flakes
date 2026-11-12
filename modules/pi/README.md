@@ -159,10 +159,9 @@ Home Manager installs the extension. After applying the configuration, run `/rel
 
 - `/fast [on|off|status]`
 - `service_tier: "priority"` for `openai` requests while enabled
-- a one-line footer with working directory, Git branch, model, thinking level,
-  fast-mode state, context usage, and cumulative input/output tokens
+- fast-mode status for the prompt's integrated statusline
 
-Fast mode starts disabled in each new session; use `/fast on` to enable it. Toggle changes are stored in the session so resumed branches recover their previous state. The extension is the sole owner of the custom footer and priority-mode request field. Token totals include assistant, tool, summary, compaction, and standalone usage entries; the footer caches totals until the session or its leaf changes.
+Fast mode starts disabled in each new session; use `/fast on` to enable it. Toggle changes are stored in the session so resumed branches recover their previous state. The extension owns the priority-mode request field and publishes its display state through `codex-fast-mode`. Its statusline renderer supplies the editor extension with working directory, Git branch, model, thinking level, fast-mode state, context usage, cumulative input/output tokens, and extension statuses. Token totals include assistant, tool, summary, compaction, and standalone usage entries; the renderer caches totals until the session or its leaf changes.
 
 Subagent child processes are detected through `PI_SUBAGENT_CHILD=1` and do
 not receive the priority service tier. `PI_SUBAGENT_PARENT_SESSION` is also set
@@ -171,7 +170,7 @@ the child-process signal. Parent Pi sessions continue to use fast mode normally.
 
 ### Codex subscription usage
 
-`files/extensions/codex-usage.ts` adds `/codex-usage` and shows the Codex weekly quota remaining and reset date and time in the computer's time zone immediately to the left of the model in the single-line footer. The display starts with a ten-cell remaining-quota bar, such as `###------- weekly 33% left`, followed by a timestamp such as `reset 2026-11-05 03:00`; each `#` represents a full ten percentage points remaining. Narrow terminals truncate the usage text or omit it when there is not enough room beside the model. Interactive parent sessions fetch usage at startup and every minute without blocking startup. `/codex-usage` refreshes immediately and shows the local reset date and time without a time-zone suffix, along with the source timestamp. Concurrent refreshes share one request, each request has a 30-second timeout, and shutdown or reload cancels pending work. Non-interactive sessions and subagent processes do not poll.
+`files/extensions/codex-usage.ts` adds `/codex-usage` and shows the Codex weekly quota remaining and reset date and time in the computer's time zone immediately to the left of the model in the prompt's top statusline. The display starts with a ten-cell remaining-quota bar, such as `###------- weekly 33% left`, followed by a timestamp such as `reset 2026-11-05 03:00`; each `#` represents a full ten percentage points remaining. Narrow terminals truncate the usage text or omit it to preserve context, model, and task-selection information. Interactive parent sessions fetch usage at startup and every minute without blocking startup. `/codex-usage` refreshes immediately and shows the local reset date and time without a time-zone suffix, along with the source timestamp. Concurrent refreshes share one request, each request has a 30-second timeout, and shutdown or reload cancels pending work. Non-interactive sessions and subagent processes do not poll.
 
 The extension runs `codexbar usage --provider codex --source oauth --json --no-credits` using the CodexBar CLI already installed by the common profile. It reads the weekly `usage.secondary` window, not session token totals or API credit balances. OAuth uses the Codex CLI account selected by CodexBar and `CODEX_HOME`, which can differ from Pi's ChatGPT login. Use the same account in both clients to track the subscription used by Pi. The extension does not read, copy, or manage authentication files; CodexBar owns usage retrieval and its authentication behavior. It does not fall back to browser cookie extraction.
 
@@ -181,9 +180,11 @@ Apply Home Manager and restart Pi to install the extension. To try it before app
 
 ### Prompt and cursor rendering
 
-`files/extensions/hardware-cursor-only.ts` adds a fixed `❯` to the first visible input row and uses the active theme's `dim` color for the top and bottom borders. Built-in editor padding reserves space for the prompt, so the marker is not part of submitted text. Continuation lines, autocomplete, wrapping, and mouse positioning use Pi's editor behavior. The marker is omitted when the terminal is narrower than three columns.
+`modules/pi/files/extensions/hardware-cursor-only.ts` owns the editor and the empty footer. It uses the renderer from `modules/pi/files/extensions/codex-fast-mode.ts` to place status information in the editor's top border. The working directory and branch share a subtle theme-backed background on the left, followed by the context meter. Tokens, background tasks, other extension statuses, weekly quota, and the model appear on the right, connected by a thin rule. At narrower widths, the renderer shortens the path and quota, then omits secondary statuses, tokens, and the location before shortening essential context and model information. A selected `/bg` item retains a visible marker and hardware cursor even in a very narrow pane.
 
-The extension removes Pi's software cursor markers while preserving the terminal cursor used for IME positioning. It is paired with `showHardwareCursor: true` in `settings.json`. Review it when updating Pi if cursor rendering or IME positioning changes.
+The first visible input row starts with `╰─` instead of a boxed input area. Built-in editor padding reserves space for the prompt, so the marker is not part of submitted text. At three or four columns it uses only `╰`; below three columns it omits the marker. The editor keeps Pi's wrapping, history, autocomplete, and mouse positioning. Hidden input lines retain scroll hints. The bottom border is omitted when no lines are hidden below; autocomplete retains a blank separator so its mouse coordinates remain unchanged.
+
+The extension removes Pi's software cursor markers while preserving the terminal cursor used for IME positioning. It is paired with `showHardwareCursor: true` in `modules/pi/files/settings.json`. Review it when updating Pi if cursor rendering or IME positioning changes. With the existing checkout-backed extensions installed, `/reload` applies these changes without a Home Manager switch. Check a narrow pane, multiline Korean input, autocomplete, and Down/Enter task selection after reloading.
 
 ### Terminal title on exit
 
@@ -199,7 +200,7 @@ When migrating an existing installation, apply Home Manager to remove its manage
 
 `pi-bg-bash` replaces Pi's model-facing `bash` tool, not the system Bash executable, login shell, or user-entered `!` commands. Ordinary calls still wait for exit; `background: true` returns a task ID immediately, and completion sends the agent the exit state and recent output. `Ctrl+Shift+B` moves running foreground tool calls to the background when the terminal supports modified keys. Elapsed time alone does not trigger that transition.
 
-Use `/bg` to view task state, runtime, and commands. The footer shows `/bg (N)` immediately after token totals when the command is available. `N` is the number of running tasks reported by pi-bg-bash's status, excluding finished tasks; it shows zero when none are running. From an empty input with autocomplete closed, press Down to highlight `/bg (N)` in the terminal palette's purple, Enter to open `/bg`, or Up/Escape to return to the input. The editor publishes selection through the `bg-selection` status, and the footer renders it without adding an editor row or duplicating the package's `bg: N` status. Typing or pasting leaves the selection and edits the input normally. Nonempty input retains normal cursor and history navigation. In `/bg`, press Enter for live output, `x` to stop a task after confirmation, and Escape to go back. The agent can use `bash_tasks`, `bash_output`, `bash_kill`, and `bash_watch` to inspect or manage tasks. Output watches are optional; completion notifications do not require them.
+Use `/bg` to view task state, runtime, and commands. The prompt's top statusline shows `/bg (N)` immediately after token totals when the command is available. `N` is the number of running tasks reported by pi-bg-bash's status, excluding finished tasks; it shows zero when none are running. From an empty input with autocomplete closed, press Down to highlight `/bg (N)` in the terminal palette's purple, Enter to open `/bg`, or Up/Escape to return to the input. The editor publishes selection through the `bg-selection` status, and the statusline highlights it without adding an editor row or duplicating the package's `bg: N` status. Typing or pasting leaves the selection and edits the input normally. Nonempty input retains normal cursor and history navigation. In `/bg`, press Enter for live output, `x` to stop a task after confirmation, and Escape to go back. The agent can use `bash_tasks`, `bash_output`, `bash_kill`, and `bash_watch` to inspect or manage tasks. Output watches are optional; completion notifications do not require them.
 
 Tasks survive `/reload`, but quitting Pi or switching sessions stops them. Logs are private files under `$XDG_STATE_HOME/pi-bg/` (default `~/.local/state/pi-bg/`), with seven-day cleanup and a 100 MiB per-task limit. The package does not honor Pi's `shellPath` or `shellCommandPrefix`; neither is configured by this module. Do not combine it with another extension that replaces `bash` or registers `/bg` or `Ctrl+Shift+B`.
 
@@ -249,7 +250,7 @@ Cloudflare operations use the `cf` CLI installed by the common Home Manager prof
 
 Pi selects the generated `one-half-light` theme from `themes/exports/pi/one-half-light.json`. The module also installs `claude-like` as an alternative. The built-in `system` theme remains available in `/settings` to derive colors from the terminal's background and ANSI palette.
 
-The custom footer uses standard ANSI colors, so its accents follow the active terminal palette.
+The integrated prompt statusline uses the active Pi theme for its background, path, model, and thin rules. Token, context, and task-selection accents use standard ANSI colors from the terminal palette.
 
 ## Verification
 

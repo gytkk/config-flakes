@@ -2,18 +2,17 @@ import type { Usage } from "@earendil-works/pi-ai";
 import {
   type ExtensionAPI,
   type ExtensionContext,
+  type ReadonlyFooterDataProvider,
 } from "@earendil-works/pi-coding-agent";
 import { CURSOR_MARKER, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { sep } from "node:path";
 
 const STATE_TYPE = "codex-fast-mode";
 const DEFAULT_ENABLED = false;
-const HORIZONTAL_PADDING = 1;
 const ANSI_RESET = "\x1b[0m";
 
 const CLAUDE_ANSI = {
   red: "\x1b[31m",
-  green: "\x1b[32m",
   yellow: "\x1b[33m",
   cyan: "\x1b[36m",
   dim: "\x1b[2m",
@@ -129,133 +128,95 @@ function styleStatus(text: string, ansi: string): string {
   return `${ansi}${text}${ANSI_RESET}`;
 }
 
+export function createStatusLine(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  footerData: ReadonlyFooterDataProvider,
+): (width: number, hiddenLines?: number) => string {
+  const getTokenTotals = createTokenTotalsReader();
+  return (width, hiddenLines = 0) => {
+    if (width <= 0) return "";
+    const theme = ctx.ui.theme;
+    const border = (text: string) => theme.fg("dim", text);
+    const accent = (text: string) => theme.fg("accent", text);
+    const separator = border(" │ ");
+    const join = (parts: string[]) => parts.filter(Boolean).join(separator);
+    const statuses = footerData.getExtensionStatuses();
+    const hasBg = pi.getCommands().some((command) => command.name === "bg");
+    const selected = hasBg && statuses.get("bg-selection") === "selected";
+    const bgStatus = statuses.get("bg");
+    const count = bgStatus === undefined ? "0" : /^bg: (\d+)$/.exec(bgStatus)?.[1] ?? "?";
+    let bg = hasBg ? styleStatus(`${selected ? "* " : ""}/bg (${count})`,
+      selected ? CLAUDE_ANSI.boldPurple : CLAUDE_ANSI.dim) : "";
+    // Keep a visible selection and cursor even when no other status fits.
+    if (width < 4) return selected
+      ? CURSOR_MARKER + truncateToWidth(bg, width, "")
+      : accent("╭") + border("─".repeat(width - 1));
+
+    const modelParts = [accent(sanitizeStatusText(ctx.model?.id ?? "no-model"))];
+    if (ctx.model?.reasoning) modelParts.push(styleStatus(ctx.thinkingLevel ?? "off", CLAUDE_ANSI.brightOrange));
+    if (supportsFastMode(ctx)) modelParts.push(styleStatus(
+      `fast(${statuses.get(STATE_TYPE) === "on" ? "on" : "off"})`, CLAUDE_ANSI.brightOrange,
+    ));
+    let model = modelParts.join(border(" · "));
+    const percent = ctx.getContextUsage()?.percent;
+    const bounded = percent == null ? undefined : Math.max(0, Math.min(100, percent));
+    const contextColor = bounded === undefined ? CLAUDE_ANSI.dim
+      : bounded >= 90 ? CLAUDE_ANSI.red : bounded >= 70 ? CLAUDE_ANSI.yellow : CLAUDE_ANSI.cyan;
+    const contextLabel = styleStatus(bounded === undefined ? "?%" : `${Math.floor(bounded)}%`, contextColor);
+    const filled = Math.floor((bounded ?? 0) / 10);
+    let context = styleStatus("━".repeat(filled), contextColor) + border("─".repeat(10 - filled)) + contextLabel;
+    const scroll = hiddenLines > 0 ? border(`↑ ${hiddenLines} more`) : "";
+    const cwd = sanitizeStatusText(formatCwd(ctx.sessionManager.getCwd()));
+    const branch = sanitizeStatusText(footerData.getGitBranch() ?? "");
+    const identity = (limit: number) => theme.bg("userMessageBg",
+      ` ${accent(truncateToWidth(cwd, limit, "…"))}${branch ? border(" › ") + theme.fg("text", branch) : ""} `,
+    );
+    let location = identity(visibleWidth(cwd));
+    const totals = getTokenTotals(ctx);
+    let tokens = `${border("tokens")} ${styleStatus(`↓${formatTokens(totals.input)}`, CLAUDE_ANSI.boldBlue)} ${styleStatus(`↑${formatTokens(totals.output)}`, CLAUDE_ANSI.brightOrange)}`;
+    const extras = [...statuses].filter(([key]) => ![STATE_TYPE, "codex-usage", "bg", "bg-selection"].includes(key))
+      .map(([, value]) => sanitizeStatusText(value)).filter(Boolean);
+    let usage = sanitizeStatusText(statuses.get("codex-usage") ?? "");
+    const contentWidth = width - 2;
+    const left = () => join([location, context, scroll]);
+    const right = () => join([tokens, bg, ...extras, usage, model]);
+    const occupied = () => visibleWidth(left()) + visibleWidth(right()) + 1;
+
+    if (occupied() > contentWidth) location = identity(Math.min(20, visibleWidth(cwd)));
+    if (occupied() > contentWidth) {
+      const spare = contentWidth - occupied() + visibleWidth(usage);
+      usage = spare >= 20 ? truncateToWidth(usage, spare, "…") : "";
+    }
+    while (occupied() > contentWidth && extras.length) extras.pop();
+    if (occupied() > contentWidth) tokens = "";
+    if (occupied() > contentWidth) location = "";
+    if (occupied() > contentWidth) context = contextLabel;
+    if (occupied() > contentWidth && !selected) bg = "";
+    if (occupied() > contentWidth) {
+      const spare = Math.max(0, contentWidth - visibleWidth(join([context, scroll, bg])) - 4);
+      model = truncateToWidth(model, spare, "…");
+    }
+    if (occupied() > contentWidth) {
+      return accent("╭") + (selected ? CURSOR_MARKER : "")
+        + truncateToWidth(join([bg, context, scroll, model]), width - 1, "");
+    }
+    const rightText = right();
+    const markedRight = selected ? rightText.replace(bg, CURSOR_MARKER + bg) : rightText;
+    const gap = contentWidth - visibleWidth(left()) - visibleWidth(rightText);
+    return accent("╭") + left() + border("─".repeat(gap)) + markedRight + border("─");
+  };
+}
+
 export default function(pi: ExtensionAPI) {
   let enabled = DEFAULT_ENABLED;
-  let requestRender: (() => void) | undefined;
-
-  const installFooter = (ctx: ExtensionContext): void => {
-    if (ctx.mode !== "tui") return;
-
-    const getTokenTotals = createTokenTotalsReader();
-    ctx.ui.setFooter((tui, _theme, footerData) => {
-      requestRender = () => tui.requestRender();
-      const unsubscribe = footerData.onBranchChange(() => tui.requestRender());
-
-      return {
-        render: (width: number): string[] => {
-          const sidePadding =
-            width >= HORIZONTAL_PADDING * 2 ? HORIZONTAL_PADDING : 0;
-          const contentWidth = width - sidePadding * 2;
-          if (contentWidth <= 0) return [" ".repeat(width)];
-
-          const separator = ` ${styleStatus("|", CLAUDE_ANSI.dim)} `;
-          const sections: string[] = [];
-
-          sections.push(
-            styleStatus(formatCwd(ctx.sessionManager.getCwd()), CLAUDE_ANSI.cyan),
-          );
-
-          const branch = footerData.getGitBranch();
-          if (branch) sections.push(sanitizeStatusText(branch));
-
-          const extensionStatuses = footerData.getExtensionStatuses();
-          const modelParts = [sanitizeStatusText(ctx.model?.id ?? "no-model")];
-          if (ctx.model?.reasoning) {
-            modelParts.push(
-              styleStatus(ctx.thinkingLevel ?? "off", CLAUDE_ANSI.brightOrange),
-            );
-          }
-          if (supportsFastMode(ctx)) {
-            modelParts.push(
-              styleStatus(
-                `fast(${enabled ? "on" : "off"})`,
-                CLAUDE_ANSI.brightOrange,
-              ),
-            );
-          }
-          const modelSeparator = ` ${styleStatus("·", CLAUDE_ANSI.dim)} `;
-          const modelStatus = modelParts.join(modelSeparator);
-
-          const contextUsage = ctx.getContextUsage();
-          const percent = contextUsage?.percent;
-          if (percent === null || percent === undefined) {
-            sections.push(`${styleStatus("----------", CLAUDE_ANSI.dim)} ?%`);
-          } else {
-            const boundedPercent = Math.max(0, Math.min(100, percent));
-            const filled = Math.floor((boundedPercent * 10) / 100);
-            const contextColor =
-              boundedPercent >= 90
-                ? CLAUDE_ANSI.red
-                : boundedPercent >= 70
-                  ? CLAUDE_ANSI.yellow
-                  : CLAUDE_ANSI.green;
-            const bar =
-              styleStatus("#".repeat(filled), contextColor) +
-              styleStatus("-".repeat(10 - filled), CLAUDE_ANSI.dim);
-            sections.push(`${bar} ${Math.floor(boundedPercent)}%`);
-          }
-
-          const totals = getTokenTotals(ctx);
-          sections.push(
-            `${styleStatus("tokens", CLAUDE_ANSI.dim)} ${styleStatus(`↓${formatTokens(totals.input)}`, CLAUDE_ANSI.boldBlue)} ${styleStatus(`↑${formatTokens(totals.output)}`, CLAUDE_ANSI.brightOrange)}`,
-          );
-
-          if (pi.getCommands().some((command) => command.name === "bg")) {
-            const status = extensionStatuses.get("bg");
-            const count = status === undefined ? "0" : /^bg: (\d+)$/.exec(status)?.[1] ?? "?";
-            const selected = extensionStatuses.get("bg-selection") === "selected";
-            sections.push(
-              (selected ? CURSOR_MARKER : "") + styleStatus(
-                `${selected ? "* " : ""}/bg (${count})`,
-                selected ? CLAUDE_ANSI.boldPurple : CLAUDE_ANSI.dim,
-              ),
-            );
-          }
-
-          for (const [key, status] of extensionStatuses) {
-            if (key === "codex-usage" || key === "bg" || key === "bg-selection") continue;
-            const styled = sanitizeStatusText(status);
-            if (styled) sections.push(styled);
-          }
-
-          const left = sections.join(separator);
-          const modelWidth = visibleWidth(modelStatus);
-          const ellipsis = styleStatus("...", CLAUDE_ANSI.dim);
-          const margin = " ".repeat(sidePadding);
-          const usage = sanitizeStatusText(extensionStatuses.get("codex-usage") ?? "");
-          const usageWidth = contentWidth - modelWidth - visibleWidth(separator);
-          const right = usage && usageWidth >= 7
-            ? truncateToWidth(usage, usageWidth, "...") + separator + modelStatus
-            : modelStatus;
-          const rightWidth = visibleWidth(right);
-          if (rightWidth + 2 > contentWidth) {
-            const truncatedRight = truncateToWidth(right, contentWidth, ellipsis);
-            const rightPadding = " ".repeat(
-              contentWidth - visibleWidth(truncatedRight),
-            );
-            return [margin + rightPadding + truncatedRight + margin];
-          }
-
-          const availableLeft = contentWidth - rightWidth - 2;
-          const truncatedLeft = truncateToWidth(left, availableLeft, ellipsis);
-          const padding = " ".repeat(
-            contentWidth - visibleWidth(truncatedLeft) - rightWidth,
-          );
-          return [margin + truncatedLeft + padding + right + margin];
-        },
-        invalidate: () => { },
-        dispose: () => {
-          requestRender = undefined;
-          unsubscribe();
-        },
-      };
-    });
+  const publish = (ctx: ExtensionContext): void => {
+    if (ctx.mode === "tui") ctx.ui.setStatus(STATE_TYPE, enabled ? "on" : "off");
   };
-
-  const setEnabled = (next: boolean): void => {
+  const setEnabled = (next: boolean, ctx: ExtensionContext): void => {
     enabled = next;
     pi.appendEntry(STATE_TYPE, { enabled } satisfies FastModeState);
-    requestRender?.();
+    publish(ctx);
   };
 
   pi.on("session_start", (_event, ctx) => {
@@ -264,15 +225,7 @@ export default function(pi: ExtensionAPI) {
       if (entry.type !== "custom" || entry.customType !== STATE_TYPE) continue;
       if (isFastModeState(entry.data)) enabled = entry.data.enabled;
     }
-    installFooter(ctx);
-  });
-
-  pi.on("model_select", () => {
-    requestRender?.();
-  });
-
-  pi.on("thinking_level_select", () => {
-    requestRender?.();
+    publish(ctx);
   });
 
   pi.on("before_provider_request", (event, ctx) => {
@@ -296,11 +249,11 @@ export default function(pi: ExtensionAPI) {
       }
 
       if (action === "" || action === "toggle") {
-        setEnabled(!enabled);
+        setEnabled(!enabled, ctx);
       } else if (action === "on") {
-        setEnabled(true);
+        setEnabled(true, ctx);
       } else if (action === "off") {
-        setEnabled(false);
+        setEnabled(false, ctx);
       } else {
         ctx.ui.notify("Usage: /fast [on|off|status]", "warning");
         return;
