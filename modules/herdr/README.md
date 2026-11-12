@@ -72,7 +72,9 @@ While prefix mode is active, the status line uses golden amber: the current them
 | `h/j/k/l`, `Shift+h/j/k/l` | Focus or swap panes |
 | `Tab`, `Shift+Tab` | Next or previous pane |
 | `v`, `-`, `x`, `z` | Split right, split down, close pane, zoom |
-| `b`, `s`, `q`, `?` | Toggle sidebar, settings, close window without ending terminals, prefix help |
+| `b`, `s`, `?` | Toggle sidebar, settings, prefix help |
+
+`Ctrl+Space`, then `q`, is unbound: it only leaves prefix mode and restores terminal focus, without closing the window or sending input.
 
 Only pickers and explicitly requested help open dialogs. The zoxide picker uses a native filter rather than fzf and queries the originating space's machine. Agent numbers follow the App API's space/tab/pane order, not its priority-sorted sidebar. Direct `Cmd+[/]`, `Cmd+Shift+[/]`, `Cmd+1..9`, `Cmd+t/w`, `Alt+t/w`, and `Ctrl+Tab` / `Ctrl+Shift+Tab` match the TUI actions above across layouts. Prefix mode is scoped to `tui`; other layouts keep normal `Ctrl+Space` input.
 

@@ -12,7 +12,7 @@ const ACTIONS = {
   K: ["pane.swap", { direction: "up" }], L: ["pane.swap", { direction: "right" }],
   v: ["pane.split", { direction: "right" }], "-": ["pane.split", { direction: "down" }],
   x: ["pane.close"], z: ["pane.zoom"], b: ["layout.toggle", { id: "sidebar" }],
-  s: ["app.settings"], q: ["window.close"],
+  s: ["app.settings"],
 };
 const HELP = [
   ["c / X / T", "New / close / rename tab"],
@@ -24,7 +24,7 @@ const HELP = [
   ["h j k l / Shift", "Focus pane / swap pane"],
   ["Tab / Shift+Tab", "Next / previous pane"],
   ["v / - / x / z", "Split right / split down / close / zoom"],
-  ["b / s / q", "Sidebar / settings / close window (keep terminals)"],
+  ["b / s", "Sidebar / settings"],
 ];
 const SHIFTED = { ",": "<", ".": ">", "/": "?", "1": "!", "2": "@", "3": "#", "4": "$", "5": "%", "6": "^", "7": "&", "8": "*", "9": "(" };
 

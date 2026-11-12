@@ -80,7 +80,7 @@ test("the persistent status bar does not steal focus until activated and Escape 
 });
 
 test("unknown and modified keys cancel without leaking input or triggering a plain-key command", async () => {
-  for (const [keyName, modifiers] of [["u", {}], ["X", { control: true }]]) {
+  for (const [keyName, modifiers] of [["u", {}], ["q", {}], ["X", { control: true }]]) {
     const { key, view, state } = await fixture();
     key(keyName, modifiers);
     assert.equal(state.stopped, 1);
