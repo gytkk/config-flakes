@@ -1,5 +1,5 @@
 let
-  flake = builtins.getFlake (toString ../../..);
+  flake = builtins.getFlake (toString ../..);
   inherit (flake) inputs;
   lib = inputs.nixpkgs.lib;
   agenixModule = builtins.toFile "agenix-home-test.nix" (

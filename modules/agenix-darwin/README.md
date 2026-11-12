@@ -8,12 +8,13 @@ Activation creates the launchd log directory and atomically updates the wrapper 
 
 The launcher stores only command paths and synchronization state under `~/.local/state/agenix-launchd`. It delegates identities, decryption, secret permissions, and secret generations to agenix. Failures produce a diagnostic and do not trigger a launchd restart loop. Activation reports a warning and continues, matching the previous failure policy.
 
-Run the isolated Python checks from the repository root:
+Run the isolated Python checks and synthetic Nix configuration evaluation from the repository root:
 
 ```sh
 uv run --no-project -m unittest discover -s modules/agenix-darwin/tests -v
+nix eval --impure --raw --file modules/agenix-darwin/tests.nix
 ```
 
-The Python checks use temporary mount commands; they do not decrypt real secrets or change launchd services. The synthetic Nix configuration fixture in `tests.nix` currently resolves its flake root with `../../..`, one directory above this checkout. Its flake-root path must be corrected before using it for evaluation.
+The Python checks use temporary mount commands; they do not decrypt real secrets or change launchd services. The Nix fixture resolves this checkout's root flake and checks Darwin, empty-secret, and Linux configuration contracts without building or activating a configuration. `--impure` permits `builtins.getFlake` to resolve the local checkout path.
 
 After applying Home Manager on each Mac, verify secret access, unchanged reapplication, and login behavior. Stable plist contents alone do not establish that macOS background notifications have stopped.
