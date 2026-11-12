@@ -67,7 +67,7 @@ describe("hardware cursor prompt", () => {
     expect(lines).toHaveLength(2);
     expect(lines[0]).toContain("test-model");
     expect(lines[0]).toContain("11%");
-    expect(lines[1]).toStartWith(`${dim("╰─")}${CURSOR_MARKER} `);
+    expect(lines[1]).toStartWith(`${dim("╰─")} ${CURSOR_MARKER} `);
     expect(lines.join("")).not.toContain("\x1b[7m");
     expect(lines.every((line) => visibleWidth(line) === 80)).toBe(true);
     expect(editor.footer!.render(80)).toEqual([]);
@@ -79,7 +79,7 @@ describe("hardware cursor prompt", () => {
     const editor = createEditor()!;
     const original = new CustomEditor(tui as never, theme as never, keybindings as never);
     original.focused = true;
-    original.setPaddingX(2);
+    original.setPaddingX(3);
     for (const current of [editor, original]) {
       current.setText("one two three four\n한글 text");
       current.render(12);
@@ -112,7 +112,7 @@ describe("hardware cursor prompt", () => {
     await Bun.sleep(0);
     expect(editor.isShowingAutocomplete()).toBe(true);
     const lines = editor.render(20);
-    expect(lines[1]).toStartWith(dim("╰─") + "/h");
+    expect(lines[1]).toStartWith(dim("╰─") + " /h");
     expect(lines[2]).toBe("");
     expect(lines[3]).toContain("help");
     expect(lines[3]).not.toContain("╰─");
@@ -171,7 +171,7 @@ describe("hardware cursor prompt", () => {
       expect(editor.render(20)).toEqual(original.render(20));
       expect(editor.getCursor()).toEqual(original.getCursor());
     }
-    editor.setText("abcdefghi");
+    editor.setText("abcdefgh");
     const line = editor.render(20)[1];
     expect(line).toContain("/bg (0)");
     expect(visibleWidth(line)).toBe(20);

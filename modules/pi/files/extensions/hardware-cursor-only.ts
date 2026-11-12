@@ -92,7 +92,7 @@ class HardwareCursorOnlyEditor extends CustomEditor {
     if (width <= 0) return [];
     // Pi replaces borderColor when thinking or bash mode changes.
     this.borderColor = this.dimBorder;
-    this.setPaddingX(Math.max(2, this.getPaddingX()));
+    this.setPaddingX(Math.max(3, this.getPaddingX()));
     if (!this.showBackgroundItem()) this.setBackgroundSelected(false);
     const lines = super.render(width).map(stripSoftwareCursor);
     const promptWidth = width >= 5 ? 2 : width >= 3 ? 1 : 0;
