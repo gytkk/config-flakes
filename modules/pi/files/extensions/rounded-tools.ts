@@ -1,4 +1,4 @@
-import type { ExtensionAPI, Theme, ThemeBg, ToolRenderers } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, MessageRenderer, Theme, ThemeBg, ToolRenderers } from "@earendil-works/pi-coding-agent";
 import { Box, Container, Text, mixColors, rgbColor, truncateToWidth, visibleWidth, type Component, type TuiMouseEvent } from "@earendil-works/pi-tui";
 
 type CallContext = Parameters<NonNullable<ToolRenderers["renderCall"]>>[2];
@@ -84,7 +84,68 @@ function rendererFailure(component: Component, slot: string, error: unknown, the
   return content;
 }
 
+function singleLine(text: string): Component {
+  return { render: (width) => [truncateToWidth(text.replace(/[\r\n\t]/g, " "), width)], invalidate() {} };
+}
+
+function diagnosticsTitle(path: unknown, theme: Theme): Component {
+  return singleLine(theme.fg("toolTitle", theme.bold("lsp_diagnostics"))
+    + (typeof path === "string" ? ` ${theme.fg("muted", path)}` : ""));
+}
+
+function diagnosticsSummary(text: string): string {
+  const counts = new Map<string, number>();
+  for (const match of text.matchAll(/^.+:\d+:\d+ - (error|warning|info|hint|diagnostic):/gm)) {
+    counts.set(match[1], (counts.get(match[1]) ?? 0) + 1);
+  }
+  const parts = ["error", "warning", "info", "hint", "diagnostic"].flatMap((severity) => {
+    const count = counts.get(severity) ?? 0;
+    return count ? [`${count} ${severity}${count === 1 || severity === "info" ? "" : "s"}`] : [];
+  });
+  const omitted = [...text.matchAll(/^… (\d+) more diagnostics$/gm)].reduce((sum, match) => sum + Number(match[1]), 0);
+  if (omitted) parts.push(`+${omitted} more`);
+  // Availability warnings are not a clean diagnostic result. Keep their reason visible.
+  const notices = text.split("\n").map((line) => line.trim())
+    .filter((line) => /^(?:⚠️|✅)\s/.test(line) && !/^⚠️\s+[^:]+:$/.test(line))
+    .map((line) => line.replace(/^(?:⚠️|✅)\s*/, ""));
+  parts.push(...notices);
+  return parts.join("; ") || text.split("\n").find((line) => line.trim() && line.trim() !== "LSP diagnostics:")?.trim()
+    || "No diagnostic output";
+}
+
+function diagnosticsBody(text: string, expanded: boolean, hint: string, theme: Theme): Component {
+  if (expanded) return new Text(theme.fg("toolOutput", text), 0, 0);
+  const summary = theme.fg("toolOutput", diagnosticsSummary(text));
+  const suffix = theme.fg("muted", ` (${hint})`);
+  return {
+    render(width) {
+      const available = width - visibleWidth(suffix);
+      return [available >= 12 ? truncateToWidth(summary, available) + suffix : truncateToWidth(summary, width)];
+    },
+    invalidate() {},
+  };
+}
+
+const diagnosticsRenderers: ToolRenderers = {
+  renderCall: (args, theme) => diagnosticsTitle(
+    args && typeof args === "object" && "path" in args ? args.path : undefined, theme),
+  renderResult: (result, options, theme, ctx) => diagnosticsBody(
+    result.content.filter((block) => block.type === "text").map((block) => block.text).join("\n"),
+    options.expanded, ctx.keyHint("app.tools.expand", "to expand"), theme),
+};
+
+const diagnosticsMessage: MessageRenderer<{ summary?: string; path?: string }> = (message, options, theme) => {
+  const text = typeof message.details?.summary === "string" ? message.details.summary
+    : typeof message.content === "string" ? message.content
+    : message.content.filter((block) => block.type === "text").map((block) => block.text).join("\n");
+  const content = new Box(options.outputPad, 0);
+  content.addChild(diagnosticsTitle(message.details?.path, theme));
+  content.addChild(diagnosticsBody(text, options.expanded, options.keyHint("app.tools.expand", "to expand"), theme));
+  return new RoundedFrame(content, theme, "toolSuccessBg");
+};
+
 export function roundToolRenderers(name: string, base: ToolRenderers = {}): ToolRenderers {
+  if (name === "lsp_diagnostics") base = { ...base, ...diagnosticsRenderers };
   // Pi shares state between the call and result slots. Keep wrapper state separate from the delegate's state.
   const rows = new WeakMap<object, Row>();
   const empty = new Container();
@@ -147,4 +208,5 @@ export function roundToolRenderers(name: string, base: ToolRenderers = {}): Tool
 
 export default function (pi: ExtensionAPI) {
   pi.registerToolRenderer((name, next) => roundToolRenderers(name, next()));
+  pi.registerMessageRenderer("pi-lsp-diagnostics", diagnosticsMessage);
 }

@@ -35,6 +35,7 @@ function load(agent: string, cwd: string) {
         path: extension.path,
         tools: [...extension.tools.keys()],
         commands: [...extension.commands.keys()],
+        messageRenderers: [...extension.messageRenderers.keys()],
       })),
     }));
   `, piEntry, cwd], {
@@ -46,7 +47,7 @@ function load(agent: string, cwd: string) {
   const loaded = JSON.parse(result.stdout);
   expect(loaded.errors).toEqual([]);
   expect(loaded.warnings).toEqual([]);
-  return loaded.extensions as Array<{ path: string; tools: string[]; commands: string[] }>;
+  return loaded.extensions as Array<{ path: string; tools: string[]; commands: string[]; messageRenderers: string[] }>;
 }
 
 test("discovers prompt-ui once, without loading its helpers as extensions", async () => {
@@ -86,9 +87,13 @@ test.skipIf(!lspPackage)("loads patched pi-lsp with npm dependencies and registe
   await mkdir(join(agent, "npm"));
   await symlink(dirname(source), join(agent, "npm/node_modules"));
 
+  await symlink(join(moduleRoot, "files/extensions/rounded-tools.ts"), join(agent, "extensions/rounded-tools.ts"));
   const extensions = load(agent, cwd);
-  expect(extensions).toHaveLength(1);
+  expect(extensions).toHaveLength(2);
   for (const name of ["lsp_rename", "lsp_code_actions", "lsp_apply_edit", "lsp_hover", "lsp_diagnostics"]) {
-    expect(extensions[0].tools.filter((tool) => tool === name)).toHaveLength(1);
+    expect(extensions.flatMap((extension) => extension.tools).filter((tool) => tool === name)).toHaveLength(1);
   }
+  const owners = extensions.filter((extension) => extension.messageRenderers.includes("pi-lsp-diagnostics"));
+  expect(owners).toHaveLength(1);
+  expect(owners[0].path).toEndWith("rounded-tools.ts");
 }, 60_000);

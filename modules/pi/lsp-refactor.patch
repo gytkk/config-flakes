@@ -21,7 +21,7 @@
    DefinitionRequest,
    DidChangeConfigurationNotification,
    DidChangeTextDocumentNotification,
-@@ -15,12 +24,8 @@
+@@ -15,19 +24,15 @@
    InitializedNotification,
    PublishDiagnosticsNotification,
    ReferencesRequest,
@@ -32,10 +32,10 @@
 +} = requireDependency("vscode-languageserver-protocol") as typeof LanguageServerProtocol;
  import { Type } from "typebox";
 -import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
- import { Box, Spacer, Text } from "@earendil-works/pi-tui";
+-import { Box, Spacer, Text } from "@earendil-works/pi-tui";
  import { loadLspConfig } from "../_shared/config";
  import { isPathIncluded, matchesAnyGlob } from "../_shared/glob";
-@@ -28,6 +33,7 @@
+ import { filePathToUri, findProjectRoot, normalizeRelativePath, resolveCommand, toAbsolutePath, uriToFilePath } from "../_shared/paths";
  import { formatLspDiagnostics, formatWarnings, hasIssueOutput, joinSections } from "../_shared/output";
  import { isExecutableAvailable } from "../_shared/runner";
  import type { LspServerConfig, ResolvedCommand, StoredDiagnostics } from "../_shared/types";
@@ -43,7 +43,38 @@
  
  const DEFAULT_STARTUP_TIMEOUT_MS = 45_000;
  const DEFAULT_DIAGNOSTICS_WAIT_MS = 1_500;
-@@ -252,6 +258,61 @@
+@@ -145,30 +150,6 @@
+   return { content: [{ type: "text" as const, text }], details: {} };
+ }
+
+-function customMessageText(content: unknown, details: unknown): string {
+-  const summary = (details as { summary?: unknown } | undefined)?.summary;
+-  if (typeof summary === "string") return summary;
+-  if (typeof content === "string") return content;
+-  if (!Array.isArray(content)) return "";
+-  return content
+-    .filter((item): item is { type: string; text: string } => item?.type === "text" && typeof item.text === "string")
+-    .map((item) => item.text)
+-    .join("\n");
+-}
+-
+-function registerDiagnosticsRenderer(pi: ExtensionAPI): void {
+-  pi.registerMessageRenderer("pi-lsp-diagnostics", (message, _options, theme) => {
+-    const text = customMessageText(message.content, message.details);
+-    const box = new Box(1, 1, (value) => theme.bg("toolSuccessBg", value));
+-    box.addChild(new Text(theme.fg("toolTitle", theme.bold("lsp_diagnostics")), 0, 0));
+-    if (text.trim()) {
+-      box.addChild(new Spacer(1));
+-      box.addChild(new Text(theme.fg("toolOutput", text), 0, 0));
+-    }
+-    return box;
+-  });
+-}
+-
+ class DocumentStore {
+   private readonly documents = new Map<string, OpenDocument>();
+
+@@ -252,6 +233,61 @@
      return this.unavailableReason;
    }
  
@@ -105,7 +136,7 @@
    async ensureStarted(signal?: AbortSignal): Promise<void> {
      if (this.connection && !this.unavailableReason) return;
      if (this.unavailableReason) throw new Error(this.unavailableReason);
-@@ -293,6 +354,14 @@
+@@ -293,6 +329,14 @@
        `${this.server.id} initialize`,
      )) as InitializeResult;
      this.capabilities = initializeResult.capabilities;
@@ -120,7 +151,7 @@
  
      await connection.sendNotification(InitializedNotification.method, {});
      if (this.server.settings !== undefined) {
-@@ -309,11 +378,14 @@
+@@ -309,11 +353,14 @@
        rootUri,
        workspaceFolders: [{ name: path.basename(this.root), uri: rootUri }],
        capabilities: {
@@ -135,7 +166,7 @@
          },
          textDocument: {
            synchronization: {
-@@ -329,6 +401,15 @@
+@@ -329,6 +376,15 @@
            definition: {},
            references: {},
            documentSymbol: {},
@@ -151,7 +182,7 @@
          },
        },
        initializationOptions: this.server.initializationOptions ?? {},
-@@ -354,6 +435,10 @@
+@@ -354,6 +410,10 @@
        return items.map(() => this.server.settings ?? {});
      });
      anyConnection.onRequest("workspace/workspaceFolders", () => [{ name: path.basename(this.root), uri: filePathToUri(this.root) }]);
@@ -162,7 +193,7 @@
      anyConnection.onRequest("client/registerCapability", () => null);
      anyConnection.onRequest("client/unregisterCapability", () => null);
      anyConnection.onRequest("window/workDoneProgress/create", () => null);
-@@ -379,6 +464,8 @@
+@@ -379,6 +439,8 @@
        return doc;
      }
  
@@ -171,7 +202,7 @@
      const doc = this.documents.change(file, text);
      await this.connection.sendNotification(DidChangeTextDocumentNotification.method, {
        textDocument: { uri: doc.uri, version: doc.version },
-@@ -564,6 +651,41 @@
+@@ -564,6 +626,41 @@
      return { file, match, client, workspace };
    }
  
@@ -213,10 +244,11 @@
    diagnosticsForPath(ctx: ExtensionContext, inputPath: string): string {
      const file = toAbsolutePath(inputPath, ctx.cwd);
      const entries = this.diagnostics.getAllForFile(file);
-@@ -597,6 +719,7 @@
+@@ -596,7 +693,7 @@
+
  export default function piLspExtension(pi: ExtensionAPI) {
    const manager = new LspManager();
-   registerDiagnosticsRenderer(pi);
+-  registerDiagnosticsRenderer(pi);
 +  registerRefactorTools(pi, { target: (ctx, file) => manager.refactorTarget(ctx, file) });
  
    pi.on("tool_result", async (event, ctx) => {
