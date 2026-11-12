@@ -34,6 +34,10 @@ let
     "rounded-tools.ts" = mkSymlink "files/extensions/rounded-tools.ts";
     "pi-lsp" = "${lspExtension}/extensions";
     "prompt-ui" = mkSymlink "files/extensions/prompt-ui";
+    "phase-tasks" = mkSymlink "files/extensions/phase-tasks";
+    "python-kernel" = mkSymlink "files/extensions/python-kernel";
+    "ast-transform" = mkSymlink "files/extensions/ast-transform";
+    "session-artifacts" = mkSymlink "files/extensions/session-artifacts";
     "herdr-subagents.ts" = mkSymlink "files/extensions/herdr-subagents.ts";
     "terminal-title-reset.ts" = mkSymlink "files/extensions/terminal-title-reset.ts";
   }
@@ -73,6 +77,8 @@ in
     home.packages = [
       pkgs.pi
       pkgs.mcp-nixos
+      pkgs.python3
+      pkgs.ast-grep
     ];
 
     home.file = extensionFiles // {

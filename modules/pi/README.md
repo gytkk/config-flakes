@@ -330,6 +330,53 @@ Apply Home Manager and restart Pi to install the patched extension and disable t
 
 Run `bash modules/pi/tests/run.sh lsp-workspace-edit.test.ts lsp-refactor.test.ts` for filesystem safety and tool-flow tests. These tests use temporary files and an injected backend to cover preview/apply, action resolution, stale edits, session invalidation, cancellation, and synchronization failures. A live smoke check should rename a symbol used in another file, apply an organize-imports action, inspect the result through `lsp_hover`, and verify that editing a file between preview and apply rejects the stale edit.
 
+## Task, analysis, and artifact extensions
+
+These four extensions have independent entry points and do not replace Pi's built-in tools or its JavaScript `codemode`. Home Manager installs their directories together with Python and ast-grep. Apply Home Manager, then restart Pi; `/reload` alone does not install newly declared extension paths or binaries.
+
+| Extension | Model tools | Interactive commands | Purpose |
+| --- | --- | --- | --- |
+| `modules/pi/files/extensions/phase-tasks/` | `task_list` | `/tasks` | Phase-aware work tracking with current-branch restoration |
+| `modules/pi/files/extensions/python-kernel/` | `python_cell` | `/python status`, `/python reset` | Persistent Python cells, captured output, and images |
+| `modules/pi/files/extensions/ast-transform/` | `ast_search`, `ast_preview`, `ast_apply`, `ast_discard` | Model tools | Structural search and previewed, snapshot-checked rewrites |
+| `modules/pi/files/extensions/session-artifacts/` | `artifact` | `/artifacts` | Durable text snapshots with listing, paging, and search |
+
+Python execution has the same filesystem and network permissions as Pi; it is not a sandbox. AST previews require an explicit scope and do not modify files until applied. Artifact storage is local and can retain sensitive command output; register only material appropriate to keep with the session.
+
+### Phased tasks
+
+`task_list` accepts `init`, `start`, `done`, `drop`, `append`, `remove`, and `view`. Initialize with `phases: [{ name, tasks: ["task name"] }]`, then explicitly start a pending task. Only one task runs at a time; completing, abandoning, or removing it promotes the next pending task. Targets use stable IDs or unambiguous exact names. Replacing an existing plan requires `replace: true`. The compact widget shows current or next work and disappears when no unfinished tasks remain; `/tasks` opens a read-only, scrollable tree.
+
+Snapshots belong to the current session branch and restore on resume, fork, reload, and tree navigation. Task tracking does not automatically trigger another model turn. Limits are 32 phases, 200 tasks, and a 32 KB snapshot.
+
+### Python cells
+
+`python_cell` accepts `code`, optional integer `timeout` (1–120 seconds, default 30), and `reset`. A lazy `python3` subprocess preserves variables, functions, future imports, and top-level `await` across serialized cells. Final expressions, stdout, stderr, and tracebacks are returned. `display_image` accepts PNG/JPEG bytes, a file path, or a matplotlib figure when matplotlib is already installed; libraries are not installed automatically.
+
+Python exceptions fail the tool while preserving earlier mutations. Timeout, cancellation, process failure, reset, session replacement, and tree navigation discard the namespace; interrupted code is never replayed. Resume and reload start fresh rather than reconstructing historical Python state. Text output and images are bounded; discarded excess text is not an artifact. Python can allocate memory, access files/network, and launch processes with the user's privileges. Its file writes do not participate in Pi's mutation queues.
+
+### Structural transformations
+
+`ast_search` and `ast_preview` require `files`, `language`, and `pattern`; preview also requires `replacement`. Scope is 1–32 explicit existing UTF-8 files inside the working directory, not directories or globs. Search reports zero-based byte ranges and one-based lines/byte columns. Rewrites use ast-grep syntax captures, not LSP symbol identity.
+
+Preview leaves files untouched and returns a complete diff plus a token. `ast_apply` takes `previewId`, locks the scoped files, checks every snapshot, and applies the stored replacement bytes without rerunning the query. Tokens are single-use even on failure, expire after ten minutes, and are discarded on session navigation, reload, or cancellation. `ast_discard` rejects an unused proposal. Symlinks, hardlinks, stale files, overlapping edits, unsupported encoding, and oversized scopes are rejected. Guarded rollback avoids overwriting detected external edits, but external editors do not share Pi's locks: the final check-to-rename race and process crashes prevent cross-file transactional guarantees.
+
+### Retained text artifacts
+
+`artifact` provides `register`, `list`, `read`, and literal `search`. Registration takes an explicit `path` and optional title/line range; later reads use the registered ID. Paging returns `nextOffset` and `nextColumn` so long Unicode lines can be continued. `/artifacts` opens the selector and read-only content viewer; `/artifacts register PATH`, `read ID [OFFSET]`, `search ID TEXT`, and `help` also work. The registration command treats its remaining argument as the path, without shell quoting.
+
+Snapshots are private local copies under Pi's agent directory in `session-artifacts/<origin-session-hash>/`. They survive source deletion and shutdown. Branch-local index entries restore on resume and fork; forks can still reference the originating session's files. No automatic deletion occurs, including when a session is deleted. Close Pi before manually removing unneeded owner directories, and check fork references first. Limits are 2 MiB per source, 20,000 snapshot lines, and 64 files/32 MiB per originating session. Cancelled registration can leave an unindexed retained snapshot that counts toward this quota.
+
+Automatic retention recognizes Pi 1.5.2's native `bash` and `codemode` full-output metadata only after checking builtin provenance and private temporary-file paths. The managed `pi-bg-bash` override is excluded; register its logs explicitly. Free-text paths are never scraped, and other directories are not scanned.
+
+Run the focused feature checks with Python and ast-grep on PATH:
+
+```bash
+bash modules/pi/tests/run.sh phase-tasks.test.ts python-kernel.test.ts ast-transform.test.ts session-artifacts.test.ts
+```
+
+For an interactive smoke check, use a disposable directory: initialize and advance tasks, inspect `/tasks` at narrow width, evaluate a variable across two Python cells, preview and apply a two-file structural replacement, then register a log and read it after deleting its source. `/python reset` must clear the variable, and an external edit between AST preview and apply must reject the stale proposal before changing another target.
+
 ## MCP integration
 
 `files/mcp.json` configures Pi's built-in MCP extension with:
