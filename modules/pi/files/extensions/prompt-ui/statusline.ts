@@ -1,20 +1,9 @@
 import type { ExtensionContext, ReadonlyFooterDataProvider } from "@earendil-works/pi-coding-agent";
-import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { mixColors, stripTerminalSequences, truncateToWidth, visibleWidth, type Color } from "@earendil-works/pi-tui";
 import { sep } from "node:path";
 
 const STATE_TYPE = "codex-fast-mode";
-const ANSI_RESET = "\x1b[0m";
 const contextWindowFormat = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 2 });
-
-const CLAUDE_ANSI = {
-  red: "\x1b[31m",
-  green: "\x1b[32m",
-  yellow: "\x1b[33m",
-  cyan: "\x1b[36m",
-  purple: "\x1b[35m",
-  dim: "\x1b[2m",
-  brightOrange: "\x1b[1;33m",
-} as const;
 
 function formatCwd(cwd: string): string {
   const home = process.env.HOME ?? process.env.USERPROFILE;
@@ -26,10 +15,6 @@ function formatCwd(cwd: string): string {
 
 function sanitizeStatusText(text: string): string {
   return text.replace(/[\r\n\t]/g, " ").replace(/ +/g, " ").trim();
-}
-
-function styleStatus(text: string, ansi: string): string {
-  return `${ansi}${text}${ANSI_RESET}`;
 }
 
 export function createStatusLine(
@@ -47,19 +32,27 @@ export function createStatusLine(
     const statuses = footerData.getExtensionStatuses();
     if (width < 4) return accent("╭") + border("─".repeat(width - 1));
 
-    const modelParts = [accent(sanitizeStatusText(ctx.model?.id ?? "no-model"))];
-    if (ctx.model?.reasoning) modelParts.push(styleStatus(ctx.thinkingLevel ?? "off", CLAUDE_ANSI.purple));
-    if (ctx.model?.provider === "openai" && process.env.PI_SUBAGENT_CHILD !== "1" && statuses.get(STATE_TYPE) === "fast") modelParts.push(styleStatus(
-      "fast", CLAUDE_ANSI.brightOrange,
+    const colors = theme.colors;
+    const pathBg = mixColors(colors.userMessageBg, colors.accent, 0.12, "srgb");
+    const modelBg = mixColors(colors.userMessageBg, colors.customMessageLabel, 0.12, "srgb");
+    // Pull badge text toward the theme foreground for contrast on tinted surfaces.
+    const ink = (color: Color) => mixColors(color, colors.text, 0.6, "srgb");
+    const badge = (text: string, bg: Color) => theme.style("\uE0B6", { fg: bg })
+      + theme.style(` ${text} `, { bg }) + theme.style("\uE0B4", { fg: bg });
+    const modelId = sanitizeStatusText(ctx.model?.id ?? "no-model");
+    const modelParts = [badge(theme.style(modelId, { fg: ink(colors.customMessageLabel), bold: true }), modelBg)];
+    if (ctx.model?.reasoning) modelParts.push(theme.getThinkingBorderColor(ctx.thinkingLevel ?? "off")(ctx.thinkingLevel ?? "off"));
+    if (ctx.model?.provider === "openai" && process.env.PI_SUBAGENT_CHILD !== "1" && statuses.get(STATE_TYPE) === "fast") modelParts.push(theme.style(
+      "fast", { fg: "syntaxKeyword", bold: true },
     ));
     let model = modelParts.join(border(" · "));
     const contextUsage = ctx.getContextUsage();
     const percent = contextUsage?.percent;
     const contextWindow = contextUsage?.contextWindow ?? ctx.model?.contextWindow;
     const bounded = percent == null ? undefined : Math.max(0, Math.min(100, percent));
-    const contextColor = bounded === undefined ? CLAUDE_ANSI.dim
-      : bounded >= 90 ? CLAUDE_ANSI.red : bounded >= 70 ? CLAUDE_ANSI.yellow : CLAUDE_ANSI.cyan;
-    const contextLabel = styleStatus(bounded === undefined ? "?%" : `${Math.floor(bounded)}%`, contextColor)
+    const contextColor = bounded === undefined ? "muted"
+      : bounded >= 90 ? "error" : bounded >= 70 ? "warning" : "accent";
+    const contextLabel = theme.fg(contextColor, bounded === undefined ? "?%" : `${Math.floor(bounded)}%`)
       + (contextWindow != null && Number.isFinite(contextWindow) && contextWindow > 0
         ? border(` / ${contextWindowFormat.format(contextWindow)}`) : "");
     let minimumMeterWidth = Math.max(12, visibleWidth(contextLabel) + 2);
@@ -71,7 +64,7 @@ export function createStatusLine(
       const filled = Math.floor(meterWidth * (bounded ?? 0) / 100);
       const segment = (start: number, length: number) => {
         const used = Math.max(0, Math.min(length, filled - start));
-        return styleStatus("━".repeat(used), contextColor) + border("─".repeat(length - used));
+        return theme.fg(contextColor, "━".repeat(used)) + border("─".repeat(length - used));
       };
       return segment(0, leftWidth) + label + segment(rightStart, meterWidth - rightStart);
     };
@@ -79,15 +72,22 @@ export function createStatusLine(
     const cwd = sanitizeStatusText(formatCwd(ctx.sessionManager.getCwd()));
     const branch = sanitizeStatusText(footerData.getGitBranch() ?? "");
     const gitStatus = branch ? sanitizeStatusText(getGitStatus()) : "";
-    const cap = (text: string) => theme.style(text, { fg: theme.colors.userMessageBg });
-    const identity = (limit: number) => cap("\uE0B6") + theme.bg("userMessageBg",
-      ` ${accent(truncateToWidth(cwd, limit, "…"))}${branch ? border(" › ") + theme.fg("text", branch) + (gitStatus ? " " + theme.fg("muted", gitStatus) : "") : ""} `,
-    ) + cap("\uE0B0");
+    const git = gitStatus.split(" ").filter(Boolean).map(part => {
+      const color = part === "git!" ? colors.error : part.startsWith("+") ? colors.success
+        : part.startsWith("*") ? colors.warning : colors.accent;
+      return theme.style(part, { fg: ink(color) });
+    }).join(" ");
+    const identity = (limit: number) => badge(
+      theme.style(stripTerminalSequences(truncateToWidth(cwd, limit, "…")), { fg: ink(colors.accent), bold: true })
+        + (branch ? theme.style(" › ", { fg: ink(colors.accent) })
+          + theme.style(branch, { fg: ink(colors.customMessageLabel) }) + (git ? ` ${git}` : "") : ""),
+      pathBg,
+    );
     let location = identity(visibleWidth(cwd));
     const extras = [...statuses].filter(([key]) => ![STATE_TYPE, "codex-usage"].includes(key))
       .map(([, value]) => sanitizeStatusText(value)).filter(Boolean);
     let usage = sanitizeStatusText(statuses.get("codex-usage") ?? "")
-      .replace(/^#+/, (filled) => styleStatus(filled, CLAUDE_ANSI.green));
+      .replace(/^#+/, (filled) => theme.fg("success", filled));
     const contentWidth = width - 1;
     const left = () => join([location, scroll]);
     const right = () => join([...extras, usage, model]);
@@ -105,7 +105,7 @@ export function createStatusLine(
     if (occupied() > contentWidth) minimumMeterWidth = visibleWidth(contextLabel);
     if (occupied() > contentWidth) {
       const spare = Math.max(0, contentWidth - occupied() + visibleWidth(model));
-      model = truncateToWidth(model, spare, "…");
+      model = truncateToWidth([accent(modelId), ...modelParts.slice(1)].join(border(" · ")), spare, "…");
     }
     if (occupied() > contentWidth) {
       return accent("╭") + truncateToWidth(join([contextLabel, scroll, model]), width - 1, "");

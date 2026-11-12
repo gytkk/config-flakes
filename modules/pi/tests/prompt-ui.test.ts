@@ -4,11 +4,13 @@ import { CombinedAutocompleteProvider, CURSOR_MARKER, matchesKey, visibleWidth }
 import promptUI from "../files/extensions/prompt-ui";
 import fastMode from "../files/extensions/codex-fast-mode";
 import { stripSoftwareCursor } from "../files/extensions/prompt-ui/editor";
+import { promptTheme } from "./fixtures/prompt-theme";
 
-const dim = (text: string) => `\x1b[2m${text}\x1b[22m`;
+const uiTheme = promptTheme();
+const accent = (text: string) => uiTheme.fg("accent", text);
 const plain = (text: string) => text;
 const theme = {
-  borderColor: dim,
+  borderColor: accent,
   selectList: { selectedText: plain, description: plain, scrollInfo: plain, noMatch: plain },
 };
 const tui = { terminal: { rows: 24 }, requestRender() {} };
@@ -49,10 +51,7 @@ function createEditor(mode = "tui", commands: string[] = [], fastOrder?: "before
         if (value === undefined) statuses.delete(key);
         else statuses.set(key, value);
       },
-      theme: {
-        colors: { userMessageBg: "#edf0f3" }, style: (text: string) => text,
-        fg: (_color: string, text: string) => dim(text), bg: (_color: string, text: string) => text,
-      },
+      theme: uiTheme,
       setEditorComponent: (factory: Function) => {
         editor = factory(tui, theme, keybindings);
       },
@@ -82,7 +81,7 @@ describe("prompt UI", () => {
     const editor = createEditor("tui", [], order)!;
     expect(editor.render(180)[0]).not.toContain("fast");
     await editor.fast("on");
-    expect(editor.render(180)[0]).toContain("\x1b[1;33mfast\x1b[0m");
+    expect(editor.render(180)[0]).toContain(uiTheme.style("fast", { fg: "syntaxKeyword", bold: true }));
     await editor.fast("off");
     expect(editor.render(180)[0]).not.toContain("fast");
     expect(editor.footer!.render(180)).toEqual([]);
@@ -104,7 +103,7 @@ describe("prompt UI", () => {
     expect(lines).toHaveLength(2);
     expect(lines[0]).toContain("test-model");
     expect(lines[0]).toContain("11%");
-    expect(lines[1]).toStartWith(`${dim("╰─")} ${CURSOR_MARKER} `);
+    expect(lines[1]).toStartWith(`${accent("╰─")} ${CURSOR_MARKER} `);
     expect(lines.join("")).not.toContain("\x1b[7m");
     expect(lines.every((line) => visibleWidth(line) === 80)).toBe(true);
     expect(editor.footer!.render(80)).toEqual([]);
@@ -125,7 +124,7 @@ describe("prompt UI", () => {
       current.handleInput("!");
     }
     const expected = original.render(12).map(stripSoftwareCursor);
-    expected[1] = dim("╰─") + expected[1].slice(2);
+    expected[1] = accent("╰─") + expected[1].slice(2);
     expected.pop();
     expect(editor.render(12).slice(1)).toEqual(expected.slice(1));
     expect(editor.getCursor()).toEqual(original.getCursor());
@@ -149,7 +148,7 @@ describe("prompt UI", () => {
     await Bun.sleep(0);
     expect(editor.isShowingAutocomplete()).toBe(true);
     const lines = editor.render(20);
-    expect(lines[1]).toStartWith(dim("╰─") + " /h");
+    expect(lines[1]).toStartWith(accent("╰─") + " /h");
     expect(lines[2]).toBe("");
     expect(lines[3]).toContain("help");
     expect(lines[3]).not.toContain("╰─");
@@ -165,7 +164,7 @@ describe("prompt UI", () => {
     expect(editor.getExpandedText()).toBe(text);
     editor.setText(text);
     const lines = editor.render(20);
-    expect(lines[1]).toStartWith(dim("╰─"));
+    expect(lines[1]).toStartWith(accent("╰─"));
     expect(lines.join("").split("╰─")).toHaveLength(2);
     expect(editor.render(80)[0]).toContain("more");
     expect(lines.join("")).toContain(CURSOR_MARKER);

@@ -8,7 +8,7 @@ export function stripSoftwareCursor(line: string): string {
 }
 
 export class PromptEditor extends CustomEditor {
-  private readonly dimBorder = this.borderColor;
+  private readonly promptBorder = this.borderColor;
   renderStatusLine?: (width: number, hiddenLines: number) => string;
 
   protected renderTopBorder(width: number, hiddenLines: number): string {
@@ -23,11 +23,11 @@ export class PromptEditor extends CustomEditor {
   render(width: number): string[] {
     if (width <= 0) return [];
     // Pi replaces borderColor when thinking or bash mode changes.
-    this.borderColor = this.dimBorder;
+    this.borderColor = this.promptBorder;
     this.setPaddingX(Math.max(3, this.getPaddingX()));
     const lines = super.render(width).map(stripSoftwareCursor);
     const promptWidth = width >= 5 ? 2 : width >= 3 ? 1 : 0;
-    if (promptWidth) lines[1] = this.dimBorder("╰─".slice(0, promptWidth)) + lines[1].slice(promptWidth);
+    if (promptWidth) lines[1] = this.promptBorder("╰─".slice(0, promptWidth)) + lines[1].slice(promptWidth);
     // Keep the autocomplete separator in place so built-in mouse rows still match.
     if (lines.at(-1) === "") lines.pop();
     return lines;

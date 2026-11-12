@@ -36,7 +36,7 @@ export default function (pi: ExtensionAPI) {
     ctx.ui.setEditorComponent((tui, theme, keybindings) => {
       const editor = new PromptEditor(tui, {
         ...theme,
-        borderColor: (text) => ctx.ui.theme.fg("dim", text),
+        borderColor: (text) => ctx.ui.theme.fg("accent", text),
       }, keybindings);
       editor.renderStatusLine = (width, hiddenLines) => renderStatusLine?.(width, hiddenLines) ?? "";
       return editor;

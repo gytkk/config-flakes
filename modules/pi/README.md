@@ -464,7 +464,7 @@ Cloudflare operations use the `cf` CLI installed by the common Home Manager prof
 
 Pi selects the generated `one-half-light` theme from `themes/exports/pi/one-half-light.json`. The module also installs `claude-like` as an alternative. The built-in `system` theme remains available in `/settings` to derive colors from the terminal's background and ANSI palette.
 
-The local prompt uses Pi theme tokens for path/model accents and borders, ANSI purple for thinking, bright yellow/orange for fast mode, and green for filled quota cells. Context usage is cyan below 70%, yellow from 70%, and red from 90%. No app-local theme copy is added.
+The local prompt derives rounded path and model badges from the active Pi theme: the path uses an accent-tinted background and the model uses a label-tinted background, with stronger foreground colors for readability. Git counts retain their symbols and use warning (`*`), success (`+`), and accent (`?`) colors; query failures use error. Thinking follows the selected level's theme color, fast mode uses the keyword color in bold, and filled quota cells use success. Context usage uses accent below 70%, warning from 70%, and error from 90%. The input marker also uses accent. Narrow layouts drop the model badge before truncating its text. No shared theme values or generated exports are changed. For an already installed checkout-linked prompt extension, `/reload` picks up rendering changes.
 
 ## Verification
 
