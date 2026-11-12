@@ -7,6 +7,7 @@
     },
     "disabledServers": ["python-jedi", "opengrep", "ast-grep", "zizmor", "typos", "fallow"]
   },
+  "ui": { "compactWidget": true },
   "format": { "enabled": false },
   "autofix": { "enabled": false },
   "actionableWarnings": { "enabled": false, "autoFix": { "enabled": false } },

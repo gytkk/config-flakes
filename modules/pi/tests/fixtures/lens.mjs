@@ -1,9 +1,9 @@
 // Exact release, real Node/jiti + SDK lifecycle, no model/provider or ambient state.
 import assert from "node:assert/strict";
 import childProcess from "node:child_process";
-import { syncBuiltinESMExports } from "node:module";
+import { createRequire, syncBuiltinESMExports } from "node:module";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { join, basename } from "node:path";
+import { join, basename, dirname } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 const root = process.argv[3], cwd = join(root, "project"), agentDir = process.env.PI_CODING_AGENT_DIR;
 // Observe only this fixture's children. Never inspect or kill ambient servers.
@@ -25,6 +25,10 @@ childProcess.spawn = function(command, args, options) {
 };
 syncBuiltinESMExports();
 const pi = await import(pathToFileURL(process.argv[2]));
+pi.initTheme("light", false);
+const { theme } = await import(pathToFileURL(join(dirname(process.argv[2]), "modes/interactive/theme/theme.js")));
+const { visibleWidth, stripTerminalSequences } = await import(pathToFileURL(createRequire(process.argv[2]).resolve("@earendil-works/pi-tui")));
+const widgets = new Map();
 function put(file, content) { mkdirSync(join(cwd, file, ".."), { recursive: true }); writeFileSync(join(cwd, file), content); }
 mkdirSync(join(cwd, ".git"));
 put("package.json", '{"type":"module","scripts":{"test":"touch TEST-RAN"}}');
@@ -64,7 +68,17 @@ watchdog.unref();
 process.once("SIGTERM", () => { void cleanup().finally(() => process.exit(124)); });
 async function bind() {
   session = runtime.session;
-  await session.bindExtensions({ onError: e => errors.push(e) });
+  await session.bindExtensions({
+    mode: "tui", onError: e => errors.push(e),
+    uiContext: {
+      ...session.extensionRunner.createToolContext("widget-host", undefined).ui,
+      theme,
+      setWidget(name, factory) {
+        if (factory) widgets.set(name, factory({ requestRender() {} }, theme));
+        else widgets.delete(name);
+      },
+    },
+  });
   const names = session.getAllTools().map(t => t.name);
   for (const n of ["lsp_navigation", "lens_diagnostics", "ast_grep_search", "ast_grep_replace", "ast_grep_outline"]) assert.equal(names.filter(x => x === n).length, 1);
   for (const n of ["lsp_hover", "lsp_rename", "lsp_apply_edit", "lsp_code_actions", "ast_search", "ast_preview", "ast_apply", "ast_discard", "analyze", "project_scan", "rebuild"]) assert.ok(!names.includes(n), n);
@@ -113,6 +127,14 @@ try {
   assert.equal(r.isError, false); assert.match(text(r), /answer/);
   r = await tool("lens_diagnostics", { path: "a.ts", source: "lsp" });
   assert.equal(r.details.unconfirmed, false); assert.ok(r.details.totalDiagnostics > 0);
+  const widget = widgets.get("pi-lens");
+  assert.ok(widget, "Lens mounts its own status widget");
+  for (const width of [40, 80, 160]) {
+    const lines = widget.render(width);
+    assert.equal(lines.length, 1, "compact widget has one summary row");
+    assert.ok(visibleWidth(lines[0]) <= width, "summary stays within terminal width");
+  }
+  console.log("Lens compact widget:", stripTerminalSequences(widget.render(80)[0]));
   r = await nav("definition", "b.ts", 2, 13); assert.equal(r.isError, false); assert.ok(r.details.resultCount > 0);
   r = await nav("references", "a.ts", 1, 14); assert.ok(r.details.resultCount >= 2);
   r = await nav("codeAction", "a.ts", 1, 14); assert.equal(r.isError, false);
@@ -160,7 +182,6 @@ try {
   assert.equal(readFileSync(join(cwd, "b.ts"), "utf8"), before);
   assert.match(readFileSync(join(cwd, "a.ts"), "utf8"), /concurrent writer/);
   // Native Lens result renderer remains inside the generic frame, expandable.
-  pi.initTheme("light", false);
   const definition = session.extensionRunner.getToolDefinition("ast_grep_replace");
   const renderers = session.extensionRunner.resolveToolRenderers("ast_grep_replace", () => definition);
   const row = new pi.ToolExecutionComponent("ast_grep_replace", "render", replacement, { outputPad: 1 }, renderers, { requestRender() {} }, cwd);
