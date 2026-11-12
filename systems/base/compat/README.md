@@ -1,6 +1,6 @@
 # Home Manager compatibility
 
-`home-manager.nix` keeps two repository-wide Home Manager compatibility settings outside the common base module.
+[The compatibility module](home-manager.nix) keeps two repository-wide Home Manager compatibility settings outside the common base module.
 
 `targets.darwin.copyApps.enable = false` keeps the current macOS App Management behavior. It was introduced when the Home Manager state version moved to 26.05 because `copyApps` became enabled from state version 25.11 and reset TCC App Management permission during activation. Reconsider it only after testing the current Home Manager behavior on a Darwin host that installs Nix-managed `.app` bundles.
 

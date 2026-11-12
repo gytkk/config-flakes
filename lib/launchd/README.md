@@ -1,6 +1,6 @@
 # Launchd lifecycle backport
 
-`backport.nix` replaces only `processAgentImpl` in the pinned Home Manager launchd module. It deliberately fails when that function's source changes.
+[The backport](backport.nix) replaces only `processAgentImpl` in the pinned Home Manager launchd module. It deliberately fails when that function's source changes.
 
 Home Manager revision `b787c48e2ec57a9d098f5c2721882a3bc1e16f97` supplies the macOS 26 `bootout --wait` gate, harmless absent-domain handling, per-agent failure aggregation, domain migration, and retry of unchanged but unloaded agents. The local replacement preserves those behaviors and backs up the installed plist before replacement so rollback also works when the previous generation's plist is missing or differs from the installed file. A failed first bootstrap removes the newly installed plist so reapplication retries. It does not roll back the whole Home Manager generation.
 

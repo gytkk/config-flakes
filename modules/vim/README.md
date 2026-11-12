@@ -95,7 +95,7 @@ EDITOR=vim agx -e openai-api-key.age
 
 Bare `nvim`, `vim`, or `vi` restores only the current working directory's session, preferring the current Git branch and falling back to that directory's unbranched session. It opens the left explorer at the working directory after all `VeryLazy` handlers finish, even if a restored file or symlink belongs to another project. Without a matching session, it opens only the explorer. LazyVim's default and personal autocmds are registered before restoration opens files, so their normal file and window events apply settings across restored tabs and splits. Opening a file with `nvim filename.txt`, `vim filename.txt`, or `vi filename.txt` skips startup session restore and explorer opening. The default setup uses the existing `nvim` session state. Sessions from the former isolated candidate are not copied.
 
-Before applying the promoted setup, close Neovim. If rollback is needed, first save the existing config lockfile and Neovim data, including sessions, outside their active directories. Apply Home Manager for the target environment, restore the repository's plugin revisions, and restart Neovim:
+Before applying this setup, close Neovim. If rollback may be needed, first save the existing config lockfile and Neovim data, including sessions, outside their active directories. Apply Home Manager for the target environment, restore the repository's plugin revisions, and restart Neovim:
 
 ```bash
 home-manager switch --flake .#pylv-denim

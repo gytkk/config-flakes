@@ -24,8 +24,12 @@ nix run nixpkgs#nixos-rebuild -- switch \
 ### On the Server
 
 ```bash
-sudo nixos-rebuild switch --flake github:gytkk/config-flakes#pylv-sepia
+sudo nixos-rebuild switch --flake .#pylv-sepia
 ```
+
+Run from the configured checkout (`~/development/config-flakes` by default).
+Home Manager installs out-of-store links to that checkout, so pulling the
+reviewed revision there is part of applying a configuration update.
 
 ### Build memory
 
@@ -39,34 +43,22 @@ sudo nixos-rebuild switch --flake .#pylv-sepia --max-jobs 1
 
 ## Container services
 
-Podman runs the application containers declared with NixOS `virtualisation.oci-containers`. Each application has a separate module, fixed image version, persistent data outside the image, and systemd services with health checks and journal logs. Ghost uses `ghost.nix`; the authenticated read-only trading dashboard uses `trading-agent.nix` and the module exported by the trading-agent source. Neither application requires Docker Engine.
+Podman runs the Ghost container declared in
+[the Ghost module](ghost.nix). The trading dashboard's container services come
+from the private [trading-agent repository](https://github.com/gytkk/trading-agent).
+Neither integration requires Docker Engine.
 
-| Container | Service | Memory limit | CPU limit | Persistent state |
-| --- | --- | --- | --- | --- |
-| `ghost` | `podman-ghost` | 2 GiB | 2 CPUs | `/var/lib/ghost` |
-| `trading-agent-admin` | `podman-trading-agent-admin` | 512 MiB | 1 CPU | Access configuration and read-only IPC mount |
-| `trading-agent-reader` | `podman-trading-agent-reader` | 512 MiB | 2 CPUs | Read-only imported profile databases |
-| `trading-agent-accounts` | `podman-trading-agent-accounts` | 512 MiB | 1 CPU | Read-only broker queries, private credentials and persistent account snapshots |
+[The trading integration](trading-agent.nix) enables the product's NixOS module
+for `trading.pylv.dev`, using UID 1000 and GID 100. It supplies the profile and
+Access configuration under `~/.config/trading-agent`, imported databases under
+`~/.local/share/trading-agent/imports/pylv-onyx-20261024/databases`, and the
+account configuration and credentials under `~/.config/trading-agent/live-accounts`.
 
-Trading-agent owns its image build, Cargo and Bun dependency hashes, and container service definitions. This host pins its source in `trading-agent-source.nix` and supplies only runtime paths, hostname, and process UID/GID. The source comes from the private `gytkk/trading-agent` repository at the fixed published revision `944c1d53d33a88adb581f99188918c33f3fe392e`; the evaluating user's Git credentials must have read access. The repository split replaces the unavailable local-only revision `4263e22bc8578ec59c84ef49ba4817bfe6f2a97e`, so review the pinned product revision before the next NixOS activation. No running service is changed by this source migration. Running containers use immutable Nix store outputs and do not execute files from the checkout.
-
-The admin binds to `127.0.0.1:8765` using host networking, preserving the existing Cloudflare Tunnel route and Access verification. Its container mounts only `~/.config/trading-agent/access.toml` and the read-only IPC directory. The reader mounts `~/.config/trading-agent/profiles.toml`, the imported database directory at its existing absolute path, the current-account snapshots directory read-only, and the writable private socket directory `/run/trading-agent-ipc`. This directory is separate from the per-container RuntimeDirectory managed by oci-containers. The processes use UID 1000 and GID 100 to preserve file ownership and IPC peer checks. The admin and reader cannot read broker credentials or tokens. The earlier `trade-admin` and `trade-admin-reader` user units are disabled after cutover.
-
-The account monitor mounts its private registry, EngineConfig files and credential directory from `~/.config/trading-agent/live-accounts/`. It attempts to query KIS domestic stocks, KIS US stocks and Toss holdings on a 60-second schedule with `read_only=true` and live writes disabled; slow broker responses can delay refreshes. It stores broker tokens under `/var/lib/trading-agent-account-state/broker/` and append-only query results under `snapshots/accounts.sqlite3`. Only the snapshots subdirectory is shared with the reader. The dashboard defaults to current account valuations; historical execution data remains under the profile list. No trading supervisor, advisor or order execution process is started.
-
-```bash
-sudo systemctl status podman-ghost podman-trading-agent-admin podman-trading-agent-reader podman-trading-agent-accounts
-sudo podman ps
-sudo journalctl -u podman-trading-agent-admin -u podman-trading-agent-reader -u podman-trading-agent-accounts
-```
-
-Ghost's health check requests its local HTTP endpoint. Trading's reader health check verifies socket creation, its web health check verifies HTTP 401 for an unauthenticated request, and the account monitor health check verifies snapshot database creation. A healthy container does not establish broker connectivity or current account balances. After deployment, separately verify profile queries, account query states and Cloudflare Access login. The account monitor logs only source aliases and outcome codes. Database backups and restore procedures remain separate from image rollback; see the Ghost backup section below and the trading-agent repository's operating documentation.
-
-After deployment or a reader restart, run the IPC check from the local trading-agent checkout. It verifies private directory and socket ownership, registered profile database availability, and rejection of operating controls. This catches ownership changes that a socket-existence health check cannot detect.
-
-```bash
-bun trade-engine/scripts/check-admin-ipc.mjs --socket /run/trading-agent-ipc/read.sock --uid 1000 --expected-profiles 5
-```
+[The source pin](trading-agent-source.nix) selects the product revision; the
+evaluating user's Git credentials must have read access. Review that revision
+before activation. Container definitions, resource limits, health checks,
+broker behavior, and product-specific deployment checks belong to that
+revision's operating documentation, not a second copy in this repository.
 
 ## Menu by pylv
 
@@ -80,15 +72,12 @@ copy for the administrator and deployment Mac is stored in
 `secrets/menu-deploy-key.age`. GitHub Actions uses a separate CI key whose
 private half exists only as the `MENU_DEPLOY_SSH_KEY` repository secret. Both
 public keys have the same forced command and forwarding restrictions in
-`menu.nix`. The server is intentionally not a recipient of either private key.
+[the Menu module](menu.nix). The server is intentionally not a recipient of either private key.
 To recover the manual key from the repository root:
 
 ```bash
 umask 077
-(
-  cd secrets
-  RULES=./secrets.nix agenix -d menu-deploy-key.age
-) > ~/.ssh/menu-deploy
+agx -d menu-deploy-key.age > ~/.ssh/menu-deploy
 ssh-keygen -y -f ~/.ssh/menu-deploy > ~/.ssh/menu-deploy.pub
 public_key="$(cut -d ' ' -f 2 ~/.ssh/menu-deploy.pub)"
 rg --fixed-strings "$public_key" systems/hosts/pylv-sepia/menu.nix
@@ -100,21 +89,19 @@ Devsisters workstations; neither NixOS server can decrypt it. Create or rotate
 the backup from the repository root with:
 
 ```bash
-(
-  cd secrets
-  agx -e menu-github-pat.age
-)
+agx -e menu-github-pat.age
 ```
 
 Use a fine-grained PAT restricted to `gytkk/menu` with `Contents: Read and
 write`, and give it a short expiration. To recover it for Sveltia, decrypt it
-locally with `agx -d menu-github-pat.age` from `secrets/`, paste it only into
+locally with `agx -d menu-github-pat.age`, paste it only into
 the CMS token prompt on a trusted browser, and clear the terminal and clipboard
-afterward. The secret is intentionally not declared under `age.secrets`,
+afterward. The `agx` wrapper selects the repository's secrets directory and
+workstation identity. The secret is intentionally not declared under `age.secrets`,
 deployed to a host, or included in the CMS configuration.
 
-From an authorized deployment machine, stream a verified tar archive with the
-exact commit and archive SHA-256:
+From the **Menu repository checkout** on an authorized deployment machine,
+stream its verified `dist` archive with the exact commit and archive SHA-256:
 
 ```bash
 archive="$(mktemp)"
@@ -155,7 +142,7 @@ GitHub repository secret.
 
 Cloudflare Tunnel routing and the public hostname are managed separately in
 Cloudflare and are not configured by this flake. The transitional
-`astro-blog-legacy.nix` module keeps the old forced-command account, key and
+[legacy Astro module](astro-blog-legacy.nix) keeps the old forced-command account, key and
 `/srv/astro-blog` data available without serving the old nginx origin. Keep it
 and the encrypted backup until two Menu releases and a rollback have been
 verified; remove them only as a separate cleanup step.
@@ -200,167 +187,9 @@ Treat this single-instance production SQLite deployment as an intentional,
 locally operated exception and test Ghost upgrades against a restored backup
 before changing the pinned image.
 
-### Declarative Settings and Theme Plan
-
-Status: proposed. Implement this only after approving the remaining product and
-security decisions below.
-
-#### Desired State
-
-- Anyone can read public posts without creating an account.
-- Member signup, newsletters, and comments are disabled initially.
-- Staff continue to authenticate through Ghost Admin at `/ghost`.
-- Supported publication settings are reconciled through the Ghost Admin API;
-  the SQLite database is never edited directly.
-- A repository-managed custom theme controls layout and styling.
-- Secrets remain encrypted with agenix and never enter the Nix store, generated
-  units, logs, or Git history.
-
-The initial managed Ghost settings are:
-
-| Ghost setting | Desired value | Purpose |
-| --- | --- | --- |
-| `is_private` | `false` | Allow unauthenticated site visits |
-| `members_signup_access` | `none` | Disable member signup and member features |
-| `default_content_visibility` | `public` | Make new posts public by default |
-| `comments_enabled` | `off` | Disable member-only comments |
-
-#### Configuration Boundaries
-
-| Concern | Source of truth |
-| --- | --- |
-| Container, database, URL, mail, storage, and proxy | `ghost.nix` |
-| Selected publication settings and navigation | Admin API desired-state file |
-| Owner account and initial custom integration | One-time Ghost Admin bootstrap |
-| Admin API credential | agenix secret |
-| Layout, templates, CSS, JavaScript, and theme defaults | Repository-managed Ghost theme |
-| Posts, pages, images, and other editorial content | Ghost content database and uploads |
-| Public hostname and optional admin access policy | Cloudflare Zero Trust dashboard |
-
-Editorial content should not be continuously reconciled by Nix. This keeps
-normal authoring in Ghost Admin independent from infrastructure deployments.
-
-#### Proposed Repository Layout
-
-```text
-systems/hosts/pylv-sepia/
-├── ghost.nix
-└── ghost/
-    ├── settings.json
-    ├── sync-settings.js
-    ├── routes.yaml
-    └── theme/
-        ├── package.json
-        ├── default.hbs
-        ├── index.hbs
-        ├── post.hbs
-        ├── page.hbs
-        ├── partials/
-        └── assets/
-            ├── css/
-            ├── js/
-            └── images/
-```
-
-Keep the sync script narrow: it should update only keys explicitly present in
-`settings.json`. It must not overwrite unrelated settings changed through Ghost
-Admin.
-
-#### Implementation Phases
-
-1. **Finish the current runtime rollout**
-   - Activate the host-network and backup ownership fix.
-   - Run a manual backup and verify the SQLite integrity check and archive.
-   - Confirm the origin returns HTTP 200 after a Ghost restart.
-
-2. **Bootstrap Admin API access**
-   - Create the Owner account manually if it does not exist.
-   - Create one custom integration dedicated to configuration reconciliation.
-   - Encrypt its Admin API key as a new agenix secret.
-   - Confirm the key can read and update settings without printing it in logs.
-
-3. **Add idempotent settings reconciliation**
-   - Add the desired-state JSON and a small Admin API client.
-   - Generate short-lived Admin API JWTs only in memory.
-   - Add `ghost-settings-sync.service` after `podman-ghost.service`.
-   - Wait for the Ghost health check before calling the API, use bounded retries,
-     and fail with actionable errors.
-   - Snapshot the currently managed values before the first write so they can be
-     restored without editing SQLite.
-
-4. **Add the repository-managed theme**
-   - Start from the current Source theme behavior rather than rebuilding every
-     feature at once.
-   - Package the theme from the repository and mount it read-only into
-     `/var/lib/ghost/content/themes`.
-   - Validate it with GScan during checks.
-   - Activate it through the Admin API only after validation and Ghost startup.
-   - Keep Source available as the immediate fallback theme.
-   - Put adjustable colors, typography, and layout choices in Ghost custom theme
-     settings; keep structural layout in Handlebars and CSS.
-
-5. **Add routing only when required**
-   - Keep Ghost's default routes for the first theme release.
-   - Add and mount `routes.yaml` only for a concrete collection, channel, or URL
-     requirement.
-   - Validate feeds, pagination, tags, authors, and canonical URLs after routing
-     changes.
-
-6. **Make the publication public safely**
-   - Remove the current host-wide Cloudflare Access requirement before launch.
-   - Prefer Ghost's built-in Staff authentication initially.
-   - If Cloudflare Access is retained for admin defense in depth, do not protect
-     `/ghost*` blindly: explicitly verify that the public Content API,
-     ActivityPub endpoints, assets, feeds, and any member endpoints remain
-     reachable without Cloudflare authentication.
-
-#### Verification and Rollout
-
-Before committing each logical change:
-
-```bash
-nixfmt systems/hosts/pylv-sepia/ghost.nix
-nix flake check --no-build
-nix build .#nixosConfigurations.pylv-sepia.config.system.build.toplevel
-```
-
-Also verify:
-
-- GScan accepts the packaged theme.
-- The generated Podman unit mounts the intended theme and no secret value.
-- The sync unit is idempotent and a second run makes no unexpected changes.
-- An unauthenticated request can read the home page and a public post.
-- Member signup, newsletter subscription, and comments are unavailable.
-- Ghost Admin still accepts the Owner account.
-- RSS, sitemap, public assets, Content API, and ActivityPub endpoints do not
-  redirect to Cloudflare Access.
-- A manual `ghost-backup.service` run produces an integrity-checked archive.
-
-Activate only after the checks pass:
-
-```bash
-sudo nixos-rebuild switch --flake .#pylv-sepia
-```
-
-#### Rollback
-
-- Retain a pre-change backup and the API snapshot of managed settings.
-- Revert the relevant Git commit and switch the previous NixOS configuration.
-- Reactivate Source through Ghost Admin or the Admin API if the custom theme
-  fails.
-- Restore managed settings through the API snapshot; do not patch SQLite.
-
-#### Decisions Required Before Implementation
-
-- Select the first theme direction: Source-derived minimal customization or a
-  new visual design.
-- Decide whether Ghost Staff authentication alone is sufficient or whether a
-  carefully scoped Cloudflare Access policy is required for admin routes.
-- Decide whether navigation should be API-managed or remain editorial.
-- Select an SMTP provider before enabling password recovery, staff invitations,
-  or members. Select Mailgun separately before enabling newsletters.
-- Decide whether GScan is run through a pinned package derivation or a separate
-  repository check.
+Publication settings, staff accounts, routes, and themes remain managed in
+Ghost Admin. This flake does not implement Admin API settings reconciliation
+or install a custom Ghost theme.
 
 ### Deploy
 
@@ -473,11 +302,13 @@ home.packages = with pkgs; [
 
 | File | Description |
 | --- | --- |
-| `configuration.nix` | NixOS system configuration and host module imports |
-| `ghost.nix` | Ghost container, loopback nginx origin, and local backups |
-| `menu.nix` | Menu static site origin and deployment integration |
-| `disk-config.nix` | Disk partitioning configuration (disko) |
-| `hardware-configuration.nix` | Auto-generated hardware configuration |
+| [Host configuration](configuration.nix) | NixOS system configuration and host module imports |
+| [Ghost](ghost.nix) | Ghost container, loopback nginx origin, and local backups |
+| [Menu](menu.nix) | Menu static site origin and deployment integration |
+| [Legacy Astro deployment](astro-blog-legacy.nix) | Previous deployment account and data retained for rollback |
+| [Trading integration](trading-agent.nix) / [source pin](trading-agent-source.nix) | Product module and host runtime paths |
+| [Disk layout](disk-config.nix) | Disk partitioning configuration (disko) |
+| [Hardware configuration](hardware-configuration.nix) | Auto-generated hardware configuration |
 
 ## Shared Modules
 

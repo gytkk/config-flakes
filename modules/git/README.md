@@ -1,31 +1,6 @@
 # Git Module
 
-This module provides comprehensive Git configuration with sensible defaults and productivity enhancements.
-
-## What it does
-
-- Configures Git with user identity and email
-- Enables Git LFS (Large File Storage) support
-- Sets up custom configuration for diff, pull, push, and color settings
-- Creates a global `.gitignore` file with common patterns
-- Configures Neovim as the default editor and Delta for Git diff output
-
-## Features
-
-- **User Configuration**: Sets username to `gytkk` and email to `gytk.kim@gmail.com`
-- **Git LFS**: Automatically handles large files
-- **Smart Defaults**:
-  - Rebase on pull with fast-forward only
-  - Auto-setup remote for push
-  - Default branch set to `main`
-  - Colorized output for better readability
-- **Global Gitignore**: Excludes common files like `.DS_Store`, `.idea`, `.vscode`, `.env`, etc.
-
-## Requirements
-
-- Nix package manager
-- Home Manager
-- Neovim (for the editor)
+Home Manager configures Git, Git LFS, Delta, and `~/.gitignore` when `modules.git.enable` is enabled.
 
 ## Configuration Details
 
@@ -36,20 +11,15 @@ This module provides comprehensive Git configuration with sensible defaults and 
 - **Pull Strategy**: Rebase with fast-forward only
 - **Push Strategy**: Current branch with auto-setup of remote
 - **Default Branch**: `main`
+- **Fetch**: Fetch all remotes and prune deleted branches and tags
+- **GitHub credentials**: GitHub and Gist use `gh auth git-credential`; authenticate with GitHub CLI separately
 
 ### Global Gitignore Patterns
 
 - System files: `.DS_Store`
-- IDE files: `.idea`, `.vscode`
-- Environment files: `.env`, `.envrc`, `.tool-versions`
-- Python files: `.coverage`
+- IDE and assistant files: `.idea`, `.vscode`, `.zed`, `.ai`, `.claude/settings.local.json`, `.sisyphus/`
+- Environment files: `.direnv/`, `.env`, `.envrc`, `.tool-versions`, `mise.toml`
+- Python caches, build output, package metadata, and coverage output
+- Node.js logs
+- Nix build results: `result`, `result-*`
 
-## Usage
-
-After applying this module, Git will be configured with all the settings. You can verify the configuration with:
-
-```bash
-git config --list
-```
-
-The global gitignore will be applied automatically to all repositories.

@@ -1,6 +1,6 @@
 # Theme Overrides
 
-Overrides are app-specific patches applied after the canonical core and app template have already been resolved.
+Overrides are app-specific patches layered over canonical colors and app template defaults. Slot overrides apply before template rendering; other apps patch rendered fields as described below.
 
 Use overrides when:
 
@@ -25,6 +25,12 @@ Do not use overrides to redefine the canonical theme core.
 - `uv run --no-project themes/validate_overrides.py`
 - `uv run --no-project themes/check_templates.py` also checks override template/current override file structure
 
+Save each override as `themes/overrides/<app>/<theme-id>.yaml`. Use `version: 1`
+and keep all top-level sections and `meta` keys in the order shown by that app's
+template, even when a section is empty. Generation requires `meta.theme` and
+`meta.variant` to match the canonical theme; standalone override validation
+checks their format but does not compare them with the core file.
+
 ## Resolution order
 
 For Ghostty exports, values resolve in this order:
@@ -38,7 +44,7 @@ For Neovim exports, values resolve in this order:
 2. override `groups.<group>` patch
 3. override `links.<group>` replacement
 
-If a link override exists for a group, it replaces the final attrs table for that group.
+For groups present in a template, a link override replaces the final attrs table. For a newly added group absent from both templates, a `groups` entry takes precedence over a same-named `links` entry.
 
 For Starship exports, `slots` patches replace generator-computed slots before template rendering. `modules.<table>.<key>` patches replace existing string-valued template settings; other settings retain their template values. See the [Starship resolution rules](../README.md#resolution-rules) and `themes/overrides/starship/TEMPLATE.yaml` for supported values and authoring structure.
 
@@ -49,6 +55,9 @@ For Zellij exports, values resolve in this order:
 1. generator-computed component colors
 2. override `components.<component>` attr patch
 3. override `players.<player_n>` replacement inside `multiplayer_user_colors`
+4. player-color deduplication and background-distinction adjustment
+
+The final step can adjust even explicitly overridden player colors.
 
 ## Ghostty override format
 
@@ -118,9 +127,8 @@ players:
 Ghostty override values may be:
 
 - literal hex strings like `"#232136"` for UI color slots
-- indexed palette entries like `"0=#393552"`
-- palette refs like `"{palette.selection}"`
-- role refs like `"{roles.ui.cursor}"`
+- palette refs like `"{palette.selection}"` or role refs like `"{roles.ui.cursor}"` for UI color slots
+- indexed palette entries like `"0=#393552"` or `"0={roles.ansi.black}"`; `palette_n_entry` values must include an index and `=`
 - a quoted decimal from `"0"` to `"1"` for `faint_opacity`, such as `"0.85"`
 
 Neovim override values may be:
@@ -142,8 +150,8 @@ Zellij override values may be:
 - use plain YAML keys for highlight groups, including names like `@function` or `@constructor`; do not quote the key names in this repo's minimal YAML format
 - `groups` patches merge into the existing generated attrs for a group.
 - `links` replace the group attrs with `{ link = ... }`.
-- unknown groups are appended as an extra override section at the end of the generated Neovim output.
+- groups absent from the builtin template are appended in an `Override groups` section before the plugin sections; plugin groups are also patched in their own sections.
 - Ghostty `slots` replace individual generated slot values after the default terminal mapping is computed.
 - Zellij `components` patches replace individual component attrs after generator defaults are resolved.
-- Zellij `players` patches replace individual `player_n` colors after the multiplayer palette is generated.
+- Zellij `players` patches replace individual `player_n` colors before the final deduplication and background-distinction adjustment.
 - templates remain the official/default contract; overrides are the narrow exception layer.

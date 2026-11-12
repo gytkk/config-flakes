@@ -72,12 +72,6 @@ After applying the module, run `exec zsh -l`. To bypass timing, use `command hom
 - **direnv**: Directory-based environment variable management
 - **uv**: Python package manager with shell completion
 
-## Requirements
-
-- Nix package manager
-- Home Manager
-- Zsh shell support
-
 ## Nix executable priority on macOS
 
 Login shells put `~/.nix-profile/bin` first in `PATH` through the Home Manager-generated `.zprofile`, after macOS runs `path_helper`. This makes commands such as `python3` use the Nix installation. Non-login child shells inherit that order, and activating a virtual environment can still override Python for the current shell.
@@ -90,17 +84,3 @@ After applying Home Manager, start a new login shell with `exec zsh -l`. Restart
 - `~/.config/starship.toml`: Link to the generated canonical theme export
 - `~/.zsh_history`: Command history storage
 
-## Usage
-
-After applying this module, restart your shell or run:
-
-```bash
-exec zsh -l
-```
-
-The configuration will automatically:
-
-- Load the selected Starship theme
-- Enable completion, syntax highlighting, and autosuggestions
-- Set up aliases and integrations
-- Configure optimal shell settings

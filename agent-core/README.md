@@ -22,11 +22,13 @@ agent-core/
 └── tests/
 ```
 
-`manifest.toml`의 `skill_sources`는 로컬 skill과 외부 Git source를 선언한다. 외부 source는 설치 작업마다 기본 branch의 최신 full SHA를 한 번 결정하며, 같은 작업의 모든 target에 같은 SHA를 사용한다. `resolving-merge-conflicts`는 최신 upstream에서 삭제되어 사용자 결정에 따라 새 설치 목록에서 제외한다. 최신 upstream의 workflow와 UI metadata 변경도 첫 전환에 포함된다.
+`manifest.toml`의 `skill_sources`는 로컬 skill과 외부 Git source를 선언한다. 외부 source는 설치 작업마다 기본 branch의 최신 full SHA를 한 번 결정하며, 같은 작업의 모든 target에 같은 SHA를 사용한다. `resolving-merge-conflicts`는 최신 upstream에서 삭제되어 사용자 결정에 따라 새 설치 목록에서 제외한다. 현재 source와 target별 선택 목록은 manifest를 기준으로 확인한다.
 
 `skill_targets`는 Codex/Pi/OMP 공통 pool과 Claude copy에 설치할 skill을 선택한다. 세 runtime은 `~/.agents/skills`를 공유하므로 같은 shared 선택 목록을 발견한다. [OpenAI API 모듈](../modules/openai-api/README.md)은 API client에 agenix 키를 전달하며, skill 설치 자체가 package나 credential을 준비하지는 않는다.
 
 Hunk의 `hunk-review`는 `modem-dev/hunk`의 `.agents/skills/hunk-review`에서 취득하여 shared와 Claude target에 설치한다. Skill은 `hunk skill show hunk-review`로 설치된 CLI 버전에 맞는 지침을 읽는다. Hunk 실행 파일은 공통 Home Manager 패키지가 설치하며, skill은 다른 외부 source와 동일하게 switch 때 갱신한다.
+
+`impeccable`은 `pbakaus/impeccable`의 `.agents/skills/impeccable`에서 취득하여 shared target에만 설치한다. Claude는 별도 공식 marketplace plugin을 사용하므로 Claude target에는 중복 설치하지 않는다.
 
 `runtimes.*.skills`와 기존 vendored tree는 이전 Nix generation의 복구와 최종 renderer 정리를 위해 남아 있다. 현재 module은 이 skill output을 설치하지 않는다. 모든 host의 Codex/Claude/Pi 전환과 실제 discovery 검증이 끝나기 전에는 이 fallback과 golden hash를 제거하거나 변경하지 않는다.
 
@@ -110,7 +112,7 @@ agent-core verify-install --expected <dir> --actual <dir>
 agent-core skill-plan --target shared
 ```
 
-- `render`는 manifest와 canonical resource를 읽고 runtime별 shared skill allowlist에 맞는 output tree를 생성한다. Output 경로는 없거나 비어 있는 실제 디렉터리여야 한다.
+- `render`는 manifest의 문서 조합과 `runtimes.*.skills`의 legacy allowlist에 맞는 output tree를 로컬 canonical resource에서 생성한다. 현재 CLI 설치 목록인 `skill_targets`나 최신 외부 source의 내용으로 skill을 렌더링하지 않는다. Output 경로는 없거나 비어 있는 실제 디렉터리여야 한다.
 - `check`는 manifest, rule, adapter, skill, generated marker, golden hash를 검증한다. 홈 디렉터리와 module 경로는 읽지 않는다.
 - `verify-install`은 명시적으로 전달한 두 tree의 파일 내용, symlink 대상, 누락 경로, 추가 경로를 비교한다. Runtime 이름이나 기본 홈 경로를 추론하지 않는다.
 - `skill-plan`은 `shared`, `claude` target의 source별 이름과 경로, 갱신 정책, CLI 버전을 JSON으로 출력한다. 네트워크나 홈 디렉터리를 읽지 않는다.
@@ -121,7 +123,7 @@ agent-core skill-plan --target shared
 materialize(runtime: str) -> Mapping[PurePosixPath, bytes]
 ```
 
-파일 쓰기와 CLI parsing은 이 API 밖에 둔다. Renderer는 manifest allowlist에 있는 shared skill만 선택한다. 같은 source, manifest, runtime은 byte 단위로 같은 결과를 만들어야 한다.
+파일 쓰기와 CLI parsing은 이 API 밖에 둔다. Renderer의 legacy skill 선택은 `runtimes.*.skills`를 따르고 CLI 설치 선택은 `skill_targets`를 따른다. 같은 source, manifest, runtime은 byte 단위로 같은 결과를 만들어야 한다.
 
 ## Manifest
 
@@ -235,15 +237,19 @@ uv run --project agent-core scripts/install-agent-skills.py restore \
 
 ## 전환 상태
 
-격리 CLI 검증, source 선언, 설치 연결 명령과 shared activation 코드는 구현되어 있다. `devsisters-macbook`에서는 backup과 소유권 인계 후 Home Manager switch로 Codex/Pi 공유 skill 20개와 Claude skill 17개를 설치했다. 설치 파일 fingerprint, 소유권 기록과 lock의 일치를 확인했으며 native discovery는 아직 확인하지 않았다. 다섯 host의 Codex/Pi/Claude 전환과 discovery를 확인한 뒤에만 기존 vendored 9개와 skill renderer를 정리한다. `resolving-merge-conflicts`도 이 fallback 정리 시 제거한다.
+격리 CLI 검증, source 선언, 설치 연결 명령과 shared activation 코드는 구현되어 있다. `devsisters-macbook`에서는 backup과 소유권 인계 후 Home Manager switch를 완료했으며, 당시 설치한 Codex/Pi 공유 skill 20개와 Claude skill 17개의 파일 fingerprint, 소유권 기록과 lock의 일치를 확인했다. 이 수량은 해당 switch의 기록이며 현재 manifest의 선택 수량이나 이후 갱신 완료를 뜻하지 않는다. Native discovery는 아직 확인하지 않았다. 다섯 host의 Codex/Pi/Claude 전환과 discovery를 확인한 뒤에만 legacy skill renderer와 외부 source로 전환한 vendored 디렉터리, `resolving-merge-conflicts`를 정리한다. 현재 local source로 선택한 `codebase-design`, `diagnosing-bugs`, `research` 등은 정리 대상이 아니다.
 
 | Host | 적용 대상 | 확인 상태와 남은 작업 |
 | --- | --- | --- |
-| `devsisters-macbook` | Codex/Pi, Claude | Home Manager generation 307의 switch가 완료됐다. Legacy Codex 링크와 기존 `find-skills`는 백업으로 이동했으며 Codex/Pi의 legacy 경로는 없다. 공유 skill 20개와 Claude skill 17개의 설치 파일, 소유권 기록과 lock을 검증했다. Claude의 기존 `synced` 디렉터리와 바로 아래 항목의 메타데이터도 유지됐다. 각 runtime의 native discovery가 남아 있다. |
+| `devsisters-macbook` | Codex/Pi, Claude | Home Manager generation 307의 switch가 완료됐다. Legacy Codex 링크와 기존 `find-skills`는 백업으로 이동했으며 Codex/Pi의 legacy 경로는 없다. 당시 공유 skill 20개와 Claude skill 17개의 설치 파일, 소유권 기록과 lock을 검증했다. Claude의 기존 `synced` 디렉터리와 바로 아래 항목의 메타데이터도 유지됐다. 현재 선택 목록의 적용 여부와 각 runtime의 native discovery가 남아 있다. |
 | `devsisters-macstudio` | Codex/Pi, Claude | 실제 상태 확인, backup과 인계, switch와 discovery가 남아 있다. |
 | `pylv-denim` | Codex/Pi, Claude | 실제 상태 확인, backup과 인계, switch와 discovery가 남아 있다. |
 | `pylv-sepia` | Codex/Pi, Claude | 실제 상태 확인, backup과 인계, switch와 discovery가 남아 있다. |
 | `pylv-onyx` | Codex/Pi, Claude | `gytkk@pylv-onyx`에서 호스트, 실행 파일과 Nix generation 경로를 확인했다. 후속 SSH 연결은 시간 초과되어 runtime 점검, backup과 인계, switch와 discovery가 남아 있다. |
+
+Discovery는 각 host의 새 runtime session에서 manifest의 target별 기대 이름과 실제 loader가 표시하는 이름, description과 source 경로를 대조한다. 설치 디렉터리에서 기대 목록을 역으로 만들거나 전체 skill 개수만 비교하지 않는다. Legacy 경로와의 중복 노출이 없고 관련 없는 사용자 skill과 Claude plugin이 보존됐는지도 확인한다. 파일 fingerprint나 loader 검증은 모델의 실제 skill 선택 행동 검증을 대신하지 않는다.
+
+최종 renderer 정리는 모든 host의 위 확인과 legacy skill output 소비자 제거가 끝난 뒤 별도 변경으로 수행한다. 현재 local source와 필요한 license를 보존하고, 외부 source와 겹치는 legacy 사본 및 `resolving-merge-conflicts`, skill tree 생성과 generated skill marker만 제거한다. 지침 문서 bytes는 `schema/document-hashes.toml`과 별도로 대조해 보존한 뒤, 의도된 output layout 변경에 맞춰 `schema/golden-hashes.toml`과 `nix/runtime-golden-hashes.nix`를 갱신한다. Source 검증, 로컬 skill 검증과 지침 renderer는 유지하고 외부 skill 취득, 설치와 discovery는 integration 검증으로 다룬다.
 
 ## 개발과 검증
 

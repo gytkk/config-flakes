@@ -46,159 +46,10 @@ Those belong in exporters and optional override files outside `core/`.
 
 ## Example YAML shape
 
-```yaml
-version: 1
-
-meta:
-  id: tokyo-night-ish
-  name: Tokyo Night-ish
-  variant: dark        # dark | light
-  family: tokyo-night
-  author: pylv
-  description: Base24-oriented canonical theme example
-
-palette:
-  # Base24-compatible base slots
-  base00: "#1a1b26"
-  base01: "#16161e"
-  base02: "#2f3549"
-  base03: "#444b6a"
-  base04: "#787c99"
-  base05: "#a9b1d6"
-  base06: "#cbccd1"
-  base07: "#d5d6db"
-  base08: "#c0caf5"
-  base09: "#a9b1d6"
-  base0A: "#0db9d7"
-  base0B: "#9ece6a"
-  base0C: "#b4f9f8"
-  base0D: "#2ac3de"
-  base0E: "#bb9af7"
-  base0F: "#f7768e"
-  base10: "#ff9e64"
-  base11: "#e0af68"
-  base12: "#9ece6a"
-  base13: "#b4f9f8"
-  base14: "#2ac3de"
-  base15: "#bb9af7"
-  base16: "#c0caf5"
-  base17: "#565f89"
-
-  # Strict alias set. Keep names and order stable across all themes.
-  bg: "{palette.base00}"
-  bgElevated: "{palette.base01}"
-  bgAlt: "{palette.base02}"
-  border: "{palette.base03}"
-  muted: "{palette.base04}"
-  comment: "{palette.base16}"
-  fgMuted: "{palette.base04}"
-  fgInactive: "{palette.base06}"
-  fg: "{palette.base05}"
-  fgBright: "{palette.base06}"
-  fgMax: "{palette.base07}"
-
-  red: "{palette.base08}"
-  orange: "{palette.base09}"
-  yellow: "{palette.base0A}"
-  green: "{palette.base0B}"
-  cyan: "{palette.base0C}"
-  blue: "{palette.base0D}"
-  magenta: "{palette.base0E}"
-  pink: "{palette.base0F}"
-
-  yellowBright: "{palette.base10}"
-  greenBright: "{palette.base11}"
-  cyanBright: "{palette.base12}"
-  blueBright: "{palette.base13}"
-  magentaBright: "{palette.base14}"
-
-  selection: "{palette.base15}"
-  lineNumber: "{palette.base16}"
-  whitespace: "{palette.base17}"
-  blackBright: "{palette.base03}"
-  white: "{palette.base07}"
-
-roles:
-  ui:
-    bg: "{palette.bg}"
-    bgAlt: "{palette.bgAlt}"
-    bgElevated: "{palette.bgElevated}"
-    fg: "{palette.fg}"
-    fgInactive: "{palette.fgInactive}"
-    fgMuted: "{palette.fgMuted}"
-    border: "{palette.border}"
-    borderActive: "{palette.blue}"
-    selection: "{palette.selection}"
-    selectionInactive: "{palette.bgAlt}"
-    currentLine: "{palette.bgElevated}"
-    currentLineNumber: "{palette.fgBright}"
-    cursor: "{palette.fg}"
-    caretText: "{palette.bg}"
-    search: "{palette.yellowBright}"
-    searchText: "{palette.bg}"
-    match: "{palette.border}"
-    panelBg: "{palette.bgElevated}"
-    sidebarBg: "{palette.bgElevated}"
-    statuslineBg: "{palette.bgElevated}"
-    statuslineFg: "{palette.fg}"
-
-  syntax:
-    text: "{palette.fg}"
-    comment: "{palette.comment}"
-    string: "{palette.green}"
-    stringEscape: "{palette.cyan}"
-    number: "{palette.orange}"
-    constant: "{palette.orange}"
-    keyword: "{palette.magenta}"
-    operator: "{palette.fg}"
-    variable: "{palette.fg}"
-    parameter: "{palette.fg}"
-    property: "{palette.red}"
-    field: "{palette.red}"
-    function: "{palette.blue}"
-    method: "{palette.blue}"
-    type: "{palette.yellow}"
-    class: "{palette.yellow}"
-    interface: "{palette.yellow}"
-    namespace: "{palette.blue}"
-    builtin: "{palette.cyan}"
-    tag: "{palette.red}"
-    attribute: "{palette.yellow}"
-    punctuation: "{palette.fg}"
-    link: "{palette.blue}"
-
-  diagnostics:
-    error: "{palette.red}"
-    warning: "{palette.yellow}"
-    info: "{palette.blue}"
-    hint: "{palette.cyan}"
-    ok: "{palette.green}"
-
-  vcs:
-    added: "{palette.green}"
-    modified: "{palette.yellow}"
-    removed: "{palette.red}"
-    renamed: "{palette.blue}"
-    conflict: "{palette.orange}"
-
-  ansi:
-    black: "{palette.bg}"
-    red: "{palette.red}"
-    green: "{palette.green}"
-    yellow: "{palette.yellow}"
-    blue: "{palette.blue}"
-    magenta: "{palette.magenta}"
-    cyan: "{palette.cyan}"
-    white: "{palette.fg}"
-    brightBlack: "{palette.blackBright}"
-    brightRed: "{palette.pink}"
-    brightGreen: "{palette.greenBright}"
-    brightYellow: "{palette.yellowBright}"
-    brightBlue: "{palette.blueBright}"
-    brightMagenta: "{palette.magentaBright}"
-    brightCyan: "{palette.cyanBright}"
-    brightWhite: "{palette.white}"
-```
+Copy [`TEMPLATE.yaml`](TEMPLATE.yaml) for the complete authoring shape, or see
+[`core/one-half-light.yaml`](core/one-half-light.yaml) for a current light theme.
+The validator requires the template's exact keys and ordering, not a minimal
+subset.
 
 ## Schema Rules
 
@@ -213,25 +64,24 @@ There is no app-specific top-level key in the canonical schema.
 
 ### 2. Required `meta` Keys
 
-- `id`
+- `id` (kebab-case)
 - `name`
-- `variant`
-
-Optional:
-
+- `variant` (`dark` or `light`)
 - `family`
 - `author`
 - `description`
 
+All six fields are required, in template order.
+
 ### 3. Required `palette` Keys
 
-At minimum, require Base24-compatible slots:
+Require all 24 Base24-compatible slots, `base00` through `base17`, including
+`base0A` through `base0F`, followed by the exact alias set from
+`themes/TEMPLATE.yaml`. Missing keys, extra keys, and reordered keys fail
+validation.
 
-- `base00` through `base17`
-
-Use the strict alias set from `themes/TEMPLATE.yaml`.
-Do not add extra alias names casually, and prefer keeping alias names and
-ordering identical across all theme files.
+Palette and role colors accept `#RRGGBB` or `{palette.name}` references.
+References to `roles.*` are supported in app overrides, not in canonical colors.
 
 ### 4. Required `roles` Groups
 
@@ -241,8 +91,9 @@ ordering identical across all theme files.
 - `vcs`
 - `ansi`
 
-Not every leaf must be required on day 1, but exporters should have shared
-fallback logic.
+Every leaf in each template role group is required, in template order.
+Exporters derive app-specific colors from this complete context; omitted
+canonical roles do not fall back to palette colors or exporter defaults.
 
 ## Role Naming Conventions
 
@@ -273,110 +124,15 @@ Bad examples:
 
 ### Role group intent
 
-#### `ui`
+| Group | Meaning |
+| --- | --- |
+| `ui` | Shared interface surfaces, foregrounds, selection, cursor, and search colors. |
+| `syntax` | Language and markup meaning, independent of parser scope names. |
+| `diagnostics` | Error, warning, info, hint, and success states. |
+| `vcs` | Added, modified, removed, renamed, and conflicting content. |
+| `ansi` | The 16 terminal palette colors. |
 
-Use for shared interface roles that many apps have in some form.
-
-Recommended leaves:
-
-- `bg`
-- `bgAlt`
-- `bgElevated`
-- `fg`
-- `fgInactive`
-- `fgMuted`
-- `border`
-- `borderActive`
-- `selection`
-- `selectionInactive`
-- `currentLine`
-- `currentLineNumber`
-- `cursor`
-- `caretText`
-- `search`
-- `searchText`
-- `match`
-- `panelBg`
-- `sidebarBg`
-- `statuslineBg`
-- `statuslineFg`
-
-#### `syntax`
-
-Use for language and markup meaning, not parser-specific scope systems.
-
-Recommended leaves:
-
-- `text`
-- `comment`
-- `string`
-- `stringEscape`
-- `number`
-- `constant`
-- `keyword`
-- `operator`
-- `variable`
-- `parameter`
-- `property`
-- `field`
-- `function`
-- `method`
-- `type`
-- `class`
-- `interface`
-- `namespace`
-- `builtin`
-- `tag`
-- `attribute`
-- `punctuation`
-- `link`
-
-#### `diagnostics`
-
-Use for editor and tooling feedback states.
-
-Recommended leaves:
-
-- `error`
-- `warning`
-- `info`
-- `hint`
-- `ok`
-
-#### `vcs`
-
-Use for version control or diff meaning.
-
-Recommended leaves:
-
-- `added`
-- `modified`
-- `removed`
-- `renamed`
-- `conflict`
-
-#### `ansi`
-
-Use for terminal palette export only.
-
-Recommended leaves:
-
-- `black`
-- `red`
-- `green`
-- `yellow`
-- `blue`
-- `magenta`
-- `cyan`
-- `white`
-- `brightBlack`
-- `brightRed`
-- `brightGreen`
-- `brightYellow`
-- `brightBlue`
-- `brightMagenta`
-- `brightCyan`
-- `brightWhite`
+The exact required leaves are maintained in `themes/TEMPLATE.yaml`.
 
 ## Shared Rules
 
@@ -488,7 +244,7 @@ uv run --no-project themes/generate.py
 uv run --no-project themes/generate.py themes/core/one-half-light.yaml
 ```
 
-The generator prints export paths relative to the repository root, such as `themes/exports/ghostty/one-half-light.conf`. It renders, validates, and serializes every app export for all requested themes before writing any files. A generation or validation error in any app or theme leaves existing exports unchanged and creates no export files. Filesystem errors during the subsequent write phase can still leave partially updated exports.
+The generator prints export paths relative to the repository root, such as `themes/exports/ghostty/one-half-light.conf`. It validates the canonical themes and supported overrides, checks Zed exports against the vendored schema, and renders and serializes all requested exports before writing any files. It does not run each application's native config validator. A generation or validation error in any app or theme leaves existing exports unchanged and creates no export files. Filesystem errors during the subsequent write phase can still leave partially updated exports.
 
 Generator regression tests:
 
@@ -502,7 +258,7 @@ Template consistency helper:
 uv run --no-project themes/check_templates.py
 ```
 
-This now checks both:
+This checks both:
 
 - app template JSON files under `themes/templates/`
 - override template/current override YAML files under `themes/overrides/`
@@ -545,16 +301,14 @@ Adapter templates and schema helpers:
   derived from tmux style syntax and the existing local statusline layout
 - `themes/templates/pi/official-template.json` -> Pi TUI theme template derived
   from Pi's published theme schema and bundled theme documentation
-- `themes/overrides/ghostty/*.yaml` -> optional Ghostty slot overrides applied
-  after generator defaults
-- `themes/overrides/starship/*.yaml` -> optional Starship palette/format slots and string-valued module settings applied after generator defaults- `themes/overrides/zed/*.yaml` -> optional Zed style, syntax, and player patches applied before export schema validation
-- `themes/overrides/zellij/*.yaml` -> optional Zellij-specific
+- [`overrides/SCHEMA.md`](overrides/SCHEMA.md) -> supported override formats,
+  authoring templates, and per-app merge rules
 - `themes/check_templates.py` -> consistency check for app template metadata,
   contract fields, section layout, duplicate entries, and declared key coverage
 
 ## Resolution Rules
 
-Neovim and Zellij override loaders run their existing schema validators before returning an override. They require `meta.theme` and `meta.variant` to match the canonical theme. Unsupported highlight attributes, component names, and player keys fail generation before any export is written.
+All supported override loaders validate their app's override structure. Generation also requires `meta.theme` and `meta.variant` to match the canonical theme. Unsupported highlight attributes, component names, and player keys fail generation before any export is written.
 
 Ghostty palette overrides use indexed entries such as `palette_0_entry: "0={roles.ansi.black}"`. The generator preserves the index and resolves the color after `=` as a palette reference, role reference, or literal hex color. Other Ghostty slots retain their existing whole-value resolution.
 
@@ -564,14 +318,15 @@ Vira Graphene's Neovim and Zed overrides follow the Graphene definition in the [
 
 Starship overrides use the ordered keys `version`, `meta`, `slots`, and `modules`; see `overrides/starship/TEMPLATE.yaml`. Color slots accept hex colors or canonical palette/role references. The `format` slot accepts a Starship format string. Module patches are limited to existing string-valued settings in the Starship template and inherit all other settings. The generator rejects invalid override keys and mismatched theme metadata. One Half Light separates the folder icon on a purple background from the directory name on a blue background with regular-weight bright text. The Git branch, ahead/behind arrows, and commit counts use blue text on gray, while the time uses dark text. Language and environment segments use accent-colored text. Git change indicators, the SSH hostname, and error/Vim mode indicators use canonical palette colors. These accents prioritize palette consistency and do not meet the 4.5:1 contrast target retained for ordinary text.
 
-Exporters should resolve values in this order:
+Resolution proceeds from canonical data to app output:
 
-1. per-app override outside the core schema
-2. `roles.*`
-3. `palette.*`
-4. exporter fallback defaults
+1. validate the complete canonical theme and resolve palette references
+2. resolve role colors from that palette
+3. compute app-specific slots and render templates, applying supported overrides
+   at the stage described in [`overrides/SCHEMA.md`](overrides/SCHEMA.md)
+4. validate the Zed export and serialize the app outputs
 
-This keeps app-specific tweaks possible without weakening the canonical schema.
+Overrides can replace derived app values; they do not make canonical keys optional.
 
 ## Core vs Adapter Boundary
 
@@ -657,29 +412,14 @@ Default rule:
 Instead use this progression:
 
 1. derive from `roles`
-3. if still not good enough, add a small override file in `themes/overrides/<app>/`
+2. if still not good enough, add a small override file in `themes/overrides/<app>/`
 
 This keeps exceptions visible and isolated.
 
-Current override support:
-- `themes/overrides/SCHEMA.md` -> override-layer format notes
-- `themes/overrides/ghostty/TEMPLATE.yaml` -> Ghostty minimal authoring template
-- `themes/overrides/TEMPLATE.yaml` -> Neovim minimal authoring template
-- `themes/overrides/starship/TEMPLATE.yaml` -> Starship minimal authoring template
-- `themes/overrides/zed/TEMPLATE.yaml` -> Zed minimal authoring template
-- `themes/overrides/zellij/TEMPLATE.yaml` -> Zellij minimal authoring template
-- `themes/overrides/ghostty/<theme-id>.yaml` -> Ghostty slot overrides
-- `themes/overrides/nvim/<theme-id>.yaml` -> Neovim per-theme override patches
-- `themes/overrides/starship/<theme-id>.yaml` -> Starship slot and module setting overrides
-- `themes/overrides/zed/<theme-id>.yaml` -> Zed style, syntax, and player overrides
-- `themes/overrides/zellij/<theme-id>.yaml` -> Zellij per-theme override patches
-- `themes/validate_overrides.py` -> override validator for Ghostty, Neovim, Starship, Zed, and Zellij override files
-
-Current Neovim override precedence:
-
-1. rendered template attrs
-2. `groups.<highlight-group>` patch merge
-3. `links.<highlight-group>` replacement
+Ghostty, Neovim, Starship, Zed, and Zellij support overrides. See
+[`overrides/SCHEMA.md`](overrides/SCHEMA.md) for the templates, supported values,
+and merge precedence. Herdr, K9s, Pi, and tmux currently use their canonical
+theme mappings and app templates without a YAML override layer.
 
 Use overrides for app-specific exceptions like:
 

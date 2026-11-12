@@ -335,7 +335,7 @@ If you claim you verified everything, you are lying.
 
 Spawn an Agent subagent with:
 
-- `prompt`: The composed prompt from 3a (review target + persona + pass instructions + output format)
+- `prompt`: The composed prompt from 5a (review target + standards + persona + pass instructions + output format)
 - `subagent_type`: `general-purpose`
 - `description`: `"DA review pass {N}: {pass_name}"`
 

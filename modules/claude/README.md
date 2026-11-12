@@ -20,13 +20,13 @@ Each Home Manager activation runs the official plannotator installer with `--min
 
 `~/.claude/settings.json` uses an out-of-store symlink to [files/settings.json](files/settings.json) in every profile. Changes saved to user settings from Claude Code update that tracked file directly. Project and project-local settings remain scoped to their projects. Home Manager temporarily uses a writable copy during marketplace registration and plugin installation and updates, then restores the symlink so those activation operations do not rewrite the shared settings.
 
-- **Model**: Inherits the Claude Code default (no `model` pin)
-- **Theme**: `light-ansi` uses the terminal's ANSI palette on a light background
+- **Model**: `fable`, with global `high` effort and `high` overrides for the configured Opus and Fable model IDs
+- **Theme**: `light` in fullscreen TUI mode
 - **Agent Teams**: Enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`)
 - **MCP**: Enables all project MCP servers and Context7; Notion uses the `ntn` CLI
 - **Permissions**: Pre-approved tools (Bash, Read, Edit, Write, WebFetch, WebSearch, Context7)
 - **Permission Mode**: `acceptEdits` for the working directory and Claude default repo-local worktrees
-- **Memory** (experimental): `autoMemoryEnabled` + `autoDreamEnabled` — native background insight extraction and 24h consolidation
+- **Memory** (experimental): `autoMemoryEnabled` and `autoDreamEnabled` are enabled
 - **Status line**: Working directory, Git branch, context/tokens/line changes, plus the Claude.ai weekly limit, selected model, and effort right-aligned
 - **Language**: English
 - **Telemetry**: OTLP metrics and logs go to the Devsisters Databricks workspace; endpoints and the per-signal `X-Databricks-UC-Table-Name` headers are static `env` values
@@ -55,7 +55,7 @@ Running uses a green `●`, confirmed completion a blue `✓`, interruption a ye
 
 For Agent Teams, the watcher reads each stopped child's native `.meta.json` and the team's `config.json` under `CLAUDE_CONFIG_DIR` (default: `~/.claude`). Removal from a team led by the current session confirms interruption, so the row disappears ten seconds after confirmation. Registered teammates follow the same ten-second hiding rule after `SubagentStop`. Missing, unreadable, or invalid team files do not confirm termination. Worktrees remain unchanged.
 
-The parser targets the pinned Claude Code 2.1.284 transcript format. Stop-only events from internal agents do not create rows. Independently launched Claude processes are not linked as children. Display limits are documented in [Herdr's subagent settings](../herdr/README.md#subagents).
+The parser was developed against Claude Code 2.1.284's transcript format; the current CLI pin is maintained in [package.nix](../../packages/apps/claude-code/package.nix). Internal transcript formats are not a stable API, so review the parser and fixture coverage when updating Claude. Stop-only events from internal agents do not create rows. Independently launched Claude processes are not linked as children. Display limits are documented in [Herdr's subagent settings](../herdr/README.md#subagents).
 
 Apply Home Manager for the current environment, run `herdr server reload-config`, and start a new Claude session inside Herdr. Verification uses isolated fixture transcripts and fake Herdr commands:
 
@@ -96,6 +96,8 @@ The `devsisters` base profile enables `modules.claude.mumu.enable`, which regist
 - `openai/codex-plugin-cc`
 - `DietrichGebert/ponytail`, `pbakaus/impeccable`
 - `devsisters/mumu` (Devsisters profile only)
+
+The writable shared settings also contain an enabled `ark@ark` entry and its `devsisters/ark` marketplace. These are not in `default.nix`'s activation-managed install list, and the Ark marketplace does not declare `autoUpdate: true`; do not treat this saved preference as installation on a fresh host.
 
 ### Installed Plugins
 

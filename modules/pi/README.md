@@ -86,7 +86,7 @@ Versioned npm packages are skipped by `pi update --extensions`. Update pins
 through a reviewed repository change, and review package source and release
 notes because Pi packages execute with the permissions of the Pi process.
 
-`pi-subagents` loads only its extension; its bundled skills and prompt templates are filtered out so they cannot opt into background workflows or wide fanout. The initial rollout uses packaged agents plus local `researcher` and `reviewer` definitions with explicit Luna/Sol/Astra routing. Delegation defaults to foreground, stores artifacts under the parent Pi session, allows eight child launches per parent session, and blocks nested delegation at child depth. Automatic missions, schedules, resumption of interrupted background workflows, and the generic `delegate` agent are disabled. Tool activation stays dynamic through `subagents_enable`. The package removes completed background records after 30 days, or 90 days when their session still exists; this retention does not apply to foreground session artifacts.
+`pi-subagents` loads only its extension; its bundled skills and prompt templates are filtered out so they cannot opt into background workflows or wide fanout. The current rollout uses packaged agents plus local `researcher` and `reviewer` definitions with explicit Luna/Sol/Astra routing. Delegation defaults to foreground, stores artifacts under the parent Pi session, allows eight child launches per parent session, and blocks nested delegation at child depth. Automatic missions, schedules, resumption of interrupted background workflows, and the generic `delegate` agent are disabled. Tool activation stays dynamic through `subagents_enable`.
 
 Delegation defaults to `openai/gpt-6.1-sol`; `scout` and `researcher` use `openai/gpt-6-luna`, `planner` uses Sol, and `oracle` uses `openai/gpt-6-astra`. All three models are in the allowlist. The `reviewer` uses `high` thinking.
 
@@ -183,7 +183,7 @@ Apply Home Manager and restart Pi to install the extension. To try it before app
 
 `files/extensions/hardware-cursor-only.ts` adds a fixed `❯` to the first visible input row and uses the active theme's `dim` color for the top and bottom borders. Built-in editor padding reserves space for the prompt, so the marker is not part of submitted text. Continuation lines, autocomplete, wrapping, and mouse positioning use Pi's editor behavior. The marker is omitted when the terminal is narrower than three columns.
 
-The extension removes Pi 1.4's software cursor markers while preserving the terminal cursor used for IME positioning. It is paired with `showHardwareCursor: true` in `settings.json`. Review it when updating Pi if cursor rendering or IME positioning changes.
+The extension removes Pi's software cursor markers while preserving the terminal cursor used for IME positioning. It is paired with `showHardwareCursor: true` in `settings.json`. Review it when updating Pi if cursor rendering or IME positioning changes.
 
 ### Terminal title on exit
 
@@ -214,8 +214,8 @@ result so the model can correct problems in the same turn. The package also
 provides `lsp_diagnostics`, `lsp_hover`, `lsp_definition`, `lsp_references`,
 and `lsp_symbols` tools.
 
-`files/lsp.json` configures every server installed by `modules/lsp`, plus
-`rust-analyzer` installed in the active rustup toolchain:
+`files/lsp.json` configures the following servers from `modules/lsp`, plus
+`rust-analyzer` installed in the active rustup toolchain. The LSP module also installs Pyright for other consumers, but Pi's Python route uses only `ty`:
 
 - `nixd`, `gopls`, and `typescript-language-server`
 - the JSON, CSS, and HTML servers from `vscode-langservers-extracted`

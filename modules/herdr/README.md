@@ -80,6 +80,8 @@ Only pickers and explicitly requested help open dialogs. The zoxide picker uses 
 
 In the desktop App, `Alt+[` / `Alt+]` also focus the previous / next space, including on Windows. These replace Windows' default previous / next tab bindings; `Ctrl+Shift+Tab` / `Ctrl+Tab` remain available for tab navigation.
 
+For prefix-free pane splitting on macOS, the locally observed App `keys.json` binds `Cmd+d` to `pane.split:right` and `Cmd+Shift+d` to `pane.split:down`. These are App-side bindings, not TUI shortcuts or overrides in the repository's managed keys. The installer preserves existing bindings for these keys; it does not enforce their presence on another host or replace that host's shipped defaults. Check the App's own `keys.json` if they differ. The managed prefix alternatives remain `Ctrl+Space`, then `v` or `-`.
+
 This is not a TUI plugin migration. TUI copy/resize modes, pane renaming, and editing scrollback are not mapped to unrelated App actions. App files hot-reload; no `herdr server reload-config` is needed. The integration targets App 0.1.15's mod API.
 
 The desktop installer manages only `minimum_contrast` in `settings.json`, setting it to `3.0` while preserving other personal settings. Herdr replaces terminal text below this contrast threshold with near-white or near-black, making Claude Code's submitted prompts readable on their dark background without replacing as many ANSI colors as a `4.5` threshold. This affects all desktop terminals, not only Claude; it is a correction threshold, not a guaranteed final contrast ratio. The app hot-reloads it, including existing text. Changed settings are backed up to `settings.json.home-manager.bak`.
