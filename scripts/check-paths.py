@@ -19,7 +19,6 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DOCUMENTS = (
     ROOT / "README.md",
     ROOT / "AGENTS.md",
-    ROOT / "CLAUDE.md",
 )
 REPOSITORY_DIRS = (
     "config|agent-core|base|docs|hosts|lib|modules|overlays|packages|scripts|secrets|systems|themes"

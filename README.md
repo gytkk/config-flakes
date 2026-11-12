@@ -502,7 +502,7 @@ After changing module paths or configuration behavior, update the corresponding 
 uv run --no-project scripts/check-paths.py
 ```
 
-The checker covers local Markdown link targets and concrete repository paths in inline code and code blocks in the root entry-point documents. It skips placeholder and glob paths, installed paths, external URLs, and link anchors. Pass additional Markdown files as arguments to check them explicitly.
+The checker covers local Markdown link targets and concrete repository paths in inline code and code blocks in the root `README.md` and `AGENTS.md` by default. It skips placeholder and glob paths, installed paths, external URLs, and link anchors. Pass Markdown files as arguments to check those files instead of the defaults.
 
 ```bash
 nix flake show
