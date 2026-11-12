@@ -95,6 +95,10 @@ printf '# changed workflow\n' > "$REPO/.github/workflows/apps-ci.yml"
 workflow_sha="$(commit 'change package build workflow')"
 assert_apps "package build workflow change rebuilds every app" '["alpha","beta"]' "$mixed_sha" "$workflow_sha"
 
+printf '# changed updater workflow\n' > "$REPO/.github/workflows/apps-update.yml"
+update_workflow_sha="$(commit 'change package update workflow')"
+assert_apps "package update workflow change rebuilds every app" '["alpha","beta"]' "$workflow_sha" "$update_workflow_sha"
+
 rm "$APP_ROOT/alpha/package.nix"
 deleted_sha="$(commit 'delete alpha')"
-assert_apps "deleted package rebuilds all remaining apps" '["beta"]' "$workflow_sha" "$deleted_sha"
+assert_apps "deleted package rebuilds all remaining apps" '["beta"]' "$update_workflow_sha" "$deleted_sha"

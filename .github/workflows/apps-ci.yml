@@ -39,6 +39,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: Test changed-app detection
         run: bash packages/tests/detect-changed-apps.sh
+      - name: Test README version synchronization
+        run: bash packages/tests/sync-readme-versions.sh
       - name: Test app updaters and patch preflight
         run: |
           bash packages/tests/update-all.sh
