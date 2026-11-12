@@ -32,7 +32,8 @@ export class PromptEditor extends CustomEditor {
   }
 
   private showBackgroundItem(): boolean {
-    return this.getText() === "" && !this.isShowingAutocomplete() && this.hasBackgroundCommand();
+    return this.getText() === "" && !this.isShowingAutocomplete() && this.hasBackgroundCommand()
+      && (parseBackgroundCount(this.getBackgroundStatus()) ?? 0) > 0;
   }
 
   setText(text: string): void {
@@ -78,8 +79,8 @@ export class PromptEditor extends CustomEditor {
 
   private renderBackgroundItem(line: string, width: number): string {
     if (!this.hasBackgroundCommand() || this.isShowingAutocomplete()) return line;
-    const status = this.getBackgroundStatus();
-    const count = status === undefined ? 0 : parseBackgroundCount(status) ?? "?";
+    const count = parseBackgroundCount(this.getBackgroundStatus());
+    if (count === undefined || count < 1) return line;
     const label = `${this.backgroundSelected ? "* " : ""}/bg (${count})`;
     const marker = this.backgroundSelected && this.focused ? CURSOR_MARKER : "";
     const style = (text: string) => this.backgroundSelected ? `\x1b[1;35m${text}\x1b[0m` : this.dimBorder(text);

@@ -185,25 +185,54 @@ describe("prompt UI", () => {
     }
   });
 
-  test("right-aligns task counts on the first input row without changing text", () => {
+  test("right-aligns positive task counts on the first input row without changing text", () => {
     const editor = createEditor("tui", ["bg"])!;
     const plainLine = () => editor.render(80)[1].replace(/\x1b\[[0-9;]*m/g, "");
     expect(editor.render(80)[0]).not.toContain("/bg");
-    expect(plainLine()).toEndWith(" /bg (0)");
+    expect(plainLine()).not.toContain("/bg");
+    editor.statuses.set("bg", "bg: 1");
+    expect(plainLine()).toEndWith(" /bg (1)");
     expect(visibleWidth(plainLine())).toBe(80);
     editor.statuses.set("bg", "bg: 3");
     expect(plainLine()).toEndWith(" /bg (3)");
-    editor.statuses.set("bg", "invalid");
-    expect(plainLine()).toEndWith(" /bg (?)");
-    editor.statuses.delete("bg");
     editor.setText("한글\nsecond");
-    expect(plainLine()).toEndWith(" /bg (0)");
+    expect(plainLine()).toEndWith(" /bg (3)");
     expect(editor.render(80)[2]).not.toContain("/bg");
     expect(editor.getText()).toBe("한글\nsecond");
   });
 
+  test.each([undefined, "bg: 0", "invalid"])("hides and prevents selection of inactive task status %s", (status) => {
+    const editor = createEditor("tui", ["bg"])!;
+    if (status !== undefined) editor.statuses.set("bg", status);
+    expect(editor.render(80)[1]).not.toContain("/bg");
+    editor.handleInput("\x1b[B");
+    expect(editor.statuses.has("bg-selection")).toBe(false);
+    const submitted: string[] = [];
+    editor.onSubmit = (text) => { submitted.push(text); };
+    editor.handleInput("\r");
+    expect(submitted).not.toContain("/bg");
+  });
+
+  test.each([undefined, "bg: 0", "invalid"])("clears task selection when status becomes %s", (status) => {
+    const editor = createEditor("tui", ["bg"])!;
+    editor.statuses.set("bg", "bg: 1");
+    editor.handleInput("\x1b[B");
+    expect(editor.statuses.get("bg-selection")).toBe("selected");
+    if (status === undefined) editor.statuses.delete("bg");
+    else editor.statuses.set("bg", status);
+    const lines = editor.render(80);
+    expect(lines[1]).not.toContain("/bg");
+    expect(lines[1]).toContain(CURSOR_MARKER);
+    expect(editor.statuses.has("bg-selection")).toBe(false);
+    const submitted: string[] = [];
+    editor.onSubmit = (text) => { submitted.push(text); };
+    editor.handleInput("\r");
+    expect(submitted).not.toContain("/bg");
+  });
+
   test("hides task counts before overlapping text or the cursor without changing wrapping", () => {
     const editor = createEditor("tui", ["bg"])!;
+    editor.statuses.set("bg", "bg: 1");
     const original = createEditor()!;
     for (const text of ["abcdefghij", "한글abcdefgh", "abcdefghijklmnopqrs", "firstlinefillstheentirerow\nsecond"]) {
       editor.setText(text);
@@ -213,15 +242,16 @@ describe("prompt UI", () => {
     }
     editor.setText("abcdefgh");
     const line = editor.render(20)[1];
-    expect(line).toContain("/bg (0)");
+    expect(line).toContain("/bg (1)");
     expect(visibleWidth(line)).toBe(20);
     expect(visibleWidth(line.split(CURSOR_MARKER)[0])).toBe(11);
     editor.setText("");
-    expect(editor.render(20)[1]).toContain("/bg (0)");
+    expect(editor.render(20)[1]).toContain("/bg (1)");
   });
 
   test("hides the right prompt while autocomplete owns navigation", async () => {
     const editor = createEditor("tui", ["bg"])!;
+    editor.statuses.set("bg", "bg: 1");
     editor.setAutocompleteProvider(new CombinedAutocompleteProvider([{ name: "bg" }, { name: "branch" }]));
     editor.setText("/b");
     editor.handleInput("\t");
@@ -233,6 +263,7 @@ describe("prompt UI", () => {
 
   test("keeps the selected task cursor bounded at every width", () => {
     const editor = createEditor("tui", ["bg"])!;
+    editor.statuses.set("bg", "bg: 1");
     editor.handleInput("\x1b[B");
     for (let width = 1; width <= 160; width++) {
       const lines = editor.render(width);
@@ -244,6 +275,7 @@ describe("prompt UI", () => {
 
   test("selects background tasks with Down and submits /bg only on Enter", () => {
     const editor = createEditor("tui", ["bg"])!;
+    editor.statuses.set("bg", "bg: 1");
     const submitted: string[] = [];
     editor.onSubmit = (text) => { submitted.push(text); };
     expect(editor.render(80)).toHaveLength(2);
@@ -254,7 +286,7 @@ describe("prompt UI", () => {
     expect(lines).toHaveLength(2);
     expect(editor.statuses.get("bg-selection")).toBe("selected");
     expect(lines[0]).not.toContain(CURSOR_MARKER);
-    expect(lines[1]).toContain(`${CURSOR_MARKER}\x1b[1;35m* /bg (0)`);
+    expect(lines[1]).toContain(`${CURSOR_MARKER}\x1b[1;35m* /bg (1)`);
     expect(lines[1].split(CURSOR_MARKER)).toHaveLength(2);
     editor.focused = false;
     expect(editor.render(80).join("")).not.toContain(CURSOR_MARKER);
@@ -268,6 +300,7 @@ describe("prompt UI", () => {
   test("Up and Escape return to editing without submitting or aborting", () => {
     for (const key of ["\x1b[A", "\x1b", "\x03"]) {
       const editor = createEditor("tui", ["bg"])!;
+      editor.statuses.set("bg", "bg: 1");
       let submitted = false;
       editor.onSubmit = () => { submitted = true; };
       editor.onEscape = () => { throw new Error("selection must not abort the agent"); };
@@ -281,6 +314,7 @@ describe("prompt UI", () => {
   test("typing, paste, and programmatic text changes leave task selection", () => {
     for (const input of ["hello", "\x1b[200~한글\ntext\x1b[201~"]) {
       const editor = createEditor("tui", ["bg"])!;
+      editor.statuses.set("bg", "bg: 1");
       editor.handleInput("\x1b[B");
       editor.handleInput(input);
       expect(editor.render(80).join("")).not.toContain("Background tasks");
@@ -288,6 +322,7 @@ describe("prompt UI", () => {
       expect(editor.statuses.has("bg-selection")).toBe(false);
     }
     const editor = createEditor("tui", ["bg"])!;
+    editor.statuses.set("bg", "bg: 1");
     editor.handleInput("\x1b[B");
     editor.setText("");
     expect(editor.statuses.has("bg-selection")).toBe(false);
@@ -295,6 +330,7 @@ describe("prompt UI", () => {
 
   test("preserves multiline movement, history, and autocomplete", async () => {
     const editor = createEditor("tui", ["bg"])!;
+    editor.statuses.set("bg", "bg: 1");
     editor.addToHistory("previous prompt");
     editor.handleInput("\x1b[A");
     expect(editor.getText()).toBe("previous prompt");
@@ -317,6 +353,7 @@ describe("prompt UI", () => {
 
   test("clicking the input restores its cursor without opening tasks", () => {
     const editor = createEditor("tui", ["bg"])!;
+    editor.statuses.set("bg", "bg: 1");
     editor.handleInput("\x1b[B");
     editor.render(80);
     editor.handleMouse({ type: "click", button: "left", x: 3, y: 1, width: 80 } as never);
@@ -327,6 +364,7 @@ describe("prompt UI", () => {
   test("hides unavailable commands and fits selected rows to terminal width", () => {
     const commands = ["bg"];
     const editor = createEditor("tui", commands)!;
+    editor.statuses.set("bg", "bg: 1");
     editor.handleInput("\x1b[B");
     for (const width of [1, 2, 3, 20, 80]) {
       expect(editor.render(width).every((line) => visibleWidth(line) <= width)).toBe(true);
