@@ -245,7 +245,7 @@ For a remote machine, use `cf auth login --no-browser`. Automation can supply `C
 ### Agent Session Record Hooks
 
 - [Agent session record 모듈](modules/agent-session-record/README.md)은 `agent-session-record` CLI 하나를 설치한다. Claude의 `SessionEnd`, Codex의 `SessionStart`와 `Stop` hook은 `agent-session-record hook`을 사용한다. 전체 기록을 다시 처리할 때는 `agent-session-record replay <claude|codex>`를 실행한다. Home Manager가 실행 설정을 `~/.config/agent-session-record/config.json`에 생성한다.
-- 직접 실행한 세션과 신원을 확인할 수 있는 subagent 세션에는 내용을 드러내지 않는 `run_id`를 부여한다. snapshot은 전송 전에 secret과 개인 정보를 가리고 로컬 private queue에 저장한다. 검사에 실패하거나 내용이 빈 snapshot도 보관하되 파생 지식에서는 제외한다.
+- 직접 실행한 세션과 신원을 확인할 수 있는 subagent 세션에는 내용을 드러내지 않는 `run_id`를 부여한다. snapshot은 전송 전에 secret과 개인 정보를 가리고 로컬 private queue에 저장한다. 가리기나 개인정보 검사에 실패하면 원본은 전송하지 않고 로컬 source를 유지한다. 기존 queue의 검사 실패 항목도 전송하지 않고 수동 확인을 위해 보존한다. 내용이 빈 정상 처리 snapshot은 보관하되 파생 지식에서는 제외한다.
 - 전송에 성공하면 `/home/gytkk/agent-sessions/<scope>/<provider>/<YYYY>/<MM>/<DD>/<run_id>.*`에 archive를 남기고, manifest와 receipt를 로컬 ledger에 기록한다. 상태 디렉터리는 권한 `0700`, queue와 archive 파일은 권한 `0600`을 사용한다.
 - 기본 scope는 `personal`이다. devsisters profile에서는 capture를 끄고, `pylv-denim`은 업로드 대상 `pylv-onyx`에 로컬 주소 `192.168.0.10`으로 접속한다.
 - hook과 전송 실패는 각각 `warnings.log`와 `debug.log`에 기록하며 Claude와 Codex의 실행을 막지 않는다.
@@ -399,6 +399,8 @@ uv run --no-project scripts/check-paths.py
 ```
 
 The checker covers local Markdown link targets and concrete repository paths in inline code and code blocks in the root `README.md` and `AGENTS.md` by default. It skips placeholder and glob paths, installed paths, external URLs, and link anchors. Pass Markdown files as arguments to check those files instead of the defaults.
+
+Fences close only with the same marker character and at least the opening length. Markdown link examples inside fenced code are treated as literal text; concrete repository paths in those blocks are still checked.
 
 ```bash
 nix flake show
