@@ -58,8 +58,7 @@ function expectFilledFrame(lines: string[], background: ThemeBg) {
   const contrast = theme.appearance === "light" ? rgbColor(0, 0, 0) : rgbColor(255, 255, 255);
   const border = foregroundAnsi(mixColors(theme.colors[background], contrast, 0.15, "srgb"), theme.getColorMode());
   for (const row of rows) {
-    const horizontal = row[0].char === "╭" || row[0].char === "╰";
-    expect(row.every((cell, index) => cell.bg === (horizontal || index === 0 || index === row.length - 1 ? "" : bg))).toBe(true);
+    expect(row.every((cell) => cell.bg === bg)).toBe(true);
     expect(row[0].fg).toBe(border);
     expect(row.at(-1)!.fg).toBe(border);
   }
@@ -102,7 +101,7 @@ test("registers a renderer resolver without overriding tools or execution", () =
 });
 
 describe("rounded tool composition", () => {
-  test("keeps fill inside unpainted border cells through state and theme changes", () => {
+  test("fills complete frame rows like OMP through state and theme changes", () => {
     for (const pad of [0, 1]) {
       const row = tool("custom", {}, undefined, pad);
       for (const name of ["light", "dark"]) {
@@ -130,8 +129,8 @@ describe("rounded tool composition", () => {
     const nested = cells(lines[3]);
     expect(nested.slice(1, 6).every((cell) => cell.bg === theme.getBgAnsi("toolErrorBg"))).toBe(true);
     expect(nested.slice(6, -1).every((cell) => cell.bg === theme.getBgAnsi("toolSuccessBg"))).toBe(true);
-    expect(nested[0].bg).toBe("");
-    expect(nested.at(-1)!.bg).toBe("");
+    expect(nested[0].bg).toBe(theme.getBgAnsi("toolSuccessBg"));
+    expect(nested.at(-1)!.bg).toBe(theme.getBgAnsi("toolSuccessBg"));
     expectOneFrame(lines, 60);
   });
 
