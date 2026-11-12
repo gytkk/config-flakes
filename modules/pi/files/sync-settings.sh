@@ -29,7 +29,8 @@ mkdir -p "$(dirname "$settings")"
 tmp=$(mktemp "${settings}.XXXXXX")
 trap 'rm -f "$tmp"' EXIT
 if [ -e "$settings" ] || [ -L "$settings" ]; then
-  jq --slurpfile common "$common" '. + $common[0]' "$settings" > "$tmp"
+  # Retire the managed Powerline settings together with its package selection.
+  jq --slurpfile common "$common" 'del(.powerline, .bashMode, .workingVibe) + $common[0]' "$settings" > "$tmp"
 else
   jq . "$common" > "$tmp"
 fi

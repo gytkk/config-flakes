@@ -28,7 +28,7 @@ The module also installs:
 - `pkgs.pi`
 - `pkgs.mcp-nixos`
 
-`settings.json` is a private, writable regular file on each machine, not a checkout symlink. Nix combines the general settings in `modules/pi/files/settings.json` with the `extensionPackages` selection in `modules/pi/default.nix` to generate the common settings. Home Manager merges these into the local file before linking the new generation; common top-level keys take precedence, while other local keys are preserved. Pi creates `deviceId` on first ChatGPT login and keeps it, `trackingId`, and `lastChangelogVersion` local. The sync rejects these fields in common settings. Existing symlink installations are migrated without writing their local state back to the checkout.
+`settings.json` is a private, writable regular file on each machine, not a checkout symlink. Nix combines the general settings in `modules/pi/files/settings.json` with the `extensionPackages` selection in `modules/pi/default.nix` to generate the common settings. Home Manager merges these into the local file before linking the new generation; common top-level keys take precedence, while other local keys are preserved except the retired managed `powerline`, `bashMode`, and `workingVibe` keys. Pi creates `deviceId` on first ChatGPT login and keeps it, `trackingId`, and `lastChangelogVersion` local. The sync rejects these fields in common settings. Existing symlink installations are migrated without writing their local state back to the checkout.
 
 `/settings` and package commands modify only the local settings file. Changes to managed keys last until the next Home Manager application; edit `modules/pi/files/settings.json` for general defaults or `extensionPackages` in `modules/pi/default.nix` for package selection. Close Pi before applying Home Manager to avoid concurrent settings writes. Other mutable configuration still uses out-of-store symlinks. Generated instructions and common settings change only after applying Home Manager.
 
@@ -48,11 +48,11 @@ Supporting files such as `modules/pi/files/extensions/subagent/config.json` rema
 - `openai/gpt-6-astra` with `high` thinking
 - the generated `one-half-light` theme
 - a startup header without the loaded-resource listing
-- Powerline's default preset with a path-first custom layout and pipe separators above the editor, with one-column editor and output padding (`editorPaddingX: 1`, `outputPad: 1`)
+- a local status border directly above the open `╰─` prompt; the editor reserves three columns for the prompt while output padding stays at one column
 - the hardware terminal cursor for IME positioning
 - prompt-cache notices, with cache warming left at Pi's default `"streaming"` mode
 
-Pi uses the default fullscreen mode and built-in keybindings: `Home` and `Ctrl+A` move to the input line's start, while `Ctrl+Home` moves to the top of the fullscreen conversation. The module does not install a keybindings file. Powerline owns editor shortcuts; use `/attach` for shell sessions rather than the removed Down/Enter task item.
+Pi uses the default fullscreen mode and built-in keybindings: `Home` and `Ctrl+A` move to the input line's start, while `Ctrl+Home` moves to the top of the fullscreen conversation. The module does not install a keybindings file. The custom editor inherits Pi's input shortcuts; use `/attach` for shell sessions rather than the removed Down/Enter task item.
 
 ### File links in Herdr
 
@@ -66,7 +66,7 @@ Apply Home Manager and restart Pi to load the patched package; `/reload` alone d
 
 `modules/pi/files/models.json` sets the configured OpenAI chat models, `gpt-6-astra`, `gpt-6.1-sol`, and `gpt-6-luna`, to a 1,000,000-token (1M) context window through `modelOverrides`. The overrides apply to parent and subagent sessions without changing authentication, endpoints, output limits, or other catalog metadata. They do not change the separate Luna classifier or the unused legacy `openai-codex` provider. This is Pi-side metadata for usage and compaction calculations, not a server capability change; the endpoint must accept the larger context.
 
-Apply Home Manager to install the model configuration, then restart Pi. Powerline shows the effective limit beside context usage, for example `110k/1.0M (11.0%)`, and updates when the selected model changes. It uses the current usage metadata or the selected model before usage is known, rather than a hard-coded 1M label.
+Apply Home Manager to install the model configuration, then restart Pi. The local statusline shows the effective limit beside context usage, for example `11% / 1M`, and updates when the selected model changes. It uses the current usage metadata or the selected model before usage is known, rather than a hard-coded 1M label.
 
 `compaction.modelOverrides` configures `openai/gpt-6-astra` to reserve 54,400 tokens and retain roughly 40,000 recent tokens without summarization. With the 1,000,000-token context window, automatic compaction starts above 945,600 tokens. Other models use Pi's default compaction budgets. The reserve remains an absolute token count.
 
@@ -94,7 +94,6 @@ The `extensionPackages` list in `modules/pi/default.nix` is intentionally versio
 | [`@juicesharp/rpiv-ask-user-question`](https://github.com/juicesharp/rpiv-mono/tree/main/packages/rpiv-ask-user-question) | `2.15.0` | Structured user questions from rpiv-mono |
 | `pi-interactive-shell` | `0.18.0` | Interactive PTY overlay, background dispatch, and completion notifications |
 | `pi-lens` | `4.4.12` | LSP diagnostics/navigation, semantic rename, AST search and replacement preview |
-| `pi-powerline-footer` | `0.22.0` | Editor and responsive status bars |
 | `pi-web-access` | `0.46.0` | Web search, source checks, and content fetching |
 | `pi-subagents` | `0.84.0` | Foreground-first delegated Pi sessions |
 
@@ -238,9 +237,9 @@ Apply Home Manager on the reporter and desktop hosts, select the personal `tui` 
 
 - `/fast [on|off|status]`
 - `service_tier: "priority"` for `openai` requests while enabled
-- fast-mode status for Powerline's custom status item
+- fast-mode status for the local prompt statusline
 
-Fast mode starts disabled in each new session; use `/fast on` to enable it. Toggle changes are stored in the session so resumed branches recover their previous state. The extension owns the priority-mode request field and publishes its display state through `codex-fast-mode`. Powerline consumes that status through `powerline.customItems`, without importing the fast-mode implementation. The display value is `fast` only while enabled for an OpenAI parent session; otherwise the status is cleared. Model changes refresh it without changing the saved toggle or request behavior.
+Fast mode starts disabled in each new session; use `/fast on` to enable it. Toggle changes are stored in the session so resumed branches recover their previous state. The extension owns the priority-mode request field and publishes its display state through `codex-fast-mode`. The local prompt UI consumes that status through Pi's footer data provider, without importing the fast-mode implementation. The display value is `fast` only while enabled for an OpenAI parent session; otherwise the status is cleared. Model changes refresh it without changing the saved toggle or request behavior.
 
 Subagent child processes are detected through `PI_SUBAGENT_CHILD=1` and do
 not receive the priority service tier. `PI_SUBAGENT_PARENT_SESSION` is also set
@@ -249,7 +248,7 @@ the child-process signal. Parent Pi sessions continue to use fast mode normally.
 
 ### Codex subscription usage
 
-`modules/pi/files/extensions/codex-usage.ts` adds `/codex-usage` and publishes the Codex weekly quota remaining and time until reset to Powerline's `weekly` custom item. The compact format is `#######--- 79% (⏳ 3d 14h)`: a ten-cell remaining-quota bar, the remaining percentage, and the reset countdown in days and hours. The countdown uses 24-hour days and drops partial hours; less than one hour remaining appears as `0d 0h`. Each `#` represents a full ten percentage points remaining. Powerline owns the item's styling; the old per-cell green coloring is not retained. An unknown reset time appears as `(⏳ unknown)`. Powerline moves overflowing segments to its secondary row or drops them at narrow widths. This quota is separate from Powerline's session/cache tokens and API cost or subscription indicator. Interactive parent sessions fetch usage at startup and every minute without blocking startup. `/codex-usage` refreshes immediately and shows the local reset date and time without a time-zone suffix, along with the source timestamp. Concurrent refreshes share one request, each request has a 30-second timeout, and shutdown or reload cancels pending work. Non-interactive sessions and subagent processes do not poll.
+`modules/pi/files/extensions/codex-usage.ts` adds `/codex-usage` and publishes the Codex weekly quota remaining and time until reset through the `codex-usage` status key. The compact format is `#######--- 79% (⏳ 3d 14h)`: a ten-cell remaining-quota bar, the remaining percentage, and the reset countdown in days and hours. The countdown uses 24-hour days and drops partial hours; less than one hour remaining appears as `0d 0h`. Each `#` represents a full ten percentage points remaining. The local statusline colors the filled cells green and places the quota immediately before the model. An unknown reset time appears as `(⏳ unknown)`. The statusline shortens or omits the quota at narrow widths to preserve context and model information. This quota is separate from session tokens and API cost. Interactive parent sessions fetch usage at startup and every minute without blocking startup. `/codex-usage` refreshes immediately and shows the local reset date and time without a time-zone suffix, along with the source timestamp. Concurrent refreshes share one request, each request has a 30-second timeout, and shutdown or reload cancels pending work. Non-interactive sessions and subagent processes do not poll.
 
 The extension runs `codexbar usage --provider codex --source oauth --json --no-credits` using the CodexBar CLI already installed by the common profile. It reads the weekly `usage.secondary` window, not session token totals or API credit balances. OAuth uses the Codex CLI account selected by CodexBar and `CODEX_HOME`, which can differ from Pi's ChatGPT login. Use the same account in both clients to track the subscription used by Pi. The extension does not read, copy, or manage authentication files; CodexBar owns usage retrieval and its authentication behavior. It does not fall back to browser cookie extraction.
 
@@ -259,17 +258,17 @@ Apply Home Manager and restart Pi to install the extension. To try it before app
 
 ### Prompt and cursor rendering
 
-`pi-powerline-footer@0.22.0` is the sole managed editor/footer owner. Its `default` preset supplies colors and segment defaults, with a custom layout above the editor and pipe separators. The layout orders the full working-directory path (home abbreviated as `~`), Git branch and staged (`+`), unstaged (`*`), and untracked (`?`) counts, effective context usage, extension statuses, weekly quota, model, thinking, and fast mode. Cache tokens and cost/subscription information are omitted. The `right` group follows the left group rather than aligning to the terminal's right edge; the empty `secondary` group does not prevent responsive overflow. The package owns Git querying and cache invalidation (default status TTL one second); there is no local Git polling loop. Its counting, failure presentation, responsive overflow, glyphs, and colors replace the former local renderer's conventions. At narrow widths, segments move to a secondary row or are omitted. No full-width context meter, exact quota position, `╰─` prompt, or selectable `/bg (N)` input item is retained.
+`modules/pi/files/extensions/prompt-ui/` is the sole managed editor/footer owner. It places the working-directory path and Git branch/counts on the left, a context meter spanning the remaining space, and extension statuses, weekly quota, model, thinking, and fast mode on the right. The statusline replaces the editor's top border; the `╰─` input follows directly without an extra horizontal separator or idle bottom border. Narrow widths shorten or omit less important statuses while preserving context and model information.
 
-Fast mode and CodexBar retrieval remain independent status providers. `powerline.customItems` promotes `codex-usage` and `codex-fast-mode` into dedicated items, hiding missing values and excluding them from the aggregate extension-status segment to avoid duplicates. Powerline works without either provider. Authentication, usage refresh/failure/stale handling, fast-mode payloads, child exclusion, and saved session toggles remain provider-owned.
+Git counts use unstaged (`*`), staged (`+`), and untracked (`?`) files. The watcher polls every two seconds after the previous query finishes, counts individual untracked files, and treats merge conflicts as unresolved work. Queries have time/output bounds, failures show `git!` with a bounded warning, and shutdown/reload cancels pending work.
 
-Managed defaults disable the welcome overlay, delayed send (`sendDelayMs: 0`), AI routing (`autoFollowUp: false`), and working vibes (`workingVibe: "off"`). `powerline.queue.compactPromptMode: "native"` preserves `/compact <text>` as native compaction instructions and leaves mid-compaction messages to Pi's native queue. Powerline still ships explicit `/queue`, `/bash-mode`, `/vibe`, stash, and other commands; their presence is not permission to use them or to change execution policy. Sticky bash is not activated, `bashMode.toggleShortcut: null` leaves `Ctrl+Shift+B` to the shell package, and ghost completions are disabled. No additional queue, shell, delayed-send, or AI workflow is configured.
+Fast mode and CodexBar retrieval remain independent status providers. The renderer consumes `codex-fast-mode` and `codex-usage` through Pi's footer data provider and excludes them from aggregate extension statuses. It also works without either provider. Authentication, quota refresh/failure/stale handling, request payloads, child exclusion, and saved fast-mode toggles remain provider-owned.
 
-The selected Pi theme, `editorPaddingX`, `outputPad`, and `showHardwareCursor: true` are preserved. Powerline inherits Pi's editor and hardware-cursor markers rather than using the removed software-cursor stripping code. The user accepted the mouse limitation below for this migration. Apply Home Manager with Pi closed to add Powerline and remove the old prompt extension link together; then restart Pi. `/reload` alone cannot change installed extension ownership. Do not keep an unmanaged copy of the old prompt extension enabled.
+The custom editor extends Pi's `CustomEditor` and retains native input, history, wrapping, autocomplete, mouse coordinates, and `/compact <text>` semantics. It reserves three padding columns for the prompt instead of adding a prefix outside Pi's coordinate system. It preserves hardware-cursor markers, removes software-cursor styling, and retains scroll hints and autocomplete row offsets. The ordinary footer renders no duplicate status. The UI has no legacy `/bg (N)` selector; interactive-shell and Lens remain installed independently.
 
-**Known mouse limitation, accepted for integration:** the exact 0.22.0 package on Pi 1.5.2 adds three prompt-prefix columns without translating inherited editor mouse coordinates. In the isolated regression, at width 40 with padding 1, clicking the displayed `d` in `abcdefghij` selects logical column 6 instead of 3. Pi's base editor selects column 3. The ordinary assertion in `modules/pi/tests/powerline-integration.test.ts` intentionally remains failing until this requirement is satisfied; there is no local compatibility renderer or package patch.
+Apply Home Manager with Pi closed to remove Powerline from the managed package list and install the local prompt extension together, then restart Pi. Activation removes the retired managed Powerline settings but does not delete npm caches or Powerline's saved queue/stash data. Do not leave an unmanaged Powerline extension enabled alongside the local editor. `/reload` alone cannot change installed extension ownership. The [Powerline migration record](../../docs/pi-extension-migrations/powerline-footer.md) is historical, not the current installation policy.
 
-The independent headless integration checks exercise real package components, status providers, Git counts, changed model/context/thinking, quota failures/staleness, input/paste/wrapping/history/autocomplete, native compact submission, follow-up/cancel routing, and reload. They do **not** establish real Korean IME candidate positioning, terminal mouse selection, narrow Herdr pane behavior, or question/shell overlay focus restoration. Those live checks remain unverified; Shell and Lens have separate integration checks, not full simultaneous overlay/focus evidence. See the [migration specification](../../docs/pi-extension-migrations/powerline-footer.md).
+Headless checks exercise the real Pi editor, status rendering across terminal widths, effective model/context values, provider independence, Git polling and disposal, paste/history/autocomplete, native compaction submission, and mouse cursor placement. Node/jiti checks cover discovery and coexistence with installed shell, Lens, and questionnaire packages. Actual Korean IME candidate placement and live overlay focus restoration still require a terminal check.
 
 ### Terminal title on exit
 
@@ -445,7 +444,7 @@ Cloudflare operations use the `cf` CLI installed by the common Home Manager prof
 
 Pi selects the generated `one-half-light` theme from `themes/exports/pi/one-half-light.json`. The module also installs `claude-like` as an alternative. The built-in `system` theme remains available in `/settings` to derive colors from the terminal's background and ANSI palette.
 
-Powerline uses its upstream preset colors and Pi theme tokens. No app-local theme copy is added; context warnings and thinking colors follow the package rather than the old renderer.
+The local prompt uses Pi theme tokens for path/model accents and borders, ANSI purple for thinking, bright yellow/orange for fast mode, and green for filled quota cells. Context usage is cyan below 70%, yellow from 70%, and red from 90%. No app-local theme copy is added.
 
 ## Verification
 
@@ -457,16 +456,15 @@ bash modules/pi/tests/run.sh module-config.test.ts subagent-profiles.test.ts
 
 Set `PI_RPIV_QUESTION_PACKAGE_DIR` to an isolated `@juicesharp/rpiv-ask-user-question@2.15.0` package with its runtime dependencies to enable the questionnaire loader check in `extension-loading.test.ts`. It checks the monorepo package metadata, exact configured identity, single tool registration and fresh rediscovery. With all migration package directories supplied, the coexistence check includes the questionnaire too. An unset variable skips this check; loading is not evidence of live questionnaire or overlay focus behavior.
 
-Powerline tests require an explicitly supplied, unpacked `pi-powerline-footer@0.22.0` npm release directory. The runner verifies the package version in the tests, copies it into the temporary tree, and links only the installed Pi dependencies; it does not download packages. Without `PI_POWERLINE_PACKAGE_DIR`, the Powerline loader and component tests fail with a prerequisite error rather than silently skipping the required migration checks. Run them with:
+Prompt UI checks use the installed Pi components without a Powerline package dependency:
 
 ```bash
-PI_POWERLINE_PACKAGE_DIR=/path/to/unpacked/package \
-  bash modules/pi/tests/run.sh module-config.test.ts extension-loading.test.ts powerline-integration.test.ts codex-fast-mode.test.ts codex-usage.test.ts rounded-tools.test.ts
+bash modules/pi/tests/run.sh module-config.test.ts extension-loading.test.ts prompt-ui.test.ts prompt-statusline.test.ts prompt-git-status.test.ts codex-fast-mode.test.ts codex-usage.test.ts
 ```
 
-The mouse regression currently fails; the independent integration case must still pass. Keep `PI_POWERLINE_PACKAGE_DIR` set for the full suite and any invocation of the loader tests. Node/jiti discovery is checked separately from headless component rendering/input.
+The prompt mouse regression must pass: clicking the displayed character must select that character, not a column shifted by the prompt prefix. Node/jiti discovery is checked separately from headless component rendering/input.
 
-When `PI_POWERLINE_PACKAGE_DIR`, `PI_INTERACTIVE_SHELL_PACKAGE_DIR`, and `PI_LENS_PACKAGE_DIR` are all supplied, the loader suite also checks that the three packages coexist with the status providers and rounded-tools without duplicate tools or commands. This is loading evidence, not simultaneous live overlay/focus verification.
+When `PI_INTERACTIVE_SHELL_PACKAGE_DIR` and `PI_LENS_PACKAGE_DIR` are supplied, the loader suite also checks their coexistence with the local prompt UI, status providers, and rounded-tools without duplicate tools or commands. Supplying `PI_RPIV_QUESTION_PACKAGE_DIR` includes the questionnaire in that check. This is loading evidence, not simultaneous live overlay/focus verification.
 
 Lens integration requires an already installed exact 4.4.12 package with its dependencies; it never downloads them or reads the live agent package directory implicitly:
 

@@ -24,7 +24,6 @@ let
       skills = [ ];
       prompts = [ ];
     }
-    "npm:pi-powerline-footer@0.22.0"
     "npm:pi-web-access@0.46.0"
     {
       source = "npm:pi-subagents@0.84.0";
@@ -34,6 +33,7 @@ let
   ];
 
   localExtensions = {
+    "prompt-ui" = mkSymlink "files/extensions/prompt-ui";
     "codex-fast-mode.ts" = mkSymlink "files/extensions/codex-fast-mode.ts";
     "codex-usage.ts" = mkSymlink "files/extensions/codex-usage.ts";
     "rounded-tools.ts" = mkSymlink "files/extensions/rounded-tools.ts";

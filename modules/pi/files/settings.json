@@ -72,43 +72,6 @@
       }
     }
   },
-  "powerline": {
-    "preset": "default",
-    "placement": "above",
-    "separator": "pipe",
-    "path": {
-      "mode": "full"
-    },
-    "layout": {
-      "left": ["path", "git", "context_pct"],
-      "right": ["extension_statuses", "custom:weekly", "model", "thinking", "custom:fast"],
-      "secondary": []
-    },
-    "welcome": false,
-    "queue": {
-      "compactPromptMode": "native"
-    },
-    "sendDelayMs": 0,
-    "autoFollowUp": false,
-    "customItems": [
-      {
-        "id": "weekly",
-        "statusKey": "codex-usage",
-        "position": "right"
-      },
-      {
-        "id": "fast",
-        "statusKey": "codex-fast-mode",
-        "position": "right",
-        "color": "warning"
-      }
-    ]
-  },
-  "bashMode": {
-    "toggleShortcut": null,
-    "completions": false
-  },
-  "workingVibe": "off",
   "editorPaddingX": 1,
   "outputPad": 1,
   "showHardwareCursor": true

@@ -14,7 +14,7 @@ cmp "$local_settings" <(jq . "$common")
 [ "$(find "$local_settings" -perm 0600 | wc -l | tr -d ' ')" = 1 ]
 echo 'PASS: new installation gets common settings in a private regular file'
 
-jq '. + {deviceId:"machine-a", trackingId:"local-tracking", lastChangelogVersion:"1.1.0", localSetting:true, subagents:{localOverride:true}}' "$common" > "$TEST_ROOT/legacy.json"
+jq '. + {deviceId:"machine-a", trackingId:"local-tracking", lastChangelogVersion:"1.1.0", localSetting:true, powerline:{preset:"default"}, bashMode:{completions:false}, workingVibe:"off", subagents:{localOverride:true}}' "$common" > "$TEST_ROOT/legacy.json"
 cp "$TEST_ROOT/legacy.json" "$TEST_ROOT/legacy-original.json"
 rm "$local_settings"
 ln -s "$TEST_ROOT/legacy.json" "$local_settings"
@@ -22,7 +22,8 @@ bash "$SYNC" "$common" "$local_settings"
 [ ! -L "$local_settings" ]
 cmp "$TEST_ROOT/legacy.json" "$TEST_ROOT/legacy-original.json"
 jq -e '.deviceId == "machine-a" and .trackingId == "local-tracking" and .lastChangelogVersion == "1.1.0" and .localSetting == true and .subagents == {defaultModel:"openai/gpt-6.1-sol"}' "$local_settings" >/dev/null
-echo 'PASS: symlink migration preserves local metadata without changing its source'
+jq -e 'has("powerline") == false and has("bashMode") == false and has("workingVibe") == false' "$local_settings" >/dev/null
+echo 'PASS: symlink migration retires Powerline settings and preserves local metadata without changing its source'
 
 cp "$local_settings" "$TEST_ROOT/local-original.json"
 bash "$SYNC" "$common" "$local_settings"

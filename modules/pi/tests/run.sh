@@ -35,14 +35,6 @@ ln -s "$PI_TEST_NODE_MODULES" "$temporary/pi/node_modules"
 export PI_CODING_AGENT_DIR="$temporary/agent"
 mkdir -p "$PI_CODING_AGENT_DIR"
 
-# Opt-in exact-release tests: no downloads or global dependency installation.
-if [[ -n ${PI_POWERLINE_PACKAGE_DIR:-} ]]; then
-  cp -R "$(realpath "$PI_POWERLINE_PACKAGE_DIR")" "$temporary/powerline"
-  rm -rf "$temporary/powerline/node_modules"
-  ln -s "$PI_TEST_NODE_MODULES" "$temporary/powerline/node_modules"
-  export PI_POWERLINE_PACKAGE_DIR="$temporary/powerline"
-fi
-
 tests=("$temporary/pi/tests")
 if (( $# )); then
   tests=()
