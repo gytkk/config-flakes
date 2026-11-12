@@ -1,5 +1,5 @@
-import type { ExtensionAPI, Theme, ToolRenderers } from "@earendil-works/pi-coding-agent";
-import { Box, Container, Text, truncateToWidth, visibleWidth, type Component, type TuiMouseEvent } from "@earendil-works/pi-tui";
+import type { ExtensionAPI, Theme, ThemeBg, ToolRenderers } from "@earendil-works/pi-coding-agent";
+import { Box, Container, Text, mixColors, rgbColor, truncateToWidth, visibleWidth, type Component, type TuiMouseEvent } from "@earendil-works/pi-tui";
 
 type CallContext = Parameters<NonNullable<ToolRenderers["renderCall"]>>[2];
 type ToolResult = Parameters<NonNullable<ToolRenderers["renderResult"]>>[0];
@@ -8,7 +8,7 @@ class RoundedFrame implements Component {
   private inset = 0;
   private contentHeight = 0;
 
-  constructor(readonly content: Container | Box, public theme: Theme) {}
+  constructor(readonly content: Container | Box, public theme: Theme, public background: ThemeBg) {}
 
   render(width: number): string[] {
     if (width <= 0) return [];
@@ -24,13 +24,18 @@ class RoundedFrame implements Component {
     }
     this.contentHeight = lines.length;
     if (!lines.length) return [];
-    if (!this.inset) return lines.map((line) => truncateToWidth(line, width, ""));
-    const border = (text: string) => this.theme.fg("borderMuted", text);
+    const bg = this.theme.getBgAnsi(this.background);
+    // Restore the panel background after child resets without replacing deliberate inner backgrounds.
+    const fill = (text: string) => this.theme.bg(this.background, text.replace(/\x1b\[(?:0|49)?m/g, `$&${bg}`));
+    if (!this.inset) return lines.map((line) => fill(truncateToWidth(line, width, "")));
+    const contrast = this.theme.appearance === "light" ? rgbColor(0, 0, 0) : rgbColor(255, 255, 255);
+    const color = mixColors(this.theme.colors[this.background], contrast, 0.15, "srgb");
+    const border = (text: string) => this.theme.style(text, { fg: color, bg: this.background });
     return [
       border(`╭${"─".repeat(innerWidth)}╮`),
       ...lines.map((line) => {
         const text = truncateToWidth(line, innerWidth, "");
-        return border("│") + text + " ".repeat(Math.max(0, innerWidth - visibleWidth(text))) + "\x1b[0m" + border("│");
+        return border("│") + fill(text + " ".repeat(Math.max(0, innerWidth - visibleWidth(text)))) + "\x1b[0m" + border("│");
       }),
       border(`╰${"─".repeat(innerWidth)}╯`),
     ];
@@ -84,17 +89,18 @@ export function roundToolRenderers(name: string, base: ToolRenderers = {}): Tool
   const rows = new WeakMap<object, Row>();
   const empty = new Container();
   const getRow = (theme: Theme, ctx: CallContext): Row => {
+    const color = ctx.isPartial ? "toolPendingBg" : ctx.isError ? "toolErrorBg" : "toolSuccessBg";
     let row = rows.get(ctx.state);
     if (!row) {
       const content = base.renderShell === "self" ? new Container() : new Box(ctx.outputPad, 0);
-      row = { frame: new RoundedFrame(content, theme) };
+      row = { frame: new RoundedFrame(content, theme, color) };
       rows.set(ctx.state, row);
     }
     row.frame.theme = theme;
+    row.frame.background = color;
     const content = row.frame.content;
     if (content instanceof Box) {
       content.setPaddingX(ctx.outputPad);
-      const color = ctx.isPartial ? "toolPendingBg" : ctx.isError ? "toolErrorBg" : "toolSuccessBg";
       content.setBgFn((text) => theme.bg(color, text));
     }
     return row;

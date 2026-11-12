@@ -6,14 +6,15 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   createCodemodeExtension, createEditToolDefinition, createReadToolDefinition, initTheme,
-  ToolExecutionComponent, type ToolRenderers, type ToolRendererResolver,
+  ToolExecutionComponent, type ToolRenderers, type ToolRendererResolver, type Theme, type ThemeBg,
 } from "@earendil-works/pi-coding-agent";
 import {
-  Container, Text, getCapabilities, getOsc8LinkAtColumn, hyperlink, setCapabilities,
+  Container, Text, foregroundAnsi, getCapabilities, getOsc8LinkAtColumn, hyperlink, mixColors, rgbColor, setCapabilities,
   stripTerminalSequences, visibleWidth, type TuiMouseEvent,
 } from "@earendil-works/pi-tui";
 import roundedTools, { roundToolRenderers } from "../files/extensions/rounded-tools";
 
+let theme: Theme;
 const roots: string[] = [];
 const capabilities = getCapabilities();
 beforeEach(() => initTheme("dark", false));
@@ -24,9 +25,56 @@ afterEach(async () => {
 const textResult = (text: string) => ({ content: [{ type: "text" as const, text }], details: undefined });
 const plain = (lines: string[]) => lines.map(stripTerminalSequences);
 
+function cells(line: string) {
+  let bg = "";
+  let fg = "";
+  const result: { char: string; bg: string; fg: string }[] = [];
+  for (const part of line.split(/(\x1b\[[\d;]*m)/)) {
+    if (!part.startsWith("\x1b[")) {
+      for (const char of part) result.push({ char, bg, fg });
+      continue;
+    }
+    const codes = part.slice(2, -1).split(";").map(Number);
+    for (let i = 0; i < codes.length; i++) {
+      const code = codes[i];
+      if (code === 0) { bg = ""; fg = ""; }
+      else if (code === 49) bg = "";
+      else if (code === 39) fg = "";
+      else if (code === 38 || code === 48) {
+        const count = codes[i + 1] === 2 ? 5 : 3;
+        const color = `\x1b[${codes.slice(i, i + count).join(";")}m`;
+        if (code === 48) bg = color;
+        else fg = color;
+        i += count - 1;
+      }
+    }
+  }
+  return result;
+}
+
+function expectFilledFrame(lines: string[], background: ThemeBg) {
+  const rows = lines.filter(Boolean).map(cells);
+  const bg = theme.getBgAnsi(background);
+  const contrast = theme.appearance === "light" ? rgbColor(0, 0, 0) : rgbColor(255, 255, 255);
+  const border = foregroundAnsi(mixColors(theme.colors[background], contrast, 0.15, "srgb"), theme.getColorMode());
+  for (const row of rows) {
+    expect(row.every((cell) => cell.bg === bg)).toBe(true);
+    expect(row[0].fg).toBe(border);
+    expect(row.at(-1)!.fg).toBe(border);
+  }
+  expect(rows[0].every((cell) => cell.fg === border)).toBe(true);
+  expect(rows.at(-1)!.every((cell) => cell.fg === border)).toBe(true);
+}
+
 function tool(name: string, args: unknown = {}, base?: ToolRenderers, outputPad = 1) {
-  return new ToolExecutionComponent(name, `test-${name}`, args, { outputPad },
-    roundToolRenderers(name, base), { requestRender: mock(() => {}) } as never, process.cwd());
+  const renderers = roundToolRenderers(name, base);
+  return new ToolExecutionComponent(name, `test-${name}`, args, { outputPad }, {
+    ...renderers,
+    renderCall(args, currentTheme, ctx) {
+      theme = currentTheme;
+      return renderers.renderCall!(args, currentTheme, ctx);
+    },
+  }, { requestRender: mock(() => {}) } as never, process.cwd());
 }
 
 function click(width: number, height: number, x: number, y: number): TuiMouseEvent {
@@ -53,6 +101,37 @@ test("registers a renderer resolver without overriding tools or execution", () =
 });
 
 describe("rounded tool composition", () => {
+  test("fills border cells and content through state and theme changes", () => {
+    for (const pad of [0, 1]) {
+      const row = tool("custom", {}, undefined, pad);
+      for (const name of ["light", "dark"]) {
+        initTheme(name, false);
+        row.invalidate();
+        row.updateResult(textResult("running"), true);
+        expectFilledFrame(row.render(60), "toolPendingBg");
+        row.updateResult(textResult("done"));
+        expectFilledFrame(row.render(60), "toolSuccessBg");
+        row.updateResult({ ...textResult("failed"), isError: true });
+        expectFilledFrame(row.render(60), "toolErrorBg");
+      }
+    }
+  });
+
+  test("fills self-shell gaps and ANSI resets while preserving explicit backgrounds", () => {
+    const row = tool("custom", {}, {
+      renderShell: "self",
+      renderCall: (_args, theme) => new Text(
+        `before\x1b[0mafter\x1b[m reset\x1b[49m background\n${theme.bg("toolErrorBg", "inner")} tail`, 0, 0),
+    });
+    row.updateResult(textResult("done"));
+    const lines = row.render(60);
+    expectFilledFrame([lines[1], lines[2], lines.at(-1)!], "toolSuccessBg");
+    const nested = cells(lines[3]);
+    expect(nested.slice(1, 6).every((cell) => cell.bg === theme.getBgAnsi("toolErrorBg"))).toBe(true);
+    expect(nested.slice(6).every((cell) => cell.bg === theme.getBgAnsi("toolSuccessBg"))).toBe(true);
+    expectOneFrame(lines, 60);
+  });
+
   test("keeps a single closed frame before, during, and after results", () => {
     const row = tool("custom", { query: "한글 😀" });
     expectOneFrame(row.render(60), 60);
@@ -212,12 +291,14 @@ describe("installed Pi renderers", () => {
     } }, true);
     expectOneFrame(row.render(70), 70);
     expect(plain(row.render(70)).join("\n")).toContain("read sample.ts");
+    expectFilledFrame(row.render(70), "toolPendingBg");
     row.updateResult({ ...textResult("file contents"), details: {
       calls: [{ name: "read", args: "sample.ts", status: "ok", durationMs: 12 }],
     } });
     expectOneFrame(row.render(70), 70);
     expect(plain(row.render(70)).join("\n")).toContain("file contents");
     expect(plain(row.render(70)).join("\n")).toContain("12ms");
+    expectFilledFrame(row.render(70), "toolSuccessBg");
   });
 
   test("leaves native images outside the text frame without duplicating them", () => {
