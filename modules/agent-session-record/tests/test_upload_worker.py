@@ -103,7 +103,12 @@ class UploadWorkerTests(unittest.TestCase):
         self.assertFalse(self.lock_path.exists())
 
     def test_upload_steps_share_one_deadline(self):
-        manifest = {"run_id": "run_test", "transcript_fingerprint": "fingerprint"}
+        manifest = {
+            "run_id": "run_test",
+            "transcript_fingerprint": "fingerprint",
+            "redaction_status": "succeeded",
+            "privacy_check_status": "succeeded",
+        }
         with (
             patch("time.monotonic", side_effect=[100, 110, 160, 250, 390]),
             patch.object(self.recorder, "run_checked") as run,
@@ -117,6 +122,44 @@ class UploadWorkerTests(unittest.TestCase):
         self.assertEqual(
             [call.kwargs["timeout"] for call in run.call_args_list], [290, 240, 150, 10]
         )
+
+    def test_every_upload_entrypoint_rejects_unsanitized_snapshots(self):
+        transcript = self.root / "transcript"
+        meta = self.root / "meta"
+        target = self.root / "remote"
+        transcript.write_text('{"content":"sk-test-secret-value-that-is-long"}\n')
+        meta.write_text("{}\n")
+        for redaction, privacy in (
+            ("failed", "failed"),
+            ("failed", "succeeded"),
+            ("succeeded", "failed"),
+            ("pending", "pending"),
+            (None, None),
+        ):
+            with self.subTest(redaction=redaction, privacy=privacy):
+                manifest = {
+                    "redaction_status": redaction,
+                    "privacy_check_status": privacy,
+                }
+                with (
+                    patch.object(self.recorder, "run_checked") as transport,
+                    patch("shutil.copyfile") as copy,
+                ):
+                    self.assertFalse(self.recorder.upload_snapshot(manifest, transcript))
+                    with self.assertRaises(ValueError):
+                        self.recorder.queue_snapshot(manifest, transcript)
+                    for upload in (
+                        self.recorder.upload_local,
+                        self.recorder.upload_remote,
+                    ):
+                        with self.assertRaises(ValueError):
+                            upload(transcript, meta, target, manifest)
+                transport.assert_not_called()
+                copy.assert_not_called()
+                self.assertFalse(target.exists())
+        self.assertEqual(list(self.recorder.queue_dir.iterdir()), [])
+        self.assertEqual(list(self.recorder.tmp_dir.iterdir()), [])
+        self.assertEqual(list(self.recorder.session_state_dir.iterdir()), [])
 
     def test_expired_budget_does_not_start_another_transport(self):
         with patch("subprocess.Popen") as popen:

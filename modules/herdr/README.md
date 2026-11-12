@@ -104,16 +104,17 @@ Cmd-click an OMP-generated file hyperlink to open text or source code in a new r
 
 The [router](../herdr-app/file-opener.py) validates the local computer and origin pane, passes filenames as data, and uses Neovim RPC rather than typing shell commands. Its private `/tmp/omp-nvim-<uid>` directory holds editor sockets and per-origin pane records. This is a local desktop integration: it does not retrieve remote files or change plain paths that Herdr detects independently of OMP hyperlinks.
 
-Apply Home Manager and start a new OMP process. Existing OMP sessions read their link scheme only at startup; reloading extensions is not enough. The [installer](../herdr-app/install-file-opener.py) registers only this custom scheme and keeps the preceding managed application as `.home-manager.bak` when replacing it. Before a Home Manager switch, the installed handler can be exercised by launching from this checkout:
+Apply Home Manager and start a new OMP process. Existing OMP sessions read their link scheme only at startup; reloading extensions is not enough. The [installer](../herdr-app/install-file-opener.py) registers only this custom scheme. It compiles and signs the new handler before changing the installed application, then keeps the preceding managed application as `.home-manager.bak` after successful registration, replacing an older managed backup. Failed publication or registration restores the preceding application and backup; an unchanged reinstall leaves both untouched. Unrelated applications and backups are not replaced. If rollback itself fails, the error identifies a retained `.omp-file-opener-*` recovery directory beside the application; preserve its contents for manual recovery. Before a Home Manager switch, the installed handler can be exercised by launching from this checkout:
 
 ```bash
 python3 modules/herdr-app/file-opener.py launch "$(command -v omp)"
 ```
 
-The file-opening regression check uses real isolated Neovim processes and temporary files, including literal filenames and modified-buffer preservation:
+The file-opening regression check uses real isolated Neovim processes and temporary files, including literal filenames and modified-buffer preservation. The installer regression check uses temporary application bundles and stubbed compile, sign, and registration commands; it never touches the real application registry:
 
 ```bash
 python3 -B -m unittest discover -s modules/herdr-app/tests -p test_file_opener.py -v
+python3 -B -m unittest discover -s modules/herdr-app/tests -p test_install_file_opener.py -v
 ```
 
 ### Desktop space completion indicators

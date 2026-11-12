@@ -48,7 +48,6 @@ class CaptureSource:
 class ProviderAdapter(Protocol):
     name: str
     hook_events: tuple[str, ...]
-    archive_on_redaction_failure: bool
 
     def hook_contract(self, event: str) -> HookContract: ...
 
@@ -78,7 +77,7 @@ def jsonl_objects(path: Path) -> list[dict[str, Any]]:
                     continue
                 if isinstance(value, dict):
                     objects.append(value)
-    except OSError:
+    except (OSError, UnicodeError):
         pass
     return objects
 
@@ -87,7 +86,7 @@ def first_record(path: Path) -> dict[str, Any]:
     try:
         with path.open(encoding="utf-8") as handle:
             value = json.loads(handle.readline())
-    except (OSError, json.JSONDecodeError):
+    except (OSError, json.JSONDecodeError, UnicodeError):
         return {}
     return value if isinstance(value, dict) else {}
 
@@ -112,7 +111,6 @@ def first_jsonl_value(path: Path, reader: Any) -> str:
 class ClaudeProvider:
     name = "claude"
     hook_events = ("session-end",)
-    archive_on_redaction_failure = True
 
     def hook_contract(self, event: str) -> HookContract:
         if event == "session-end":
@@ -292,7 +290,6 @@ class ClaudeProvider:
 class CodexProvider:
     name = "codex"
     hook_events = ("session-start", "stop")
-    archive_on_redaction_failure = True
 
     def hook_contract(self, event: str) -> HookContract:
         if event == "stop":

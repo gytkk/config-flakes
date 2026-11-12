@@ -79,19 +79,29 @@ def check_document(document: Path) -> list[str]:
         errors.append(f"{display_path(document)}: unable to read document: {error}")
         return errors
 
-    in_fence = False
+    fence_marker = ""
     for line_number, line in enumerate(lines, start=1):
         fence = FENCE.match(line)
         if fence:
-            in_fence = not in_fence
-            continue
+            marker = fence.group(1)
+            if not fence_marker:
+                fence_marker = marker
+                continue
+            if (
+                marker[0] == fence_marker[0]
+                and len(marker) >= len(fence_marker)
+                and not line[fence.end() :].strip()
+            ):
+                fence_marker = ""
+                continue
 
-        for match in INLINE_LINK.finditer(line):
-            target = link_target(match.group(1))
-            if not is_skipped(target) and not (document.parent / target).exists():
-                report_missing(document, line_number, target, errors)
+        if not fence_marker:
+            for match in INLINE_LINK.finditer(line):
+                target = link_target(match.group(1))
+                if not is_skipped(target) and not (document.parent / target).exists():
+                    report_missing(document, line_number, target, errors)
 
-        code_chunks = [line] if in_fence else INLINE_CODE.findall(line)
+        code_chunks = [line] if fence_marker else INLINE_CODE.findall(line)
         for code in code_chunks:
             for match in REPOSITORY_PATH.finditer(code):
                 # Positional flake update arguments name inputs, not filesystem paths.

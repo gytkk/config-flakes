@@ -799,23 +799,132 @@ raise SystemExit(1)
         self.assertEqual(meta["relationship_status"], "unknown")
         self.assertIsNone(meta["parent_run_id"])
 
-    def test_redaction_failure_archives_raw_but_marks_ineligible(self) -> None:
-        transcript = self.fixtures / "redaction-failure.jsonl"
-        transcript.write_text(
-            "not-json sk-test-secret-value-that-is-long\n", encoding="utf-8"
-        )
-        self.run_worker(
-            "claude", self.payload("redaction-failure", "redaction-failure", transcript)
-        )
-        meta_path = self.find_meta("redaction-failure")
-        meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        self.assertEqual(meta["redaction_status"], "failed")
-        self.assertFalse(meta["eligible_for_derivation"])
-        archive = meta_path.parent / f"{meta['run_id']}.jsonl"
-        self.assertIn("sk-test-secret", archive.read_text(encoding="utf-8"))
-        self.assertNotIn(
-            "sk-test-secret", (self.state / "warnings.log").read_text(encoding="utf-8")
-        )
+    def test_redaction_failures_retain_sources_without_queuing_or_uploading(self) -> None:
+        secret = "sk-test-secret-value-that-is-long"
+        valid = json.dumps({"message": {"content": secret}}).encode() + b"\n"
+        failures = {
+            "invalid-json": valid + f"not-json {secret}\n".encode(),
+            "invalid-encoding": valid + b"\xff\n",
+            "residual-sensitive": b'{"type":"user"}\n' + valid,
+        }
+        for provider in ("claude", "codex"):
+            for failure, content in failures.items():
+                with self.subTest(provider=provider, failure=failure):
+                    session_id = f"{provider}-{failure}"
+                    transcript = self.fixtures / f"{session_id}.jsonl"
+                    transcript.write_bytes(content)
+                    env = self.environment()
+                    env["AGENT_SESSION_RECORD_STATE_DIR"] = str(self.state / session_id)
+                    recorder = Recorder(get_provider(provider), env)
+                    payload = self.payload(session_id, session_id, transcript)
+                    capture = recorder.provider.captures_from_event(
+                        json.loads(payload.read_text()), recorder.capture_context
+                    )[0]
+                    manifest = recorder.build_manifest(capture)
+                    with patch.object(
+                        recorder, "redact_value", wraps=recorder.redact_value
+                    ) as redact:
+                        if failure == "residual-sensitive":
+                            redact.side_effect = lambda value: value
+                        self.assertFalse(recorder.process_capture(manifest))
+                        recorder.process_payload(payload)
+                    self.assertEqual(transcript.read_bytes(), content)
+                    self.assertEqual(manifest["redaction_status"], "failed")
+                    self.assertEqual(manifest["privacy_check_status"], "failed")
+                    self.assertIsNone(manifest["redacted_transcript_fingerprint"])
+                    self.assertFalse(manifest["eligible_for_derivation"])
+                    for directory in (
+                        recorder.queue_dir,
+                        recorder.tmp_dir,
+                        recorder.session_state_dir,
+                        recorder.manifest_dir,
+                        self.archive,
+                    ):
+                        self.assertEqual(list(directory.iterdir()), [])
+                    attempts_path = recorder.attempt_dir / f"{manifest['run_id']}.jsonl"
+                    attempts = [
+                        json.loads(line) for line in attempts_path.read_text().splitlines()
+                    ]
+                    self.assertEqual(
+                        {attempt["status"] for attempt in attempts}, {"redaction_failed"}
+                    )
+                    hooks = [
+                        json.loads(line)
+                        for line in (recorder.attempt_dir / "hooks.jsonl")
+                        .read_text()
+                        .splitlines()
+                    ]
+                    self.assertEqual(
+                        [attempt["status"] for attempt in hooks], ["received", "failed"]
+                    )
+                    for evidence in (
+                        recorder.warning_log,
+                        attempts_path,
+                        recorder.attempt_dir / "hooks.jsonl",
+                    ):
+                        self.assertNotIn(secret, evidence.read_text())
+
+    def test_failed_queued_snapshots_are_retained_even_when_stale_or_legacy(self) -> None:
+        for provider in ("claude", "codex"):
+            for legacy in (False, True):
+                for redaction, privacy in (
+                    ("failed", "failed"),
+                    ("failed", "succeeded"),
+                    ("succeeded", "failed"),
+                    ("failed", None),
+                    (None, "failed"),
+                ):
+                    with self.subTest(
+                        provider=provider,
+                        legacy=legacy,
+                        redaction=redaction,
+                        privacy=privacy,
+                    ):
+                        session_id = f"{provider}-{legacy}-{redaction}-{privacy}"
+                        transcript = self.fixtures / f"{session_id}.jsonl"
+                        self.write_jsonl(
+                            transcript,
+                            {"message": {"content": "sk-test-secret-value-that-is-long"}},
+                        )
+                        env = self.environment()
+                        env["AGENT_SESSION_RECORD_STATE_DIR"] = str(self.state / session_id)
+                        recorder = Recorder(get_provider(provider), env)
+                        capture = recorder.provider.captures_from_event(
+                            {"session_id": session_id, "transcript_path": str(transcript)},
+                            recorder.capture_context,
+                        )[0]
+                        manifest = recorder.build_manifest(capture)
+                        manifest.update(
+                            redaction_status=redaction,
+                            privacy_check_status=privacy,
+                            redacted_transcript_fingerprint=recorder.fingerprint(transcript),
+                        )
+                        if legacy:
+                            manifest["schema_version"] = 1
+                            manifest["redaction_policy_version"] = "legacy"
+                        item = recorder.queue_item(manifest)
+                        self.write_json(item / "manifest.json", manifest)
+                        queued = item / "transcript.jsonl"
+                        queued.write_bytes(transcript.read_bytes())
+                        original_manifest = (item / "manifest.json").read_bytes()
+                        with (
+                            patch.object(recorder, "upload_snapshot") as upload,
+                            patch.object(recorder, "process_capture") as capture_snapshot,
+                            patch.object(recorder, "state_is_stale", return_value=True) as stale,
+                        ):
+                            self.assertFalse(recorder.process_queued_item(item))
+                            recorder.replay_queue()
+                            recorder.migrate_legacy_queue(item, manifest)
+                        upload.assert_not_called()
+                        capture_snapshot.assert_not_called()
+                        stale.assert_not_called()
+                        self.assertEqual(
+                            (item / "manifest.json").read_bytes(), original_manifest
+                        )
+                        self.assertEqual(queued.read_bytes(), transcript.read_bytes())
+                        self.assertEqual(list(recorder.quarantine_dir.iterdir()), [])
+                        self.assertEqual(list(recorder.session_state_dir.iterdir()), [])
+                        self.assertEqual(list(self.archive.iterdir()), [])
 
     def test_empty_transcript_is_archived_but_excluded_from_derivation(self) -> None:
         transcript = self.fixtures / "empty.jsonl"

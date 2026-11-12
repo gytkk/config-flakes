@@ -492,6 +492,18 @@ class Recorder:
         return manifest
 
     @staticmethod
+    def sanitization_succeeded(manifest: dict[str, Any]) -> bool:
+        return (
+            manifest.get("redaction_status") == "succeeded"
+            and manifest.get("privacy_check_status") == "succeeded"
+        )
+
+    @classmethod
+    def require_sanitized(cls, manifest: dict[str, Any]) -> None:
+        if not cls.sanitization_succeeded(manifest):
+            raise ValueError("snapshot has not passed redaction and privacy checks")
+
+    @staticmethod
     def validate_manifest(manifest: dict[str, Any]) -> bool:
         run_id = manifest.get("run_id")
         parent_run_id = manifest.get("parent_run_id")
@@ -576,9 +588,9 @@ class Recorder:
                 and bool(manifest["termination_status"]),
                 isinstance(manifest.get("transcript_fingerprint"), str)
                 and FINGERPRINT_PATTERN.fullmatch(manifest["transcript_fingerprint"]),
-                redaction_status in {"succeeded", "failed"},
+                redaction_status == "succeeded",
                 manifest.get("redaction_policy_version") == REDACTION_POLICY_VERSION,
-                privacy_check_status in {"succeeded", "failed"},
+                privacy_check_status == "succeeded",
                 manifest.get("privacy_policy_version") == PRIVACY_POLICY_VERSION,
                 privacy_check_status == redaction_status,
                 isinstance(manifest.get("redacted_transcript_fingerprint"), str)
@@ -654,6 +666,7 @@ class Recorder:
         os.replace(item, target)
 
     def queue_snapshot(self, manifest: dict[str, Any], transcript: Path) -> Path:
+        self.require_sanitized(manifest)
         item = self.queue_item(manifest)
         manifest_path = item / "manifest.json"
         transcript_path = item / "transcript.jsonl"
@@ -798,6 +811,9 @@ class Recorder:
             ledger.chmod(0o600)
 
     def upload_snapshot(self, manifest: dict[str, Any], transcript: Path) -> bool:
+        if not self.sanitization_succeeded(manifest):
+            self.warn("snapshot upload blocked: redaction or privacy check did not succeed")
+            return False
         seconds = int(manifest["snapshot_mtime_ns"]) / 1_000_000_000
         date_path = dt.datetime.fromtimestamp(seconds, dt.UTC).strftime("%Y/%m/%d")
         target_dir = (
@@ -846,6 +862,7 @@ class Recorder:
         target_dir: Path,
         manifest: dict[str, Any],
     ) -> None:
+        self.require_sanitized(manifest)
         target_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         target_dir.chmod(0o700)
         run_id = manifest["run_id"]
@@ -866,6 +883,7 @@ class Recorder:
         target_dir: Path,
         manifest: dict[str, Any],
     ) -> None:
+        self.require_sanitized(manifest)
         deadline = time.monotonic() + UPLOAD_TIMEOUT_SECONDS
         remote = f"{self.remote_user}@{self.remote_host}"
         run_id = manifest["run_id"]
@@ -952,6 +970,12 @@ class Recorder:
         manifest = self.read_json(manifest_path)
         if not manifest:
             return False
+        if not self.sanitization_succeeded(manifest):
+            self.warn(
+                "queued snapshot retained for manual review: "
+                "redaction or privacy check did not succeed"
+            )
+            return False
         provider = manifest.get("provider") or manifest.get("agent")
         session_id = manifest.get("provider_session_id") or manifest.get("session_id")
         scope = manifest.get("scope")
@@ -988,30 +1012,23 @@ class Recorder:
         os.close(fd)
         redacted = Path(raw_redacted)
         try:
-            if self.redact_transcript(transcript, redacted):
-                archive = redacted
-                manifest["redaction_status"] = "succeeded"
-                manifest["privacy_check_status"] = "succeeded"
-                redacted_fingerprint = self.fingerprint(redacted)
-            else:
-                provider = get_provider(str(manifest["provider"]))
-                if not provider.archive_on_redaction_failure:
-                    self.warn(
-                        f"redaction failed for {manifest['provider']}/"
-                        f"{manifest['provider_session_id']}; snapshot was not archived"
-                    )
-                    return False
-                self.warn(
-                    f"redaction failed for {manifest['provider']}/"
-                    f"{manifest['provider_session_id']}; archiving original snapshot"
-                )
-                archive = transcript
+            if not self.redact_transcript(transcript, redacted):
                 manifest["redaction_status"] = "failed"
                 manifest["privacy_check_status"] = "failed"
-                redacted_fingerprint = manifest["transcript_fingerprint"]
+                manifest["redacted_transcript_fingerprint"] = None
+                manifest["eligible_for_derivation"] = False
+                self.warn(
+                    f"redaction failed for {manifest['provider']}/"
+                    f"{manifest['provider_session_id']}; source retained locally, "
+                    "snapshot was not queued or uploaded"
+                )
+                self.append_capture_attempt(manifest, "redaction_failed")
+                return False
+            manifest["redaction_status"] = "succeeded"
+            manifest["privacy_check_status"] = "succeeded"
             manifest["redaction_policy_version"] = REDACTION_POLICY_VERSION
             manifest["privacy_policy_version"] = PRIVACY_POLICY_VERSION
-            manifest["redacted_transcript_fingerprint"] = redacted_fingerprint
+            manifest["redacted_transcript_fingerprint"] = self.fingerprint(redacted)
             manifest["eligible_for_derivation"] = (
                 manifest["redaction_status"] == "succeeded"
                 and manifest["summary_status"] == "not_started"
@@ -1022,7 +1039,7 @@ class Recorder:
                     f"{manifest['provider_session_id']}"
                 )
                 return False
-            item = self.queue_snapshot(manifest, archive)
+            item = self.queue_snapshot(manifest, redacted)
             self.append_capture_attempt(manifest, "queued")
             if self.process_queued_item(item):
                 self.append_capture_attempt(manifest, "stored")
@@ -1096,6 +1113,11 @@ class Recorder:
             pass
 
     def migrate_legacy_queue(self, item: Path, manifest: dict[str, Any]) -> None:
+        if "failed" in (
+            manifest.get("redaction_status"), manifest.get("privacy_check_status")
+        ):
+            self.warn("failed legacy snapshot retained locally for manual review")
+            return
         provider = manifest.get("provider") or manifest.get("agent")
         session_id = manifest.get("provider_session_id") or manifest.get("session_id")
         scope = manifest.get("scope", self.scope)
@@ -1143,6 +1165,14 @@ class Recorder:
                     if not manifest:
                         self.warn(f"queued manifest is invalid JSON: {item.name}")
                         self.quarantine(item)
+                        continue
+                    if "failed" in (
+                        manifest.get("redaction_status"),
+                        manifest.get("privacy_check_status"),
+                    ):
+                        self.warn(
+                            "failed queued snapshot retained locally for manual review"
+                        )
                         continue
                     if (
                         manifest.get("schema_version") != SCHEMA_VERSION

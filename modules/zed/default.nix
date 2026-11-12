@@ -73,10 +73,16 @@ let
   wslActivationScript = ''
     deploy_zed_config() (
       set -e
-      mkdir -p "${windowsZedConfigPath}/themes"
-      mkdir -p "${windowsZedDataPath}/extensions/installed"
+      config_path=${lib.escapeShellArg windowsZedConfigPath}
+      data_path=${lib.escapeShellArg windowsZedDataPath}
+      settings_file=${lib.escapeShellArg settingsFile}
+      keymap_file=${lib.escapeShellArg keymapFile}
+      themes_path=${lib.escapeShellArg zedThemeExportsPath}
+      extensions_path=${lib.escapeShellArg (toString extensionsDir)}
+      mkdir -p "$config_path/themes"
+      mkdir -p "$data_path/extensions/installed"
 
-      stage=$(mktemp -d "${windowsZedConfigPath}/.home-manager.XXXXXX")
+      stage=$(mktemp -d "$config_path/.home-manager.XXXXXX")
       extension_stage=""
       cleanup_zed_stage() {
         rm -rf "$stage"
@@ -92,12 +98,12 @@ let
       }
       trap cleanup_zed_stage EXIT
       mkdir "$stage/themes"
-      cp "${settingsFile}" "$stage/settings.json"
-      cmp "${settingsFile}" "$stage/settings.json"
-      cp "${keymapFile}" "$stage/keymap.json"
-      cmp "${keymapFile}" "$stage/keymap.json"
+      cp "$settings_file" "$stage/settings.json"
+      cmp "$settings_file" "$stage/settings.json"
+      cp "$keymap_file" "$stage/keymap.json"
+      cmp "$keymap_file" "$stage/keymap.json"
 
-      for theme in "${zedThemeExportsPath}"/*.json; do
+      for theme in "$themes_path"/*.json; do
         [ -f "$theme" ] || continue
         cp "$theme" "$stage/themes/$(basename "$theme")"
         cmp "$theme" "$stage/themes/$(basename "$theme")"
@@ -106,7 +112,7 @@ let
       # Stage every config before replacing files; keep the latest pre-replacement bytes.
       for file in "$stage"/*.json "$stage/themes"/*.json; do
         [ -f "$file" ] || continue
-        target="${windowsZedConfigPath}/''${file#"$stage/"}"
+        target="$config_path/''${file#"$stage/"}"
         if cmp -s "$file" "$target"; then
           continue
         fi
@@ -119,11 +125,11 @@ let
       done
 
       # 확장 복사 (Nix store → Windows 경로)
-      for ext in ${extensionsDir}/*; do
+      for ext in "$extensions_path"/*; do
         [ -d "$ext" ] || continue
         ext_name=$(basename "$ext")
-        target="${windowsZedDataPath}/extensions/installed/$ext_name"
-        extension_stage=$(mktemp -d "${windowsZedDataPath}/extensions/installed/.home-manager.XXXXXX")
+        target="$data_path/extensions/installed/$ext_name"
+        extension_stage=$(mktemp -d "$data_path/extensions/installed/.home-manager.XXXXXX")
         cp -rL "$ext" "$extension_stage/new"
         if [ -e "$target" ] || [ -L "$target" ]; then
           mv -T "$target" "$extension_stage/previous"
@@ -134,9 +140,9 @@ let
       done
 
       echo "Zed config deployed to Windows:"
-      echo "  - Settings: ${windowsZedConfigPath}"
-      echo "  - Keymap: ${windowsZedConfigPath}"
-      echo "  - Extensions: ${windowsZedDataPath}/extensions/installed"
+      echo "  - Settings: $config_path"
+      echo "  - Keymap: $config_path"
+      echo "  - Extensions: $data_path/extensions/installed"
     )
     run deploy_zed_config
   '';

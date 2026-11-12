@@ -32,37 +32,75 @@ end open location
             info = plistlib.load(file)
         if info.get("CFBundleIdentifier") != BUNDLE_ID:
             raise ValueError(f"Refusing to replace an unrelated application: {destination}")
-    if not marker.exists() or marker.read_text() != stamp:
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix=".omp-file-opener-", dir=destination.parent) as directory:
-            directory = Path(directory)
-            source_script = directory / "handler.applescript"
-            source_script.write_text(script)
-            bundle = directory / destination.name
-            subprocess.run(["/usr/bin/osacompile", "-o", str(bundle), str(source_script)], check=True)
-            plist = bundle / "Contents/Info.plist"
-            with plist.open("rb") as file:
-                info = plistlib.load(file)
-            info.update({
-                "CFBundleIdentifier": BUNDLE_ID,
-                "CFBundleName": "OMP Neovim",
-                "CFBundleURLTypes": [{"CFBundleURLName": "OMP file links", "CFBundleURLSchemes": ["omp-nvim"]}],
-                "LSUIElement": True,
-            })
-            with plist.open("wb") as file:
-                plistlib.dump(info, file)
-            (bundle / "Contents/Resources/managed-version").write_text(stamp)
-            subprocess.run(["/usr/bin/codesign", "--force", "--sign", "-", str(bundle)], check=True)
+    if marker.exists() and marker.read_text() == stamp:
+        subprocess.run([LSREGISTER, "-f", str(destination)], check=True)
+        return
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    directory = Path(tempfile.mkdtemp(prefix=".omp-file-opener-", dir=destination.parent))
+    preserve_recovery = False
+    try:
+        source_script = directory / "handler.applescript"
+        source_script.write_text(script)
+        bundle = directory / destination.name
+        subprocess.run(["/usr/bin/osacompile", "-o", str(bundle), str(source_script)], check=True)
+        plist = bundle / "Contents/Info.plist"
+        with plist.open("rb") as file:
+            info = plistlib.load(file)
+        info.update({
+            "CFBundleIdentifier": BUNDLE_ID,
+            "CFBundleName": "OMP Neovim",
+            "CFBundleURLTypes": [{"CFBundleURLName": "OMP file links", "CFBundleURLSchemes": ["omp-nvim"]}],
+            "LSUIElement": True,
+        })
+        with plist.open("wb") as file:
+            plistlib.dump(info, file)
+        (bundle / "Contents/Resources/managed-version").write_text(stamp)
+        subprocess.run(["/usr/bin/codesign", "--force", "--sign", "-", str(bundle)], check=True)
+
+        backup = destination.with_name(destination.name + ".home-manager.bak")
+        previous_destination = directory / "previous-destination.app"
+        previous_backup = directory / "previous-backup.app"
+        moved_destination = moved_backup = published = False
+        try:
             if destination.exists():
-                backup = destination.with_name(destination.name + ".home-manager.bak")
                 if backup.exists():
                     with (backup / "Contents/Info.plist").open("rb") as file:
                         if plistlib.load(file).get("CFBundleIdentifier") != BUNDLE_ID:
                             raise ValueError(f"Refusing to replace an unrelated backup: {backup}")
-                    shutil.rmtree(backup)
-                os.replace(destination, backup)
+                    os.replace(backup, previous_backup)
+                    moved_backup = True
+                os.replace(destination, previous_destination)
+                moved_destination = True
             os.replace(bundle, destination)
-    subprocess.run([LSREGISTER, "-f", str(destination)], check=True)
+            published = True
+            subprocess.run([LSREGISTER, "-f", str(destination)], check=True)
+            if moved_destination:
+                os.replace(previous_destination, backup)
+        except BaseException as error:
+            recovery_moves = []
+            if published:
+                recovery_moves.append((destination, bundle))
+            if moved_destination:
+                recovery_moves.append((previous_destination, destination))
+            if moved_backup:
+                recovery_moves.append((previous_backup, backup))
+            recovery_errors = []
+            for original, restored in recovery_moves:
+                try:
+                    os.replace(original, restored)
+                except OSError as recovery_error:
+                    recovery_errors.append(f"{original} -> {restored}: {recovery_error}")
+            if recovery_errors:
+                preserve_recovery = True
+                raise RuntimeError(
+                    f"Installation failed ({error}); rollback failed: {'; '.join(recovery_errors)}. "
+                    f"Recovery files retained at {directory}"
+                ) from error
+            raise
+    finally:
+        if not preserve_recovery:
+            shutil.rmtree(directory)
 
 
 if __name__ == "__main__":

@@ -6,4 +6,6 @@ On WSL, Home Manager copies these files to Windows Zed. Activation stages and by
 
 Extensions are copied to temporary directories before replacement. If replacement fails, activation restores the previous directory; if that restoration also fails, it retains the directory and reports its path. Dry-run makes no filesystem changes.
 
+WSL destination and checkout paths are shell-escaped before activation. Spaces, apostrophes, dollar signs, and backticks in those paths remain literal filename characters.
+
 Run the isolated activation regression tests from the repository root with `uv run --no-project scripts/tests/test_config_activation.py`.
