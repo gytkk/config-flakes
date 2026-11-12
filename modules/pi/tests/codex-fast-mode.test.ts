@@ -6,7 +6,6 @@ import fastMode, { createStatusLine } from "../files/extensions/codex-fast-mode"
 describe("prompt statusline", () => {
   function fixture() {
     const statuses = new Map([["codex-usage", "---------- weekly 9% left | reset 2026-11-05 03:00"]]);
-    const commands = ["bg"];
     const ctx = {
       model: { id: "test-model", provider: "openai", reasoning: true, contextWindow: 1_000_000 },
       thinkingLevel: "high",
@@ -25,16 +24,16 @@ describe("prompt statusline", () => {
       } },
     };
     const data = { getGitBranch: () => "main", getExtensionStatuses: () => statuses };
-    const render = createStatusLine({ getCommands: () => commands.map((name) => ({ name })) } as never, ctx as never, data as never);
+    const render = createStatusLine(ctx as never, data as never);
     const line = (width = 300) => render(width).replace(/\x1b\[[0-9;]*m/g, "");
-    return { statuses, commands, ctx, data, render, line };
+    return { statuses, ctx, data, render, line };
   }
 
   test("preserves every status and places usage immediately before the model", () => {
     const { statuses, line } = fixture();
     expect(line()).toStartWith("╭\uE0B6 /workspace/한글-project › main \uE0B0");
     expect(line()).toContain("11%");
-    expect(line()).toContain("/bg (0)");
+    expect(line()).not.toContain("/bg");
     expect(line()).not.toContain("tokens");
     expect(line()).not.toContain("↓");
     expect(line()).toContain("---------- weekly 9% left | reset 2026-11-05 03:00 │ test-model · high · fast(off)");
@@ -77,10 +76,10 @@ describe("prompt statusline", () => {
     }
   });
 
-  test("separates the meter from background tasks with a padded divider", () => {
+  test("separates the meter from the right-hand statuses with a padded divider", () => {
     const { line } = fixture();
     for (const width of [80, 160, 220, 300]) {
-      expect(line(width)).toMatch(/[━─%] │ \/bg \(0\)/);
+      expect(line(width)).toMatch(/[━─%M] │ (?:---------- weekly|test-model)/);
     }
   });
 
@@ -105,29 +104,19 @@ describe("prompt statusline", () => {
       if (selected) statuses.set("bg-selection", "selected");
       for (let width = 0; width <= 320; width++) {
         expect(visibleWidth(render(width))).toBeLessThanOrEqual(width);
-        if (selected && width > 0) expect(render(width)).toContain(CURSOR_MARKER);
-        if (!selected) expect(render(width)).not.toContain(CURSOR_MARKER);
+        expect(render(width)).not.toContain(CURSOR_MARKER);
       }
     }
   });
 
-  test("updates tasks without duplicating private statuses", () => {
-    const { statuses, commands, line, render } = fixture();
+  test("leaves background task display and selection to the input row", () => {
+    const { statuses, line } = fixture();
     statuses.set("bg", "bg: 3");
     statuses.set("bg-selection", "selected");
-    expect(line()).toContain(`${CURSOR_MARKER}* /bg (3)`);
+    expect(line()).not.toContain("/bg");
     expect(line()).not.toContain("bg: 3");
     expect(line()).not.toContain("selected");
-    expect(render(300)).toContain("\x1b[1;35m* /bg (3)\x1b[0m");
-    statuses.delete("bg");
-    expect(line()).toContain("* /bg (0)");
-    statuses.delete("bg-selection");
     expect(line()).not.toContain(CURSOR_MARKER);
-    statuses.set("bg", "unexpected status");
-    expect(line()).toContain("/bg (?)");
-    commands.length = 0;
-    expect(line()).not.toContain("/bg");
-    expect(line()).not.toContain("unexpected status");
   });
 
   test("keeps scroll hints and handles missing context, long branches, and theme changes", () => {

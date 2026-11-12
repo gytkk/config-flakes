@@ -145,6 +145,63 @@ describe("hardware cursor prompt", () => {
     }
   });
 
+  test("right-aligns task counts on the first input row without changing text", () => {
+    const editor = createEditor("tui", ["bg"])!;
+    const plainLine = () => editor.render(80)[1].replace(/\x1b\[[0-9;]*m/g, "");
+    expect(editor.render(80)[0]).not.toContain("/bg");
+    expect(plainLine()).toEndWith(" /bg (0)");
+    expect(visibleWidth(plainLine())).toBe(80);
+    editor.statuses.set("bg", "bg: 3");
+    expect(plainLine()).toEndWith(" /bg (3)");
+    editor.statuses.set("bg", "invalid");
+    expect(plainLine()).toEndWith(" /bg (?)");
+    editor.statuses.delete("bg");
+    editor.setText("한글\nsecond");
+    expect(plainLine()).toEndWith(" /bg (0)");
+    expect(editor.render(80)[2]).not.toContain("/bg");
+    expect(editor.getText()).toBe("한글\nsecond");
+  });
+
+  test("hides task counts before overlapping text or the cursor without changing wrapping", () => {
+    const editor = createEditor("tui", ["bg"])!;
+    const original = createEditor()!;
+    for (const text of ["abcdefghij", "한글abcdefgh", "abcdefghijklmnopqrs", "firstlinefillstheentirerow\nsecond"]) {
+      editor.setText(text);
+      original.setText(text);
+      expect(editor.render(20)).toEqual(original.render(20));
+      expect(editor.getCursor()).toEqual(original.getCursor());
+    }
+    editor.setText("abcdefghi");
+    const line = editor.render(20)[1];
+    expect(line).toContain("/bg (0)");
+    expect(visibleWidth(line)).toBe(20);
+    expect(visibleWidth(line.split(CURSOR_MARKER)[0])).toBe(11);
+    editor.setText("");
+    expect(editor.render(20)[1]).toContain("/bg (0)");
+  });
+
+  test("hides the right prompt while autocomplete owns navigation", async () => {
+    const editor = createEditor("tui", ["bg"])!;
+    editor.setAutocompleteProvider(new CombinedAutocompleteProvider([{ name: "bg" }, { name: "branch" }]));
+    editor.setText("/b");
+    editor.handleInput("\t");
+    await Bun.sleep(0);
+    expect(editor.isShowingAutocomplete()).toBe(true);
+    expect(editor.render(80)[1]).not.toContain("/bg (");
+    expect(editor.render(80)[1]).toContain(CURSOR_MARKER);
+  });
+
+  test("keeps the selected task cursor bounded at every width", () => {
+    const editor = createEditor("tui", ["bg"])!;
+    editor.handleInput("\x1b[B");
+    for (let width = 1; width <= 160; width++) {
+      const lines = editor.render(width);
+      expect(lines.every((line) => visibleWidth(line) <= width)).toBe(true);
+      expect(lines[0]).not.toContain(CURSOR_MARKER);
+      expect(lines[1]).toContain(CURSOR_MARKER);
+    }
+  });
+
   test("selects background tasks with Down and submits /bg only on Enter", () => {
     const editor = createEditor("tui", ["bg"])!;
     const submitted: string[] = [];
@@ -156,8 +213,9 @@ describe("hardware cursor prompt", () => {
     const lines = editor.render(80);
     expect(lines).toHaveLength(2);
     expect(editor.statuses.get("bg-selection")).toBe("selected");
-    expect(lines[0]).toContain(CURSOR_MARKER);
-    expect(lines[1]).not.toContain(CURSOR_MARKER);
+    expect(lines[0]).not.toContain(CURSOR_MARKER);
+    expect(lines[1]).toContain(`${CURSOR_MARKER}\x1b[1;35m* /bg (0)`);
+    expect(lines[1].split(CURSOR_MARKER)).toHaveLength(2);
     editor.focused = false;
     expect(editor.render(80).join("")).not.toContain(CURSOR_MARKER);
     editor.focused = true;

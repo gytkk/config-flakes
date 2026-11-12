@@ -3,7 +3,7 @@ import {
   type ExtensionContext,
   type ReadonlyFooterDataProvider,
 } from "@earendil-works/pi-coding-agent";
-import { CURSOR_MARKER, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { sep } from "node:path";
 
 const STATE_TYPE = "codex-fast-mode";
@@ -16,7 +16,6 @@ const CLAUDE_ANSI = {
   yellow: "\x1b[33m",
   cyan: "\x1b[36m",
   dim: "\x1b[2m",
-  boldPurple: "\x1b[1;35m",
   brightOrange: "\x1b[1;33m",
 } as const;
 
@@ -58,7 +57,6 @@ function styleStatus(text: string, ansi: string): string {
 }
 
 export function createStatusLine(
-  pi: ExtensionAPI,
   ctx: ExtensionContext,
   footerData: ReadonlyFooterDataProvider,
 ): (width: number, hiddenLines?: number) => string {
@@ -70,16 +68,7 @@ export function createStatusLine(
     const separator = border(" │ ");
     const join = (parts: string[]) => parts.filter(Boolean).join(separator);
     const statuses = footerData.getExtensionStatuses();
-    const hasBg = pi.getCommands().some((command) => command.name === "bg");
-    const selected = hasBg && statuses.get("bg-selection") === "selected";
-    const bgStatus = statuses.get("bg");
-    const count = bgStatus === undefined ? "0" : /^bg: (\d+)$/.exec(bgStatus)?.[1] ?? "?";
-    let bg = hasBg ? styleStatus(`${selected ? "* " : ""}/bg (${count})`,
-      selected ? CLAUDE_ANSI.boldPurple : CLAUDE_ANSI.dim) : "";
-    // Keep a visible selection and cursor even when no other status fits.
-    if (width < 4) return selected
-      ? CURSOR_MARKER + truncateToWidth(bg, width, "")
-      : accent("╭") + border("─".repeat(width - 1));
+    if (width < 4) return accent("╭") + border("─".repeat(width - 1));
 
     const modelParts = [accent(sanitizeStatusText(ctx.model?.id ?? "no-model"))];
     if (ctx.model?.reasoning) modelParts.push(styleStatus(ctx.thinkingLevel ?? "off", CLAUDE_ANSI.brightOrange));
@@ -122,7 +111,7 @@ export function createStatusLine(
     let usage = sanitizeStatusText(statuses.get("codex-usage") ?? "");
     const contentWidth = width - 2;
     const left = () => join([location, scroll]);
-    const right = () => join([bg, ...extras, usage, model]);
+    const right = () => join([...extras, usage, model]);
     const surroundingWidth = () => visibleWidth(left()) + visibleWidth(right())
       + (left() ? visibleWidth(separator) : 0) + (right() ? visibleWidth(separator) : 0);
     const occupied = () => surroundingWidth() + minimumMeterWidth;
@@ -135,19 +124,15 @@ export function createStatusLine(
     while (occupied() > contentWidth && extras.length) extras.pop();
     if (occupied() > contentWidth) location = "";
     if (occupied() > contentWidth) minimumMeterWidth = visibleWidth(contextLabel);
-    if (occupied() > contentWidth && !selected) bg = "";
     if (occupied() > contentWidth) {
       const spare = Math.max(0, contentWidth - occupied() + visibleWidth(model));
       model = truncateToWidth(model, spare, "…");
     }
     if (occupied() > contentWidth) {
-      return accent("╭") + (selected ? CURSOR_MARKER : "")
-        + truncateToWidth(join([bg, contextLabel, scroll, model]), width - 1, "");
+      return accent("╭") + truncateToWidth(join([contextLabel, scroll, model]), width - 1, "");
     }
-    const rightText = right();
-    const markedRight = selected ? rightText.replace(bg, CURSOR_MARKER + bg) : rightText;
     const meter = renderMeter(contentWidth - surroundingWidth());
-    return accent("╭") + join([left(), meter, markedRight]) + border("─");
+    return accent("╭") + join([left(), meter, right()]) + border("─");
   };
 }
 
