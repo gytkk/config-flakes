@@ -1,6 +1,5 @@
-import { CustomEditor, type ExtensionAPI, type KeybindingsManager } from "@earendil-works/pi-coding-agent";
+import { CustomEditor, type KeybindingsManager } from "@earendil-works/pi-coding-agent";
 import { CURSOR_MARKER, truncateToWidth, visibleWidth, type TuiMouseEvent } from "@earendil-works/pi-tui";
-import { createStatusLine } from "./codex-fast-mode";
 
 const SOFTWARE_CURSOR_PATTERN = /\x1b_pi:\/?fc\x07/g;
 
@@ -8,7 +7,15 @@ export function stripSoftwareCursor(line: string): string {
   return line.replace(SOFTWARE_CURSOR_PATTERN, "");
 }
 
-class HardwareCursorOnlyEditor extends CustomEditor {
+// pi-bg-bash 0.5.1 publishes task counts through its display status.
+export function parseBackgroundCount(status: string | undefined): number | undefined {
+  const match = status === undefined ? undefined : /^bg: (\d+)$/.exec(status);
+  if (!match) return undefined;
+  const count = Number(match[1]);
+  return Number.isSafeInteger(count) ? count : undefined;
+}
+
+export class PromptEditor extends CustomEditor {
   private readonly dimBorder = this.borderColor;
   private backgroundSelected = false;
   renderStatusLine?: (width: number, hiddenLines: number) => string;
@@ -72,7 +79,7 @@ class HardwareCursorOnlyEditor extends CustomEditor {
   private renderBackgroundItem(line: string, width: number): string {
     if (!this.hasBackgroundCommand() || this.isShowingAutocomplete()) return line;
     const status = this.getBackgroundStatus();
-    const count = status === undefined ? "0" : /^bg: (\d+)$/.exec(status)?.[1] ?? "?";
+    const count = status === undefined ? 0 : parseBackgroundCount(status) ?? "?";
     const label = `${this.backgroundSelected ? "* " : ""}/bg (${count})`;
     const marker = this.backgroundSelected && this.focused ? CURSOR_MARKER : "";
     const style = (text: string) => this.backgroundSelected ? `\x1b[1;35m${text}\x1b[0m` : this.dimBorder(text);
@@ -105,35 +112,4 @@ class HardwareCursorOnlyEditor extends CustomEditor {
     if (lines.at(-1) === "") lines.pop();
     return lines;
   }
-}
-
-export default function (pi: ExtensionAPI) {
-  pi.on("session_start", (_event, ctx) => {
-    if (ctx.mode !== "tui") return;
-    ctx.ui.setStatus("bg-selection", undefined);
-    let renderStatusLine: ReturnType<typeof createStatusLine> | undefined;
-    let getBackgroundStatus = (): string | undefined => undefined;
-    ctx.ui.setFooter((tui, _theme, footerData) => {
-      renderStatusLine = createStatusLine(ctx, footerData);
-      getBackgroundStatus = () => footerData.getExtensionStatuses().get("bg");
-      const unsubscribe = footerData.onBranchChange(() => tui.requestRender());
-      return {
-        render: () => [],
-        invalidate() {},
-        dispose: unsubscribe,
-      };
-    });
-    ctx.ui.setEditorComponent((tui, theme, keybindings) => {
-      const editor = new HardwareCursorOnlyEditor(tui, {
-        ...theme,
-        borderColor: (text) => ctx.ui.theme.fg("dim", text),
-      }, keybindings);
-      editor.renderStatusLine = (width, hiddenLines) => renderStatusLine?.(width, hiddenLines) ?? "";
-      editor.getBackgroundStatus = () => getBackgroundStatus();
-      editor.matchesBackgroundKey = (data, action) => keybindings.matches(data, action);
-      editor.hasBackgroundCommand = () => pi.getCommands().some((command) => command.name === "bg");
-      editor.onBackgroundSelectionChange = (selected) => ctx.ui.setStatus("bg-selection", selected ? "selected" : undefined);
-      return editor;
-    });
-  });
 }

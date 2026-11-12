@@ -1,7 +1,9 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
 import { CustomEditor } from "@earendil-works/pi-coding-agent";
 import { CombinedAutocompleteProvider, CURSOR_MARKER, matchesKey, visibleWidth } from "@earendil-works/pi-tui";
-import hardwareCursorOnly, { stripSoftwareCursor } from "../files/extensions/hardware-cursor-only";
+import promptUI from "../files/extensions/prompt-ui";
+import fastMode from "../files/extensions/codex-fast-mode";
+import { parseBackgroundCount, stripSoftwareCursor } from "../files/extensions/prompt-ui/editor";
 
 const dim = (text: string) => `\x1b[2m${text}\x1b[22m`;
 const plain = (text: string) => text;
@@ -20,46 +22,82 @@ const keybindings = {
   matches: (data: string, action: string) => (keys[action] ?? []).some((key) => matchesKey(data, key as never)),
 };
 
-function createEditor(mode = "tui", commands: string[] = []) {
+function createEditor(mode = "tui", commands: string[] = [], fastOrder?: "before" | "after") {
   let editor: CustomEditor | undefined;
   const statuses = new Map<string, string>();
   let footer: { render: (width: number) => string[]; dispose: () => void } | undefined;
   let unsubscribed = false;
-  hardwareCursorOnly({
+  const handlers: Function[] = [];
+  let fastCommand: Function | undefined;
+  const ctx = {
+    mode,
+    model: { id: "test-model", provider: "openai" },
+    sessionManager: { getCwd: () => "/workspace", getBranch: () => [] },
+    getContextUsage: () => ({ percent: 11 }),
+    ui: {
+      notify: mock(() => {}),
+      setFooter: (factory: Function) => {
+        footer = factory(tui, {}, {
+          getGitBranch: () => "main", getExtensionStatuses: () => statuses,
+          onBranchChange: () => () => { unsubscribed = true; },
+        });
+      },
+      setStatus: (key: string, value: string | undefined) => {
+        if (value === undefined) statuses.delete(key);
+        else statuses.set(key, value);
+      },
+      theme: {
+        colors: { userMessageBg: "#edf0f3" }, style: (text: string) => text,
+        fg: (_color: string, text: string) => dim(text), bg: (_color: string, text: string) => text,
+      },
+      setEditorComponent: (factory: Function) => {
+        editor = factory(tui, theme, keybindings);
+      },
+    },
+  };
+  const pi = {
     getCommands: () => commands.map((name) => ({ name })),
-    on: (_event: string, handler: Function) => handler({}, {
-      mode,
-      model: { id: "test-model", provider: "openai" },
-      sessionManager: {
-        getCwd: () => "/workspace",
-      },
-      getContextUsage: () => ({ percent: 11 }),
-      ui: {
-        setFooter: (factory: Function) => {
-          footer = factory(tui, {}, {
-            getGitBranch: () => "main", getExtensionStatuses: () => statuses,
-            onBranchChange: () => () => { unsubscribed = true; },
-          });
-        },
-        setStatus: (key: string, value: string | undefined) => {
-          if (value === undefined) statuses.delete(key);
-          else statuses.set(key, value);
-        },
-        theme: {
-          colors: { userMessageBg: "#edf0f3" }, style: (text: string) => text,
-          fg: (_color: string, text: string) => dim(text), bg: (_color: string, text: string) => text,
-        },
-        setEditorComponent: (factory: Function) => {
-          editor = factory(tui, theme, keybindings);
-        },
-      },
-    }),
-  } as never);
+    on: (event: string, handler: Function) => { if (event === "session_start") handlers.push(handler); },
+    registerCommand: (_name: string, command: { handler: Function }) => { fastCommand = command.handler; },
+    appendEntry: mock(() => {}),
+  };
+  if (fastOrder === "before") fastMode(pi as never);
+  promptUI(pi as never);
+  if (fastOrder === "after") fastMode(pi as never);
+  for (const handler of handlers) handler({}, ctx);
   if (editor) editor.focused = true;
-  return editor ? Object.assign(editor, { statuses, footer, isUnsubscribed: () => unsubscribed }) : undefined;
+  return editor ? Object.assign(editor, {
+    statuses, footer, isUnsubscribed: () => unsubscribed,
+    fast: (action: string) => fastCommand!(action, ctx),
+  }) : undefined;
 }
 
-describe("hardware cursor prompt", () => {
+test.each([
+  [undefined, undefined], ["", undefined], ["bg: 0", 0], ["bg: 12", 12],
+  ["bg: -1", undefined], ["bg: 1.5", undefined], ["bg: 2 extra", undefined],
+  ["bg: 9007199254740992", undefined],
+])("parses the background status %s without guessing a count", (status, expected) => {
+  expect(parseBackgroundCount(status as string | undefined)).toBe(expected);
+});
+
+describe("prompt UI", () => {
+  test.each(["before", "after"] as const)("reads fast mode statuses with the provider loaded %s the UI", async (order) => {
+    const editor = createEditor("tui", [], order)!;
+    expect(editor.render(180)[0]).toContain("fast(off)");
+    await editor.fast("on");
+    expect(editor.render(180)[0]).toContain("fast(on)");
+    expect(editor.footer!.render(180)).toEqual([]);
+  });
+
+  test("works without fast mode or usage providers", () => {
+    const editor = createEditor()!;
+    const line = editor.render(180)[0];
+    expect(line).toContain("test-model");
+    expect(line).toContain("11%");
+    expect(line).not.toContain("fast(");
+    expect(line).not.toContain("weekly");
+  });
+
   test("shows a status border and open prompt with no duplicate footer", () => {
     const editor = createEditor()!;
     editor.borderColor = (text) => `purple:${text}`;

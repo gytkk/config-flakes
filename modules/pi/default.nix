@@ -63,8 +63,7 @@ in
       ".pi/agent/extensions/codex-fast-mode.ts".source = mkSymlink "files/extensions/codex-fast-mode.ts";
       ".pi/agent/extensions/codex-usage.ts".source = mkSymlink "files/extensions/codex-usage.ts";
       ".pi/agent/extensions/pi-lsp".source = "${lspExtension}/extensions";
-      ".pi/agent/extensions/hardware-cursor-only.ts".source =
-        mkSymlink "files/extensions/hardware-cursor-only.ts";
+      ".pi/agent/extensions/prompt-ui".source = mkSymlink "files/extensions/prompt-ui";
       ".pi/agent/extensions/herdr-agent-state.ts" = lib.mkIf config.modules.herdr.enable {
         source = "${pkgs.herdr.src}/src/integration/assets/pi/herdr-agent-state.ts";
       };

@@ -156,7 +156,7 @@ The extension publishes display metadata only from the parent interactive Pi ses
 
 The progress payload and slash events follow `pi-subagents` 0.84.0. Review this integration when updating that package. It does not import the package's internal modules or modify its execution behavior. Herdr failures produce a warning and leave Pi running.
 
-Home Manager installs the extension. After applying the configuration, run `/reload` in Pi and `herdr server reload-config` for the [Herdr sidebar layout](../herdr/README.md#subagents). For a foreground smoke test, run `/run scout List the top-level files without changing anything` inside a Herdr Pi pane and verify that the child appears, updates, and disappears when finished. Run `bun test modules/pi/tests/herdr-subagents.test.ts` for the isolated event and metadata tests.
+Home Manager installs the extension. After applying the configuration, run `/reload` in Pi and `herdr server reload-config` for the [Herdr sidebar layout](../herdr/README.md#subagents). For a foreground smoke test, run `/run scout List the top-level files without changing anything` inside a Herdr Pi pane and verify that the child appears, updates, and disappears when finished. Run `bash modules/pi/tests/run.sh herdr-subagents.test.ts` for the isolated event and metadata tests.
 
 ### Herdr Desktop
 
@@ -166,17 +166,17 @@ Desktop rows show the agent name, resolved model when known, and a state-colored
 
 Snapshots refresh every five seconds and expire in the UI after fifteen seconds without an update. Session replacement gets a fresh identity; shutdown removes the label after queued writes finish. Core labels are persistent: activity excerpts can remain on disk after a crash even though stale rows are hidden. Remote reporters and the desktop need synchronized clocks.
 
-Apply Home Manager on the reporter and desktop hosts, select the personal `tui` layout, then run `/reload` in Pi or restart it. Desktop mods hot-reload; `herdr server reload-config` is only for the TUI. Verify with `/run scout List the top-level files without changing anything`. Checks: `bun test modules/pi/tests/herdr-subagents.test.ts` and `node --experimental-vm-modules --test modules/herdr-app/tests/omp-agents.test.mjs`.
+Apply Home Manager on the reporter and desktop hosts, select the personal `tui` layout, then run `/reload` in Pi or restart it. Desktop mods hot-reload; `herdr server reload-config` is only for the TUI. Verify with `/run scout List the top-level files without changing anything`. Checks: `bash modules/pi/tests/run.sh herdr-subagents.test.ts` and `node --experimental-vm-modules --test modules/herdr-app/tests/omp-agents.test.mjs`.
 
 ### OpenAI fast mode
 
-`files/extensions/codex-fast-mode.ts` provides:
+`modules/pi/files/extensions/codex-fast-mode.ts` provides:
 
 - `/fast [on|off|status]`
 - `service_tier: "priority"` for `openai` requests while enabled
 - fast-mode status for the prompt's integrated statusline
 
-Fast mode starts disabled in each new session; use `/fast on` to enable it. Toggle changes are stored in the session so resumed branches recover their previous state. The extension owns the priority-mode request field and publishes its display state through `codex-fast-mode`. Its statusline renderer supplies the editor extension with working directory, Git branch, model, thinking level, fast-mode state, context usage and extension statuses. The statusline does not display or aggregate cumulative input/output tokens.
+Fast mode starts disabled in each new session; use `/fast on` to enable it. Toggle changes are stored in the session so resumed branches recover their previous state. The extension owns the priority-mode request field and publishes its display state through `codex-fast-mode`. The prompt UI consumes that status without importing the fast-mode implementation.
 
 Subagent child processes are detected through `PI_SUBAGENT_CHILD=1` and do
 not receive the priority service tier. `PI_SUBAGENT_PARENT_SESSION` is also set
@@ -195,11 +195,11 @@ Apply Home Manager and restart Pi to install the extension. To try it before app
 
 ### Prompt and cursor rendering
 
-`modules/pi/files/extensions/hardware-cursor-only.ts` owns the editor and the empty footer. It uses the renderer from `modules/pi/files/extensions/codex-fast-mode.ts` to place status information in the editor's top border. The working directory and branch share a subtle theme-backed background with a rounded Powerline left cap and an arrow-shaped right cap, followed by the context meter. The caps use the same color as the segment background and require a font with Powerline glyphs, such as a Nerd Font. Other extension statuses, weekly quota, and the model appear on the right. Background tasks appear on the input row instead. The context meter occupies the remaining width, centers its percentage label, and scales its filled line across that full width. A padded vertical divider separates the meter from the right-hand status group. At narrower widths, the renderer shortens the path and quota, then omits secondary statuses and the location before shortening essential context and model information. A selected `/bg` item retains a visible marker and hardware cursor on the input row even in a very narrow pane.
+`modules/pi/files/extensions/prompt-ui/index.ts` owns the editor and the empty footer. It connects the input behavior in `modules/pi/files/extensions/prompt-ui/editor.ts` to the renderer in `modules/pi/files/extensions/prompt-ui/statusline.ts`. Only the directory entry point loads as an extension. Fast mode and usage retrieval remain separate extensions that publish through Pi's status API. The UI works without either provider and omits the fast-mode label when its status is absent. The statusline shows working directory, Git branch, model, thinking level, fast-mode state, context usage, and extension statuses; it does not aggregate cumulative input/output tokens. The working directory and branch share a subtle theme-backed background with a rounded Powerline left cap and an arrow-shaped right cap, followed by the context meter. The caps use the same color as the segment background and require a font with Powerline glyphs, such as a Nerd Font. Other extension statuses, weekly quota, and the model appear on the right. Background tasks appear on the input row instead. The context meter occupies the remaining width, centers its percentage label, and scales its filled line across that full width. A padded vertical divider separates the meter from the right-hand status group. At narrower widths, the renderer shortens the path and quota, then omits secondary statuses and the location before shortening essential context and model information. A selected `/bg` item retains a visible marker and hardware cursor on the input row even in a very narrow pane.
 
 The first visible input row starts with `╰─` followed by one space instead of a boxed input area. Built-in editor padding reserves three columns for the marker and gap, so neither is part of submitted text. Very narrow terminals reduce the padding to leave room for input. At three or four columns it uses only `╰`; below three columns it omits the marker. The editor keeps Pi's wrapping, history, autocomplete, and mouse positioning. Hidden input lines retain scroll hints. The bottom border is omitted when no lines are hidden below; autocomplete retains a blank separator so its mouse coordinates remain unchanged.
 
-The extension removes Pi's software cursor markers while preserving the terminal cursor used for IME positioning. It is paired with `showHardwareCursor: true` in `modules/pi/files/settings.json`. Review it when updating Pi if cursor rendering or IME positioning changes. With the existing checkout-backed extensions installed, `/reload` applies these changes without a Home Manager switch. Check a narrow pane, multiline Korean input, autocomplete, and Down/Enter task selection after reloading.
+The extension removes Pi's software cursor markers while preserving the terminal cursor used for IME positioning. It is paired with `showHardwareCursor: true` in `modules/pi/files/settings.json`. Review it when updating Pi if cursor rendering or IME positioning changes. Apply Home Manager and restart Pi when migrating from the former hardware-cursor-only extension so the old entry point is removed and the prompt UI directory is installed together. After that migration, `/reload` picks up checkout-backed prompt UI edits. Check a narrow pane, multiline Korean input, autocomplete, and Down/Enter task selection after reloading.
 
 ### Terminal title on exit
 
@@ -215,7 +215,7 @@ When migrating an existing installation, apply Home Manager to remove its manage
 
 `pi-bg-bash` replaces Pi's model-facing `bash` tool, not the system Bash executable, login shell, or user-entered `!` commands. Ordinary calls still wait for exit; `background: true` returns a task ID immediately, and completion sends the agent the exit state and recent output. `Ctrl+Shift+B` moves running foreground tool calls to the background when the terminal supports modified keys. Elapsed time alone does not trigger that transition.
 
-Use `/bg` to view task state, runtime, and commands. The first visible input row shows `/bg (N)` right-aligned when the command is available. The display uses unused space without reducing the editor's wrapping width or moving its mouse targets. It hides when it would overlap input text or the cursor, and while autocomplete is open. `N` is the number of running tasks reported by pi-bg-bash's status, excluding finished tasks; it shows zero when none are running. From an empty input with autocomplete closed, press Down to highlight `/bg (N)` in the terminal palette's purple, Enter to open `/bg`, or Up/Escape to return to the input. The editor publishes selection through the `bg-selection` status and highlights the right-aligned item without adding a row or duplicating the package's `bg: N` status. Typing or pasting leaves the selection and edits the input normally. Nonempty input retains normal cursor and history navigation. In `/bg`, press Enter for live output, `x` to stop a task after confirmation, and Escape to go back. The agent can use `bash_tasks`, `bash_output`, `bash_kill`, and `bash_watch` to inspect or manage tasks. Output watches are optional; completion notifications do not require them.
+Use `/bg` to view task state, runtime, and commands. The first visible input row shows `/bg (N)` right-aligned when the command is available. The display uses unused space without reducing the editor's wrapping width or moving its mouse targets. It hides when it would overlap input text or the cursor, and while autocomplete is open. `N` is the number of running tasks reported by pi-bg-bash's status, excluding finished tasks; it shows zero when the status is absent and `?` when the package reports an unrecognized format. The parser in `modules/pi/files/extensions/prompt-ui/editor.ts` isolates the dependency on pi-bg-bash's `bg: N` display format. From an empty input with autocomplete closed, press Down to highlight `/bg (N)` in the terminal palette's purple, Enter to open `/bg`, or Up/Escape to return to the input. The editor publishes selection through the `bg-selection` status and highlights the right-aligned item without adding a row or duplicating the package's `bg: N` status. Typing or pasting leaves the selection and edits the input normally. Nonempty input retains normal cursor and history navigation. In `/bg`, press Enter for live output, `x` to stop a task after confirmation, and Escape to go back. The agent can use `bash_tasks`, `bash_output`, `bash_kill`, and `bash_watch` to inspect or manage tasks. Output watches are optional; completion notifications do not require them.
 
 Tasks survive `/reload`, but quitting Pi or switching sessions stops them. Logs are private files under `$XDG_STATE_HOME/pi-bg/` (default `~/.local/state/pi-bg/`), with seven-day cleanup and a 100 MiB per-task limit. The package does not honor Pi's `shellPath` or `shellCommandPrefix`; neither is configured by this module. Do not combine it with another extension that replaces `bash` or registers `/bg` or `Ctrl+Shift+B`.
 
@@ -298,13 +298,9 @@ runtime dependencies, with its original extension disabled to prevent duplicate
 servers and tool registrations. Update both pins and revalidate the patch when
 upgrading pi-lsp. No installed npm source is modified.
 
-Apply Home Manager and restart Pi to install the patched extension and disable
-the original together. `/reload` alone does not install this change. On first
-startup, allow Pi's normal package installation to finish before using LSP.
-Run `bun test modules/pi/tests/lsp-workspace-edit.test.ts` for filesystem safety
-cases. A live smoke check should rename a symbol used in another file, apply an
-organize-imports action, inspect the result through `lsp_hover`, and verify that
-editing a file between preview and apply rejects the stale edit.
+Apply Home Manager and restart Pi to install the patched extension and disable the original together. `/reload` alone does not install this change. On first startup, allow Pi's normal package installation to finish before using LSP.
+
+Run `bash modules/pi/tests/run.sh lsp-workspace-edit.test.ts lsp-refactor.test.ts` for filesystem safety and tool-flow tests. These tests use temporary files and an injected backend to cover preview/apply, action resolution, stale edits, session invalidation, cancellation, and synchronization failures. A live smoke check should rename a symbol used in another file, apply an organize-imports action, inspect the result through `lsp_hover`, and verify that editing a file between preview and apply rejects the stale edit.
 
 ## MCP integration
 
@@ -325,10 +321,25 @@ The integrated prompt statusline uses the active Pi theme for its background, pa
 
 ## Verification
 
+The test runner requires Bun, Node.js, jq, ripgrep, and an installed Pi matching the version in `packages/apps/pi/package.nix`. It locates the Nix-installed runtime through `pi` on PATH; for another installation layout, set `PI_TEST_NODE_MODULES` to that runtime's node_modules directory. It copies the module to a temporary directory, links the installed dependencies there, and uses a temporary Pi agent directory. It does not install dependencies or change the checkout, credentials, or live settings. Pass test filenames to run a subset:
+
+```bash
+bash modules/pi/tests/run.sh prompt-ui.test.ts prompt-statusline.test.ts codex-fast-mode.test.ts
+```
+
+The suite exercises native Node/jiti discovery for the prompt UI. The patched LSP loading check additionally requires an unmodified, already installed pi-lsp package at the configured version, with its npm dependencies available in the parent node_modules directory. Enable that check explicitly:
+
+```bash
+PI_LSP_PACKAGE_DIR="$HOME/.pi/agent/npm/node_modules/pi-lsp" \
+  bash modules/pi/tests/run.sh extension-loading.test.ts
+```
+
+Without `PI_LSP_PACKAGE_DIR`, only the patched LSP loading check is skipped. It applies `modules/pi/lsp-refactor.patch` to a temporary source copy, adds the local refactoring code, and verifies discovery and single registration of the existing and refactoring tools using Pi's real loader. It does not start a language server or call a model; live server behavior still requires the LSP smoke check above.
+
 After changing this module:
 
 1. Validate edited JSON files with `jq -e . <file>`.
-2. Run `bun test modules/pi/tests` and `bash modules/pi/tests/sync-settings.sh` for extension and device-local settings checks. Run `nixfmt modules/pi/default.nix` when the Nix module changes.
+2. Run `bash modules/pi/tests/run.sh` and `bash modules/pi/tests/sync-settings.sh` for extension and device-local settings checks. Run `nixfmt modules/pi/default.nix` when the Nix module changes.
 3. Run `nix flake check --no-build` when module wiring changes.
 4. Apply the Home Manager configuration manually:
 

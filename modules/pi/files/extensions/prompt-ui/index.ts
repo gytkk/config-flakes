@@ -1,0 +1,34 @@
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { PromptEditor } from "./editor";
+import { createStatusLine } from "./statusline";
+
+export default function (pi: ExtensionAPI) {
+  pi.on("session_start", (_event, ctx) => {
+    if (ctx.mode !== "tui") return;
+    ctx.ui.setStatus("bg-selection", undefined);
+    let renderStatusLine: ReturnType<typeof createStatusLine> | undefined;
+    let getBackgroundStatus = (): string | undefined => undefined;
+    ctx.ui.setFooter((tui, _theme, footerData) => {
+      renderStatusLine = createStatusLine(ctx, footerData);
+      getBackgroundStatus = () => footerData.getExtensionStatuses().get("bg");
+      const unsubscribe = footerData.onBranchChange(() => tui.requestRender());
+      return {
+        render: () => [],
+        invalidate() {},
+        dispose: unsubscribe,
+      };
+    });
+    ctx.ui.setEditorComponent((tui, theme, keybindings) => {
+      const editor = new PromptEditor(tui, {
+        ...theme,
+        borderColor: (text) => ctx.ui.theme.fg("dim", text),
+      }, keybindings);
+      editor.renderStatusLine = (width, hiddenLines) => renderStatusLine?.(width, hiddenLines) ?? "";
+      editor.getBackgroundStatus = () => getBackgroundStatus();
+      editor.matchesBackgroundKey = (data, action) => keybindings.matches(data, action);
+      editor.hasBackgroundCommand = () => pi.getCommands().some((command) => command.name === "bg");
+      editor.onBackgroundSelectionChange = (selected) => ctx.ui.setStatus("bg-selection", selected ? "selected" : undefined);
+      return editor;
+    });
+  });
+}
