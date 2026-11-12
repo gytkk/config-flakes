@@ -59,6 +59,25 @@ describe("foreground specialist profiles", () => {
     expect(body).not.toContain("Do not use shell commands");
   });
 
+  test("worker owns writer tools and bounded completion, not model or artifact defaults", () => {
+    const { fields, tools, body } = profile("worker");
+    expect(read("default.nix")).toContain('".pi/agent/agents/worker.md".source = mkSymlink "agents/worker.md";');
+    expect(fields.name).toBe("worker");
+    expect(fields.acceptanceRole).toBe("writer");
+    expect(fields.systemPromptMode).toBe("replace");
+    expect(fields.defaultContext).toBe("fresh");
+    expect(fields.inheritProjectContext).toBe("true");
+    expect(fields.inheritGlobalContext).toBe("false");
+    expect(fields.inheritSkills).toBe("false");
+    expect(tools).toEqual(["read", "grep", "find", "ls", "bash", "edit", "write", "contact_supervisor"]);
+    for (const key of ["output", "defaultReads", "defaultProgress", "model", "thinking", "acceptance", "extensions", "subagentOnlyExtensions"]) expect(fields[key]).toBeUndefined();
+    for (const key of ["tools", "systemPrompt", "acceptanceRole", "outputSchema"]) expect(settings.subagents.agentOverrides.worker[key]).toBeUndefined();
+    expect(JSON.parse(fields.outputSchema).properties.status.enum).toEqual(["completed", "blocked", "failed"]);
+    expect(body).toContain('reason: "need_decision"');
+    expect(body).toContain("wait for the reply");
+    expect(body).toContain("acceptanceReport");
+  });
+
   test("model routing and bounded foreground rollout remain unchanged", () => {
     expect(settings.defaultModel).toBe("gpt-6-astra");
     expect(settings.defaultThinkingLevel).toBe("high");

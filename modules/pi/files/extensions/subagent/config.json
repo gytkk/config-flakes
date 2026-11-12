@@ -2,6 +2,7 @@
   "asyncByDefault": false,
   "forceTopLevelAsync": false,
   "autoResume": false,
+  "disabledFeatures": ["workflow-scripts"],
   "toolActivation": "dynamic",
   "toolDescriptionMode": "compact",
   "inlineToolDisplay": "summary",

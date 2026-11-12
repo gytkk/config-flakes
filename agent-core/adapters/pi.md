@@ -35,8 +35,7 @@ These instructions extend the shared global agent rules with Pi-specific behavio
 
 - Scope the task inline before delegating. Keep a small, bounded edit or a question already answerable from loaded context in the parent; delegate only a distinct slice whose result can change the implementation or decision, or when the user explicitly requests it.
 
-- Use one foreground child at a time in the current rollout. Background runs,
-  workflow scripts, and delegated worktrees require a separate policy change.
+- Use one foreground child at a time in the current rollout. The only background exception is a follow-up that the user enters and confirms in `/agent-hub`; the package resumes that existing child's stored contract. This exception does not authorize model-initiated resume, automatic retries, fresh background launches, workflow scripts, nested delegation, or delegated worktrees. Handle its completion notification without launching further work unless separately authorized.
 - Before delegation, check that the role's required tools have providers loaded
   in the foreground child. Tool names alone do not load extensions. Report a
   missing capability instead of changing execution mode after a failed launch.

@@ -38,6 +38,7 @@ let
     "python-kernel" = mkSymlink "files/extensions/python-kernel";
     "ast-transform" = mkSymlink "files/extensions/ast-transform";
     "session-artifacts" = mkSymlink "files/extensions/session-artifacts";
+    "agent-hub" = mkSymlink "files/extensions/agent-hub";
     "herdr-subagents.ts" = mkSymlink "files/extensions/herdr-subagents.ts";
     "terminal-title-reset.ts" = mkSymlink "files/extensions/terminal-title-reset.ts";
   }
@@ -86,6 +87,7 @@ in
       ".pi/agent/APPEND_SYSTEM.md".source = "${agentCoreOutput}/APPEND_SYSTEM.md";
       ".pi/agent/agents/researcher.md".source = mkSymlink "agents/researcher.md";
       ".pi/agent/agents/reviewer.md".source = mkSymlink "agents/reviewer.md";
+      ".pi/agent/agents/worker.md".source = mkSymlink "agents/worker.md";
       ".pi/agent/lsp.json".source = mkSymlink "files/lsp.json";
       ".pi/agent/mcp.json".source = mkSymlink "files/mcp.json";
       ".pi/agent/models.json".source = mkSymlink "files/models.json";
