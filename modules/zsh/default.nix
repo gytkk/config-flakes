@@ -135,13 +135,15 @@ in
             # Prevent LC_ALL from overriding LANG/LC_CTYPE
             unset LC_ALL
 
-            # Let headless shells discover user services through `systemctl --user`.
-            if [[ -z "''${XDG_RUNTIME_DIR:-}" ]]; then
-              export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-            fi
-            if [[ -z "''${DBUS_SESSION_BUS_ADDRESS:-}" && -S "$XDG_RUNTIME_DIR/bus" ]]; then
-              export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
-            fi
+            ${lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
+              # Let headless Linux shells discover user services through `systemctl --user`.
+              if [[ -z "''${XDG_RUNTIME_DIR:-}" ]]; then
+                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+              fi
+              if [[ -z "''${DBUS_SESSION_BUS_ADDRESS:-}" && -S "$XDG_RUNTIME_DIR/bus" ]]; then
+                export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+              fi
+            ''}
           '';
 
           zshConfig = lib.mkOrder 1000 ''

@@ -78,6 +78,12 @@ Login shells put `~/.nix-profile/bin` first in `PATH` through the Home Manager-g
 
 After applying Home Manager, start a new login shell with `exec zsh -l`. Restart applications such as Codex from that shell so they inherit the updated `PATH`.
 
+## User-service environment
+
+Only Linux shells initialize an unset or empty `XDG_RUNTIME_DIR` to `/run/user/<uid>` and discover `DBUS_SESSION_BUS_ADDRESS` from its existing bus socket. Existing nonempty values are preserved. macOS skips both defaults so shell tools and desktop applications use the same platform-native runtime paths.
+
+After applying Home Manager on macOS, clear values inherited from the previous configuration with `unset XDG_RUNTIME_DIR HC_SOCKET`, then run `exec zsh -l`. Restart affected applications if they still pass the old runtime directory to new shells.
+
 ## Configuration files
 
 - `~/.config/zsh/`: Home Manager-generated startup files
