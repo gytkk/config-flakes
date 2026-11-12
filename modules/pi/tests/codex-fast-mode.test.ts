@@ -1,69 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 import { CURSOR_MARKER, visibleWidth } from "@earendil-works/pi-tui";
-import fastMode, { createStatusLine, createTokenTotalsReader } from "../files/extensions/codex-fast-mode";
-
-function context() {
-  let entries: any[] = [];
-  let leaf = "root";
-  let sessionId = "session-a";
-  const getEntries = mock(() => entries);
-  const ctx = {
-    sessionManager: {
-      getEntries,
-      getLeafId: () => leaf,
-      getSessionId: () => sessionId,
-    },
-  };
-  return {
-    ctx: ctx as never,
-    getEntries,
-    setEntries: (next: any[]) => {
-      entries = next;
-      leaf = `entry-${next.length}`;
-    },
-    setLeaf: (next: string) => { leaf = next; },
-    setSessionId: (next: string) => { sessionId = next; },
-  };
-}
-
-const usage = (input: number, output: number) => ({ input, output });
-
-describe("footer token totals", () => {
-  test("includes assistant, tool, summary, compaction, and standalone usage", () => {
-    const fixture = context();
-    fixture.setEntries([
-      { type: "message", message: { role: "assistant", usage: usage(10, 1) } },
-      { type: "message", message: { role: "toolResult", usage: usage(20, 2) } },
-      { type: "message", message: { role: "toolResult" } },
-      { type: "message", message: { role: "user" } },
-      { type: "branch_summary", usage: usage(30, 3) },
-      { type: "compaction", usage: usage(40, 4) },
-      { type: "usage", kind: "cache_warm", usage: usage(50, 5) },
-    ]);
-    expect(createTokenTotalsReader()(fixture.ctx)).toEqual({ input: 150, output: 15 });
-  });
-
-  test("does not rescan unchanged sessions and invalidates on append or branch change", () => {
-    const fixture = context();
-    const readTotals = createTokenTotalsReader();
-    expect(readTotals(fixture.ctx)).toEqual({ input: 0, output: 0 });
-    readTotals(fixture.ctx);
-    expect(fixture.getEntries).toHaveBeenCalledTimes(1);
-    fixture.setEntries([{ type: "usage", usage: usage(5, 1) }]);
-    expect(readTotals(fixture.ctx)).toEqual({ input: 5, output: 1 });
-    expect(fixture.getEntries).toHaveBeenCalledTimes(2);
-    fixture.setLeaf("branch-b");
-    readTotals(fixture.ctx);
-    expect(fixture.getEntries).toHaveBeenCalledTimes(3);
-    fixture.setSessionId("session-b");
-    readTotals(fixture.ctx);
-    expect(fixture.getEntries).toHaveBeenCalledTimes(4);
-    const other = context();
-    readTotals(other.ctx);
-    expect(other.getEntries).toHaveBeenCalledTimes(1);
-  });
-});
+import fastMode, { createStatusLine } from "../files/extensions/codex-fast-mode";
 
 describe("prompt statusline", () => {
   function fixture() {
@@ -73,11 +11,15 @@ describe("prompt statusline", () => {
       model: { id: "test-model", provider: "openai", reasoning: true },
       thinkingLevel: "high",
       sessionManager: {
-        getEntries: () => [], getCwd: () => "/workspace/한글-project",
-        getSessionId: () => "test", getLeafId: () => null,
+        getCwd: () => "/workspace/한글-project",
       },
       getContextUsage: () => ({ percent: 11 }),
       ui: { theme: {
+        colors: { userMessageBg: "#edf0f3" },
+        style: (text: string, { fg }: { fg: string }) => {
+          expect(fg).toBe("#edf0f3");
+          return `\x1b[38;2;237;240;243m${text}\x1b[39m`;
+        },
         fg: (_: string, text: string) => `\x1b[36m${text}\x1b[39m`,
         bg: (_: string, text: string) => `\x1b[47m${text}\x1b[49m`,
       } },
@@ -90,9 +32,11 @@ describe("prompt statusline", () => {
 
   test("preserves every status and places usage immediately before the model", () => {
     const { statuses, line } = fixture();
-    expect(line()).toStartWith("╭ /workspace/한글-project › main ");
+    expect(line()).toStartWith("╭\uE0B6 /workspace/한글-project › main \uE0B0");
     expect(line()).toContain("11%");
-    expect(line()).toContain("tokens ↓0 ↑0 │ /bg (0)");
+    expect(line()).toContain("/bg (0)");
+    expect(line()).not.toContain("tokens");
+    expect(line()).not.toContain("↓");
     expect(line()).toContain("---------- weekly 9% left | reset 2026-11-05 03:00 │ test-model · high · fast(off)");
     statuses.set("codex-fast-mode", "on");
     statuses.set("custom", "other extension");

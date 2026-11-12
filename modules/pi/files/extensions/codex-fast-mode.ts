@@ -1,4 +1,3 @@
-import type { Usage } from "@earendil-works/pi-ai";
 import {
   type ExtensionAPI,
   type ExtensionContext,
@@ -16,18 +15,12 @@ const CLAUDE_ANSI = {
   yellow: "\x1b[33m",
   cyan: "\x1b[36m",
   dim: "\x1b[2m",
-  boldBlue: "\x1b[1;34m",
   boldPurple: "\x1b[1;35m",
   brightOrange: "\x1b[1;33m",
 } as const;
 
 type FastModeState = {
   enabled: boolean;
-};
-
-type TokenTotals = {
-  input: number;
-  output: number;
 };
 
 function isFastModeState(value: unknown): value is FastModeState {
@@ -45,71 +38,6 @@ function isSubagentProcess(): boolean {
 
 function supportsFastMode(ctx: ExtensionContext): boolean {
   return ctx.model?.provider === "openai" && !isSubagentProcess();
-}
-
-function addUsage(totals: TokenTotals, usage: Usage): void {
-  totals.input += usage.input;
-  totals.output += usage.output;
-}
-
-export function createTokenTotalsReader(): (ctx: ExtensionContext) => TokenTotals {
-  let cached: {
-    manager: ExtensionContext["sessionManager"];
-    sessionId: string;
-    leafId: string | null;
-    totals: TokenTotals;
-  } | undefined;
-
-  return (ctx) => {
-    const manager = ctx.sessionManager;
-    const sessionId = manager.getSessionId();
-    const leafId = manager.getLeafId();
-    // Entries are append-only and every append moves the leaf.
-    if (
-      cached &&
-      cached.manager === manager &&
-      cached.sessionId === sessionId &&
-      cached.leafId === leafId
-    ) {
-      return cached.totals;
-    }
-
-    const totals: TokenTotals = { input: 0, output: 0 };
-    for (const entry of manager.getEntries()) {
-      if (entry.type === "usage") {
-        addUsage(totals, entry.usage);
-      } else if (entry.type === "message") {
-        if (entry.message.role === "assistant") {
-          addUsage(totals, entry.message.usage);
-        } else if (entry.message.role === "toolResult" && entry.message.usage) {
-          addUsage(totals, entry.message.usage);
-        }
-      } else if (
-        (entry.type === "branch_summary" || entry.type === "compaction") &&
-        entry.usage
-      ) {
-        addUsage(totals, entry.usage);
-      }
-    }
-
-    cached = { manager, sessionId, leafId, totals };
-    return totals;
-  };
-}
-
-function formatTokens(count: number): string {
-  if (count < 1_000) return count.toString();
-  if (count < 1_000_000) {
-    const value =
-      count < 10_000 ? (count / 1_000).toFixed(1) : Math.round(count / 1_000);
-    return `${value}k`;
-  }
-
-  const value =
-    count < 10_000_000
-      ? (count / 1_000_000).toFixed(1)
-      : Math.round(count / 1_000_000);
-  return `${value}M`;
 }
 
 function formatCwd(cwd: string): string {
@@ -133,7 +61,6 @@ export function createStatusLine(
   ctx: ExtensionContext,
   footerData: ReadonlyFooterDataProvider,
 ): (width: number, hiddenLines?: number) => string {
-  const getTokenTotals = createTokenTotalsReader();
   return (width, hiddenLines = 0) => {
     if (width <= 0) return "";
     const theme = ctx.ui.theme;
@@ -169,18 +96,17 @@ export function createStatusLine(
     const scroll = hiddenLines > 0 ? border(`↑ ${hiddenLines} more`) : "";
     const cwd = sanitizeStatusText(formatCwd(ctx.sessionManager.getCwd()));
     const branch = sanitizeStatusText(footerData.getGitBranch() ?? "");
-    const identity = (limit: number) => theme.bg("userMessageBg",
+    const cap = (text: string) => theme.style(text, { fg: theme.colors.userMessageBg });
+    const identity = (limit: number) => cap("\uE0B6") + theme.bg("userMessageBg",
       ` ${accent(truncateToWidth(cwd, limit, "…"))}${branch ? border(" › ") + theme.fg("text", branch) : ""} `,
-    );
+    ) + cap("\uE0B0");
     let location = identity(visibleWidth(cwd));
-    const totals = getTokenTotals(ctx);
-    let tokens = `${border("tokens")} ${styleStatus(`↓${formatTokens(totals.input)}`, CLAUDE_ANSI.boldBlue)} ${styleStatus(`↑${formatTokens(totals.output)}`, CLAUDE_ANSI.brightOrange)}`;
     const extras = [...statuses].filter(([key]) => ![STATE_TYPE, "codex-usage", "bg", "bg-selection"].includes(key))
       .map(([, value]) => sanitizeStatusText(value)).filter(Boolean);
     let usage = sanitizeStatusText(statuses.get("codex-usage") ?? "");
     const contentWidth = width - 2;
     const left = () => join([location, context, scroll]);
-    const right = () => join([tokens, bg, ...extras, usage, model]);
+    const right = () => join([bg, ...extras, usage, model]);
     const occupied = () => visibleWidth(left()) + visibleWidth(right()) + 1;
 
     if (occupied() > contentWidth) location = identity(Math.min(20, visibleWidth(cwd)));
@@ -189,7 +115,6 @@ export function createStatusLine(
       usage = spare >= 20 ? truncateToWidth(usage, spare, "…") : "";
     }
     while (occupied() > contentWidth && extras.length) extras.pop();
-    if (occupied() > contentWidth) tokens = "";
     if (occupied() > contentWidth) location = "";
     if (occupied() > contentWidth) context = contextLabel;
     if (occupied() > contentWidth && !selected) bg = "";

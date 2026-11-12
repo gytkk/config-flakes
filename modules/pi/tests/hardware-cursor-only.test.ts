@@ -31,8 +31,7 @@ function createEditor(mode = "tui", commands: string[] = []) {
       mode,
       model: { id: "test-model", provider: "openai" },
       sessionManager: {
-        getEntries: () => [], getCwd: () => "/workspace",
-        getSessionId: () => "test", getLeafId: () => null,
+        getCwd: () => "/workspace",
       },
       getContextUsage: () => ({ percent: 11 }),
       ui: {
@@ -46,7 +45,10 @@ function createEditor(mode = "tui", commands: string[] = []) {
           if (value === undefined) statuses.delete(key);
           else statuses.set(key, value);
         },
-        theme: { fg: (_color: string, text: string) => dim(text), bg: (_color: string, text: string) => text },
+        theme: {
+          colors: { userMessageBg: "#edf0f3" }, style: (text: string) => text,
+          fg: (_color: string, text: string) => dim(text), bg: (_color: string, text: string) => text,
+        },
         setEditorComponent: (factory: Function) => {
           editor = factory(tui, theme, keybindings);
         },
