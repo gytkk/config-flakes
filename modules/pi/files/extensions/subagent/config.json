@@ -11,11 +11,11 @@
   "asyncWidget": false,
   "artifactDir": "session",
   "maxSubagentDepth": 1,
-  "maxSubagentSpawnsPerSession": 8,
-  "globalConcurrencyLimit": 2,
+  "maxSubagentSpawnsPerSession": 0,
+  "globalConcurrencyLimit": 8,
   "parallel": {
-    "maxTasks": 4,
-    "concurrency": 2
+    "maxTasks": 16,
+    "concurrency": 8
   },
   "scheduledRuns": {
     "enabled": false

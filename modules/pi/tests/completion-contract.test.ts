@@ -70,6 +70,9 @@ test("installed 0.84 discovery, structured_output, acceptance and configured /ru
       import { EventEmitter } from 'node:events';
       import { SessionManager } from './package/node_modules/@earendil-works/pi-coding-agent/dist/index.js';
       import { loadConfig } from './package/src/extension/config.js';
+      import { checkSubagentDepth, resolveTopLevelParallelMaxTasks, resolveTopLevelParallelConcurrency } from './package/src/shared/types.js';
+      import { preflightSpawnBudget } from './package/src/runs/shared/spawn-budget.js';
+      import { mapConcurrent, Semaphore } from './package/src/runs/shared/parallel-utils.js';
       import { resolveDisabledFeatureSurface, disabledFeatureUseError } from './package/src/shared/disabled-features.js';
       import { registerSlashCommands } from './package/src/slash/slash-commands.js';
       import { readFileSync } from 'node:fs';
@@ -142,6 +145,33 @@ test("installed 0.84 discovery, structured_output, acceptance and configured /ru
       const disabled = resolveDisabledFeatureSurface(config);
       assert.deepEqual(config.disabledFeatures, ['workflow-scripts']);
       assert.equal(config.autoResume, false);
+      assert.equal(checkSubagentDepth(config.maxSubagentDepth).blocked, false);
+      assert.equal(checkSubagentDepth(config.maxSubagentDepth, { depth: 1, maxDepth: config.maxSubagentDepth }).blocked, true);
+      const budget = preflightSpawnBudget({}, config, 'fixture-parent', 100);
+      assert.equal(budget.error, undefined);
+      assert.equal(budget.snapshot.limit, null);
+      const capacity = resolveTopLevelParallelConcurrency(undefined, config.parallel.concurrency);
+      const items = Array.from({ length: resolveTopLevelParallelMaxTasks(config.parallel.maxTasks) }, (_, i) => i);
+      assert.equal(items.length, 16);
+      assert.equal(capacity, 8);
+      const semaphore = new Semaphore(config.globalConcurrencyLimit);
+      let active = 0;
+      let peak = 0;
+      const runFixture = async (item) => {
+        peak = Math.max(peak, ++active);
+        await new Promise(resolve => setImmediate(resolve));
+        active--;
+        return item;
+      };
+      // Exercise package scheduling and shared capacity, not model or child execution.
+      const groups = await Promise.all([
+        mapConcurrent(items, capacity, runFixture, semaphore),
+        mapConcurrent(items, capacity, runFixture, semaphore),
+      ]);
+      assert.deepEqual(groups, [items, items]);
+      assert.equal(peak, 8);
+      assert.equal(active, 0);
+      assert.equal(disabledFeatureUseError({ agent: 'worker', task: 'Fixture', async: true, worktree: true }, disabled), undefined);
       assert.equal(disabledFeatureUseError({ action: 'resume', id: 'fixture-run' }, disabled), undefined);
       assert.match(disabledFeatureUseError({ workflowScript: 'return null' }, disabled), /workflow-scripts/);
       const commands = new Map();
@@ -192,7 +222,7 @@ test("installed 0.84 discovery, structured_output, acceptance and configured /ru
     writeFileSync(join(root, "probe.mjs"), script);
     const probe = spawnSync("node", [join(root, "probe.mjs")], {
       cwd: root, encoding: "utf8", timeout: 30000,
-      env: { ...process.env, HOME: root, PI_CODING_AGENT_DIR: agent, PI_SUBAGENT_EXTRA_AGENT_DIRS: "", PI_SUBAGENTS_PI_CODING_AGENT_PACKAGE_ROOT: join(hostModules, "@earendil-works/pi-coding-agent") },
+      env: { ...process.env, HOME: root, PI_CODING_AGENT_DIR: agent, PI_SUBAGENT_EXTRA_AGENT_DIRS: "", PI_SUBAGENT_MAX_DEPTH: undefined, PI_SUBAGENT_MAX_SPAWNS_PER_SESSION: undefined, PI_SUBAGENTS_PI_CODING_AGENT_PACKAGE_ROOT: join(hostModules, "@earendil-works/pi-coding-agent") },
     });
     expect(probe.stderr).toBe("");
     expect(probe.status).toBe(0);

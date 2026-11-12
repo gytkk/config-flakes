@@ -19,7 +19,7 @@ function profile(name: string) {
   return { fields, body: match[2], tools: fields.tools.split(", ") };
 }
 
-describe("foreground specialist profiles", () => {
+describe("specialist profiles", () => {
   test.each(["researcher", "reviewer"])("installs %s without conflicting role overrides", (name: string) => {
     const { fields, tools } = profile(name);
     expect(read("default.nix")).toContain(`".pi/agent/agents/${name}.md".source = mkSymlink "agents/${name}.md";`);
@@ -78,7 +78,7 @@ describe("foreground specialist profiles", () => {
     expect(body).toContain("acceptanceReport");
   });
 
-  test("model routing and bounded foreground rollout remain unchanged", () => {
+  test("model routing and foreground defaults remain unchanged", () => {
     expect(settings.defaultModel).toBe("gpt-6-astra");
     expect(settings.defaultThinkingLevel).toBe("high");
     expect(settings.subagents.defaultModel).toBe("openai/gpt-6.1-sol");
@@ -89,5 +89,18 @@ describe("foreground specialist profiles", () => {
     expect(rollout.asyncByDefault).toBe(false);
     expect(rollout.forceTopLevelAsync).toBe(false);
     expect(rollout.maxSubagentDepth).toBe(1);
+  });
+
+  test("parallel capacity expands without enabling unattended or nested delegation", () => {
+    expect(rollout.globalConcurrencyLimit).toBe(8);
+    expect(rollout.parallel).toEqual({ maxTasks: 16, concurrency: 8 });
+    expect(rollout.maxSubagentSpawnsPerSession).toBe(0);
+    expect(rollout.autoResume).toBe(false);
+    expect(rollout.disabledFeatures).toEqual(["workflow-scripts"]);
+    expect(rollout.scheduledRuns.enabled).toBe(false);
+    expect(rollout.missions.enabled).toBe(false);
+    expect(rollout.proactiveSkillSubagents).toBe(false);
+    expect(rollout.authorityPolicy.scheduleCreate).toBe("forbid");
+    expect(settings.subagents.agentOverrides.delegate.disabled).toBe(true);
   });
 });
