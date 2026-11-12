@@ -1,6 +1,6 @@
 # App packages
 
-Self-contained non-nixpkgs app packages used by the parent `ws` repository. The nested flake keeps package CI independent from the parent flake's private inputs.
+Self-contained non-nixpkgs app packages used by `gytkk/config-flakes`. The nested flake keeps package CI independent from the root configuration flake's private inputs.
 
 The nested flake exports `aarch64-darwin`, `x86_64-linux`, and `aarch64-linux`. Intel Mac (`x86_64-darwin`) compatibility is not maintained.
 

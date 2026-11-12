@@ -1,16 +1,16 @@
 # Repository instructions
 
-This is the `gytkk/config-flakes` repository: configuration and shared coding-agent resources. Application and hardware projects have their own repositories and checkout instructions. Worktrees are allowed; preserve unrelated work.
+This is the `gytkk/config-flakes` repository: configuration and shared coding-agent resources. Application and hardware projects have their own repositories and checkout instructions. Preserve unrelated work.
 
 - Before changing shared agent rules, runtime adapters, skills, source selections, or renderer behavior, read [agent-core/README.md](agent-core/README.md). Canonical shared sources remain in `agent-core/`; runtime settings belong in `modules/`.
 - Declare configuration inputs directly in the root `flake.nix` and delegate configuration outputs to `outputs.nix`. Manage configuration dependency pins in the root `flake.lock`. Keep root `scripts/` for shared repository tools.
-- Worktrees are allowed. Configuration runtime checkout paths default to `~/development/config-flakes`; before applying Home Manager or NixOS configuration from a worktree, deliberately configure that path or apply from the main checkout.
+- Worktrees are allowed. Configuration runtime checkout paths default to `~/development/config-flakes`, independently of the evaluation checkout. Before applying Home Manager or NixOS configuration from a worktree, set the environment's `flakeDirectory` in `systems/inventory.nix` or apply from the main checkout.
 - Keep environment composition in `systems/`: shared Home Manager defaults and profiles in `systems/base/`, NixOS host composition in `systems/hosts/`, and environment definitions in `systems/inventory.nix`. Reusable modules, libraries, packages, themes, and secrets remain at the repository root.
-- Application and hardware work belongs in the separate private repositories `gytkk/menu`, `gytkk/trading-agent`, `gytkk/keyboards`, and `gytkk/keycult-trackball`, normally checked out at `~/<repository-name>`. Read the target repository's instructions and run its checks there; configuration rules do not apply to those projects.
+- Application and hardware source, checks, and project instructions belong in the [separate repositories](README.md#config-flakes). Read the target repository's instructions and run its checks there; this repository owns configuration and host integration, not those projects' implementation.
 - Before changing OpenClaw resources or their paths, read [OpenClaw task routing](modules/openclaw/README.md#task-routing-across-repositories). Its independent workspace instructions, skills, and automation runbooks live outside this repository; shared coding-agent resources in `agent-core/` are not their replacement.
 - Commit completed, validated task changes unless the user requests otherwise. Do not push unless explicitly requested.
 
-For documentation changes, run `uv run --no-project scripts/check-paths.py` from the repository root. Pass other changed Markdown files explicitly when their code paths are relative to the repository root; the checker does not resolve project-relative code paths. For project documentation, also run the affected project's documentation checks from its project root. See [README.md](README.md) for repository navigation.
+For documentation changes, run `uv run --no-project scripts/check-paths.py` from the repository root; it checks `README.md` and `AGENTS.md`. Check additional changed Markdown files separately by passing their paths explicitly, since explicit arguments replace the default document list. Inline code paths must be repository-root-relative; the checker does not resolve project-relative code paths or validate anchors. Follow the affected subsystem's README for any additional checks. See [README.md](README.md) for repository navigation.
 
 Run shell commands from the repository root, and interpret repository paths relative to it. Nix imports are relative to the importing file. The configuration-specific rules and reference material below apply to system configuration, the root flake, and configuration package CI.
 
@@ -22,12 +22,11 @@ Run shell commands from the repository root, and interpret repository paths rela
 - Use `nixfmt` to format changed Nix files before committing.
 - Prefer narrow, fast checks. Run time-consuming Nix evaluation commands such as `nix eval` and `nix flake check --no-build` only when they are required to validate the requested change or the user explicitly requests them. Skip them for documentation-only changes, simple edits, and checks unrelated to the changed behavior.
 - Skip Nix package build tests by default because they are expensive. Run `nix build`, `nix-build`, or `nix flake check` without `--no-build` only when the user explicitly requests a build or a concrete build-specific concern cannot be checked with formatting, static checks, targeted tests, or evaluation. A package change alone does not justify a build.
-- When changing the canonical theme pipeline or generated theme exports, leave a local git commit in a sensible rollbackable unit before finishing the work
-- Before applying or rolling back generations that use the former `config/` layout, read [checkout paths and migration](README.md#checkout-paths-and-migration).
+- Before moving a checkout, retiring an old path, or applying or rolling back generations that reference `~/ws`, `~/development/nix-flakes`, or the former `config/` layout, read [checkout paths and migration](README.md#checkout-paths-and-migration). Preserve paths needed by installed generations; renaming the repository or moving the checkout is not a runtime cutover.
 
 ### Documentation Guidelines
 
-- Documentation for system configuration belongs in: `AGENTS.md`, `CLAUDE.md`, `README.md`, code comments (sparingly), commit messages
+- Repository-local agent guidance belongs in this root `AGENTS.md`. Keep configuration documentation in the root or affected subsystem's `README.md`, with code comments for local implementation constraints. Shared runtime instructions are generated from `agent-core/`, not maintained in a second root instruction file.
 - When module paths or behavior change, update the module README and its links in `README.md` and repository-root guidance as applicable. Run `uv run --no-project scripts/check-paths.py` to check the current entry-point documents; pass other changed Markdown files explicitly.
 - PR descriptions should focus on the change and its purpose, omitting routine validation sections (`검증`, `Validation`, or `Testing`) and checklists for human reviewers to manage. Include validation guidance only when a breaking change requires explicit attention. This affects PR descriptions only; required checks still run.
 
@@ -172,9 +171,16 @@ AI 코딩 에이전트 설정을 변경할 때 공통 지침, runtime adapter, s
 - **Claude Code** (`modules/claude/`): `gytkk` marketplace의 원본은 `modules/claude/marketplace/`다. 공통 prompt는 agent-core output을 사용하고 shared skill은 CLI global copy로 설치한다. Plugin과 marketplace 목록은 [Claude README](modules/claude/README.md)에서 확인한다.
 - **Codex CLI** (`modules/codex/`): 기본 설정은 `files/config.toml`에서 관리하고 최종 instruction은 agent-core output을 사용한다. Skill은 Pi와 `~/.agents/skills`를 공유한다.
 - **Pi** (`modules/pi/`): Settings와 extension은 module에서 관리하고 최종 instruction은 agent-core output을 사용한다. Skill은 Codex와 native pool을 공유한다.
+- **OMP** (`modules/omp/`): 기본 profile의 settings와 personality는 module의 checkout-backed 파일로 관리한다. Shared skill은 Codex/Pi와 `~/.agents/skills`를 공유하지만 agent-core의 생성 지침은 설치하지 않는다. 인증, 세션, named profile과 MCP 설정은 device-local이다. 변경 전 [OMP README](modules/omp/README.md)에서 소유권과 적용 절차를 확인한다.
 - **OpenClaw** (`modules/openclaw/`): Nix는 실행 경로와 service drop-in 등 host integration을 관리한다. OpenClaw의 지침, skill, plugin, 세션 기록은 코딩 에이전트와 독립적으로 관리한다. 기존 호스트에서 공통 연동을 해제할 때는 [OpenClaw README](modules/openclaw/README.md#removing-the-shared-agent-integration)를 읽는다. Mutable `openclaw.json`, workspace, auth/session state는 Nix가 소유하지 않는다.
 
 ### Package Management
+
+Before adding or updating app packages or changing their CI, read [the package guide](packages/README.md). `packages/default.nix` is the shared catalog consumed by the root outputs, configuration overlay, and nested package flake.
+
+- Root `flake.nix` and `flake.lock` own configuration inputs, including private repositories. `packages/flake.nix` and `packages/flake.lock` independently own package CI inputs; keep updates scoped to the intended flake.
+- When package evaluation is required, run `nix flake check ./packages --no-build` from the repository root. Use the affected package's documented checks rather than evaluating the configuration flake for package-only changes.
+- `.github/workflows/apps-ci.yml` and `.github/workflows/apps-update.yml` validate the nested package flake, not Home Manager or NixOS integration. Changes to root inputs, outputs, or package-set wiring need their own targeted configuration validation; a passing package CI is not that evidence.
 
 - **Base packages** (`systems/base/default.nix`): nixfmt, coreutils, findutils, docker, gcc, jq, fd, ripgrep, git, gh, lazygit, nodejs, bun, go, uv, ruff, rustup, kubectl, helm, etc.
 - **LSP servers** (`modules/lsp/`): nixd, gopls, typescript-language-server, terraform-ls, ty, pyright, yaml-language-server, marksman (`rust-analyzer` must be installed in the active rustup toolchain)
