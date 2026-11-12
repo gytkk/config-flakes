@@ -48,7 +48,6 @@ function canResolve(target: RefactorTarget): boolean {
 }
 type OfferedAction = { action: Action; target: RefactorTarget; source: string };
 type Preview = { plan: EditPlan; target: RefactorTarget };
-const TOOL_NAMES = ["lsp_rename", "lsp_code_actions", "lsp_apply_edit"];
 const MAX_PREVIEW_BYTES = 40_000;
 const MAX_PREVIEWS = 8;
 const MAX_ACTIONS = 100;
@@ -116,22 +115,9 @@ export function registerRefactorTools(pi: ExtensionAPI, backend: RefactorBackend
     ].join("\n\n"));
   }
 
-  pi.registerCommand("lsp-refactor", {
-    description: "Enable semantic rename and code-action preview/apply tools for this session",
-    handler: async (args, ctx) => {
-      if (args.trim()) {
-        ctx.ui.notify("Usage: /lsp-refactor", "warning");
-        return;
-      }
-      pi.setActiveTools([...new Set([...pi.getActiveTools(), ...TOOL_NAMES])]);
-      ctx.ui.notify("LSP refactoring enabled. Ask for a rename or code action; review its preview before requesting apply. Positions are zero-based UTF-16.", "info");
-    },
-  });
-
   pi.registerTool({
     name: "lsp_rename",
     label: "LSP Rename Preview",
-    defaultActive: false,
     description: "Preview a semantic symbol rename across files using the existing LSP connection. Use only for an explicitly requested refactoring. Does not write files. Review the returned diff, then call lsp_apply_edit only when applying is authorized.",
     parameters: Type.Object({
       path: Type.String(),
@@ -162,7 +148,6 @@ export function registerRefactorTools(pi: ExtensionAPI, backend: RefactorBackend
   pi.registerTool({
     name: "lsp_code_actions",
     label: "LSP Code Actions",
-    defaultActive: false,
     description: "For an explicitly requested fix/refactoring, list LSP code actions with path and a zero-based UTF-16 range (end defaults to start). Pass an actionId alone to resolve and preview one action. Never writes files or executes server commands. Command-bearing actions must be applied through an editor instead.",
     parameters: Type.Object({
       path: Type.Optional(Type.String()),
@@ -235,7 +220,6 @@ export function registerRefactorTools(pi: ExtensionAPI, backend: RefactorBackend
   pi.registerTool({
     name: "lsp_apply_edit",
     label: "Apply LSP Preview",
-    defaultActive: false,
     description: "Apply exactly one previously reviewed lsp_rename/lsp_code_actions preview, only when the user authorized applying it. Refuses files changed since preview. A token cannot be reused. Does not execute server commands or create, rename, or delete files.",
     parameters: Type.Object({ previewId: Type.String() }),
     async execute(_id, params, signal) {

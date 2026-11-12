@@ -211,6 +211,14 @@ Fresh sessions use the packages' own `web_enable` and `subagents_enable` tools t
 
 When migrating an existing installation, apply Home Manager to remove its managed `~/.pi/agent/extensions/tool-profiles` symlink, then restart Pi. New sessions use the default activation state; resumed sessions may retain tools already activated in their transcript.
 
+## Rounded tool frames
+
+`modules/pi/files/extensions/rounded-tools.ts` wraps each tool's call and text result in one rounded terminal border. It uses Pi's renderer resolver without replacing tool definitions or execution. Existing renderers retain syntax highlighting, edit previews, codemode nested-call status, streaming updates, and expansion controls. The border uses the active theme's muted border color; default tool backgrounds still distinguish pending, successful, and failed calls. Tools with their own shell retain their inner layout. Panes narrower than five columns omit the border.
+
+Pi renders native image attachments below the text frame. Custom renderers that emit inline Kitty or iTerm2 graphics bypass the frame to preserve terminal image placement. Empty renderers stay hidden, and a failing renderer shows a warning with plain call or result text. Generic tools without renderers show their arguments and a collapsible text result. The extension does not frame assistant messages, user-entered shell commands, or dialogs.
+
+Apply Home Manager to install the extension, then run `/reload` or restart Pi. Run `bash modules/pi/tests/run.sh rounded-tools.test.ts` to check the installed Pi renderers, streaming and expansion, mouse coordinates and file links, narrow panes, theme changes, image placement, and Node/jiti discovery. For a live check, expand a `read` result, inspect an `edit` diff and a codemode result, and confirm that image attachments remain below the frame.
+
 ## Background shell tasks
 
 `pi-bg-bash` replaces Pi's model-facing `bash` tool, not the system Bash executable, login shell, or user-entered `!` commands. Ordinary calls still wait for exit; `background: true` returns a task ID immediately, and completion sends the agent the exit state and recent output. `Ctrl+Shift+B` moves running foreground tool calls to the background when the terminal supports modified keys. Elapsed time alone does not trigger that transition.
@@ -252,11 +260,12 @@ after reviewing the new source and release notes.
 
 ### Semantic rename and code actions
 
-`/lsp-refactor` explicitly enables `lsp_rename`, `lsp_code_actions`, and
-`lsp_apply_edit` for the current session. They are inactive by default and add no
-prompt snippets or guidelines. Ask for a refactoring after enabling them; review
-the returned diff before authorizing apply. All positions use **zero-based lines
-and UTF-16 character offsets**, matching the existing navigation tools.
+`lsp_rename`, `lsp_code_actions`, and `lsp_apply_edit` are available by default,
+like the existing LSP navigation tools. No slash command or enable step is needed:
+ask for a refactoring directly, review the returned diff, then authorize apply.
+Tool definitions are always available to the model; they add no prompt snippets
+or guidelines. Language servers still start only when needed. All positions use
+**zero-based lines and UTF-16 character offsets**, matching the navigation tools.
 
 - `lsp_rename({ path, line, character, newName })` uses the server's rename
   preparation when supported and returns a multi-file preview, not a mutation.

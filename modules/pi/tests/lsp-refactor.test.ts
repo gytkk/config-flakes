@@ -33,17 +33,12 @@ async function fixture() {
     root, file: files[0], versions: new Map(), diagnostics: [], request, sync,
     capabilities: { renameProvider: { prepareProvider: true }, codeActionProvider: { resolveProvider: true } },
   };
-  const tools = new Map<string, { defaultActive?: boolean; execute: Function }>();
+  const tools = new Map<string, { execute: Function }>();
   const events = new Map<string, Function>();
-  const commands = new Map<string, { handler: Function }>();
   const ctx = { cwd: root, ui: { notify: mock(() => {}) } };
-  const active = new Set(["read"]);
   registerRefactorTools({
     on: (name: string, handler: Function) => events.set(name, handler),
-    registerCommand: (name: string, command: { handler: Function }) => commands.set(name, command),
     registerTool: (tool: { name: string; execute: Function }) => tools.set(tool.name, tool),
-    getActiveTools: () => [...active],
-    setActiveTools: (names: string[]) => { active.clear(); for (const name of names) active.add(name); },
   } as unknown as ExtensionAPI, { target: async () => target });
   const call = async (name: string, params: unknown, signal?: AbortSignal): Promise<string> => {
     const result = await tools.get(name)!.execute("call", params, signal, undefined, ctx);
@@ -52,7 +47,7 @@ async function fixture() {
   const rename = (signal?: AbortSignal) => call("lsp_rename", { path: files[0], line: 0, character: 0, newName: "bar" }, signal);
   const list = () => call("lsp_code_actions", { path: files[0], line: 0, character: 0 });
   const contents = () => Promise.all(files.map((file) => readFile(file, "utf8")));
-  return { files, tools, events, commands, ctx, active, target, request, sync, call, rename, list, contents };
+  return { files, events, ctx, target, request, sync, call, rename, list, contents };
 }
 
 function previewId(text: string): string {
@@ -60,14 +55,6 @@ function previewId(text: string): string {
   if (!match) throw new Error(`No preview token in result: ${text}`);
   return match[1];
 }
-
-test("registers inactive tools and enables them without removing existing tools", async () => {
-  const f = await fixture();
-  expect([...f.tools.keys()]).toEqual(["lsp_rename", "lsp_code_actions", "lsp_apply_edit"]);
-  expect([...f.tools.values()].every((tool) => tool.defaultActive === false)).toBe(true);
-  await f.commands.get("lsp-refactor")!.handler("", f.ctx);
-  expect([...f.active]).toEqual(["read", ...f.tools.keys()]);
-});
 
 test("rename previews both files, applies once, and syncs only after writing", async () => {
   const f = await fixture();

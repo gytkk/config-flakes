@@ -88,7 +88,6 @@ test.skipIf(!lspPackage)("loads patched pi-lsp with npm dependencies and registe
 
   const extensions = load(agent, cwd);
   expect(extensions).toHaveLength(1);
-  expect(extensions[0].commands).toContain("lsp-refactor");
   for (const name of ["lsp_rename", "lsp_code_actions", "lsp_apply_edit", "lsp_hover", "lsp_diagnostics"]) {
     expect(extensions[0].tools.filter((tool) => tool === name)).toHaveLength(1);
   }
