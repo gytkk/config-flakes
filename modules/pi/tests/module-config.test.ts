@@ -10,6 +10,11 @@ import { moduleConfig, settings } from "./module-config";
 
 const prefix = ".pi/agent/extensions/";
 
+test("installs Korean translation from the checkout without an extra package", () => {
+  expect(moduleConfig.enabled.extensionSources[`${prefix}korean-translation`])
+    .toBe("/checkout/modules/pi/files/extensions/korean-translation");
+});
+
 test("activation settings combine general settings with the explicit package selection", () => {
   expect(baseSettings).not.toHaveProperty("packages");
   const { packages, ...general } = settings;

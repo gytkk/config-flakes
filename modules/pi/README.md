@@ -41,6 +41,20 @@ The module also installs:
 
 Supporting files such as `modules/pi/files/extensions/subagent/config.json` remain separate from the extension entry points. Lens loads only from its pinned npm package; there is no local LSP or AST implementation or patched-source loader. These lists do not enumerate Pi's built-in extensions or resources added by project settings or command-line arguments.
 
+## Korean conversation translation
+
+`modules/pi/files/extensions/korean-translation/` enables Korean/English translation in parent TUI sessions. It uses `openai/gpt-6-luna` through Pi's model registry and existing authentication, independently of the selected working model. `/translate off`, `/translate on`, and `/translate status` control the current branch; the setting survives reload, resume, and fork. New sessions start enabled. RPC, JSON, print mode, and subagent processes are unchanged.
+
+For interactive Korean input, the extension displays and stores the original in a custom entry, then submits the English translation as the native user message. Both are visible in the transcript, but only the English message enters model context. English-only input passes through. Slash-command names stay unchanged while Korean arguments can be translated before Pi expands skills and templates; commands handled before the input hook and shell commands are not translated. Images remain attached and are not sent to the translator. Extension-injected prompts, system instructions, file contents, tool calls/results, and thinking blocks are not translated.
+
+The working model is asked to write conversational prose in English without changing the required language of generated artifacts. Its response streams normally. After each completed turn, including any tool execution, the extension appends a Korean translation as a TUI-only custom entry. It preserves the English assistant message and excludes the Korean display entry from future model context and compaction input. Saved translation entries render again without model calls; the extension does not backfill older conversations.
+
+Fenced code, inline code, recognized URL/path tokens, and slash-command prefixes are replaced with placeholders before translation and restored byte-for-byte afterward. Missing, duplicated, or reordered placeholders reject the translation. Use code formatting for commands, exact literals, and paths with spaces or non-ASCII characters. Prose translation is model-generated and may still change nuance; the originals remain available for comparison.
+
+Each translation has a 60-second deadline and accepts at most 64 KiB of source text. Escape cancels the input loader or an active output translation. A failed input translation blocks submission and restores the text when the editor is empty; it never overwrites a newer draft. A failed output translation keeps the English response and reports a warning. Missing Luna authentication does not fall back to another model. Translation adds latency and provider usage; usage is recorded in custom-entry metadata on success but is not included in Pi's native session cost totals.
+
+Apply Home Manager manually to install the extension, then restart Pi or run `/reload`. Run `bash modules/pi/tests/run.sh korean-translation.test.ts extension-loading.test.ts module-config.test.ts` for isolated translation, cancellation, branch persistence, native rendering, and Node/jiti discovery checks. For a live check, submit a short Korean request containing inline code, compare the preserved Korean input with the English user message, and verify that an English response is followed by a separate Korean translation. Check `/translate off` before returning to untranslated interaction.
+
 ## Main settings
 
 `files/settings.json` currently selects:

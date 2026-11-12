@@ -51,6 +51,19 @@ function load(agent: string, cwd: string) {
   return loaded.extensions as Array<{ path: string; tools: string[]; commands: string[]; messageRenderers: string[] }>;
 }
 
+test("discovers Korean translation with the prompt UI on initial load and reload", async () => {
+  const { agent, cwd } = await fixture();
+  for (const name of ["korean-translation", "prompt-ui"]) {
+    await symlink(join(moduleRoot, "files/extensions", name), join(agent, "extensions", name));
+  }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const extensions = load(agent, cwd);
+    expect(extensions).toHaveLength(2);
+    expect(extensions.flatMap(extension => extension.tools)).toEqual([]);
+    expect(extensions.flatMap(extension => extension.commands)).toEqual(["translate"]);
+  }
+}, 60_000);
+
 const todoPackage = process.env.PI_RPIV_TODO_PACKAGE_DIR;
 const questionPackage = process.env.PI_RPIV_QUESTION_PACKAGE_DIR;
 test.skipIf(!questionPackage)("loads the pinned rpiv-mono questionnaire once without the umbrella package", async () => {
