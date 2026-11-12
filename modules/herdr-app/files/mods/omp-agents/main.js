@@ -210,7 +210,7 @@ export default class Agents extends View {
 
   metadataRow(t, s) {
     const k = s.t;
-    const phase = { running: "Running", stopping: "Stopping", completed: "Completed", failed: "Failed", aborted: "Aborted", interrupted: "Interrupted" }[k.phase];
+    const phase = { pending: "Pending", running: "Running", stopping: "Stopping", completed: "Completed", failed: "Failed", aborted: "Aborted", interrupted: "Interrupted" }[k.phase];
     const state = k.unavailable ? `State unavailable (last known: ${phase})` : phase;
     const color = k.unavailable || ["stopping", "aborted", "interrupted"].includes(k.phase) ? t.dim : (t[k.status] ?? t.dim);
     const modelName = k.model.slice(k.model.lastIndexOf("/") + 1);
@@ -226,7 +226,7 @@ export default class Agents extends View {
       .text_size(12.5)
       .cursor_pointer()
       .hover(el => el.bg(t.hover))
-      .tooltip([k.name, k.model, state, k.activity, `Focus parent ${k.runtime === "claude" ? "Claude Code" : "OMP"} session`].filter(Boolean).join("\n"))
+      .tooltip([k.name, k.model, state, k.activity, `Focus parent ${{ claude: "Claude Code", omp: "OMP", pi: "Pi" }[k.runtime]} session`].filter(Boolean).join("\n"))
       // This is metadata, not a core terminal: never peek, keep or focus its UI key.
       .on_click(() => run("pane.focus", { terminal: k.parent }))
       .children(s.lines.map(l => div().self_start().mt(-4).w(9).h(17).mr(4).flex_none()

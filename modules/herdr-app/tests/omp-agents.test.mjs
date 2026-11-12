@@ -342,3 +342,41 @@ test("idle refresh expires Claude stopping and settled rows before the snapshot 
   }
   assert.equal(f.state.notified, 4);
 });
+
+test("Pi children retain names, phases, exact parent focus and all slots without changing parent priority", async () => {
+  const f = await fixture();
+  const children = ["pending", "running", "completed", "failed", "interrupted"].map((phase, index) => ({
+    id: `call:${index}`, name: `Pi worker ${index}`, phase, model: index ? "openai/resolved-model" : "", activity: `activity ${index}`,
+    ...(["pending", "running"].includes(phase) ? {} : { endedAt: now }),
+  }));
+  children.push(...Array.from({ length: 5 }, (_, index) => ({ ...children[1], id: `extra:${index}` })));
+  const raw = snapshot({ children });
+  f.state.agents = [agent("remote/t1"), agent("t2", "working")];
+  f.state.terminals = [
+    { ...terminal("remote/t1"), labels: { "pi.subagents": raw, "omp.subagents": snapshot() } },
+    terminal("t2", ""),
+  ];
+  f.render();
+  const rows = [...f.state.nodes].filter(([key]) => key.startsWith("sub-pi:")).map(([, row]) => row);
+  assert.equal(rows.length, 10);
+  assert.deepEqual(rows.slice(0, 5).map(row => row.content.at(-1).background), ["#777777", "#00aa00", "#0000ff", "#ff0000", "#777777"]);
+  rows[0].click();
+  assert.equal(f.state.commands[0].command, "pane.focus");
+  assert.equal(f.state.commands[0].args.terminal, "remote/t1");
+  assert.match(rows[0].tip, /Pending/);
+  assert.match(rows[0].tip, /Focus parent Pi session/);
+  assert.match(content(rows[0]), /Pi worker 0/);
+  assert.doesNotMatch(content(rows[0]), /call:0/);
+  assert.deepEqual(f.state.order, ["t2", "remote/t1"]);
+  const projected = f.snapshots.snapshotChildren(raw, "remote/t1", "pi", now);
+  assert.equal(projected[0].model, "");
+  assert.notEqual(projected[0].address, f.snapshots.snapshotChildren(raw, "t1", "pi", now)[0].address);
+  assert.equal(f.snapshots.snapshotChildren(raw, "remote/t1", "pi", now + 5_000).length, 7);
+  assert.equal(f.snapshots.snapshotChildren(raw, "remote/t1", "pi", now + 15_000).length, 0);
+  for (const invalid of [
+    { ...children[0], name: null },
+    { ...children[0], endedAt: now },
+    { ...children[2], endedAt: undefined },
+    { ...children[2], phase: "invented" },
+  ]) assert.equal(f.snapshots.snapshotChildren(snapshot({ children: [children[1], invalid] }), "t1", "pi", now).length, 0);
+});

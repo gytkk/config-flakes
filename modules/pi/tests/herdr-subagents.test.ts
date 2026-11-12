@@ -125,6 +125,10 @@ async function update(
 beforeEach(() => {
   process.env.HERDR_ENV = "1";
   process.env.HERDR_PANE_ID = "pane-42";
+  process.env.HERDR_SOCKET_PATH = "/tmp/herdr-test.sock";
+  delete process.env.HC_TERMINAL_ID;
+  delete process.env.HC_TERMINAL_SOCKET;
+  delete process.env.HC_SOCKET;
   process.env.HERDR_BIN_PATH = "/opt/herdr";
   delete process.env.PI_SUBAGENT_CHILD;
 });
@@ -440,5 +444,120 @@ describe("Herdr extension reporting", () => {
     await Bun.sleep(0);
     releases.shift()!();
     await stopping;
+  });
+});
+
+describe("Herdr Desktop reporting", () => {
+  type Reporter = {
+    install(): void;
+    execCalls: Array<{ binary: string; args: string[] }>;
+  };
+  type Snapshot = {
+    session: string;
+    children: Array<{ id: string; name: string; phase: string; model: string; activity: string; endedAt?: number }>;
+  };
+
+  function desktop(harness: Reporter, socket = "/tmp/terminal.sock") {
+    delete process.env.HERDR_ENV;
+    process.env.HC_TERMINAL_ID = "remote/parent";
+    process.env.HC_TERMINAL_SOCKET = socket;
+    process.env.HC_SOCKET = "/tmp/fallback.sock";
+    harness.install();
+  }
+
+  function snapshot(harness: Reporter): Snapshot {
+    return JSON.parse(harness.execCalls.at(-1)!.args.at(-1)!.slice("pi.subagents=".length));
+  }
+
+  test("routes to the terminal socket, isolates concurrent child IDs, and retains terminal outcomes", async () => {
+    const harness = fakePi();
+    desktop(harness);
+    await startTui(harness);
+    try {
+      expect(harness.execCalls[0]).toMatchObject({
+        binary: "env",
+        args: ["HC_SOCKET=/tmp/terminal.sock", "herdr-core", "label", "remote/parent", expect.any(String)],
+      });
+      await update(harness, "one", Array.from({ length: 9 }, (_, index) => running(index)));
+      await update(harness, "two", [running(0, { status: "pending", model: undefined })]);
+      const children = snapshot(harness).children;
+      expect(children).toHaveLength(10);
+      expect(new Set(children.map(child => child.id)).size).toBe(10);
+      expect(children.at(-1)).toMatchObject({ phase: "pending", model: "" });
+      await harness.emit("tool_execution_end", {
+        toolName: "subagent", toolCallId: "one",
+        result: { details: { results: [
+          { index: 2, agent: "worker-2", exitCode: 1, finalOutput: "failed" },
+          { index: 0, agent: "worker-0", exitCode: 0, model: "fallback", finalOutput: "done" },
+          { index: 1, agent: "worker-1", exitCode: 1, interrupted: true },
+        ] } },
+      });
+      await waitForPublish();
+      expect(snapshot(harness).children.map(child => [child.name, child.phase])).toEqual([
+        ["worker-0", "completed"], ["worker-1", "interrupted"], ["worker-2", "failed"], ["worker-0", "pending"],
+      ]);
+      expect(snapshot(harness).children[0]).toMatchObject({ model: "fallback", activity: "done", endedAt: expect.any(Number) });
+      await harness.emit("agent_end");
+      expect(snapshot(harness).children).toHaveLength(3);
+    } finally {
+      await harness.emit("session_shutdown");
+    }
+    expect(harness.execCalls.at(-1)!.args.at(-1)).toBe("pi.subagents=");
+  });
+
+  test("supports slash results, detach removal, fallback sockets, and fresh session identities", async () => {
+    const harness = fakePi();
+    desktop(harness, "");
+    await startTui(harness);
+    const firstSession = snapshot(harness).session;
+    expect(harness.execCalls[0].args[0]).toBe("HC_SOCKET=/tmp/fallback.sock");
+    await harness.emitEvent("subagent:slash:started", { requestId: "slash" });
+    await harness.emitEvent("subagent:slash:update", { requestId: "slash", progress: [running(0)] });
+    await harness.emit("agent_end");
+    expect(snapshot(harness).children[0].phase).toBe("running");
+    await harness.emitEvent("subagent:slash:response", {
+      requestId: "slash", result: { details: { results: [{ index: 0, agent: "scout", exitCode: -2, detached: true }] } },
+    });
+    await waitForPublish();
+    expect(snapshot(harness).children).toEqual([]);
+    await harness.emit("session_shutdown");
+    await startTui(harness);
+    expect(snapshot(harness).session).not.toBe(firstSession);
+    await harness.emitEvent("subagent:slash:response", {
+      requestId: "slash", result: { details: { results: [{ index: 0, agent: "stale", exitCode: 0 }] } },
+    });
+    await waitForPublish();
+    expect(snapshot(harness).children).toEqual([]);
+    await harness.emit("session_shutdown");
+  });
+
+  test("valid TUI panes never overwrite enclosing Desktop labels", async () => {
+    process.env.HC_TERMINAL_ID = "enclosing-terminal";
+    const harness = fakePi();
+    harness.install();
+    await startTui(harness);
+    await update(harness, "one", [running(0)]);
+    await harness.emit("session_shutdown");
+    expect(harness.execCalls.every(call => call.binary === "/opt/herdr" && call.args[0] === "pane")).toBe(true);
+  });
+
+  test("serializes an in-flight Desktop update before shutdown deletion", async () => {
+    const gate = Promise.withResolvers<void>();
+    let block = false;
+    const harness = fakePi(async () => {
+      if (block) {
+        block = false;
+        await gate.promise;
+      }
+      return { code: 0, killed: false, stderr: "" };
+    });
+    desktop(harness);
+    await startTui(harness);
+    block = true;
+    await update(harness, "one", [running(0)]);
+    const stopping = harness.emit("session_shutdown");
+    gate.resolve();
+    await stopping;
+    expect(harness.execCalls.at(-1)!.args.at(-1)).toBe("pi.subagents=");
   });
 });

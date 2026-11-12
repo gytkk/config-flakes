@@ -3,8 +3,9 @@ const TTL_MS = 15_000;
 const RUNTIMES = {
   omp: { phases: new Set(["running", "completed", "failed", "aborted"]), retention: 5_000 },
   claude: { phases: new Set(["running", "stopping", "completed", "failed", "interrupted"]), retention: 10_000 },
+  pi: { phases: new Set(["pending", "running", "completed", "failed", "interrupted"]), retention: 5_000 },
 };
-const STATUS = { running: "working", stopping: "idle", completed: "done", failed: "blocked", aborted: "idle", interrupted: "idle" };
+const STATUS = { pending: "idle", running: "working", stopping: "idle", completed: "done", failed: "blocked", aborted: "idle", interrupted: "idle" };
 const record = value => value !== null && typeof value === "object" && !Array.isArray(value);
 const timestamp = value => Number.isSafeInteger(value) && value >= 0;
 
@@ -28,8 +29,9 @@ export function snapshotChildren(raw, parent, runtime, now = Date.now()) {
   for (const child of snapshot.children) {
     if (!record(child) || typeof child.id !== "string" || !child.id.trim() || ids.has(child.id)
       || !policy.phases.has(child.phase) || typeof child.model !== "string" || typeof child.activity !== "string"
-      || (child.phase === "running" || child.phase === "stopping" ? child.endedAt !== undefined
+      || (["pending", "running", "stopping"].includes(child.phase) ? child.endedAt !== undefined
         : !timestamp(child.endedAt) || child.endedAt > snapshot.updatedAt)) return [];
+    if (runtime === "pi" && typeof child.name !== "string") return [];
     if (runtime === "claude" && (typeof child.name !== "string" || typeof child.unavailable !== "boolean"
       || (child.phase === "stopping" ? !timestamp(child.stoppedAt) || child.stoppedAt > snapshot.updatedAt
         : child.phase === "running" ? child.stoppedAt !== undefined
@@ -45,7 +47,7 @@ export function snapshotChildren(raw, parent, runtime, now = Date.now()) {
       metadata: true,
       runtime,
       id: child.id,
-      name: text(runtime === "claude" ? child.name : child.id),
+      name: text(runtime === "omp" ? child.id : child.name),
       phase: child.phase,
       unavailable,
       status: unavailable ? "idle" : STATUS[child.phase],

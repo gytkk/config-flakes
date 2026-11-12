@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 const SLOT_COUNT = 7;
@@ -12,6 +13,17 @@ type Child = {
   model: string;
   activity: string;
 };
+
+type DesktopChild = {
+  id: string;
+  name: string;
+  phase: "pending" | "running" | "completed" | "failed" | "interrupted";
+  model: string;
+  activity: string;
+  endedAt?: number;
+};
+const DESKTOP_REFRESH_MS = 5_000;
+const TERMINAL_MS = 5_000;
 
 function record(value: unknown): Record<string, unknown> | undefined {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -73,10 +85,16 @@ export function sidebarTokens(children: Child[]): Record<string, string | null> 
 }
 
 export default function (pi: ExtensionAPI): void {
-  const paneId = process.env.HERDR_PANE_ID;
-  if (process.env.HERDR_ENV !== "1" || !paneId || process.env.PI_SUBAGENT_CHILD === "1") return;
+  if (process.env.PI_SUBAGENT_CHILD === "1") return;
+  const paneId = process.env.HERDR_ENV === "1" && process.env.HERDR_SOCKET_PATH ? process.env.HERDR_PANE_ID : undefined;
+  // A nested TUI owns its pane, not the enclosing App terminal.
+  const terminal = paneId ? undefined : process.env.HC_TERMINAL_ID;
+  if (!paneId && !terminal) return;
+  const socket = process.env.HC_TERMINAL_SOCKET || process.env.HC_SOCKET;
   const binary = process.env.HERDR_BIN_PATH || "herdr";
   const calls = new Map<string, Child[]>();
+  const desktopChildren = new Map<string, DesktopChild>();
+  let session = "";
   let active = false;
   let parentModel: string | null = null;
   let context: ExtensionContext | undefined;
@@ -84,7 +102,7 @@ export default function (pi: ExtensionAPI): void {
   let scheduled: ReturnType<typeof setTimeout> | undefined;
   let sending: Promise<void> | undefined;
   let draining = false;
-  let pending: Record<string, string | null> | undefined;
+  let pending: string[] | undefined;
   let warned = false;
   let subscriptions: Array<() => void> = [];
 
@@ -93,25 +111,76 @@ export default function (pi: ExtensionAPI): void {
     pi_model: parentModel,
   });
 
+  const observe = (call: string, details: unknown, final = false): void => {
+    if (!terminal || !calls.has(call)) return;
+    const payload = record(details);
+    const values = final ? payload?.results : payload?.progress;
+    const seen = new Set<string>();
+    if (Array.isArray(values)) for (const value of values) {
+      const row = record(value);
+      if (!row || !Number.isInteger(row.index) || (row.index as number) < 0 || !text(row.agent)) continue;
+      const id = JSON.stringify([call, row.index]);
+      if (row.detached === true || row.status === "detached") {
+        desktopChildren.delete(id);
+        continue;
+      }
+      const phase = final
+        ? row.interrupted === true || row.stopped === true ? "interrupted"
+          : row.exitCode === 0 ? "completed" : typeof row.exitCode === "number" ? "failed" : undefined
+        : row.status;
+      if (phase !== "pending" && phase !== "running" && phase !== "completed" && phase !== "failed" && phase !== "interrupted") continue;
+      seen.add(id);
+      const previous = desktopChildren.get(id);
+      const progress = final ? record(row.progress) ?? record(row.progressSummary) : row;
+      const projected = progress && foregroundChildren({ progress: [{ ...progress, index: row.index, agent: row.agent, status: phase === "pending" ? "pending" : "running", task: row.task }] })?.[0];
+      const settled = phase !== "pending" && phase !== "running";
+      desktopChildren.set(id, {
+        id, name: text(row.agent), phase,
+        model: text(row.model) || text(progress?.model) || previous?.model || "",
+        activity: (final ? text(row.finalOutput) : "") || projected?.activity || previous?.activity || "",
+        ...(settled ? { endedAt: previous?.endedAt ?? Date.now() } : {}),
+      });
+    }
+    // A final result without a per-child outcome must not invent completion.
+    if (final) for (const [id, child] of desktopChildren) {
+      if (JSON.parse(id)[0] === call && !seen.has(id) && child.endedAt === undefined) desktopChildren.delete(id);
+    }
+  };
+
+  const publication = (): string[] => {
+    if (terminal) {
+      const now = Date.now();
+      for (const [id, child] of desktopChildren) {
+        if (child.endedAt !== undefined && now - child.endedAt >= TERMINAL_MS) desktopChildren.delete(id);
+      }
+      const limit = (value: string) => Array.from(value).slice(0, 80).join("");
+      const snapshot = active ? JSON.stringify({
+        version: 1, session, updatedAt: now, model: parentModel ?? "",
+        children: [...desktopChildren.values()].map(child => ({
+          ...child, name: limit(child.name), model: limit(child.model), activity: limit(child.activity),
+        })),
+      }) : "";
+      const args = ["label", terminal, `pi.subagents=${snapshot}`];
+      return socket ? [`HC_SOCKET=${socket}`, "herdr-core", ...args] : args;
+    }
+    const args = ["pane", "report-metadata", paneId!, "--source", SOURCE, "--agent", "pi", "--ttl-ms", String(TTL_MS)];
+    for (const [key, value] of Object.entries(tokens())) {
+      args.push(...(value === null ? ["--clear-token", key] : ["--token", `${key}=${value}`]));
+    }
+    return args;
+  };
+
   const publish = (): Promise<void> => {
-    pending = tokens();
+    pending = publication();
     if (draining) return sending!;
     draining = true;
     sending = (async () => {
       while (pending) {
         const snapshot = pending;
         pending = undefined;
-        const args = [
-          "pane", "report-metadata", paneId,
-          "--source", SOURCE,
-          "--agent", "pi",
-          "--ttl-ms", String(TTL_MS),
-        ];
-        for (const [key, value] of Object.entries(snapshot)) {
-          args.push(...(value === null ? ["--clear-token", key] : ["--token", `${key}=${value}`]));
-        }
+        const args = snapshot;
         try {
-          const result = await pi.exec(binary, args, { timeout: 2_000 });
+          const result = await pi.exec(terminal ? socket ? "env" : "herdr-core" : binary, args, { timeout: 2_000 });
           if (result.code !== 0 || result.killed) {
             throw new Error(text(result.stderr) || `Herdr exited with code ${result.code}`);
           }
@@ -141,13 +210,19 @@ export default function (pi: ExtensionAPI): void {
     if (scheduled) clearTimeout(scheduled);
     scheduled = undefined;
     calls.clear();
+    desktopChildren.clear();
     await publish();
   };
 
   pi.on("session_start", async (_event, ctx) => {
+    for (const unsubscribe of subscriptions) unsubscribe();
+    subscriptions = [];
+    clearInterval(refresh);
+    refresh = undefined;
     if (ctx.mode !== "tui") return;
     context = ctx;
     active = true;
+    session = randomUUID();
     parentModel = text(ctx.model?.id) || null;
     await clear();
     subscriptions = [
@@ -159,17 +234,21 @@ export default function (pi: ExtensionAPI): void {
         const id = record(value)?.requestId;
         const children = foregroundChildren(value);
         if (typeof id !== "string" || children === undefined) return;
+        observe(`slash:${id}`, value);
         calls.set(`slash:${id}`, children);
         schedule();
       }),
       pi.events.on("subagent:slash:response", (value: unknown) => {
         const id = record(value)?.requestId;
-        if (typeof id === "string" && calls.delete(`slash:${id}`)) schedule();
+        if (typeof id !== "string") return;
+        observe(`slash:${id}`, record(record(value)?.result)?.details, true);
+        calls.delete(`slash:${id}`);
+        schedule();
       }),
     ];
     refresh = setInterval(() => {
       if (active) void publish();
-    }, REFRESH_MS);
+    }, terminal ? DESKTOP_REFRESH_MS : REFRESH_MS);
     refresh.unref?.();
   });
 
@@ -186,20 +265,26 @@ export default function (pi: ExtensionAPI): void {
   pi.on("tool_execution_update", (event) => {
     if (!active || event.toolName !== "subagent") return;
     const children = foregroundChildren(record(event.partialResult)?.details);
-    if (children === undefined) return;
+    if (children === undefined || !calls.has(`tool:${event.toolCallId}`)) return;
+    observe(`tool:${event.toolCallId}`, record(event.partialResult)?.details);
     calls.set(`tool:${event.toolCallId}`, children);
     schedule();
   });
 
   pi.on("tool_execution_end", (event) => {
-    if (!active || event.toolName !== "subagent" || !calls.delete(`tool:${event.toolCallId}`)) return;
+    if (!active || event.toolName !== "subagent") return;
+    observe(`tool:${event.toolCallId}`, record(event.result)?.details, true);
+    calls.delete(`tool:${event.toolCallId}`);
     schedule();
   });
 
   pi.on("agent_end", async () => {
     if (!active) return;
     for (const id of calls.keys()) {
-      if (id.startsWith("tool:")) calls.delete(id);
+      if (id.startsWith("tool:")) {
+        observe(id, undefined, true);
+        calls.delete(id);
+      }
     }
     await publish();
   });
