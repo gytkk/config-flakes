@@ -10,16 +10,6 @@ TUI 구문 강조는 밝은 터미널 배경에 맞춰 기본 제공 `one-half-l
 
 [Codex 패키지](../../packages/apps/codex/package.nix)는 공식 `codex-package` 번들 전체를 설치한다. 백그라운드 서버가 패키지를 인식하도록 `codex-package.json`, `codex-path`, `codex-resources`를 실행 파일과 함께 유지한다. 패키지 변경은 환경에 맞는 Home Manager 또는 NixOS switch 후 새 Codex 세션에 적용된다.
 
-## LSP 코드 탐색
-
-`lsp` MCP 서버는 [lspi](https://github.com/Latias94/lspi)를 통해 정의, 참조, hover, 문서 심볼과 진단을 제공한다. `codex-lsp-mcp`는 [LSP 모듈](../lsp/default.nix)이 설치한 `ty`, `gopls`, `typescript-language-server`, `terraform-ls`, `nixd`를 PATH에서 사용한다. Rust는 활성 rustup toolchain의 `rust-analyzer`를 사용한다. Python에는 Pyright를 연결하지 않는다.
-
-[files/lspi.toml](files/lspi.toml)은 [Claude의 LSP 플러그인](../claude/README.md#installed-plugins)과 같은 서버 및 확장자 매핑을 사용한다. Python, Go, Rust, TypeScript와 JavaScript, Terraform, Nix를 지원한다. lspi 0.2.0은 서버 설정마다 language ID 하나를 사용하므로 TS, TSX, JS, JSX와 Terraform의 `.tf`, `.tfvars`는 각각 구분한다. 또한 빈 인자 목록에 `--stdio`를 추가하므로 이를 지원하지 않는 Go와 Nix에는 각각 `serve`와 `--log=error`를 지정한다. 서버가 지원하는 LSP 기능만 사용할 수 있다.
-
-MCP 프로세스의 작업 디렉터리를 workspace root로 사용하므로 작업할 프로젝트 루트에서 Codex를 시작한다. 하위 프로젝트의 root marker를 자동 탐색하지 않으며, 명시적인 설정 파일을 사용하므로 프로젝트의 별도 lspi 설정은 읽지 않는다. 읽기 전용 모드에서는 rename과 서버 제어 도구를 제공하지 않는다. 도구 입력의 행과 열 번호는 1부터 시작한다.
-
-환경에 맞는 Home Manager 또는 NixOS switch를 실행한 뒤 새 Codex 세션의 `/mcp`에서 `lsp` 연결을 확인한다. Switch 전에는 새 `codex-lsp-mcp` 실행 파일이 없으므로 MCP 서버가 시작되지 않는다. 기존 세션의 `pyright` 도구는 세션을 다시 시작할 때 교체된다.
-
 ## 모델별 위임
 
 [Codex adapter](../../agent-core/adapters/codex.md)는 독립적인 작업을 일찍 위임하고, worker를 생성할 때 작업 성격에 맞는 모델과 effort를 명시하도록 지시한다. 메인 에이전트는 사용자와의 대화, 요구사항 해석, 의사결정, 결과 통합과 최종 검증을 담당한다. 모델별 작업 범위와 재위임 기준은 adapter에서 관리한다.

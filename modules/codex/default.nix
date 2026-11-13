@@ -25,12 +25,6 @@ let
       builtins.readFile ./files/codex-launcher.sh
     )
   );
-  lspMcp = pkgs.writeShellScriptBin "codex-lsp-mcp" ''
-    exec ${pkgs.lspi}/bin/lspi mcp \
-      --workspace-root "$PWD" \
-      --config ${./files/lspi.toml} \
-      --read-only "$@"
-  '';
   hookCommandNames = [
     "agent-session-record"
     "plannotator"
@@ -71,8 +65,6 @@ in
       (lib.hiPrio codexLauncher)
       pkgs.codex
       pkgs.mcp-nixos
-      pkgs.lspi
-      lspMcp
     ];
 
     home.file.".codex/AGENTS.md".source = "${agentCoreOutput}/AGENTS.md";

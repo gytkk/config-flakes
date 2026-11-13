@@ -95,7 +95,7 @@
         final: prev:
         import ./. {
           pkgs = final;
-          inherit (prev.stdenv.hostPlatform) isDarwin system;
+          inherit (prev.stdenv.hostPlatform) isDarwin;
         };
 
       legacyPackages = forEachSystem (

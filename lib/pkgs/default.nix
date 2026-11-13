@@ -28,7 +28,7 @@ let
     final: prev:
     import ../../packages {
       pkgs = final;
-      inherit (prev.stdenv.hostPlatform) isDarwin system;
+      inherit (prev.stdenv.hostPlatform) isDarwin;
     };
 
   commonOverlays = [

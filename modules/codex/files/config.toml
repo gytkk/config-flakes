@@ -24,10 +24,6 @@ tool_timeout_sec = 300
 command = "mcp-nixos"
 tool_timeout_sec = 300
 
-[mcp_servers.lsp]
-command = "codex-lsp-mcp"
-tool_timeout_sec = 300
-
 [features]
 default_mode_request_user_input = true
 multi_agent = true

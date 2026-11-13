@@ -19,7 +19,6 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 │   ├── gksdud/
 │   ├── herdr/
 │   ├── herdr-core/
-│   ├── lspi/
 │   ├── notion-cli/
 │   ├── pantry/
 │   └── pi/
@@ -59,7 +58,6 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 | gksdud | 2.1.0 |
 | herdr | 0.9.5 |
 | herdr-core | 0.1.21 |
-| lspi | 0.2.0 |
 | notion-cli | 0.23.30 |
 | pantry | main-69de978b5555 |
 | pi | 1.5.2 |
@@ -71,8 +69,6 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 - `nix run ./packages#apps.<system>.ntn`
 
 `gksdud` is exposed only on Darwin. Its signed universal app bundle supports Apple Silicon and Intel Macs running macOS 13 or later. Home Manager installs it through the [gksdud module](../modules/gksdud/README.md). Automatic startup is controlled by the app's own login-item option.
-
-`lspi` packages the upstream MCP-to-LSP bridge for [Codex's LSP integration](../modules/codex/README.md#lsp-코드-탐색). Upstream provides release binaries for both macOS architectures and x86_64 Linux; the catalog omits it on aarch64 Linux. Linux installation patches the ELF interpreter and runtime library paths for Nix.
 
 ## Adding new apps
 
@@ -125,6 +121,6 @@ The helper selects the host platform, fetches the pinned archive, disables confi
 - `App Packages CI` evaluates the nested flake and builds changed packages, including their install checks.
 - `notion-cli` tracks the stable version published at `https://ntn.dev/latest.txt`. Its updater downloads all four platform archives, verifies their official SHA-256 checksums, and updates the version and hashes together after every platform succeeds. The `ntn` alias receives the same updates through the direct channel.
 - `pantry` packages a `main` build of the Devsisters teamdev.ai CLI, versioned as `main-<12-character commit>` with no releases or tags. It is listed in `update.deny`, so aggregate updates skip it. To bump it manually, run `bash packages/apps/pantry/update.sh`, which pins the build named by the per-platform `latest/<os>-<arch>.json` manifests after confirming all four agree and each binary matches its manifest SHA-256.
-- `gksdud` and `lspi` are manually updated. They have no `update.sh`, so aggregate updates skip them. Moving a package into this catalog does not enable automatic updates.
+- `gksdud` is manually updated. It has no `update.sh`, so aggregate updates skip it. Moving a package into this catalog does not enable automatic updates.
 - Package outputs follow each platform's catalog. The Linux build job skips apps absent from the Linux catalog, including `gksdud`; it does not validate their macOS runtime behavior.
 - Changes to the nested catalog, flake, lockfile, shared `packages/lib/` helpers, or either package workflow (`apps-ci.yml` and `apps-update.yml`) select all catalog packages for CI builds. A package-local change selects that package. Parent configuration inputs, outputs, package-set wiring, and root lockfile changes do not trigger this independent package CI or widen its build selection: it uses `packages/flake.lock`, not the root lockfile. Parent integration still needs its own targeted Home Manager or NixOS evaluation. The changed-app detector is checked with `bash packages/tests/detect-changed-apps.sh`.
