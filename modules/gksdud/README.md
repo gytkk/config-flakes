@@ -14,8 +14,6 @@ home-manager switch --flake .#devsisters-macbook
 
 On first use, open `~/Applications/gksdud.app` and allow gksdud in System Settings > Privacy & Security > Accessibility so key-down switching works. The package uses upstream's self-signed compatibility ZIP; if macOS blocks its first launch, allow it in Privacy & Security. These permissions remain user-managed. Use the app's own login-item option to start it at login; Home Manager does not manage automatic startup.
 
-The old `hidutil-keyboard-mapping` launch agent is no longer managed. Removing its plist does not clear mappings already applied in the current session. Restart macOS after the first switch to clear those mappings, then open gksdud if its login-item option is off. Test Right Command switching between Korean and English after granting Accessibility permission.
-
 Caps Lock-to-Control is configured separately in System Settings > Keyboard > Keyboard Shortcuts > Modifier Keys. Select each keyboard and assign Control to Caps Lock. Nix and gksdud do not manage this mapping.
 
 The app checks for updates itself. Update the version and hash in the Nix package and reapply Home Manager instead of using the app's installer, which cannot update the immutable store bundle.
