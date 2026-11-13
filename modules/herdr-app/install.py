@@ -1,4 +1,4 @@
-"""Merge managed shortcuts, contrast, personal mods, and layout into app state."""
+"""Install managed shortcuts, personal mods, layout, and optional Windows settings."""
 
 import argparse
 import json
@@ -54,7 +54,7 @@ def status_layout(home: Path) -> dict:
     return layout
 
 
-def install(source: Path, home: Path) -> None:
+def install(source: Path, home: Path, *, copy_settings: bool = False) -> None:
     keys_path = home / "keys.json"
     if not keys_path.exists():
         print(f"Herdr App keys not found; launch the app once, then apply again: {keys_path}")
@@ -64,9 +64,9 @@ def install(source: Path, home: Path) -> None:
     if not isinstance(current, dict) or any(not isinstance(section, dict) for section in current.values()):
         raise ValueError(f"Expected keybinding section objects in {keys_path}")
     layout = status_layout(home)
-    settings_path = home / "settings.json"
-    settings = json.loads(settings_path.read_text()) if settings_path.exists() else {}
-    settings["minimum_contrast"] = 3.0
+    settings_content = (source / "settings.json").read_bytes() if copy_settings else None
+    if settings_content is not None:
+        json.loads(settings_content)
     for section, bindings in managed.items():
         current.setdefault(section, {}).update(bindings)
     # Install the action's mod before publishing the shortcut that opens it.
@@ -74,7 +74,8 @@ def install(source: Path, home: Path) -> None:
         if path.is_file() and (path.suffix == ".js" or path.name in {"mod.json", "LICENSE"}):
             replace(home / path.relative_to(source), path.read_bytes())
     replace(home / "layouts/tui.json", (json.dumps(layout, indent=2) + "\n").encode())
-    replace(settings_path, (json.dumps(settings, indent=2) + "\n").encode())
+    if settings_content is not None:
+        replace(home / "settings.json", settings_content)
     if replace(keys_path, (json.dumps(current, indent=2, ensure_ascii=False) + "\n").encode()):
         print(f"Updated Herdr App shortcuts: {keys_path}")
 
@@ -83,5 +84,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("home", type=Path)
+    parser.add_argument("--copy-settings", action="store_true", help="Copy settings for the Windows app instead of using a Home Manager symlink")
     args = parser.parse_args()
-    install(args.source, args.home)
+    install(args.source, args.home, copy_settings=args.copy_settings)

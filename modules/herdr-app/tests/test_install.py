@@ -7,6 +7,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("herdr_app_install", ROOT / "install.py")
+assert SPEC is not None and SPEC.loader is not None
 installer = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(installer)
 
@@ -43,10 +44,8 @@ class InstallTests(unittest.TestCase):
             for key in ("alt-down", "alt-]"):
                 self.assertEqual(merged["global"][key], "space.next")
             self.assertEqual(merged["terminal"], original["terminal"])
-            self.assertEqual(json.loads(settings.read_text()),
-                             {**original_settings, "minimum_contrast": 3.0})
-            self.assertEqual(json.loads((home / "settings.json.home-manager.bak").read_text()),
-                             original_settings)
+            self.assertEqual(json.loads(settings.read_text()), original_settings)
+            self.assertFalse((home / "settings.json.home-manager.bak").exists())
             personal = json.loads((layouts / "tui.json").read_text())
             self.assertEqual(personal["custom"], "keep")
             self.assertEqual(personal["terminal_padding"], [4, 4])
@@ -84,6 +83,51 @@ class InstallTests(unittest.TestCase):
                               "focus": {"width": 0.5, "color": "#123456"}})
             self.assertEqual(reapplied["children"][2],
                              {"id": "work-body", "type": "row", "padding": 4, "gap": 8})
+
+    def test_preserves_settings_symlink_and_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            (home / "keys.json").write_text("{}")
+            (home / "layouts").mkdir()
+            (home / "layouts/main.json").write_text(json.dumps({
+                "id": "status", "content": {"mod": "workspace-status"}
+            }))
+            target = home / "personal-settings.json"
+            original = '{"colors": {"cursor": "#0891B2"}, "font_size": 15}\n'
+            target.write_text(original)
+            settings = home / "settings.json"
+            settings.symlink_to(target)
+            installer.install(ROOT / "files", home)
+            self.assertTrue(settings.is_symlink())
+            self.assertEqual(settings.readlink(), target)
+            self.assertEqual(target.read_text(), original)
+            self.assertFalse((home / "settings.json.home-manager.bak").exists())
+
+    def test_windows_settings_copy_and_backup_are_idempotent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            (home / "keys.json").write_text("{}")
+            (home / "layouts").mkdir()
+            (home / "layouts/main.json").write_text(json.dumps({
+                "id": "status", "content": {"mod": "workspace-status"}
+            }))
+            settings = home / "settings.json"
+            original = '{"zoom": 1.2}\n'
+            settings.write_text(original)
+            expected = (ROOT / "files/settings.json").read_bytes()
+            installer.install(ROOT / "files", home, copy_settings=True)
+            self.assertEqual(settings.read_bytes(), expected)
+            self.assertFalse(settings.is_symlink())
+            self.assertEqual(json.loads(settings.read_text())["colors"]["cursor"], "#0891B2")
+            backup = home / "settings.json.home-manager.bak"
+            self.assertEqual(backup.read_text(), original)
+            modified = settings.stat().st_mtime_ns
+            installer.install(ROOT / "files", home, copy_settings=True)
+            self.assertEqual(settings.stat().st_mtime_ns, modified)
+            self.assertEqual(backup.read_text(), original)
+            settings.unlink()
+            installer.install(ROOT / "files", home, copy_settings=True)
+            self.assertEqual(settings.read_bytes(), expected)
 
     def test_invalid_keys_leave_existing_mod_and_configuration_untouched(self):
         with tempfile.TemporaryDirectory() as directory:

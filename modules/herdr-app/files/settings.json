@@ -1,0 +1,13 @@
+{
+  "zoom": 0.9,
+  "sounds": {
+    "enabled": true
+  },
+  "font_ligatures": false,
+  "minimum_contrast": 3.0,
+  "font_size": 13,
+  "appearance": "light",
+  "colors": {
+    "cursor": "#0891B2"
+  }
+}
