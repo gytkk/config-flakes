@@ -238,13 +238,9 @@ Home Manager installs the extension. After applying the configuration, run `/rel
 
 ### Herdr Desktop
 
-The same extension reports foreground `subagent` and `/run` children to the [personal Desktop Agents mod](../herdr/README.md#desktop-subagents) using the parent core terminal's `pi.subagents` label. `HC_TERMINAL_ID` identifies the terminal; `HC_TERMINAL_SOCKET` takes precedence over `HC_SOCKET`. A valid Herdr TUI pane uses only pane metadata, never the enclosing terminal label. Headless sessions and `PI_SUBAGENT_CHILD=1` processes do not report.
+The same extension publishes foreground `subagent` and `/run` child metadata using the parent core terminal's `pi.subagents` label. This repository does not install a Desktop mod to display these labels. `HC_TERMINAL_ID` identifies the terminal; `HC_TERMINAL_SOCKET` takes precedence over `HC_SOCKET`. A valid Herdr TUI pane uses only pane metadata, never the enclosing terminal label. Headless sessions and `PI_SUBAGENT_CHILD=1` processes do not report.
 
-Desktop rows show the agent name, resolved model when known, and a state-colored dot. Tool/path, recent output, or task text appears in the tooltip; tool arguments and reasoning are not read. Pending, running, completed, failed, and interrupted states follow the package's progress and per-child results. Settled rows remain for five seconds. Detached children disappear rather than being called complete; this foreground integration does not monitor background runs. Desktop has no seven-child limit, and clicking a row focuses its parent without changing the parent's lifecycle.
-
-Snapshots refresh every five seconds and expire in the UI after fifteen seconds without an update. Session replacement gets a fresh identity; shutdown removes the label after queued writes finish. Core labels are persistent: activity excerpts can remain on disk after a crash even though stale rows are hidden. Remote reporters and the desktop need synchronized clocks.
-
-Apply Home Manager on the reporter and desktop hosts, select the personal `tui` layout, then run `/reload` in Pi or restart it. Desktop mods hot-reload; `herdr server reload-config` is only for the TUI. Verify with `/run scout List the top-level files without changing anything`. Checks: `bash modules/pi/tests/run.sh herdr-subagents.test.ts` and `node --experimental-vm-modules --test modules/herdr-app/tests/omp-agents.test.mjs`.
+Snapshots refresh every five seconds. Session replacement gets a fresh identity; shutdown removes the label after queued writes finish. Core labels are persistent, so activity excerpts can remain on disk after a crash until replaced or cleared. Run `bash modules/pi/tests/run.sh herdr-subagents.test.ts` for the reporter tests.
 
 ### OpenAI fast mode
 

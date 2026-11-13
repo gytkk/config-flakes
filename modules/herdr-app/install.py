@@ -37,8 +37,6 @@ def status_layout(home: Path) -> dict:
         if node.get("id") == "status" and content.get("mod") in ("workspace-status", "tui-prefix"):
             content["mod"] = "tui-prefix"
             has_status = True
-        if content.get("mod") == "agents":
-            content["mod"] = "omp-agents"
         if content.get("mod") == "spaces":
             content["mod"] = "tui-spaces"
         if node.get("id") == "work-body":

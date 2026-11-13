@@ -33,7 +33,9 @@ class InstallTests(unittest.TestCase):
                 {"id": "status", "content": {"mod": "workspace-status"}, "size": {"px": 28}},
                 {"id": "work-body", "type": "row", "padding": 8, "gap": 8},
                 {"id": "spaces", "content": {"mod": "spaces"}},
-                {"id": "personal", "content": {"mod": "custom-spaces"}}
+                {"id": "personal", "content": {"mod": "custom-spaces"}},
+                {"id": "agents", "content": {"mod": "agents"}},
+                {"id": "personal-agents", "content": {"mod": "custom-agents"}}
             ]}
             (layouts / "main.json").write_text(json.dumps(layout))
             installer.install(ROOT / "files", home)
@@ -59,6 +61,9 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(json.loads((layouts / "main.json").read_text()), layout)
             self.assertEqual(personal["children"][3]["content"]["mod"], "tui-spaces")
             self.assertEqual(personal["children"][4]["content"]["mod"], "custom-spaces")
+            self.assertEqual(personal["children"][5:], layout["children"][5:])
+            self.assertEqual({path.name for path in (home / "mods").iterdir()},
+                             {"tui-prefix", "tui-spaces"})
             personal["custom"] = "personal change"
             personal["children"][0]["content"]["pane"].update(gap=12, radius=6)
             personal["terminal_padding"] = [8, 6]
@@ -76,6 +81,7 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(json.loads(backup.read_text()), original)
             reapplied = json.loads((layouts / "tui.json").read_text())
             self.assertEqual(reapplied["custom"], "personal change")
+            self.assertEqual(reapplied["children"][5:], layout["children"][5:])
             self.assertEqual(reapplied["terminal_padding"], [4, 4])
             self.assertEqual(reapplied["children"][0]["content"]["pane"],
                              {"gap": 4, "radius": 6, "header": {"height": 30},

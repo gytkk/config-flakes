@@ -20,7 +20,7 @@ in
   options.modules.herdrApp.enable = lib.mkOption {
     type = lib.types.bool;
     default = false;
-    description = "Manage Herdr App settings, shortcuts, prefix mode, and Claude/Pi subagent display";
+    description = "Manage Herdr App settings, shortcuts, prefix mode, and space completion indicators";
   };
 
   config = lib.mkIf cfg.enable {

@@ -65,13 +65,9 @@ bun test modules/herdr/tests modules/claude/tests
 
 ### Herdr Desktop
 
-The same watcher feeds the [personal Desktop Agents mod](../herdr/README.md#desktop-subagents). Outside a valid TUI pane, `HC_TERMINAL_ID` selects the parent core terminal and `HC_TERMINAL_SOCKET` takes precedence over `HC_SOCKET`. The watcher publishes a versioned `claude.subagents` label; inside a TUI pane it reports only TUI metadata, because multiple TUI panes can share one core terminal.
+Outside a valid TUI pane, the same watcher publishes a versioned `claude.subagents` label on the parent core terminal. This repository does not install a Desktop mod to display these labels. `HC_TERMINAL_ID` selects the terminal and `HC_TERMINAL_SOCKET` takes precedence over `HC_SOCKET`. Inside a TUI pane the watcher reports only TUI metadata, because multiple TUI panes can share one core terminal.
 
-Desktop shows all visible children, without the TUI's seven-slot limit. Each row contains the name, actual model when known, and a state-colored dot; its tooltip contains the state and latest activity. Waiting for stop confirmation or unavailable transcript data uses a neutral dot, never a confirmed-completion indicator. Clicking a child focuses the parent Claude terminal.
-
-Snapshots refresh every five seconds and expire after fifteen seconds without updates. Stopped and confirmed terminal rows follow the same ten-second hiding policy as TUI. Session replacement changes the snapshot identity, and only the owning watcher may update or clear its label. Session end or process exit clears the label. Core labels persist on disk: after a crash, activity excerpts can remain stored until replaced or cleared even though stale rows are hidden. Remote reporters and the desktop need synchronized clocks.
-
-Apply Home Manager on the reporter and desktop hosts, select the personal `tui` layout, and start a new Claude session. App mods hot-reload; Desktop does not need `herdr server reload-config`. The existing Claude hooks are reused without an additional marketplace plugin.
+Snapshots refresh every five seconds. Session replacement changes the snapshot identity, and only the owning watcher may update or clear its label. Session end or process exit clears the label. Core labels persist on disk, so activity excerpts can remain stored after a crash until replaced or cleared. The existing Claude hooks are reused without an additional marketplace plugin.
 
 
 ## Skills and plugins
