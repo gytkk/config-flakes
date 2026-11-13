@@ -86,6 +86,7 @@ export function createStatusLine(
     );
     let location = identity(visibleWidth(cwd));
     const extras = [...statuses].filter(([key]) => ![STATE_TYPE, "codex-usage"].includes(key))
+      .filter(([key, value]) => key !== "pi-lens-lsp" || stripTerminalSequences(value).trim() !== "LSP Inactive")
       .map(([, value]) => sanitizeStatusText(value)).filter(Boolean);
     let usage = sanitizeStatusText(statuses.get("codex-usage") ?? "")
       .replace(/^#+/, (filled) => theme.fg("success", filled));

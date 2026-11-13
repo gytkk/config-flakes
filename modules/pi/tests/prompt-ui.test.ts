@@ -87,6 +87,25 @@ describe("prompt UI", () => {
     expect(editor.footer!.render(180)).toEqual([]);
   });
 
+  test("hides only the inactive Lens status and follows status changes", () => {
+    const editor = createEditor()!;
+    const baseline = editor.render(300);
+    for (const status of ["LSP Inactive", uiTheme.fg("dim", "LSP Inactive")]) {
+      editor.statuses.set("pi-lens-lsp", status);
+      expect(editor.render(300)).toEqual(baseline);
+      expect(editor.statuses.get("pi-lens-lsp")).toBe(status);
+    }
+    for (const status of ["LSP Active: typescript", "LSP Failed: typescript", "LSP ✗"]) {
+      const styled = uiTheme.fg("error", status);
+      editor.statuses.set("pi-lens-lsp", styled);
+      expect(editor.render(300)[0]).toContain(styled);
+    }
+    editor.statuses.set("pi-lens-lsp", uiTheme.fg("dim", "LSP Inactive"));
+    expect(editor.render(300)).toEqual(baseline);
+    editor.statuses.set("custom", "LSP Inactive");
+    expect(editor.render(300)[0]).toContain("LSP Inactive");
+  });
+
   test("works without fast mode or usage providers", () => {
     const editor = createEditor()!;
     const line = editor.render(180)[0];
