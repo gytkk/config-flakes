@@ -23,7 +23,7 @@ describe("prompt statusline", () => {
 
   test("preserves every status and places usage immediately before the model", () => {
     const { statuses, line } = fixture();
-    expect(line()).toStartWith("╭\uE0B6 /workspace/한글-project › main \uE0B4");
+    expect(line()).toStartWith("╭\uE0B6 /workspace/한글-project › main \uE0B0");
     expect(line()).toContain("11%");
     expect(line()).not.toContain("/bg");
     expect(line()).not.toContain("tokens");
@@ -43,12 +43,13 @@ describe("prompt statusline", () => {
 
   test("puts Git counts after the branch inside its segment and preserves width bounds", () => {
     const { line, render, data } = fixture("*12 +4 ?13");
-    expect(line()).toContain(" › main *12 +4 ?13 \uE0B4");
+    expect(line()).toContain(" › main *12 +4 ?13 \uE0B0");
     expect(line().match(/\*12/g)).toHaveLength(1);
     for (let width = 0; width <= 320; width++) expect(visibleWidth(render(width))).toBeLessThanOrEqual(width);
     data.getGitBranch = () => "";
     expect(line()).not.toContain("*12");
-    expect(fixture().line()).toContain(" › main \uE0B4");
+    expect(line()).toStartWith("╭\uE0B6 /workspace/한글-project \uE0B0");
+    expect(fixture().line()).toContain(" › main \uE0B0");
   });
 
   test("shows fast only when enabled and follows model changes", () => {
@@ -122,9 +123,9 @@ describe("prompt statusline", () => {
         const [a, b] = [luminance(fg), luminance(bg)].sort((a, b) => b - a);
         expect((a + 0.05) / (b + 0.05)).toBeGreaterThanOrEqual(4.5);
       }
-      for (const bg of [pathBg, modelBg]) {
+      for (const [bg, rightCap] of [[pathBg, "\uE0B0"], [modelBg, "\uE0B4"]] as const) {
         expect(output).toContain(theme.style("\uE0B6", { fg: bg }));
-        expect(output).toContain(theme.style("\uE0B4", { fg: bg }));
+        expect(output).toContain(theme.style(rightCap, { fg: bg }));
       }
       expect(output).toContain(theme.style("/workspace/한글-project", { fg: ink(colors.accent), bold: true }));
       expect(output).toContain(theme.style("test-model", { fg: ink(colors.customMessageLabel), bold: true }));
@@ -138,7 +139,7 @@ describe("prompt statusline", () => {
     const { ctx, render } = fixture("*2 +4 ?1");
     ctx.sessionManager.getCwd = () => "/workspace/" + "long-directory/".repeat(8);
     const output = render(140);
-    const badge = output.slice(output.indexOf("\uE0B6"), output.indexOf("\uE0B4"));
+    const badge = output.slice(output.indexOf("\uE0B6"), output.indexOf("\uE0B0"));
     expect(stripTerminalSequences(badge)).toContain("…");
     expect(stripTerminalSequences(badge)).toContain(" › main *2 +4 ?1 ");
     // A full reset emitted by truncation would clear the enclosing badge background.

@@ -37,8 +37,8 @@ export function createStatusLine(
     const modelBg = mixColors(colors.userMessageBg, colors.customMessageLabel, 0.12, "srgb");
     // Pull badge text toward the theme foreground for contrast on tinted surfaces.
     const ink = (color: Color) => mixColors(color, colors.text, 0.6, "srgb");
-    const badge = (text: string, bg: Color) => theme.style("\uE0B6", { fg: bg })
-      + theme.style(` ${text} `, { bg }) + theme.style("\uE0B4", { fg: bg });
+    const badge = (text: string, bg: Color, rightCap = "\uE0B4") => theme.style("\uE0B6", { fg: bg })
+      + theme.style(` ${text} `, { bg }) + theme.style(rightCap, { fg: bg });
     const modelId = sanitizeStatusText(ctx.model?.id ?? "no-model");
     const modelParts = [badge(theme.style(modelId, { fg: ink(colors.customMessageLabel), bold: true }), modelBg)];
     if (ctx.model?.reasoning) modelParts.push(theme.getThinkingBorderColor(ctx.thinkingLevel ?? "off")(ctx.thinkingLevel ?? "off"));
@@ -82,6 +82,7 @@ export function createStatusLine(
         + (branch ? theme.style(" › ", { fg: ink(colors.accent) })
           + theme.style(branch, { fg: ink(colors.customMessageLabel) }) + (git ? ` ${git}` : "") : ""),
       pathBg,
+      "\uE0B0",
     );
     let location = identity(visibleWidth(cwd));
     const extras = [...statuses].filter(([key]) => ![STATE_TYPE, "codex-usage"].includes(key))
