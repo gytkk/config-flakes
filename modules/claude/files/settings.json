@@ -180,7 +180,8 @@
       "source": {
         "source": "github",
         "repo": "devsisters/ark"
-      }
+      },
+      "autoUpdate": true
     }
   },
   "otelHeadersHelper": "~/.local/bin/claude-otel-headers",
