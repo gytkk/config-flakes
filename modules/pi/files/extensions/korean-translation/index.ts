@@ -1,5 +1,5 @@
 import {
-  BorderedLoader, getMarkdownTheme,
+  BorderedLoader, DynamicBorder, getMarkdownTheme,
   type ExtensionAPI, type ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Text } from "@earendil-works/pi-tui";
@@ -61,7 +61,9 @@ export default function koreanTranslation(pi: ExtensionAPI) {
     const box = new Container();
     const data = entry.data;
     if (!data || typeof data.text !== "string") return box;
-    box.addChild(new Text(theme.fg("accent", data.direction === "input" ? "입력 원문" : "한국어 번역"), outputPad, 0));
+    box.addChild(data.direction === "input"
+      ? new Text(theme.fg("accent", "입력 원문"), outputPad, 0)
+      : new DynamicBorder((text: string) => theme.fg("border", text)));
     box.addChild(new Markdown(data.text, outputPad, 0, getMarkdownTheme()));
     return box;
   });

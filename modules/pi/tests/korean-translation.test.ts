@@ -304,10 +304,23 @@ describe("failures and lifecycle", () => {
     const component = h.renderer({ data }, { expanded: false }, theme);
     for (const width of [12, 30, 80]) {
       const lines = component.render(width);
-      expect(lines.map(stripTerminalSequences).join("").replaceAll(/\s/g, "")).toContain("한국어번역");
+      const plain = lines.map(stripTerminalSequences);
+      expect(plain[0]).toBe("─".repeat(width));
+      expect(plain[1].trimStart()).toStartWith("검사가");
+      expect(plain.join("")).not.toContain("한국어 번역");
+      expect(plain.join("").replaceAll(/\s/g, "")).toContain("검사가통과했습니다.");
       for (const line of lines) expect(visibleWidth(line)).toBeLessThanOrEqual(width);
       component.invalidate();
     }
+    expect(h.streamSimple).not.toHaveBeenCalled();
+  });
+
+  test("keeps the original input label", () => {
+    const h = harness();
+    const component = h.renderer({ data: { direction: "input", text: "설명해 주세요" } }, { expanded: false }, theme);
+    const lines = component.render(30).map(stripTerminalSequences);
+    expect(lines[0].trim()).toBe("입력 원문");
+    expect(lines[1].trim()).toBe("설명해 주세요");
     expect(h.streamSimple).not.toHaveBeenCalled();
   });
 });
