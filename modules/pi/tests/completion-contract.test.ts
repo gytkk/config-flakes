@@ -59,7 +59,9 @@ test("installed 0.84 discovery, structured_output, acceptance and configured /ru
     }
     const agent = join(root, "agent");
     mkdirSync(join(agent, "agents"), { recursive: true });
-    cpSync(fileURLToPath(new URL("../agents/worker.md", import.meta.url)), join(agent, "agents/worker.md"));
+    for (const role of ["worker", "reviewer"]) {
+      cpSync(fileURLToPath(new URL(`../agents/${role}.md`, import.meta.url)), join(agent, `agents/${role}.md`));
+    }
     mkdirSync(join(agent, "extensions/subagent"), { recursive: true });
     cpSync(fileURLToPath(new URL("../files/extensions/subagent/config.json", import.meta.url)), join(agent, "extensions/subagent/config.json"));
     // Only model/context overrides, with package discovery disabled: no live settings or package installs.
@@ -88,7 +90,11 @@ test("installed 0.84 discovery, structured_output, acceptance and configured /ru
       assert.equal(worker.source, 'user');
       assert.equal(worker.acceptanceRole, 'writer');
       assert.equal(worker.model, 'openai/gpt-6.1-sol');
-      assert.equal(worker.thinking, 'medium');
+      assert.equal(worker.thinking, 'high');
+      const reviewer = discovery.agents.find(a => a.name === 'reviewer');
+      assert.equal(reviewer.source, 'user');
+      assert.equal(reviewer.model, 'openai/gpt-6-astra');
+      assert.equal(reviewer.thinking, 'xhigh');
       assert.equal(worker.inheritProjectContext, true);
       assert.equal(worker.inheritGlobalContext, false);
       assert.equal(worker.defaultContext, 'fresh');

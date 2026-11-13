@@ -42,11 +42,12 @@
         "thinking": "low"
       },
       "worker": {
-        "thinking": "medium",
+        "thinking": "high",
         "defaultContext": "fresh"
       },
       "reviewer": {
-        "thinking": "high"
+        "model": "openai/gpt-6-astra",
+        "thinking": "xhigh"
       },
       "context-builder": {
         "tools": [

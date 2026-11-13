@@ -78,12 +78,13 @@ describe("specialist profiles", () => {
     expect(body).toContain("acceptanceReport");
   });
 
-  test("model routing and foreground defaults remain unchanged", () => {
+  test("role model routing preserves foreground defaults", () => {
     expect(settings.defaultModel).toBe("gpt-6-astra");
     expect(settings.defaultThinkingLevel).toBe("high");
     expect(settings.subagents.defaultModel).toBe("openai/gpt-6.1-sol");
-    expect(settings.subagents.agentOverrides.worker.thinking).toBe("medium");
-    expect(settings.subagents.agentOverrides.reviewer.thinking).toBe("high");
+    expect(settings.subagents.agentOverrides.worker.thinking).toBe("high");
+    expect(settings.subagents.agentOverrides.reviewer.model).toBe("openai/gpt-6-astra");
+    expect(settings.subagents.agentOverrides.reviewer.thinking).toBe("xhigh");
     expect(settings.subagents.agentOverrides.researcher.model).toBe("openai/gpt-6-luna");
     expect(settings.subagents.agentOverrides.researcher.thinking).toBe("low");
     expect(rollout.asyncByDefault).toBe(false);
