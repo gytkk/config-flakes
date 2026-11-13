@@ -1,13 +1,6 @@
 { inputs }:
 let
   lib = inputs.nixpkgs.lib;
-  agenixSource = builtins.readFile "${inputs.agenix}/modules/age-home.nix";
-  agenixModule = builtins.toFile "agenix-home.nix" (
-    import ./agenix-home.nix {
-      inherit lib;
-      source = agenixSource;
-    }
-  );
   launchdSource = import ./launchd/backport.nix {
     inherit lib;
     source = builtins.readFile "${inputs.home-manager}/modules/launchd/default.nix";
@@ -23,7 +16,7 @@ let
   );
 in
 [
-  agenixModule
+  (import ./agenix { inherit inputs; })
   {
     disabledModules = [ "${inputs.home-manager}/modules/launchd/default.nix" ];
     imports = [ launchdModule ];

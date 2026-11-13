@@ -124,7 +124,7 @@ The [Onyx Home Manager profile](systems/base/pylv/onyx.nix) installs KiCad for P
 
 New Darwin environments leave [Claude session mining](modules/claude-session-mining/README.md) disabled. The two existing Mac entries select `systems/base/devsisters/session-mining.nix` in `systems/inventory.nix`; that fragment requires the external `gytkk-space` runner checkout. [Home Manager installation compatibility](systems/base/compat/README.md) is imported separately from common package and application defaults.
 
-[Darwin agenix integration](modules/agenix-darwin/README.md) owns the stable login wrapper and activation retries. Both Home Manager builders use `lib/home-manager-modules.nix` for the explicit agenix mount interface and [launchd plist rollback compatibility](lib/launchd/README.md).
+[Agenix Home Manager integration](lib/agenix/README.md) combines the upstream mount interface with the Darwin stable login wrapper and activation retries. Both Home Manager builders install this integration and [launchd plist rollback compatibility](lib/launchd/README.md) through `lib/home-manager-modules.nix`; profiles declare identities and secrets without importing platform integration separately.
 
 [Terraform version management](modules/terraform/README.md) uses tenv on Devsisters environments to select Terraform from project version files or `required_version` constraints and install missing versions on demand.
 

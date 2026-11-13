@@ -33,7 +33,6 @@ in
 {
   imports = [
     ./compat/home-manager.nix
-    ../../modules/agenix-darwin
     ../../modules/claude-session-mining
     # 기본 모듈들 (항상 import됨)
     ../../modules/agent-skills

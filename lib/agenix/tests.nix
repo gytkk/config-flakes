@@ -2,19 +2,11 @@ let
   flake = builtins.getFlake (toString ../..);
   inherit (flake) inputs;
   lib = inputs.nixpkgs.lib;
-  agenixModule = builtins.toFile "agenix-home-test.nix" (
-    import ../../lib/agenix-home.nix {
-      inherit lib;
-      source = builtins.readFile "${inputs.agenix}/modules/age-home.nix";
-    }
-  );
   mkConfig =
     system: secrets:
     inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = import inputs.nixpkgs { inherit system; };
-      modules = [
-        agenixModule
-        ./default.nix
+      modules = (import ../home-manager-modules.nix { inherit inputs; }) ++ [
         {
           home = {
             username = "test";
