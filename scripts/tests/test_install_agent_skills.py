@@ -108,7 +108,7 @@ def fixture(tmp_path, monkeypatch):
         (folder / "reference.md").write_text("original\n")
     plan = {
         "target": "shared",
-        "runtimes": ["codex", "pi", "omp"],
+        "runtimes": ["codex", "pi"],
         "cli_version": "1.7.2",
         "sources": [
             {

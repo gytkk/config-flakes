@@ -61,7 +61,6 @@ in
     codex.enable = lib.mkForce false;
     herdr.enable = lib.mkForce false;
     herdrApp.enable = lib.mkForce false;
-    omp.enable = lib.mkForce false;
     pi.enable = lib.mkForce false;
 
     # Every jari tab runs under jari's own tmux server, which reads the default

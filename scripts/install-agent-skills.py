@@ -167,7 +167,6 @@ def cli_add(plan, source, revision, home, state, *, isolated=False):
         "--agent",
     ]
     # CLI agent IDs select the installation directory, not every consuming runtime.
-    # OMP discovers the same ~/.agents/skills pool through its agents provider.
     command += (
         ["codex", "pi"]
         if plan["target"] == "shared"

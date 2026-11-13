@@ -24,7 +24,7 @@ agent-core/
 
 `manifest.toml`의 `skill_sources`는 로컬 skill과 외부 Git source를 선언한다. 외부 source는 설치 작업마다 기본 branch의 최신 full SHA를 한 번 결정하며, 같은 작업의 모든 target에 같은 SHA를 사용한다. `resolving-merge-conflicts`는 최신 upstream에서 삭제되어 사용자 결정에 따라 새 설치 목록에서 제외한다. 현재 source와 target별 선택 목록은 manifest를 기준으로 확인한다.
 
-`skill_targets`는 Codex/Pi/OMP 공통 pool과 Claude copy에 설치할 skill을 선택한다. 세 runtime은 `~/.agents/skills`를 공유하므로 같은 shared 선택 목록을 발견한다. [OpenAI API 모듈](../modules/openai-api/README.md)은 API client에 agenix 키를 전달하며, skill 설치 자체가 package나 credential을 준비하지는 않는다.
+`skill_targets`는 Codex/Pi 공통 pool과 Claude copy에 설치할 skill을 선택한다. Codex와 Pi는 `~/.agents/skills`를 공유하므로 같은 shared 선택 목록을 발견한다. [OpenAI API 모듈](../modules/openai-api/README.md)은 API client에 agenix 키를 전달하며, skill 설치 자체가 package나 credential을 준비하지는 않는다.
 
 Hunk의 `hunk-review`는 `modem-dev/hunk`의 `.agents/skills/hunk-review`에서 취득하여 shared와 Claude target에 설치한다. Skill은 `hunk skill show hunk-review`로 설치된 CLI 버전에 맞는 지침을 읽는다. Hunk 실행 파일은 공통 Home Manager 패키지가 설치하며, skill은 다른 외부 source와 동일하게 switch 때 갱신한다.
 
@@ -34,7 +34,7 @@ Hunk의 `hunk-review`는 `modem-dev/hunk`의 `.agents/skills/hunk-review`에서 
 
 공통 [data-analysis](skills/data-analysis/SKILL.md)는 지표 정의, 집계 단위, 조인과 코호트 검증을 다루고, [data-visualization](skills/data-visualization/SKILL.md)은 데이터에서 차트를 만들고 렌더링 결과를 확인하는 절차를 다룬다. [writing-for-agents](skills/writing-for-agents/SKILL.md)는 skill 호출 조건과 로드 여부, 실행 결과를 구분해 검증한다. [korean](skills/korean/SKILL.md)은 직전 답변을 의미와 불확실성을 유지하면서 자연스러운 한국어로 정리한다. 선별 근거와 원본 버전은 [shared skill catalog](skills/README.md)에 기록한다.
 
-[parallel-research-merge](skills/parallel-research-merge/SKILL.md)는 Codex, Claude, Pi, OMP에 같은 원본으로 설치한다. 독립적인 조사 결과가 판단이나 검증을 바꿀 수 있고 메인이 동시에 진행할 일이 있을 때 사용한다. Worker 하나부터 필요한 범위만 위임하고, 채택하거나 기각한 근거가 결과에 미친 영향을 기록한다. 분석 요청은 구현이나 커밋 없이 끝낸다. 호출 조건과 효과는 [평가 사례와 비교 절차](skills/parallel-research-merge/references/evaluation.md)로 별도 검증한다.
+[parallel-research-merge](skills/parallel-research-merge/SKILL.md)는 Codex, Claude, Pi에 같은 원본으로 설치한다. 독립적인 조사 결과가 판단이나 검증을 바꿀 수 있고 메인이 동시에 진행할 일이 있을 때 사용한다. Worker 하나부터 필요한 범위만 위임하고, 채택하거나 기각한 근거가 결과에 미친 영향을 기록한다. 분석 요청은 구현이나 커밋 없이 끝낸다. 호출 조건과 효과는 [평가 사례와 비교 절차](skills/parallel-research-merge/references/evaluation.md)로 별도 검증한다.
 
 ## 책임 경계
 
@@ -61,7 +61,7 @@ Hunk의 `hunk-review`는 `modem-dev/hunk`의 `.agents/skills/hunk-review`에서 
 
 ### Runtime module
 
-`modules/claude`, `modules/codex`, `modules/pi`, `modules/omp`는 다음을 소유한다.
+`modules/claude`, `modules/codex`, `modules/pi`는 다음을 소유한다.
 
 - Runtime package 또는 user-managed runtime의 host integration
 - Renderer의 지침 문서를 실제 runtime 경로에 설치하는 선언
@@ -71,7 +71,7 @@ Hunk의 `hunk-review`는 `modem-dev/hunk`의 `.agents/skills/hunk-review`에서 
 
 Runtime module은 공통 원문, shared skill 원문, 독자적인 render 또는 merge 알고리즘을 소유하지 않는다. Renderer는 manifest에 선언한 source만 선택한다.
 
-공통 `modules/agent-skills`는 활성 agent에 맞춰 한 번의 설치 작업을 구성한다. Codex, Pi, OMP 중 하나라도 활성화되면 shared target을 한 번 선택하고, Claude가 활성화되면 Claude target을 선택한다. `linkGeneration`과 필요한 `codexUserConfig` 이후에 실행하며 Node/npm, Git, packaged canonical resource를 포함한 Python을 제공한다. Home Manager의 `run`으로 dry-run을 존중하고 설치 오류가 나면 switch를 실패시킨다.
+공통 `modules/agent-skills`는 활성 agent에 맞춰 한 번의 설치 작업을 구성한다. Codex, Pi 중 하나라도 활성화되면 shared target을 한 번 선택하고, Claude가 활성화되면 Claude target을 선택한다. `linkGeneration`과 필요한 `codexUserConfig` 이후에 실행하며 Node/npm, Git, packaged canonical resource를 포함한 Python을 제공한다. Home Manager의 `run`으로 dry-run을 존중하고 설치 오류가 나면 switch를 실패시킨다.
 
 ## 의존성 방향
 
@@ -172,12 +172,6 @@ skills/
 ```
 
 Pi는 operating invariant를 `APPEND_SYSTEM.md`로 분리한다. `AGENTS.md`에는 공통 agent rule, prose rule, Pi adapter만 포함한다. Skill은 Codex와 같은 native shared pool을 사용하며 `~/.pi/agent/skills`에 별도 복사본을 설치하지 않는다.
-
-### OMP
-
-OMP는 shared skill 소비자로만 등록한다. OMP용 문서 renderer나 legacy skill output은 만들지 않는다. [OMP 모듈](../modules/omp/README.md)을 단독으로 활성화해도 공통 activation이 `~/.agents/skills`를 설치·갱신하며, OMP의 `agents` provider가 이를 `agents:user`로 발견한다.
-
-`skill_targets.shared.runtimes`는 소비 runtime 목록이다. 설치 adapter의 `--agent codex pi`는 pinned Skills CLI에서 공통 설치 경로를 선택하는 인자이므로 그대로 유지한다. OMP 전용 복사본이나 symlink는 만들지 않는다.
 
 ## Nix 연결
 

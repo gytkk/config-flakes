@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 from .validation import ValidationError, _expect_keys
 
 TARGET_RUNTIMES = {
-    "shared": ["codex", "pi", "omp"],
+    "shared": ["codex", "pi"],
     "claude": ["claude"],
 }
 

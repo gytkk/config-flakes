@@ -19,7 +19,6 @@ rec {
   herdr-core = callPackage ./apps/herdr-core/package.nix { };
   notion-cli = callPackage ./apps/notion-cli/package.nix { };
   ntn = notion-cli;
-  omp = callPackage ./apps/omp/package.nix { };
   pantry = callPackage ./apps/pantry/package.nix { };
   pi = callPackage ./apps/pi/package.nix { };
 }

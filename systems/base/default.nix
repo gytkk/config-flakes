@@ -49,7 +49,6 @@ in
     ../../modules/k9s
     ../../modules/lsp
     ../../modules/nix-gc
-    ../../modules/omp
     ../../modules/openai-api
     ../../modules/pi
     ../../modules/tmux
@@ -85,7 +84,6 @@ in
       lsp.enable = lib.mkDefault true;
       # NixOS hosts collect garbage at the system level via modules/nixos/baseline.nix.
       nixGc.enable = lib.mkDefault (osConfig == null);
-      omp.enable = lib.mkDefault true;
       pi.enable = lib.mkDefault true;
       tmux.enable = lib.mkDefault true;
       vim.enable = lib.mkDefault true;

@@ -106,21 +106,3 @@ pi = [
   ["$subagent_7"],
   ["$subagent_7_activity"],
 ]
-omp = [
-  ["state_icon", "machine", "workspace", "tab"],
-  ["agent", "$omp_model"],
-  [{ token = "$subagent_1_status", fg = "#696c77", rules = [{ starts_with = "●", fg = "#4e974e", bold = true }, { starts_with = "✓", fg = "#0184bc" }, { starts_with = "■", fg = "#c18401" }, { starts_with = "×", fg = "#e45649", bold = true }] }, "$subagent_1"],
-  ["$subagent_1_activity"],
-  [{ token = "$subagent_2_status", fg = "#696c77", rules = [{ starts_with = "●", fg = "#4e974e", bold = true }, { starts_with = "✓", fg = "#0184bc" }, { starts_with = "■", fg = "#c18401" }, { starts_with = "×", fg = "#e45649", bold = true }] }, "$subagent_2"],
-  ["$subagent_2_activity"],
-  [{ token = "$subagent_3_status", fg = "#696c77", rules = [{ starts_with = "●", fg = "#4e974e", bold = true }, { starts_with = "✓", fg = "#0184bc" }, { starts_with = "■", fg = "#c18401" }, { starts_with = "×", fg = "#e45649", bold = true }] }, "$subagent_3"],
-  ["$subagent_3_activity"],
-  [{ token = "$subagent_4_status", fg = "#696c77", rules = [{ starts_with = "●", fg = "#4e974e", bold = true }, { starts_with = "✓", fg = "#0184bc" }, { starts_with = "■", fg = "#c18401" }, { starts_with = "×", fg = "#e45649", bold = true }] }, "$subagent_4"],
-  ["$subagent_4_activity"],
-  [{ token = "$subagent_5_status", fg = "#696c77", rules = [{ starts_with = "●", fg = "#4e974e", bold = true }, { starts_with = "✓", fg = "#0184bc" }, { starts_with = "■", fg = "#c18401" }, { starts_with = "×", fg = "#e45649", bold = true }] }, "$subagent_5"],
-  ["$subagent_5_activity"],
-  [{ token = "$subagent_6_status", fg = "#696c77", rules = [{ starts_with = "●", fg = "#4e974e", bold = true }, { starts_with = "✓", fg = "#0184bc" }, { starts_with = "■", fg = "#c18401" }, { starts_with = "×", fg = "#e45649", bold = true }] }, "$subagent_6"],
-  ["$subagent_6_activity"],
-  [{ token = "$subagent_7_status", fg = "#696c77", rules = [{ starts_with = "●", fg = "#4e974e", bold = true }, { starts_with = "✓", fg = "#0184bc" }, { starts_with = "■", fg = "#c18401" }, { starts_with = "×", fg = "#e45649", bold = true }] }, "$subagent_7"],
-  ["$subagent_7_activity"],
-]

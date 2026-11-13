@@ -19,7 +19,7 @@ in
   options.modules.herdrApp.enable = lib.mkOption {
     type = lib.types.bool;
     default = false;
-    description = "Manage Herdr App shortcuts, prefix mode, and OMP/Claude subagent display";
+    description = "Manage Herdr App shortcuts, prefix mode, and Claude/Pi subagent display";
   };
 
   config = lib.mkIf cfg.enable {
@@ -27,16 +27,5 @@ in
       run ${pkgs.python3}/bin/python3 ${./install.py} ${./files} \
         ${lib.escapeShellArg appConfigHome}
     '';
-    home.activation.herdrAppFileOpener =
-      lib.mkIf
-        (pkgs.stdenv.hostPlatform.isDarwin && config.modules.omp.enable && config.programs.neovim.enable)
-        (
-          lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-            run ${pkgs.python3}/bin/python3 ${./install-file-opener.py} \
-              ${./file-opener.py} ${pkgs.python3}/bin/python3 \
-              ${lib.escapeShellArg "${config.home.profileDirectory}/bin/nvim"} \
-              ${lib.escapeShellArg "${config.home.homeDirectory}/Applications/OMP Neovim.app"}
-          ''
-        );
   };
 }

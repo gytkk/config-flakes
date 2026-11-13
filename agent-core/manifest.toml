@@ -67,7 +67,7 @@ license = "LICENSE"
 hunk-review = ".agents/skills/hunk-review"
 
 [skill_targets.shared]
-runtimes = ["codex", "pi", "omp"]
+runtimes = ["codex", "pi"]
 skills = ["codebase-design", "code-review", "data-analysis", "data-visualization", "devils-advocate", "diagnosing-bugs", "domain-modeling", "find-skills", "grilling", "hunk-review", "impeccable", "korean", "openai-decisions", "parallel-research-merge", "pi-agent", "prototype", "repeated-work-analyzer", "research", "tdd", "theme-template-authoring", "user-friction-review", "wizard", "writing-for-agents"]
 
 [skill_targets.claude]
