@@ -4,6 +4,8 @@
     "cmd-]": "space.next",
     "alt-[": "space.prev",
     "alt-]": "space.next",
+    "alt-up": "space.prev",
+    "alt-down": "space.next",
     "cmd-shift-[": "agent.prev",
     "cmd-shift-]": "agent.next",
     "cmd-t": "tab.new",

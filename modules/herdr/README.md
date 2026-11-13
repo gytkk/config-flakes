@@ -78,7 +78,7 @@ While prefix mode is active, the status line uses golden amber: the current them
 
 Only pickers and explicitly requested help open dialogs. The zoxide picker uses a native filter rather than fzf and queries the originating space's machine. Agent numbers follow the App API's space/tab/pane order, not its priority-sorted sidebar. Direct `Cmd+[/]`, `Cmd+Shift+[/]`, `Cmd+1..9`, `Cmd+t/w`, `Alt+t/w`, and `Ctrl+Tab` / `Ctrl+Shift+Tab` match the TUI actions above across layouts. Prefix mode is scoped to `tui`; other layouts keep normal `Ctrl+Space` input.
 
-In the desktop App, `Alt+[` / `Alt+]` also focus the previous / next space, including on Windows. These replace Windows' default previous / next tab bindings; `Ctrl+Shift+Tab` / `Ctrl+Tab` remain available for tab navigation.
+In the desktop App, `Alt+Up` / `Alt+Down` and `Alt+[` / `Alt+]` also focus the previous / next space, including on Windows. The bracket shortcuts replace Windows' default previous / next tab bindings; `Ctrl+Shift+Tab` / `Ctrl+Tab` remain available for tab navigation.
 
 For prefix-free pane splitting on macOS, the locally observed App `keys.json` binds `Cmd+d` to `pane.split:right` and `Cmd+Shift+d` to `pane.split:down`. These are App-side bindings, not TUI shortcuts or overrides in the repository's managed keys. The installer preserves existing bindings for these keys; it does not enforce their presence on another host or replace that host's shipped defaults. Check the App's own `keys.json` if they differ. The managed prefix alternatives remain `Ctrl+Space`, then `v` or `-`.
 

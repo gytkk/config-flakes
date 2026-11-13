@@ -38,6 +38,10 @@ class InstallTests(unittest.TestCase):
             installer.install(ROOT / "files", home)
             merged = json.loads(keys.read_text())
             self.assertEqual(merged["global"]["cmd-e"], "app.palette")
+            for key in ("alt-up", "alt-["):
+                self.assertEqual(merged["global"][key], "space.prev")
+            for key in ("alt-down", "alt-]"):
+                self.assertEqual(merged["global"][key], "space.next")
             self.assertEqual(merged["terminal"], original["terminal"])
             self.assertEqual(json.loads(settings.read_text()),
                              {**original_settings, "minimum_contrast": 3.0})
