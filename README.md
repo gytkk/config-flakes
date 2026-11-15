@@ -373,6 +373,7 @@ The checkout must stay at `/workspace/repos/gytkk/config-flakes`, where jari clo
 jari starts shell tabs as `/bin/bash -l` and agents read `~/.bashrc` without a login shell, so [the jari profile](systems/base/jari/home.nix) manages bash as the entry point:
 
 - Before the interactive guard, `~/.bashrc` reorders `PATH` to jari's `/opt/jari/bin`, `/opt/jari-cli/node_modules/.bin`, and `/opt/node/bin`, then the Nix profiles, then the rest. jari's pinned agent CLIs and its `gh` wrapper therefore keep precedence over Nix packages. Zsh applies the same order.
+- Agent commands do not get that order: they keep the fixed `PATH` of jari's worker service, and Claude Code's shell snapshot re-exports it after sourcing `~/.bashrc`. Activation therefore links the Devsisters commands listed in `agentCommands` (`databricks`, `vault`, `pantry`) from the Nix profile into `/usr/local/bin` with passwordless sudo, and removes links into the profile that are no longer listed. Add a command there when an agent or automation script on the worker must run it.
 - Interactive login shells on a terminal hand over to the Nix-installed Zsh. A shell with `NO_ZSH_HANDOFF=1` in its environment stays in bash, and `bash` typed inside Zsh stays bash.
 - New agent sessions and new shell tabs pick up the change; running ones keep their environment.
 
