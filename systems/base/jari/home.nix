@@ -49,6 +49,16 @@ let
   '';
 
   zsh = "${config.programs.zsh.package}/bin/zsh";
+
+  # Agent processes keep jari-worker.service's fixed PATH, and Claude Code's shell
+  # snapshot re-exports it after sourcing ~/.bashrc, so they never see the Nix profile.
+  # These commands are linked into /usr/local/bin, which is on that PATH.
+  agentCommands = [
+    "databricks"
+    "vault"
+    "pantry"
+  ];
+  profileBin = "${config.home.profileDirectory}/bin";
 in
 {
   # Import base configuration
@@ -90,6 +100,33 @@ in
   home.sessionVariables = {
     VAULT_ADDR = "https://vault.devsisters.cloud";
   };
+
+  # Links point at the profile, not the store, so `home-manager switch` updates them in place.
+  # Links into the profile that are no longer listed are removed; other files are left alone.
+  home.activation.linkAgentCommands = lib.hm.dag.entryAfter [ "installPackages" ] ''
+    if /usr/bin/sudo -n true 2>/dev/null; then
+      for link in /usr/local/bin/*; do
+        target="$(readlink "$link")" || continue
+        case "$target" in
+          ${profileBin}/*)
+            case " ${lib.concatStringsSep " " agentCommands} " in
+              *" ''${link##*/} "*) ;;
+              *) run /usr/bin/sudo -n rm -f "$link" ;;
+            esac
+            ;;
+        esac
+      done
+      for name in ${lib.escapeShellArgs agentCommands}; do
+        if [ -x "${profileBin}/$name" ]; then
+          run /usr/bin/sudo -n ln -sfn "${profileBin}/$name" "/usr/local/bin/$name"
+        else
+          warnEcho "linkAgentCommands: ${profileBin}/$name is missing; not linked"
+        fi
+      done
+    else
+      warnEcho "linkAgentCommands: passwordless sudo is unavailable; agents will not find ${lib.concatStringsSep ", " agentCommands}"
+    fi
+  '';
 
   # Workers only ship the C.utf8 and en_US.utf8 locales.
   home.language.base = lib.mkForce "C.UTF-8";
