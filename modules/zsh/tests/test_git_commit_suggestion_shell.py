@@ -27,9 +27,12 @@ class CommitSuggestionShellTest(unittest.TestCase):
             if PLUGIN is None:
                 self.skipTest("zsh-autosuggestions is not installed in /nix/store")
             setup = f"source {shlex.quote(str(PLUGIN))}\n"
+        zsh = shutil.which("zsh")
+        if zsh is None:
+            self.skipTest("zsh is not installed")
         result = subprocess.run(
             [
-                shutil.which("zsh"),
+                zsh,
                 "-f",
                 "-c",
                 setup
@@ -43,6 +46,7 @@ class CommitSuggestionShellTest(unittest.TestCase):
             check=False,
         )
         self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertEqual(result.stderr, b"")
         return result.stdout
 
     def test_triggers_preserve_prefix_and_quote_message_as_one_literal_argument(self):
@@ -91,6 +95,8 @@ class CommitSuggestionShellTest(unittest.TestCase):
         for helper in (
             "return 1",
             "print partial; return 1",
+            "print -u2 -- 'git-commit-message: invalid response'; return 1",
+            "print partial; print -u2 -- 'with-openai: failed'; return 1",
             "return 0",
         ):
             with self.subTest(helper=helper):
@@ -102,6 +108,29 @@ class CommitSuggestionShellTest(unittest.TestCase):
                     ),
                     b"",
                 )
+
+    def test_plugin_failure_and_empty_output_preserve_buffer_without_ghost_text(self):
+        for helper in (
+            "print -u2 -- 'git-commit-message: invalid response'; return 1",
+            "return 0",
+        ):
+            for trigger in TRIGGERS:
+                with self.subTest(helper=helper, trigger=trigger):
+                    self.assertEqual(
+                        self.run_shell(
+                            f"git-commit-message() {{ {helper}; }}\n"
+                            f"BUFFER={shlex.quote(trigger)}\n"
+                            "CURSOR=$#BUFFER\n"
+                            'original="$BUFFER"\n'
+                            "POSTDISPLAY='stale suggestion'\n"
+                            '_zsh_autosuggest_fetch_suggestion "$BUFFER"\n'
+                            '_zsh_autosuggest_suggest "$suggestion"\n'
+                            '[[ "$BUFFER" == "$original" && -z "$POSTDISPLAY" ]] || exit 40\n'
+                            "(( CURSOR == $#BUFFER )) || exit 41\n",
+                            plugin=True,
+                        ),
+                        b"",
+                    )
 
     def test_plugin_history_keeps_normal_commands_and_excludes_stale_commits(self):
         with tempfile.NamedTemporaryFile(mode="w") as history:

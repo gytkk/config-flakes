@@ -13,7 +13,8 @@ _zsh_autosuggest_strategy_git_commit() {
 
   # The async plugin cancels this debounce when the user continues typing.
   sleep 0.3
-  message=$(git-commit-message) || return
+  # Keep background failures off the prompt; direct invocation retains diagnostics.
+  message=$(git-commit-message 2>/dev/null) || return
   [[ -n "$message" ]] || return
   if [[ "$1" == 'gc -m "' ]]; then
     suggestion="gc -m ${(qqq)message}"

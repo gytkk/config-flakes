@@ -86,15 +86,22 @@ export async function generate(data: CommitContext): Promise<string> {
   if (!response.ok) throw new Error(`OpenAI returned HTTP ${response.status}`);
   const result = await response.json();
   const choice = Array.isArray(result?.choices) ? result.choices[0] : undefined;
-  const message = choice?.message?.content;
-  if (
-    choice?.finish_reason !== "stop" || typeof message !== "string" ||
-    !message.trim() || [...message.trim()].length > 300 ||
-    /[\p{C}\p{Z}]/u.test(message.replaceAll(" ", ""))
-  ) {
-    throw new Error("OpenAI did not return a complete, single-line commit subject");
+  if (choice?.finish_reason === "length") {
+    throw new Error("OpenAI reached the output token limit before completing the subject");
   }
-  return message.trim();
+  if (choice?.finish_reason !== "stop") {
+    throw new Error("OpenAI did not complete the commit subject");
+  }
+  const content = choice?.message?.content;
+  const subject = typeof content === "string" ? content.trim() : "";
+  if (!subject) throw new Error("OpenAI returned an empty commit subject");
+  if ([...subject].length > 300) {
+    throw new Error("OpenAI commit subject exceeds 300 characters");
+  }
+  if (/[\p{C}\p{Z}]/u.test(subject.replaceAll(" ", ""))) {
+    throw new Error("OpenAI commit subject contains multiple lines or nonprintable characters");
+  }
+  return subject;
 }
 
 export async function main(): Promise<number> {

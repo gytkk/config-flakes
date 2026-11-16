@@ -177,10 +177,31 @@ describe("commit completion", () => {
     }
   });
 
+  test("accepts a single subject surrounded by whitespace", async () => {
+    const subject = "fix: preserve the commit prompt";
+    for (const content of [`${subject}\n`, `\r\n${subject}\r\n`, ` \t\n${subject}\n\t `]) {
+      spyOn(globalThis, "fetch").mockResolvedValue(completion(content));
+      expect(await generate(emptyContext)).toBe(subject);
+    }
+  });
+
   test("trims subjects and permits 300 Unicode codepoints", async () => {
     const subject = "😀".repeat(300);
     spyOn(globalThis, "fetch").mockResolvedValue(completion(` ${subject} `));
     expect(await generate(emptyContext)).toBe(subject);
+  });
+
+  test("distinguishes rejected responses without exposing their content", async () => {
+    for (const [content, finish, error] of [
+      ["private partial", "length", "OpenAI reached the output token limit before completing the subject"],
+      ["private response", "content_filter", "OpenAI did not complete the commit subject"],
+      ["\n\t ", "stop", "OpenAI returned an empty commit subject"],
+      ["x".repeat(301), "stop", "OpenAI commit subject exceeds 300 characters"],
+      ["private\nresponse", "stop", "OpenAI commit subject contains multiple lines or nonprintable characters"],
+    ]) {
+      spyOn(globalThis, "fetch").mockResolvedValue(completion(content, finish));
+      await expect(generate(emptyContext)).rejects.toThrow(error);
+    }
   });
 
   test("rejects missing API keys before a request", async () => {
