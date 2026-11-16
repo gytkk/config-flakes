@@ -285,7 +285,7 @@ Fast mode and CodexBar retrieval remain independent status providers. The render
 
 The custom editor extends Pi's `CustomEditor` and retains native input, history, wrapping, autocomplete, mouse coordinates, and `/compact <text>` semantics. It reserves three padding columns for the prompt instead of adding a prefix outside Pi's coordinate system. It preserves hardware-cursor markers, removes software-cursor styling, and retains scroll hints and autocomplete row offsets. The ordinary footer renders no duplicate status. The UI has no legacy `/bg (N)` selector; interactive-shell and Lens remain installed independently.
 
-Apply Home Manager with Pi closed to remove Powerline from the managed package list and install the local prompt extension together, then restart Pi. Activation removes the retired managed Powerline settings but does not delete npm caches or Powerline's saved queue/stash data. Do not leave an unmanaged Powerline extension enabled alongside the local editor. `/reload` alone cannot change installed extension ownership. The [Powerline migration record](../../docs/pi-extension-migrations/powerline-footer.md) is historical, not the current installation policy.
+Apply Home Manager with Pi closed to remove Powerline from the managed package list and install the local prompt extension together, then restart Pi. Activation removes the retired managed Powerline settings but does not delete npm caches or Powerline's saved queue/stash data. Do not leave an unmanaged Powerline extension enabled alongside the local editor. `/reload` alone cannot change installed extension ownership.
 
 Headless checks exercise the real Pi editor, status rendering across terminal widths, effective model/context values, provider independence, Git polling and disposal, paste/history/autocomplete, native compaction submission, and mouse cursor placement. Node/jiti checks cover discovery and coexistence with installed shell, Lens, and questionnaire packages. Actual Korean IME candidate placement and live overlay focus restoration still require a terminal check.
 
@@ -305,7 +305,7 @@ The managed `@juicesharp/rpiv-ask-user-question@2.15.0` is already published fro
 
 Use `ask_user_question` with the package's existing `questions`, `header`, `multiSelect`, and `options[].label`, `description`, and optional `preview` fields. Terminal questions retain the custom-answer row, multi-question review, notes, and Escape cancellation. RPC uses native select/input dialogs with reduced presentation; headless runs remove the tool from the active set. The extension makes no model calls of its own. The module does not select the optional i18n extension. Without that SDK, UI chrome uses its English fallback; user-authored Korean questions and answers are separate from localization.
 
-`rpiv-todo` is selected separately as the task tracker. `rpiv-advisor` and other siblings are not installed implicitly, and the pi-subagents contract remains unchanged. The earlier pi-ask-user replacement is not selected; its investigation is retained in [the question migration specification](../../docs/pi-extension-migrations/ask-user.md).
+`rpiv-todo` is selected separately as the task tracker. `rpiv-advisor` and other siblings are not installed implicitly, and the pi-subagents contract remains unchanged. The earlier pi-ask-user replacement is not selected.
 
 ## Rounded tool and extension-message frames
 
@@ -407,8 +407,6 @@ Use `ast_grep_search`, `ast_grep_outline`, and `ast_grep_replace` with explicit,
 ### Applying and verifying
 
 Close Pi, apply Home Manager yourself, refresh the shell environment and start a new Pi session. Do not deploy old LSP/AST and Lens together. Existing unmanaged Lens config can conflict with the new managed link: review/back up it before switching; do not overwrite or delete user state automatically. `/reload` cannot install a changed package selection, config link or environment. Rollback restores this migration's removed sources and package/config declarations from Git without reverting independent question, shell or prompt changes. No Home Manager switch or live-server/cache cleanup was performed by the migration tests.
-
-See [the migration specification](../../docs/pi-extension-migrations/lens.md) for validation evidence and remaining host/language gaps.
 
 ## Task, analysis, and artifact extensions
 
