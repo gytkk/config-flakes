@@ -425,7 +425,7 @@ Python execution has the same filesystem and network permissions as Pi; it is no
 
 `/todos` shows tasks grouped by status. A widget above the editor shows progress; `Ctrl+Shift+T` toggles collapse. Completed rows disappear from the widget on the next agent turn but remain in task state and `/todos`. Defaults allow 12 content rows plus a spacer; optional `maxWidgetLines` and `collapseKey` settings live in the package-owned XDG config file. This module installs no config override. Each mutation appends a snapshot to the current session branch, including calls through codemode. Session lifecycle handlers replay that branch after reload, resume, tree navigation and compaction. The package makes no model calls.
 
-The former `phase-tasks` extension is no longer installed, so `task_list` and `/tasks` are not provided by this module. Its source under `modules/pi/files/extensions/phase-tasks/`, tests, and existing session entries are preserved for rollback; no state is deleted or converted. RPIV starts with its own list and has no phase hierarchy. Close Pi before applying Home Manager so the old managed extension link is removed; restart into a fresh session to load `todo`. To roll back, remove the RPIV package selection and restore the phase-tasks installation entry before applying again, without enabling both trackers.
+RPIV uses its own task list without a phase hierarchy. Historical session entries from the former `phase-tasks` extension remain unchanged and are not converted into RPIV tasks. This module provides `todo` and `/todos`, not the former `task_list` tool or `/tasks` command.
 
 ### Python cells
 
@@ -448,7 +448,7 @@ PI_RPIV_TODO_PACKAGE_DIR=/path/to/isolated/rpiv-todo \
   bash modules/pi/tests/run.sh rpiv-todo.test.ts python-kernel.test.ts session-artifacts.test.ts
 ```
 
-The RPIV test requires the exact selected package with its runtime dependencies; it performs no downloads and is skipped when `PI_RPIV_TODO_PACKAGE_DIR` is absent. It exercises the actual Node/jiti-loaded tool and widget with Pi's in-memory session manager: mutations, cycle rejection, replay hooks, session isolation, collapse and width bounds. It does not establish a live model turn or full TUI interaction. The retained `phase-tasks.test.ts` checks only the inactive rollback source.
+The RPIV test requires the exact selected package with its runtime dependencies; it performs no downloads and is skipped when `PI_RPIV_TODO_PACKAGE_DIR` is absent. It exercises the actual Node/jiti-loaded tool and widget with Pi's in-memory session manager: mutations, cycle rejection, replay hooks, session isolation, collapse and width bounds. It does not establish a live model turn or full TUI interaction.
 
 For an interactive smoke check, use a disposable directory: create and update todos, inspect `/todos` and collapse the widget at narrow width, evaluate a variable across two Python cells, register a log and read it after deleting its source. `/python reset` must clear the variable.
 
