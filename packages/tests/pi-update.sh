@@ -9,7 +9,7 @@ export FIXTURE_SOURCE="$TEST_ROOT/source"
 export FIXTURE_TAG="v99.1.2"
 export FIXTURE_DOWNLOAD_FAILURE="0"
 mkdir -p "$APP_DIR" "$TEST_ROOT/bin" "$FIXTURE_SOURCE/nix" "$FIXTURE_SOURCE/packages/coding-agent/install-lock"
-cp "$SOURCE_ROOT/apps/pi/"{update.sh,patches.nix,herdr-file-links.patch,message-renderer-wrappers.patch} "$APP_DIR/"
+cp "$SOURCE_ROOT/apps/pi/"{update.sh,patches.nix,herdr-file-links.patch,message-renderer-wrappers.patch,image-paste-labels.patch} "$APP_DIR/"
 mkdir -p "$TEST_ROOT/scripts" "$FIXTURE_SOURCE/packages/coding-agent/src/utils"
 cp "$SOURCE_ROOT/scripts/check-nix-patches.sh" "$TEST_ROOT/scripts/"
 cat > "$FIXTURE_SOURCE/packages/coding-agent/src/utils/open-browser.ts" <<'EOF'
@@ -40,8 +40,9 @@ cat > "$FIXTURE_SOURCE/packages/tui/src/tui-alt-screen.ts" <<'EOF'
 					// URL activation is best-effort.
 				}
 EOF
-# Populate the wrapper patch's old-side contexts; rendering behavior has its own runtime suite.
-uv run --no-project python - "$APP_DIR/message-renderer-wrappers.patch" "$FIXTURE_SOURCE" <<'PY'
+# Populate old-side contexts; rendering behavior has separate runtime suites.
+for patch in message-renderer-wrappers.patch image-paste-labels.patch; do
+uv run --no-project python - "$APP_DIR/$patch" "$FIXTURE_SOURCE" <<'PY'
 import pathlib
 import re
 import sys
@@ -71,6 +72,7 @@ for path, lines in files.items():
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("\n".join(lines) + "\n")
 PY
+done
 printf '{ "version": "99.1.2" }\n' > "$FIXTURE_SOURCE/packages/coding-agent/package.json"
 for file in nix/package.nix nix/model-catalog.json packages/coding-agent/install-lock/package-lock.json package-lock.json; do
   touch "$FIXTURE_SOURCE/$file"
@@ -173,3 +175,9 @@ reset_package
 perl -0pi -e 's/import type \{ MarkdownTransformer, MessageRenderer \}/import type { RenamedTransformer, MessageRenderer }/' "$FIXTURE_SOURCE/packages/coding-agent/src/modes/interactive/components/custom-message.ts"
 assert_failure
 echo 'PASS: incompatible custom-message wrapper patch preserves the package'
+
+perl -0pi -e 's/import type \{ RenamedTransformer, MessageRenderer \}/import type { MarkdownTransformer, MessageRenderer }/' "$FIXTURE_SOURCE/packages/coding-agent/src/modes/interactive/components/custom-message.ts"
+reset_package
+perl -0pi -e 's/const PASTE_MARKER_REGEX =/const RENAMED_MARKER_REGEX =/' "$FIXTURE_SOURCE/packages/tui/src/components/editor.ts"
+assert_failure
+echo 'PASS: incompatible image-paste patch preserves the package'

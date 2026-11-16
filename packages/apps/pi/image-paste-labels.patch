@@ -1,0 +1,97 @@
+--- a/packages/tui/src/components/editor.ts
++++ b/packages/tui/src/components/editor.ts
+@@ -28,11 +28,11 @@
+ const graphemeSegmenter = getGraphemeSegmenter();
+ const wordSegmenter = getWordSegmenter();
+ 
+-/** Regex matching paste markers like `[paste #1 +123 lines]` or `[paste #2 1234 chars]`. */
+-const PASTE_MARKER_REGEX = /\[paste #(\d+)( (\+\d+ lines|\d+ chars))?\]/g;
++/** Text and image paste markers share atomic editing and undo state. */
++const PASTE_MARKER_REGEX = /\[(?:paste|Image) #(\d+)( (\+\d+ lines|\d+ chars))?\]/g;
+ 
+ /** Non-global version for single-segment testing. */
+-const PASTE_MARKER_SINGLE = /^\[paste #(\d+)( (\+\d+ lines|\d+ chars))?\]$/;
++const PASTE_MARKER_SINGLE = /^\[(?:paste|Image) #(\d+)( (\+\d+ lines|\d+ chars))?\]$/;
+ 
+ /** Check if a segment is a paste marker (i.e. was merged by segmentWithMarkers). */
+ function isPasteMarker(segment: string): boolean {
+@@ -52,7 +52,7 @@
+ 	validIds: Set<number>,
+ ): Iterable<Intl.SegmentData> {
+ 	// Fast path: no paste markers in the text or no valid IDs.
+-	if (validIds.size === 0 || !text.includes("[paste #")) {
++	if (validIds.size === 0 || (!text.includes("[paste #") && !text.includes("[Image #"))) {
+ 		return baseSegmenter.segment(text);
+ 	}
+ 
+@@ -1100,7 +1100,7 @@
+ 	private expandPasteMarkers(text: string): string {
+ 		let result = text;
+ 		for (const [pasteId, pasteContent] of this.pastes) {
+-			const markerRegex = new RegExp(`\\[paste #${pasteId}( (\\+\\d+ lines|\\d+ chars))?\\]`, "g");
++			const markerRegex = new RegExp(`\\[(?:paste|Image) #${pasteId}( (\\+\\d+ lines|\\d+ chars))?\\]`, "g");
+ 			result = result.replace(markerRegex, () => pasteContent);
+ 		}
+ 		return result;
+@@ -1147,9 +1147,34 @@
+ 		this.pushUndoSnapshot();
+ 		this.lastAction = null;
+ 		this.exitHistoryBrowsing();
+-		this.insertTextAtCursorInternal(text);
++		this.insertTextAtCursorInternal(this.collapseImagePaths(this.normalizeText(text)));
+ 	}
+ 
++	private collapseImagePaths(text: string): string {
++		// Only path-only pastes become labels. Prose, code, and shell commands stay literal.
++		if (this.getText().trimStart().startsWith("!")) return text;
++		const lines = text.split("\n");
++		const paths = lines.map((line) => {
++			const value = line.trim();
++			if (!value) return "";
++			const quote = value[0];
++			let path = value;
++			if (quote === "'" || quote === '"') {
++				if (!value.endsWith(quote) || value.slice(1, -1).includes(quote)) return undefined;
++				path = value.slice(1, -1);
++			}
++			return /^(?:\/|~\/|\.{1,2}\/|[a-z]:[\\/]|\\\\).+\.(?:png|jpe?g|gif|webp|bmp)$/i.test(path) ? value : undefined;
++		});
++		if (paths.some((path) => path === undefined)) return text;
++		return lines.map((line, index) => {
++			const path = paths[index];
++			if (!path) return line;
++			const id = ++this.pasteCounter;
++			this.pastes.set(id, path);
++			return line.replace(path, () => `[Image #${id}]`);
++		}).join("\n");
++	}
++
+ 	/**
+ 	 * Normalize text for editor storage:
+ 	 * - Normalize line endings (\r\n and \r -> \n)
+@@ -1305,6 +1330,12 @@
+ 			}
+ 		}
+ 
++		const imageLabels = this.collapseImagePaths(filteredText);
++		if (imageLabels !== filteredText) {
++			this.insertTextAtCursorInternal(imageLabels);
++			return;
++		}
++
+ 		// Split into lines to check for large paste
+ 		const pastedLines = filteredText.split("\n");
+ 
+@@ -1421,10 +1452,10 @@
+ 
+ 				// Renumber markers with ids greater than the removed one.
+ 				this.state.lines = this.state.lines.map((line) =>
+-					line.replace(PASTE_MARKER_REGEX, (fullMatch, idGroup, suffixGroup) => {
++					line.replace(PASTE_MARKER_REGEX, (fullMatch, idGroup) => {
+ 						const x = Number(idGroup);
+ 						if (x <= targetId) return fullMatch;
+-						return `[paste #${x - 1}${suffixGroup ?? ""}]`;
++						return fullMatch.replace(`#${x}`, `#${x - 1}`);
+ 					}),
+ 				);
+ 			}

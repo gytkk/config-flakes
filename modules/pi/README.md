@@ -267,6 +267,12 @@ Failed queries replace the displayed quota with an unavailable status; `/codex-u
 
 Apply Home Manager and restart Pi to install the extension. To try it before applying Home Manager, start `pi --extension ./modules/pi/files/extensions/codex-usage.ts` from the repository root. If a fetch fails, check that `codexbar` is on `PATH` and that the Codex CLI account is authenticated; Pi's `/login openai` does not authenticate CodexBar.
 
+### Image paste labels
+
+Pasting a standalone image path into the editor shows a numbered label such as `[Image #1]`. This covers Herdr's quoted screenshot paths, Pi's native clipboard image insertion, and newline-separated image paths. Labels use Pi's native paste-marker editing, including cursor movement, deletion, and undo. Submission and external editing expand them back to the original paths, including quotes and spaces, so Pi can read the same files. This changes the editor display, not the saved message text or image delivery. Prose, non-image paths, and shell commands remain literal.
+
+The behavior comes from `packages/apps/pi/image-paste-labels.patch`. Close Pi, apply Home Manager, and restart Pi to load the patched package; `/reload` cannot replace the running editor implementation. With an unpatched Pi source checkout matching the installed version, run `PI_SOURCE=/path/to/pi-source bun packages/tests/pi-image-paste.ts` to test the patch and local prompt UI without replacing the live runtime.
+
 ### Prompt and cursor rendering
 
 `modules/pi/files/extensions/prompt-ui/` is the sole managed editor/footer owner. It places the working-directory path and Git branch/counts on the left, a context meter spanning the remaining space, and extension statuses, weekly quota, model, thinking, and fast mode on the right. The statusline replaces the editor's top border; the `╰─` input follows directly without an extra horizontal separator or idle bottom border. Narrow widths shorten or omit less important statuses while preserving context and model information.
