@@ -131,7 +131,9 @@ The Pi adapter permits execution choices within an already authorized task, not 
 
 Apply Home Manager to refresh generated instructions, then restart Pi in a new session rather than resuming a session with the old policy. Model defaults and the allowlist are unchanged; pass an exact provider/model and thinking suffix when a task requires one. Agent Hub and the Herdr sidebar still have their documented foreground-oriented coverage; use package Fleet/status for other background runs. Enabling background execution does not extend those local UIs.
 
-### Specialist contracts
+### Execution profiles
+
+The local definitions are thin execution profiles: they specify tools, context inheritance, child extension loading, role restrictions, and completion output. Each delegation request supplies the objective, allowed scope, starting evidence, completion conditions, and relevant operating constraints. The prompts retain a short baseline because fresh children do not inherit the parent's global instructions or skills. The worker's structured completion contract remains available to Agent Hub.
 
 `agents/researcher.md` loads the already pinned `pi-web-access` package through `subagentOnlyExtensions`. Foreground children do not load ambient extensions, and listing a tool name alone does not load its provider. The path assumes Pi's managed npm package location under `~/.pi/agent/npm/node_modules/`; review it when changing package installation layout. The role includes `web_enable`, the search/fetch tools, `source_check`, and native `contact_supervisor`. Web tools activate on demand. It has no shell or file-writing tools, does not request progress files or a default repository output, and returns evidence and gaps to the parent. An explicitly requested runtime artifact is still managed by pi-subagents.
 
