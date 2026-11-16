@@ -101,9 +101,9 @@ Defined in `systems/inventory.nix` (single source of truth). `kind` field determ
 #### Base System
 
 1. **`systems/base/default.nix`**: Common config. core modules, standard dev packages, programs
-2. **`systems/base/devsisters/home.nix`**: vault, kc2aws, wg-cli, ruby, databricks-cli, pantry, custom scripts
+2. **`systems/base/devsisters/home.nix`**: Devsisters tools from `systems/base/devsisters/tools.nix` (vault, kc2aws, wg-cli, ruby, databricks-cli, pantry, custom scripts) plus agenix-backed telemetry
 3. **`systems/base/pylv/home.nix`**: Minimal (inherits base)
-4. **`systems/base/jari/home.nix`**: Tools, shell, Git, and editor for jari workers; agent runtimes, tmux, GUI modules, private inputs, and agenix secrets stay off
+4. **`systems/base/jari/home.nix`**: Tools, shell, Git, and editor for jari workers, plus the shared Devsisters tools; private inputs are fetched over HTTPS, and agent runtimes, tmux, GUI modules, and agenix secrets stay off
 5. **`systems/base/pylv/sepia.nix`**: Home Manager additions for `pylv-sepia`; system configuration lives in `systems/hosts/pylv-sepia/configuration.nix`
 
 ### Module System
@@ -185,6 +185,6 @@ Before adding or updating app packages or changing their CI, read [the package g
 
 - **Base packages** (`systems/base/default.nix`): nixfmt, coreutils, findutils, docker, gcc, jq, fd, ripgrep, git, gh, lazygit, nodejs, bun, go, uv, ruff, rustup, kubectl, helm, etc.
 - **LSP servers** (`modules/lsp/`): nixd, gopls, typescript-language-server, terraform-ls, ty, pyright, yaml-language-server, marksman (`rust-analyzer` must be installed in the active rustup toolchain)
-- **Devsisters-specific** (`systems/base/devsisters/`): vault, kc2aws, wg-cli, ruby, databricks-cli, pantry. `kc2aws` and `wg-cli` come from the private `keycloak2aws` and `devsisters-wg` flake inputs.
+- **Devsisters-specific** (`systems/base/devsisters/tools.nix`, shared by the devsisters and jari profiles): vault, kc2aws, wg-cli, ruby, databricks-cli, pantry. `kc2aws` and `wg-cli` come from the private `keycloak2aws` and `devsisters-wg` flake inputs.
 
 The private `keycloak2aws` flake input is declared in `flake.nix` and pinned in the root `flake.lock`. To update `kc2aws`, run `nix flake update keycloak2aws` from the repository root, apply Home Manager, and commit the resulting lockfile change.

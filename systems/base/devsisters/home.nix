@@ -1,8 +1,6 @@
 {
   config,
   lib,
-  pkgs,
-  inputs,
   username,
   homeDirectory,
   ...
@@ -12,57 +10,14 @@
   # Import base configuration
   imports = [
     ../default.nix
-    ../../../modules/terraform
+    ./tools.nix
   ];
 
   # The current shadow rollout records personal sessions only.
   modules.agentSessionRecord.enable = lib.mkForce false;
 
-  # Devsisters 특화 패키지 추가
-  home.packages = with pkgs; [
-    # Authentication
-    vault
-    inputs.keycloak2aws.packages.${pkgs.stdenv.hostPlatform.system}.kc2aws
-    inputs.devsisters-wg.packages.${pkgs.stdenv.hostPlatform.system}.wg-cli
-    # wg-quick for the devsisters WireGuard profiles
-    wireguard-tools
-
-    # kubectl oidc-login plugin (int128/kubelogin)
-    kubelogin-oidc
-
-    # Ruby
-    pkgs.stable-25_05.ruby_3_2
-
-    # Databricks CLI (root nixpkgs의 Go 구현체)
-    databricks-cli
-
-    # Pantry CLI (teamdev.ai 배포 도구, main 빌드 바이너리, 수동 업데이트)
-    pantry
-
-    # Custom scripts
-    (pkgs.writeShellScriptBin "sign" (builtins.readFile ./scripts/sign))
-    (pkgs.writeShellScriptBin "dlg" (builtins.readFile ./scripts/login))
-  ];
-
-  # Terraform 모듈 설정
-  modules.terraform = {
-    enable = true;
-    runEnv = {
-      AWS_PROFILE = "saml";
-    };
-  };
-
-  # Devsisters 특화 Git 설정
-  programs.git.settings.user = {
-    email = lib.mkForce "gyutak.kim@devsisters.com";
-    name = lib.mkForce "Gyutak Kim";
-  };
-
   # Devsisters 특화 환경 변수
   home.sessionVariables = {
-    VAULT_ADDR = "https://vault.devsisters.cloud";
-    # SBT Java 호환성 설정
-    SBT_OPTS = "-Xmx2G -XX:+UseG1GC";
     # 일부 OTLP 클라이언트는 공통 프로토콜만 읽으므로 Databricks가 지원하는 HTTP/protobuf를 명시한다.
     OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf";
     OTEL_METRICS_EXPORTER = "otlp";
@@ -96,9 +51,4 @@
       unset _dbx_token
     fi
   '';
-
-  # Add gem binaries to PATH
-  home.sessionPath = [
-    "$HOME/.gem/ruby/3.2.0/bin"
-  ];
 }

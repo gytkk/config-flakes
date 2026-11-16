@@ -358,14 +358,16 @@ home-manager build --flake .#devsisters-macbook
 curl -fsSL https://raw.githubusercontent.com/gytkk/config-flakes/main/systems/base/jari/bootstrap.sh | bash
 ```
 
-The script installs Nix when `/nix` is missing, clones this repository to `/workspace/repos/gytkk/config-flakes` unless that checkout already exists, builds `devsisters-jari`, and activates it. Existing unmanaged files such as the stock `~/.bashrc` and `~/.profile` are kept with a `.pre-home-manager` suffix. It needs no SSH key and fetches no private input. Afterwards, apply changes with `home-manager switch --flake .#devsisters-jari` from that checkout.
+The script installs Nix when `/nix` is missing, clones this repository to `/workspace/repos/gytkk/config-flakes` unless that checkout already exists, builds `devsisters-jari`, and activates it. Existing unmanaged files such as the stock `~/.bashrc` and `~/.profile` are kept with a `.pre-home-manager` suffix. It needs no SSH key: the build rewrites the `git+ssh` URLs of the private flake inputs to HTTPS, which jari's GitHub credential helper in `/etc/gitconfig` authenticates. Afterwards, apply changes with `home-manager switch --flake .#devsisters-jari` from that checkout.
 
 The checkout must stay at `/workspace/repos/gytkk/config-flakes`, where jari clones `gytkk/config-flakes`: the environment's `flakeDirectory` in `systems/inventory.nix` points there instead of the `~/development/config-flakes` default, and the Neovim and theme links resolve into it.
+
+The profile also imports [the Devsisters tools](systems/base/devsisters/tools.nix) shared with the macOS profile: `kc2aws`, `wg-cli`, Vault, the Databricks CLI, Pantry, Ruby, tenv, and the `sign` and `dlg` scripts. Home Manager writes `url."https://github.com/".insteadOf` for `ssh://git@github.com/` and `git@github.com:` to `~/.config/git/config`. Git remotes and private flake inputs on GitHub therefore use HTTPS with jari's credential helper, because a worker has no SSH key. Before the first activation that writes this rule, pass it through the environment: `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=url.https://github.com/.insteadOf GIT_CONFIG_VALUE_0=ssh://git@github.com/ home-manager switch --flake .#devsisters-jari`.
 
 jari starts shell tabs as `/bin/bash -l` and agents read `~/.bashrc` without a login shell, so [the jari profile](systems/base/jari/home.nix) manages bash as the entry point:
 
 - Before the interactive guard, `~/.bashrc` reorders `PATH` to jari's `/opt/jari/bin`, `/opt/jari-cli/node_modules/.bin`, and `/opt/node/bin`, then the Nix profiles, then the rest. jari's pinned agent CLIs and its `gh` wrapper therefore keep precedence over Nix packages. Zsh applies the same order.
-- Agent commands do not get that order: they keep the fixed `PATH` of jari's worker service, and Claude Code's shell snapshot re-exports it after sourcing `~/.bashrc`. Activation therefore links the Devsisters commands listed in `agentCommands` (`databricks`, `vault`, `pantry`) from the Nix profile into `/usr/local/bin` with passwordless sudo, and removes links into the profile that are no longer listed. Add a command there when an agent or automation script on the worker must run it.
+- Agent commands do not get that order: they keep the fixed `PATH` of jari's worker service, and Claude Code's shell snapshot re-exports it after sourcing `~/.bashrc`. Activation therefore links the Devsisters commands listed in `agentCommands` (`databricks`, `kc2aws`, `vault`, `pantry`) from the Nix profile into `/usr/local/bin` with passwordless sudo, and removes links into the profile that are no longer listed. Add a command there when an agent or automation script on the worker must run it.
 - Interactive login shells on a terminal hand over to the Nix-installed Zsh. A shell with `NO_ZSH_HANDOFF=1` in its environment stays in bash, and `bash` typed inside Zsh stays bash.
 - New agent sessions and new shell tabs pick up the change; running ones keep their environment.
 
@@ -374,7 +376,7 @@ The profile deliberately leaves these to jari or off:
 - Claude Code, Codex, Pi, OMP, Herdr, and agent session recording. jari pins the agent CLIs under `/opt` and keeps rewriting their settings in `~/.claude` and `~/.codex`, so no agent settings, instructions, or shared skills are installed.
 - tmux. Every jari tab runs under jari's own tmux server, which reads the default tmux configuration and must match the system tmux client.
 - GitHub credentials and `~/.gitconfig`. Git uses the credential helper from jari's `/etc/gitconfig`; Home Manager only writes `~/.config/git/config`, and values jari wrote to `~/.gitconfig` take precedence.
-- `kc2aws`, `wg-cli`, and agenix secrets. A worker has neither an SSH key for the private flake inputs nor an age identity, so the OpenAI key is unavailable: `with-openai` and AI commit subjects are not installed, and Neovim's AI suggestions are manual-only and report the missing key.
+- agenix secrets and the Databricks OpenTelemetry export. A worker has no age identity, so neither the OpenAI key nor the telemetry token is available: `with-openai` and AI commit subjects are not installed, and Neovim's AI suggestions are manual-only and report the missing key.
 - Scheduled Nix garbage collection. The `jari` user has no systemd user session; run `nix-collect-garbage --delete-older-than 14d` when needed.
 - GUI modules (Ghostty, Zed, Windows Terminal) and the `ko_KR.UTF-8` locale, which workers do not ship; the environment uses `C.UTF-8`.
 

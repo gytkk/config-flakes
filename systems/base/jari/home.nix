@@ -55,6 +55,7 @@ let
   # These commands are linked into /usr/local/bin, which is on that PATH.
   agentCommands = [
     "databricks"
+    "kc2aws"
     "vault"
     "pantry"
   ];
@@ -62,7 +63,10 @@ let
 in
 {
   # Import base configuration
-  imports = [ ../default.nix ];
+  imports = [
+    ../default.nix
+    ../devsisters/tools.nix
+  ];
 
   modules = {
     # jari owns the agent CLIs and keeps rewriting their settings under ~/.claude and ~/.codex.
@@ -87,18 +91,6 @@ in
 
     # The jari user has no systemd user session unless lingering is enabled.
     nixGc.enable = lib.mkForce false;
-  };
-
-  # Devsisters tools that need neither private flake inputs nor secrets
-  home.packages = with pkgs; [
-    vault
-    kubelogin-oidc
-    databricks-cli
-    pantry
-  ];
-
-  home.sessionVariables = {
-    VAULT_ADDR = "https://vault.devsisters.cloud";
   };
 
   # Links point at the profile, not the store, so `home-manager switch` updates them in place.
@@ -132,13 +124,15 @@ in
   home.language.base = lib.mkForce "C.UTF-8";
 
   programs.git.settings = {
-    user = {
-      email = lib.mkForce "gyutak.kim@devsisters.com";
-      name = lib.mkForce "Gyutak Kim";
-    };
-
     # /etc/gitconfig carries jari's GitHub App credential helper; do not reset or replace it.
     credential = lib.mkForce { };
+
+    # A worker has no SSH key. Fetch GitHub SSH remotes, including the private
+    # git+ssh flake inputs, over HTTPS with jari's credential helper.
+    url."https://github.com/".insteadOf = [
+      "ssh://git@github.com/"
+      "git@github.com:"
+    ];
   };
 
   # The worker's /etc/nix/nix.conf does not enable flakes.

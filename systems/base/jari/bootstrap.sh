@@ -2,8 +2,9 @@
 # Install the devsisters-jari Home Manager environment on a jari worker.
 #
 # A worker keeps its disk across sleep and wake, but a new worker starts empty,
-# so this script is safe to run again at any time. It needs no SSH key, age
-# identity, or private flake input.
+# so this script is safe to run again at any time. It needs no SSH key or age
+# identity: private flake inputs are fetched over HTTPS with jari's GitHub
+# credential helper.
 set -euo pipefail
 
 repoUrl="https://github.com/gytkk/config-flakes"
@@ -39,9 +40,14 @@ main() {
     git clone "$repoUrl" "$checkout"
   fi
 
+  # The private flake inputs use git+ssh URLs. Until the first activation writes
+  # the same rewrite to the Git config, pass it through the environment.
   echo "bootstrap: building $environment"
   generation="$(
-    nix build "$checkout#homeConfigurations.$environment.activationPackage" \
+    GIT_CONFIG_COUNT=1 \
+      GIT_CONFIG_KEY_0='url.https://github.com/.insteadOf' \
+      GIT_CONFIG_VALUE_0='ssh://git@github.com/' \
+      nix build "$checkout#homeConfigurations.$environment.activationPackage" \
       --extra-experimental-features 'nix-command flakes' \
       --no-link --print-out-paths
   )"
