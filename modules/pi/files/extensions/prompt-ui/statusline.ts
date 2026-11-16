@@ -1,5 +1,5 @@
 import type { ExtensionContext, ReadonlyFooterDataProvider } from "@earendil-works/pi-coding-agent";
-import { mixColors, stripTerminalSequences, truncateToWidth, visibleWidth, type Color } from "@earendil-works/pi-tui";
+import { mixColors, parseColor, stripTerminalSequences, truncateToWidth, visibleWidth, type Color } from "@earendil-works/pi-tui";
 import { sep } from "node:path";
 
 const STATE_TYPE = "codex-fast-mode";
@@ -33,7 +33,7 @@ export function createStatusLine(
     if (width < 4) return accent("╭") + border("─".repeat(width - 1));
 
     const colors = theme.colors;
-    const pathBg = mixColors(colors.userMessageBg, colors.accent, 0.12, "srgb");
+    const pathBg = mixColors(colors.userMessageBg, parseColor("#a8e6cf"), 0.16, "srgb");
     const modelBg = mixColors(colors.userMessageBg, colors.customMessageLabel, 0.12, "srgb");
     // Pull badge text toward the theme foreground for contrast on tinted surfaces.
     const ink = (color: Color) => mixColors(color, colors.text, 0.6, "srgb");

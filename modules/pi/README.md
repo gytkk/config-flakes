@@ -277,6 +277,8 @@ The behavior comes from `packages/apps/pi/image-paste-labels.patch`. Close Pi, a
 
 `modules/pi/files/extensions/prompt-ui/` is the sole managed editor/footer owner. It places the working-directory path and Git branch/counts on the left, a context meter spanning the remaining space, and extension statuses, weekly quota, model, thinking, and fast mode on the right. The statusline replaces the editor's top border; the `╰─` input follows directly without an extra horizontal separator or idle bottom border. Narrow widths shorten or omit less important statuses while preserving context and model information.
 
+The directory badge blends a pale mint tint into the theme background; its text and Git colors retain their theme-derived contrast. The model badge keeps its separate theme-derived tint.
+
 Git counts use unstaged (`*`), staged (`+`), and untracked (`?`) files. The watcher polls every two seconds after the previous query finishes, counts individual untracked files, and treats merge conflicts as unresolved work. Queries have time/output bounds, failures show `git!` with a bounded warning, and shutdown/reload cancels pending work.
 
 Fast mode and CodexBar retrieval remain independent status providers. The renderer consumes `codex-fast-mode` and `codex-usage` through Pi's footer data provider and excludes them from aggregate extension statuses. It also works without either provider. The prompt border omits Lens's `LSP Inactive` status while retaining active and failed LSP statuses. Authentication, quota refresh/failure/stale handling, request payloads, child exclusion, and saved fast-mode toggles remain provider-owned.

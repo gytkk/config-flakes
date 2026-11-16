@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { CURSOR_MARKER, colorToRgb, mixColors, stripTerminalSequences, visibleWidth } from "@earendil-works/pi-tui";
+import { CURSOR_MARKER, colorToRgb, mixColors, parseColor, stripTerminalSequences, visibleWidth } from "@earendil-works/pi-tui";
 import { createStatusLine } from "../files/extensions/prompt-ui/statusline";
 import { promptTheme } from "./fixtures/prompt-theme";
 
@@ -106,7 +106,7 @@ describe("prompt statusline", () => {
       ctx.ui.theme = promptTheme(name);
       const theme = ctx.ui.theme, colors = theme.colors;
       const ink = (color: typeof colors.accent) => mixColors(color, colors.text, 0.6, "srgb");
-      const pathBg = mixColors(colors.userMessageBg, colors.accent, 0.12, "srgb");
+      const pathBg = mixColors(colors.userMessageBg, parseColor("#a8e6cf"), 0.16, "srgb");
       const modelBg = mixColors(colors.userMessageBg, colors.customMessageLabel, 0.12, "srgb");
       const output = render(300);
       expect(pathBg).not.toEqual(modelBg);
@@ -116,6 +116,11 @@ describe("prompt statusline", () => {
           .map(channel => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
         return red * 0.2126 + green * 0.7152 + blue * 0.0722;
       };
+      expect(luminance(pathBg)).toBeGreaterThan(luminance(mixColors(colors.userMessageBg, colors.accent, 0.12, "srgb")));
+      const { r, g, b } = colorToRgb(pathBg);
+      const base = colorToRgb(colors.userMessageBg);
+      expect(g - b).toBeGreaterThan(base.g - base.b);
+      expect(g - r).toBeGreaterThan(base.g - base.r);
       for (const [fg, bg] of [
         ...[colors.accent, colors.customMessageLabel, colors.warning, colors.success, colors.error].map(color => [ink(color), pathBg]),
         [ink(colors.customMessageLabel), modelBg],
