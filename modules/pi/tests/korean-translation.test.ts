@@ -82,10 +82,27 @@ describe("literal preservation", () => {
       .toBe(text.replace("설명해 주세요", "Please explain"));
   });
 
-  test("rejects removed, repeated, reordered, and invented placeholders", () => {
+  test("allows natural Korean word order while restoring literals unchanged", () => {
+    const protectedText = protectText("Use `one` before `two`.");
+    const [one, two] = protectedText.text.match(/\{\{PI_KEEP_[^}]+\}\}/g)!;
+    expect(protectedText.restore(`${two}보다 먼저 ${one}을 사용하세요.`))
+      .toBe("`two`보다 먼저 `one`을 사용하세요.");
+  });
+
+  test("rejects removed, repeated, altered, and invented placeholders", () => {
     const protectedText = protectText("`one` then `two`");
     const tokens = protectedText.text.match(/\{\{PI_KEEP_[^}]+\}\}/g)!;
-    for (const changed of [tokens[0], `${tokens[0]} ${tokens[0]} ${tokens[1]}`, `${tokens[1]} ${tokens[0]}`, protectedText.text.replace("_0}}", "_42}}")]) {
+    for (const changed of [tokens[0], `${tokens[0]} ${tokens[0]}`, `${tokens[0]} ${tokens[0]} ${tokens[1]}`, protectedText.text.replace("_0}}", "_42}}"), protectedText.text.replace("PI_KEEP_", "PI_KEEP_changed_")]) {
+      expect(() => protectedText.restore(changed)).toThrow("protected");
+    }
+  });
+
+  test("keeps slash-command prefixes executable when argument placeholders move", () => {
+    const protectedText = protectText("/skill:review `one`보다 `two`를 먼저 확인하세요");
+    const [command, one, two] = protectedText.text.match(/\{\{PI_KEEP_[^}]+\}\}/g)!;
+    expect(protectedText.restore(`${command} Check ${two} before ${one}.`))
+      .toBe("/skill:review Check `two` before `one`.");
+    for (const changed of [`Check ${two} before ${one}. ${command}`, `${command}Check ${two} before ${one}.`]) {
       expect(() => protectedText.restore(changed)).toThrow("protected");
     }
   });
@@ -182,6 +199,68 @@ describe("input, provider isolation, and output", () => {
 });
 
 describe("failures and lifecycle", () => {
+  test.each(["input", "output"])("accepts reordered placeholders in %s without a retry or warning", async direction => {
+    const h = harness();
+    h.respond(async (_model, context) => {
+      const [one, two] = context.messages[0].content.match(/\{\{PI_KEEP_[^}]+\}\}/g);
+      return answer(direction === "output" ? `${two}보다 먼저 ${one}을 사용하세요.` : `Use ${two} before ${one}.`);
+    });
+    if (direction === "output") {
+      const result = await h.output(answer("Use `one` before `two`."));
+      expect(result.entries[0].data.text).toBe("`two`보다 먼저 `one`을 사용하세요.");
+    } else {
+      expect(await h.input("`one`보다 `two`를 먼저 사용하세요.")).toMatchObject({ action: "transform", text: "Use `two` before `one`." });
+    }
+    expect(h.streamSimple).toHaveBeenCalledTimes(1);
+    expect(h.ui.notify).not.toHaveBeenCalled();
+  });
+
+  test.each(["input", "output"])("retries a placeholder mismatch once for %s and records both attempts' usage", async direction => {
+    const h = harness();
+    h.respond(async (_model, context) => answer(h.streamSimple.mock.calls.length === 1
+      ? "Missing protected text"
+      : context.messages[0].content.replace("설명해 주세요", "Please explain").replace("The check passed.", "검사가 통과했습니다.")));
+    const result = direction === "input" ? await h.input("설명해 주세요 `foo()`") : await h.output(answer("The check passed. `foo()`"));
+    const entry = direction === "input" ? h.sm.getBranch()[0] as any : result.entries[0];
+    expect(entry.data.text).toBe(direction === "input" ? "설명해 주세요 `foo()`" : "검사가 통과했습니다. `foo()`");
+    if (direction === "input") expect(result).toMatchObject({ action: "transform", text: "Please explain `foo()`" });
+    expect(entry.data.usage).toMatchObject({ input: 10, output: 12, totalTokens: 22, cost: { total: 0.6 } });
+    expect(usage.input).toBe(5);
+    expect(usage.cost.total).toBe(0.3);
+    expect(h.streamSimple).toHaveBeenCalledTimes(2);
+    expect(h.streamSimple.mock.calls[1][1].messages).toEqual(h.streamSimple.mock.calls[0][1].messages);
+    expect(h.streamSimple.mock.calls[1][2].signal).toBe(h.streamSimple.mock.calls[0][2].signal);
+    expect(h.ui.notify).not.toHaveBeenCalled();
+  });
+
+  test("a second placeholder mismatch preserves the original and reports one warning", async () => {
+    const h = harness();
+    h.respond(async () => answer("Missing protected text"));
+    const original = answer("The check passed. `foo()`");
+    const before = structuredClone(original);
+    expect(await h.output(original)).toBeUndefined();
+    expect(original).toEqual(before);
+    expect(h.streamSimple).toHaveBeenCalledTimes(2);
+    expect(h.ui.notify).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(h.ui.notify.mock.calls)).toContain("protected");
+    expect(h.sm.getBranch()).toEqual([]);
+  });
+
+  test("cancellation stops the retry without starting another attempt", async () => {
+    const h = harness();
+    const controller = new AbortController();
+    h.ctx.signal = controller.signal;
+    h.respond(async (model, context, options) => {
+      if (h.streamSimple.mock.calls.length === 1) return answer("Missing protected text");
+      queueMicrotask(() => controller.abort());
+      return pending(model, context, options);
+    });
+    expect(await h.output(answer("The check passed. `foo()`"))).toBeUndefined();
+    expect(h.streamSimple).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(h.ui.notify.mock.calls)).toContain("cancelled or timed out");
+    expect(h.ui.setStatus.mock.calls.at(-1)).toEqual(["korean-translation", undefined]);
+  });
+
   test.each(["error", "length", "aborted", "toolUse"])("rejects translator stop reason %s without leaking provider error details", async stopReason => {
     const h = harness();
     h.respond(async () => ({ ...answer("partial", stopReason), errorMessage: "secret-provider-detail" }));
@@ -190,6 +269,7 @@ describe("failures and lifecycle", () => {
     expect(h.sm.getBranch()).toEqual([]);
     expect(JSON.stringify(h.ui.notify.mock.calls)).not.toContain("secret-provider-detail");
     expect(JSON.stringify(h.ui.notify.mock.calls)).toContain(stopReason);
+    expect(h.streamSimple).toHaveBeenCalledTimes(1);
   });
 
   test("missing model/authentication, empty text, damaged literals, and oversized input fail closed", async () => {
