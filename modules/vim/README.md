@@ -18,7 +18,8 @@ The module exposes every generated colorscheme from `themes/exports/nvim/`, load
 - Nix installs language servers; Rust uses rust-analyzer from the active rustup toolchain. Neovim watches Rust files to avoid a macOS server watcher startup stall.
 - Treesitter provides syntax parsing. Conform formats with the selected tools, including `nixfmt`, `prettier`, `rustfmt`, `gofmt`, and `ruff_format`. Markdown and YAML skip formatting on save; manual formatting remains available.
 - Native diagnostics show a color-coded circle and the current-line message directly after the code.
-- Markdown and MDX use `render-markdown.nvim` for an in-buffer preview that returns to source in insert mode. Directly opened standalone Markdown files receive Marksman support.
+- Markdown and MDX use syntax highlighting without an in-buffer rendering plugin. Directly opened standalone Markdown files receive Marksman support.
+- `:MarkdownViewer` (an alias for `:MarkdownPreview`) opens Markdown in the default browser through `iamcco/markdown-preview.nvim`. The localhost backend starts only when requested; `:MarkdownPreviewStop` stops it, and `:MarkdownPreviewToggle` toggles the preview. Lazy installs the backend dependencies with Node.js and npm through Yarn; no separately installed Yarn is required.
 
 Flash is pinned to the upstream Neovim 0.13 search-state fix. Older versions access removed `search_match_*` globals and can repeatedly report `Flash error during redraw` after a character motion, including when saving MDX files. Restore the recorded plugins after applying this configuration and restart Neovim.
 
@@ -112,6 +113,14 @@ Check folding defaults without loading plugins or touching saved sessions:
 ```bash
 nvim --headless -u NONE -i NONE -l modules/vim/tests/folds.lua
 ```
+
+After installing the preview plugin, check its lazy command, on-demand backend, localhost HTTP response, and shutdown without opening the default browser:
+
+```bash
+nvim --headless -u NONE -i NONE -l modules/vim/tests/markdown-preview.lua
+```
+
+This check requires Node.js and curl, uses the installed preview plugin, and does not load the normal editor configuration or saved sessions. Check rendering and synchronized scrolling manually with `:MarkdownViewer` in a Markdown buffer.
 
 The completion check uses the real merged LazyVim, Blink, and Minuet specs with a substituted backend, preventing external requests and credential access. It covers automatic Nix inline suggestions, preview rendering, Tab acceptance, ordinary completion and snippet fallbacks, and filetype filtering. After plugins are installed, run it from the repository root:
 

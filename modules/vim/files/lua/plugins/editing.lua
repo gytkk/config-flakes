@@ -22,14 +22,15 @@ return {
     end,
   },
   {
-    "MeanderingProgrammer/render-markdown.nvim",
+    "iamcco/markdown-preview.nvim",
+    cmd = { "MarkdownPreview", "MarkdownPreviewStop", "MarkdownPreviewToggle" },
     ft = { "markdown" },
-    dependencies = {
-      "nvim-treesitter/nvim-treesitter",
-      "nvim-tree/nvim-web-devicons",
-    },
-    opts = {
-      change_events = { "FileChangedShellPost" },
-    },
+    build = "cd app && npx --yes yarn install --frozen-lockfile",
+    init = function()
+      vim.g.mkdp_auto_start = 0
+      vim.api.nvim_create_user_command("MarkdownViewer", function()
+        vim.cmd("MarkdownPreview")
+      end, { desc = "Open Markdown preview in the default browser" })
+    end,
   },
 }
