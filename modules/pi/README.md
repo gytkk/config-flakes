@@ -20,7 +20,6 @@ symlinks.
 | `files/extensions/` | `~/.pi/agent/extensions/` | Local Pi extensions |
 | `modules/pi/agents/researcher.md`, `modules/pi/agents/reviewer.md`, and `modules/pi/agents/worker.md` | `~/.pi/agent/agents/` | Specialist prompts, tool contracts, and worker completion schema |
 | `themes/exports/pi/one-half-light.json` | `~/.pi/agent/themes/one-half-light.json` | Generated One Half Light theme |
-| `files/themes/claude-like.json` | `~/.pi/agent/themes/claude-like.json` | Alternate dark theme |
 | Agent core skill sources | `~/.agents/skills/` | Codex/Pi shared pool, installed or updated by shared activation |
 
 The module also installs:
@@ -466,7 +465,7 @@ Cloudflare operations use the `cf` CLI installed by the common Home Manager prof
 
 ## Theme
 
-Pi selects the generated `one-half-light` theme from `themes/exports/pi/one-half-light.json`. The module also installs `claude-like` as an alternative. The built-in `system` theme remains available in `/settings` to derive colors from the terminal's background and ANSI palette.
+Pi selects the generated `one-half-light` theme from `themes/exports/pi/one-half-light.json`. The built-in `system` theme remains available in `/settings` to derive colors from the terminal's background and ANSI palette.
 
 The local prompt derives path and model badges from the active Pi theme: the path uses an accent-tinted background with a rounded left edge and an arrow-shaped right edge, while the model uses a label-tinted background with rounded edges. Both use stronger foreground colors for readability. Git counts retain their symbols and use warning (`*`), success (`+`), and accent (`?`) colors; query failures use error. Thinking follows the selected level's theme color, fast mode uses the keyword color in bold, and filled quota cells use success. Context usage uses accent below 70%, warning from 70%, and error from 90%. The input marker also uses accent. Narrow layouts drop the model badge before truncating its text. No shared theme values or generated exports are changed. For an already installed checkout-linked prompt extension, `/reload` picks up rendering changes.
 
