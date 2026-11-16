@@ -20,8 +20,8 @@ themes/
 ├── TEMPLATE.yaml              # strict authoring template
 ├── core/                      # canonical theme definitions
 ├── templates/                 # app templates and vendored schemas
-├── overrides/                 # Ghostty, Neovim, Starship, Zed, Zellij YAML patches
-├── exports/                   # ghostty, herdr, k9s, nvim, pi, starship, tmux, zed, zellij
+├── overrides/                 # Ghostty, Neovim, Starship, Zed YAML patches
+├── exports/                   # ghostty, herdr, k9s, nvim, pi, starship, tmux, zed
 ├── generate.py                # Python exporters
 ├── validate.py                # canonical schema validator and YAML parser
 ├── validate_overrides.py      # app override validation
@@ -273,7 +273,6 @@ Current generators:
 - `zed` -> `themes/exports/zed/*.json`
 - `nvim` -> `themes/exports/nvim/*.lua`
 - `starship` -> `themes/exports/starship/*.toml`
-- `zellij` -> `themes/exports/zellij/*.kdl`
 - `tmux` -> `themes/exports/tmux/*.conf`
 - `pi` -> `themes/exports/pi/*.json`
 
@@ -297,8 +296,6 @@ Adapter templates and schema helpers:
 - `themes/templates/starship/official-template.json` -> Starship prompt template
   derived from the Starship config contract plus the existing local prompt
   layout
-- `themes/templates/zellij/official-template.json` -> Zellij theme template
-  derived from the official Zellij theme definition specification
 - `themes/templates/tmux/official-template.json` -> tmux statusline template
   derived from tmux style syntax and the existing local statusline layout
 - `themes/templates/pi/official-template.json` -> Pi TUI theme template derived
@@ -418,10 +415,7 @@ Instead use this progression:
 
 This keeps exceptions visible and isolated.
 
-Ghostty, Neovim, Starship, Zed, and Zellij support overrides. See
-[`overrides/SCHEMA.md`](overrides/SCHEMA.md) for the templates, supported values,
-and merge precedence. Herdr, K9s, Pi, and tmux currently use their canonical
-theme mappings and app templates without a YAML override layer.
+Ghostty, Neovim, Starship, and Zed support overrides. See [`overrides/SCHEMA.md`](overrides/SCHEMA.md) for the templates, supported values, and merge precedence. Herdr, K9s, Pi, and tmux currently use their canonical theme mappings and app templates without a YAML override layer.
 
 Use overrides for app-specific exceptions like:
 
@@ -441,4 +435,4 @@ Herdr exports contain `[theme]` and `[theme.custom]` tables. The module combines
 
 Pi tool result backgrounds use subdued palette blue for success and palette orange for errors. General success and error indicators retain their diagnostic colors, and tool diffs retain their VCS colors.
 
-The current generator emits Ghostty, Herdr, K9s, Neovim, Pi, Starship, tmux, Zed, and Zellij themes. VSCode's app-local theme is outside this pipeline. Edit canonical definitions, templates, or supported YAML overrides, then regenerate the exports instead of editing generated files directly.
+The current generator emits Ghostty, Herdr, K9s, Neovim, Pi, Starship, tmux, and Zed themes. VSCode's app-local theme is outside this pipeline. Edit canonical definitions, templates, or supported YAML overrides, then regenerate the exports instead of editing generated files directly.

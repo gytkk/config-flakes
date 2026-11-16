@@ -15,7 +15,6 @@ HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 PALETTE_REF_RE = re.compile(r"^\{palette\.[A-Za-z][A-Za-z0-9]*\}$")
 ROLE_REF_RE = re.compile(r"^\{roles\.[A-Za-z][A-Za-z0-9]*\.[A-Za-z][A-Za-z0-9]*\}$")
 ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-PLAYER_RE = re.compile(r"^player_(10|[1-9])$")
 GHOSTTY_PALETTE_ENTRY_RE = re.compile(
     r"^(?:0|[1-9]|1[0-5])=(?:#[0-9a-fA-F]{6}|\{palette\.[A-Za-z][A-Za-z0-9]*\}|\{roles\.[A-Za-z][A-Za-z0-9]*\.[A-Za-z][A-Za-z0-9]*\})$"
 )
@@ -31,7 +30,6 @@ GHOSTTY_SLOT_KEYS = {
 }
 ROOT = Path(__file__).resolve().parent
 NVIM_TEMPLATE_PATH = ROOT / "templates" / "nvim" / "official-template.json"
-ZELLIJ_TEMPLATE_PATH = ROOT / "templates" / "zellij" / "official-template.json"
 STARSHIP_TEMPLATE_PATH = ROOT / "templates" / "starship" / "official-template.json"
 ZED_TEMPLATE_PATH = ROOT / "templates" / "zed" / "official-template.json"
 ZED_HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$")
@@ -120,32 +118,6 @@ def validate_links(v: Validator, path: Path, links: dict[str, Any]) -> None:
             v.error(path, f"links.{group} must be a non-empty string")
 
 
-def validate_components(v: Validator, path: Path, components: dict[str, Any], allowed_components: set[str], allowed_attrs: set[str]) -> None:
-    for component, attrs in components.items():
-        if not isinstance(component, str) or not component:
-            v.error(path, "components contains an empty component name")
-            continue
-        if component not in allowed_components:
-            v.error(path, f"components.{component} is not a supported zellij component")
-        if not isinstance(attrs, dict) or not attrs:
-            v.error(path, f"components.{component} must be a non-empty mapping")
-            continue
-        for attr, value in attrs.items():
-            if attr not in allowed_attrs:
-                v.error(path, f"components.{component}: unsupported attr key {attr!r}")
-            if not valid_color_value(value):
-                v.error(path, f"components.{component}.{attr} must be a hex, palette ref, or role ref")
-
-
-def validate_players(v: Validator, path: Path, players: dict[str, Any]) -> None:
-    for player, value in players.items():
-        if not isinstance(player, str) or not PLAYER_RE.match(player):
-            v.error(path, f"players contains invalid player key {player!r}")
-            continue
-        if not valid_color_value(value):
-            v.error(path, f"players.{player} must be a hex, palette ref, or role ref")
-
-
 def validate_nvim_override(v: Validator, path: Path, allowed_attrs: set[str]) -> None:
     try:
         data = load_yaml(path)
@@ -224,46 +196,6 @@ def validate_ghostty_override(v: Validator, path: Path) -> None:
                 continue
             if not valid_ghostty_slot_value(key, value):
                 v.error(path, f"slots.{key} must be a color, indexed palette entry, or opacity from 0 to 1 for faint_opacity")
-
-
-def validate_zellij_override(v: Validator, path: Path, allowed_components: set[str], allowed_attrs: set[str]) -> None:
-    try:
-        data = load_yaml(path)
-    except ParseError as e:
-        v.error(path, str(e))
-        return
-
-    expected_top = ["version", "meta", "components", "players"]
-    if key_order(data) != expected_top:
-        v.error(path, "top-level key order does not match template")
-
-    for key in expected_top:
-        if key not in data:
-            v.error(path, f"missing top-level key: {key}")
-    for key in key_order(data):
-        if key not in expected_top:
-            v.error(path, f"unexpected top-level key: {key}")
-
-    if data.get("version") != 1:
-        v.error(path, "version must be 1")
-
-    meta = ensure_mapping(v, path, data.get("meta"), "meta")
-    components = ensure_mapping(v, path, data.get("components"), "components")
-    players = ensure_mapping(v, path, data.get("players"), "players")
-
-    if meta is not None:
-        validate_meta(v, path, meta, app="zellij")
-    non_empty = 0
-    if components is not None:
-        if components:
-            non_empty += 1
-        validate_components(v, path, components, allowed_components, allowed_attrs)
-    if players is not None:
-        if players:
-            non_empty += 1
-        validate_players(v, path, players)
-    if non_empty == 0:
-        v.error(path, "override must define at least one component or player override")
 
 
 def validate_starship_override(v: Validator, path: Path) -> None:
@@ -374,16 +306,12 @@ def main() -> int:
     parser.add_argument(
         "paths",
         nargs="*",
-        help="Override YAML files to validate. Defaults to themes/overrides/{ghostty,nvim,starship,zed,zellij}/*.yaml",
+        help="Override YAML files to validate. Defaults to themes/overrides/{ghostty,nvim,starship,zed}/*.yaml",
     )
     args = parser.parse_args()
 
     nvim_template = load_json(NVIM_TEMPLATE_PATH)
     nvim_allowed_attrs = set(nvim_template["highlight_schema"]["allowed_keys"])
-
-    zellij_template = load_json(ZELLIJ_TEMPLATE_PATH)
-    zellij_allowed_components = {section["component"] for section in zellij_template["sections"]}
-    zellij_allowed_attrs = {"base", "background", "emphasis_0", "emphasis_1", "emphasis_2", "emphasis_3"}
 
     if args.paths:
         targets = [Path(p).resolve() for p in args.paths]
@@ -393,7 +321,6 @@ def main() -> int:
             *[p.resolve() for p in sorted((ROOT / "overrides" / "nvim").glob("*.yaml"))],
             *[p.resolve() for p in sorted((ROOT / "overrides" / "starship").glob("*.yaml")) if p.name != "TEMPLATE.yaml"],
             *[p.resolve() for p in sorted((ROOT / "overrides" / "zed").glob("*.yaml")) if p.name != "TEMPLATE.yaml"],
-            *[p.resolve() for p in sorted((ROOT / "overrides" / "zellij").glob("*.yaml")) if p.name != "TEMPLATE.yaml"],
         ]
     if not targets:
         print("No override files found to validate.", file=sys.stderr)
@@ -409,8 +336,6 @@ def main() -> int:
             validate_starship_override(v, target)
         elif target.parent.name == "zed":
             validate_zed_override(v, target)
-        elif target.parent.name == "zellij":
-            validate_zellij_override(v, target, zellij_allowed_components, zellij_allowed_attrs)
         else:
             v.error(target, "unsupported override directory")
 

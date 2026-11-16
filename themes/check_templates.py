@@ -301,39 +301,6 @@ def check_starship(path: Path, doc: dict[str, Any], errors: list[str]) -> None:
     check_starship_sections(f"{path_str}.sections", doc.get("sections"), errors)
 
 
-def check_zellij_sections(path: str, sections: Any, errors: list[str]) -> None:
-    expect(isinstance(sections, list) and len(sections) > 0, f"{path}: sections must be a non-empty list", errors)
-    if not isinstance(sections, list):
-        return
-    seen_components: set[str] = set()
-    for idx, section in enumerate(sections):
-        item_path = f"{path}[{idx}]"
-        expect(isinstance(section, dict), f"{item_path}: section must be an object", errors)
-        if not isinstance(section, dict):
-            continue
-        require_keys(section, ["component", "attrs"], item_path, errors)
-        component = section.get("component")
-        expect(isinstance(component, str) and component, f"{item_path}.component must be a non-empty string", errors)
-        if isinstance(component, str):
-            expect(component not in seen_components, f"{path}: duplicate component {component!r}", errors)
-            seen_components.add(component)
-        attrs = section.get("attrs")
-        expect(isinstance(attrs, dict) and len(attrs) > 0, f"{item_path}.attrs must be a non-empty object", errors)
-
-
-def check_zellij(path: Path, doc: dict[str, Any], errors: list[str]) -> None:
-    check_common(path, doc, errors)
-    path_str = str(path)
-    contract = doc.get("theme_schema")
-    expect(isinstance(contract, dict), f"{path_str}.theme_schema must be an object", errors)
-    if isinstance(contract, dict):
-        require_keys(contract, ["root_node", "token_prefix", "value_type"], f"{path_str}.theme_schema", errors)
-        expect(contract.get("root_node") == "themes", f"{path_str}.theme_schema.root_node must be 'themes'", errors)
-        expect(contract.get("token_prefix") == "$", f"{path_str}.theme_schema.token_prefix must be '$'", errors)
-        expect(contract.get("value_type") == "rgb-triplet", f"{path_str}.theme_schema.value_type must be 'rgb-triplet'", errors)
-    check_zellij_sections(f"{path_str}.sections", doc.get("sections"), errors)
-
-
 def check_tmux_sections(path: str, sections: object, errors: list[str]) -> None:
     expect(isinstance(sections, list) and len(sections) > 0, f"{path}: sections must be a non-empty list", errors)
     if not isinstance(sections, list):
@@ -604,55 +571,6 @@ def check_nvim_override(path: Path, doc: dict[str, Any], errors: list[str]) -> N
             expect(isinstance(target, str) and target, f"{path_str}.links.{group} must be a non-empty string", errors)
 
 
-def check_zellij_override_template(path: Path, doc: dict[str, Any], errors: list[str]) -> None:
-    path_str = str(path)
-    expected_top = ["version", "meta", "components", "players"]
-    expect(list(doc.keys()) == expected_top, f"{path_str}: top-level keys must exactly match {expected_top}", errors)
-
-    meta = doc.get("meta")
-    expect(isinstance(meta, dict), f"{path_str}.meta must be an object", errors)
-    if isinstance(meta, dict):
-        expected_meta = ["app", "theme", "variant"]
-        expect(list(meta.keys()) == expected_meta, f"{path_str}.meta keys must exactly match {expected_meta}", errors)
-
-    components = doc.get("components")
-    expect(isinstance(components, dict), f"{path_str}.components must be an object", errors)
-
-    players = doc.get("players")
-    expect(isinstance(players, dict), f"{path_str}.players must be an object", errors)
-
-
-def check_zellij_override(path: Path, doc: dict[str, Any], errors: list[str]) -> None:
-    path_str = str(path)
-    expected_top = ["version", "meta", "components", "players"]
-    expect(list(doc.keys()) == expected_top, f"{path_str}: top-level keys must exactly match {expected_top}", errors)
-    expect(doc.get("version") == 1, f"{path_str}.version must be 1", errors)
-
-    meta = doc.get("meta")
-    expect(isinstance(meta, dict), f"{path_str}.meta must be an object", errors)
-    if isinstance(meta, dict):
-        expected_meta = ["app", "theme", "variant"]
-        expect(list(meta.keys()) == expected_meta, f"{path_str}.meta keys must exactly match {expected_meta}", errors)
-        expect(meta.get("app") == "zellij", f"{path_str}.meta.app must be 'zellij'", errors)
-        expect(isinstance(meta.get("theme"), str) and meta.get("theme"), f"{path_str}.meta.theme must be a non-empty string", errors)
-        expect(meta.get("variant") in {"light", "dark"}, f"{path_str}.meta.variant must be 'light' or 'dark'", errors)
-
-    components = doc.get("components")
-    players = doc.get("players")
-    expect(isinstance(components, dict), f"{path_str}.components must be an object", errors)
-    expect(isinstance(players, dict), f"{path_str}.players must be an object", errors)
-    if isinstance(components, dict):
-        for component, attrs in components.items():
-            expect(isinstance(component, str) and component, f"{path_str}.components contains an invalid component name", errors)
-            expect(isinstance(attrs, dict) and len(attrs) > 0, f"{path_str}.components.{component} must be a non-empty object", errors)
-    if isinstance(players, dict):
-        for player, value in players.items():
-            expect(isinstance(player, str) and player, f"{path_str}.players contains an invalid player name", errors)
-            expect(isinstance(value, str) and value, f"{path_str}.players.{player} must be a non-empty string", errors)
-    if isinstance(components, dict) and isinstance(players, dict):
-        expect(bool(components) or bool(players), f"{path_str} must contain at least one component or player override", errors)
-
-
 JSON_CHECKS = {
     ROOT / "templates" / "k9s" / "official-template.json": check_k9s,
     ROOT / "templates" / "ghostty" / "official-template.json": check_ghostty,
@@ -660,7 +578,6 @@ JSON_CHECKS = {
     ROOT / "templates" / "zed" / "official-template.json": check_zed,
     ROOT / "templates" / "nvim" / "plugins.json": check_nvim_plugin_template,
     ROOT / "templates" / "starship" / "official-template.json": check_starship,
-    ROOT / "templates" / "zellij" / "official-template.json": check_zellij,
     ROOT / "templates" / "tmux" / "official-template.json": check_tmux,
     ROOT / "templates" / "pi" / "official-template.json": check_pi,
     ROOT / "templates" / "herdr" / "official-template.json": check_herdr,
@@ -669,7 +586,6 @@ JSON_CHECKS = {
 YAML_CHECKS = {
     ROOT / "overrides" / "TEMPLATE.yaml": check_nvim_override_template,
     ROOT / "overrides" / "ghostty" / "TEMPLATE.yaml": check_ghostty_override_template,
-    ROOT / "overrides" / "zellij" / "TEMPLATE.yaml": check_zellij_override_template,
 }
 
 
@@ -702,10 +618,6 @@ def main() -> int:
         errors.extend(validator.errors)
     for path in sorted((ROOT / "overrides" / "nvim").glob("*.yaml")):
         check_nvim_override(path.relative_to(ROOT), load_yaml_doc(path), errors)
-    for path in sorted((ROOT / "overrides" / "zellij").glob("*.yaml")):
-        if path.name == "TEMPLATE.yaml":
-            continue
-        check_zellij_override(path.relative_to(ROOT), load_yaml_doc(path), errors)
 
     if errors:
         print("Template consistency check failed:", file=sys.stderr)
@@ -720,7 +632,6 @@ def main() -> int:
         + len(zed_overrides)
         + len([p for p in (ROOT / "overrides" / "ghostty").glob("*.yaml") if p.name != "TEMPLATE.yaml"])
         + len(list((ROOT / "overrides" / "nvim").glob("*.yaml")))
-        + len([p for p in (ROOT / "overrides" / "zellij").glob("*.yaml") if p.name != "TEMPLATE.yaml"])
     )
     print(f"Validated {total} template/override file(s) successfully.")
     return 0
