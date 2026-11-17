@@ -64,7 +64,9 @@ Before calling Haiku, replace fenced code, inline code, recognized URLs, and rec
 
 Each direction accepts at most 64 KiB of UTF-8 source text and has a 60-second total deadline, including any retry. Do not truncate source text to fit. Configure the host hook deadline so its default timeout does not preempt the translation deadline. Propagate `next.signal` through supported cancellation mechanisms and reject late results even if the provider cannot cancel the remote request.
 
-Check both rejected calls and `isAnswered: false` results. Reject empty, detectably truncated, or malformed responses. One retry is allowed only for placeholder-validation failure, starting from the original protected source and using the remaining deadline; other failures are not retried. Output limits that cannot accommodate the full translation must produce an explicit failure, not a partial translation presented as complete.
+Check both rejected calls and `isAnswered: false` results. Reject empty, detectably truncated, or malformed responses. Validate target-language prose as well as placeholder integrity: after excluding protected literals and translation labels, reject an English-to-Korean result that copies the English source unchanged or contains no Hangul despite a source containing English conversational sentences. A Korean heading alone does not satisfy this check. Do not impose a fixed Hangul percentage, since valid technical explanations can contain many English identifiers. These deterministic checks catch obvious non-translations; they do not prove that every sentence was translated or that its meaning is correct.
+
+One retry is allowed for either placeholder-validation failure or an obvious non-translation, starting from the original protected source with a reminder about the failed requirement and using the remaining deadline. The retry limit is shared across both validation failures, not one retry per failure type. Other failures are not retried. If the retry still fails, follow the input/output failure behavior below rather than displaying the unchanged English body as a Korean translation. Output limits that cannot accommodate the full translation must produce an explicit failure, not a partial translation presented as complete.
 
 | Failure | Required result |
 | --- | --- |
@@ -113,17 +115,24 @@ Tests must cover:
 - Korean and mixed-language input rewriting; English-only, protected-only, command, automation, unsupported-surface, and subagent pass-through.
 - Exactly one working-model submission, preservation of non-text fields, exclusion of attachments/history from Haiku, and absence of translation recursion.
 - Placeholder restoration, collisions, missing/duplicated/unknown placeholders, Unicode byte limits, incomplete output, and the single bounded retry.
+- Non-translation detection with an unchanged English answer, an English copy prefixed by a Korean translation heading, and English prose containing only protected Korean literals. A valid Korean explanation containing English technical identifiers must pass. Verify that mixed validation failures still allow only one retry.
 - Input restoration and output preservation after errors, cancellation, host timeout, or a denied model call.
 - Parent-turn filtering, duplicate completion delivery, no translation on UI redraw, and stale-result rejection after lifecycle changes or new input.
 - Control validation, default state, reload reset announcement, and active/inactive response-language markers.
 - No secrets or raw content in diagnostic messages and no mutation of unrelated hooks/settings.
+
+### Reported failure fixture
+
+A user-provided screenshot shows an English answer about Plane's PQL views, followed by a `한국어 번역` heading and the same English paragraphs, numbered steps, caveats, and source list. This confirms untranslated prose in a section presented as Korean; it does not establish which runtime instruction or model behavior caused it. The proposed mod is not implemented, so the screenshot is not evidence of a mod execution failure.
+
+Use a small synthetic answer with the same structure as a regression fixture, without copying private hostnames or storing the screenshot in the repository. A stubbed translator that returns the English body unchanged, with or without the Korean heading, must trigger validation and the bounded retry. A second unchanged result must leave the native English answer visible and show a translation-failure warning, with no purported Korean translation entry.
 
 ### Live terminal acceptance
 
 With approval for a live model call, use a disposable Claude session and check:
 
 1. A Korean request containing code and a path shows its original separately and submits an English native user message. Attached images remain available to the working model but are absent from the translation request.
-2. The selected main model streams English normally. After tool execution and the final answer, exactly one complete Korean translation appears beneath the original, including readable multiline lists and code.
+2. The selected main model streams English normally. After tool execution and the final answer, exactly one complete Korean translation appears beneath the original, including readable multiline lists and code. Compare every prose paragraph, numbered step, caveat, and ordinary heading with the English source; a Korean label or one translated sentence does not establish full coverage. Keep code, exact identifiers, URLs, and official names unchanged where required.
 3. The working model's next request and compaction input exclude original-input display entries and Korean output translations. Verify request/context data rather than asking the model whether it saw them.
 4. `/translate off`, `/translate on`, interruption, reload, clear, and resume produce the specified behavior without duplicate entries or changes to a newer draft.
 5. Non-interactive runs and subagents make no translation calls. Existing Herdr hooks and other installed mods continue to operate.
