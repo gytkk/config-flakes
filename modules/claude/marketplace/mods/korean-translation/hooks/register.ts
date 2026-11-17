@@ -50,8 +50,6 @@ async function translate($: EngineInterface, source: string, language: Language,
 
 const reasonOf = (error: unknown): string => (error instanceof TranslationError ? error.message : 'of an unexpected error')
 
-const notice = (text: string) => ({ message: { type: 'system' as const, content: [{ type: 'text' as const, text }] } })
-
 export const register: Register = on => {
   // Module state is memory-only: a reload or a replaced session starts enabled again.
   let isSupported = false
@@ -66,6 +64,8 @@ export const register: Register = on => {
   // English prompt as sent -> Korean original as typed, so the prompt row shows both.
   // shortcut: memory-only, so after a reload or resume earlier prompt rows show English alone; persist in $.state if that matters.
   const originals = new Map<string, string>()
+  // English answer -> Korean translation, drawn beneath the answer row. Memory-only like `originals`.
+  const translations = new Map<string, string>()
 
   const invalidate = () => {
     generation++
@@ -152,6 +152,13 @@ export const register: Register = on => {
     return original === undefined ? next(e) : next({ ...e, props: { ...e.props, text: `${original}\n\n[English] ${e.props.text}` } })
   })
 
+  // Redraws the answer row alone with the Korean beneath the English; the stored message stays English.
+  // shortcut: matched by the block's text, so an answer the surface draws differently from turn.complete's `answer` gets no translation; key by message id if that happens.
+  on('ui.render', { component: 'AssistantMessage' }, (_, e, next) => {
+    const korean = e.props.isSummary ? undefined : translations.get(e.props.text.trim())
+    return korean === undefined ? next(e) : next({ ...e, props: { ...e.props, text: `${e.props.text}\n\n---\n\n**한국어 번역**\n\n${korean}` } })
+  })
+
   // Any new main-loop turn, typed, queued, or automated, cancels the preceding turn's unfinished output translation.
   on('turn.start', (_, e, next) => {
     if (e.agentId === undefined) {
@@ -172,13 +179,13 @@ export const register: Register = on => {
     const mine = generation
     const abort = (output = new AbortController())
     const isStale = () => mine !== generation || abort.signal.aborted || !isEnabled
-    // Not awaited: the turn ends at once and the translation lands as a display-only notice the model never reads.
+    // Not awaited: the turn ends at once and the answer row is redrawn with the translation when it arrives.
     void translate($, e.answer, 'Korean', abort.signal)
       .then(
-        async text => {
+        text => {
           if (isStale()) return
-          const appended = await $.session.append(notice(`한국어 번역\n\n${text}`))
-          if ('deny' in appended) await $.ui.log('Korean translation could not be shown. The English answer is unchanged.')
+          translations.set(e.answer.trim(), text)
+          $.ui.invalidate('ui.render')
         },
         error => (isStale() ? undefined : $.ui.log(`Korean translation failed because ${reasonOf(error)}. The English answer is unchanged.`)),
       )
@@ -194,6 +201,7 @@ export const register: Register = on => {
     isMarked = false
     lastTurnId = undefined
     originals.clear()
+    translations.clear()
     // After /clear or a resume the process goes on with no session.start, so the opt-out resets here.
     if (!isEnabled && (e.reason === 'clear' || e.reason === 'resume')) {
       isEnabled = true

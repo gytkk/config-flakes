@@ -23,7 +23,7 @@ function world(on: On, reply: (e: any, call: number) => unknown = translator) {
     submitted: [] as any[],
     registered: [] as any[],
     session: mock.session(on),
-    notes: () => w.session.appended().map(row => (row.message.content[0] as any).text as string),
+    redraws: 0,
   }
   on('model.complete', async (_, e) => {
     w.model.push(e)
@@ -53,6 +53,11 @@ function world(on: On, reply: (e: any, call: number) => unknown = translator) {
     return { text: e.text, context: e.context }
   })
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
+  on('ui.invalidate', () => {
+    w.redraws++
+    return { value: undefined }
+  })
+  on('ui.render', ($, e: any) => h($.ui.resolve(e).Text, null, e.props.text))
   on('turn.complete', (_, e) => ({ text: e.answer }))
   return w
 }
@@ -73,6 +78,16 @@ function gate() {
   const opened = new Promise<void>(resolve => (open = resolve))
   return { opened, open }
 }
+
+declare const h: (...args: any[]) => any
+// What the answer row draws beneath the English answer: the Korean translation, or undefined when there is none.
+const shown = async ($: any, answer = 'The build passed.', props: object = {}) => {
+  const ui = await $.ui.mount({ plugin: 'korean-translation', surface: 'terminal', component: 'AssistantMessage', requestId: 'a1', props: { text: answer, isFirstOfReply: true, ...props } })
+  const text: string = (await ui.find({ type: 'Text' }))?.text
+  await ui.unmount()
+  return text === answer ? undefined : text.slice(answer.length)
+}
+const BENEATH = (korean: string) => `\n\n---\n\n**한국어 번역**\n\n${korean}`
 
 const KOREAN = '이 함수를 고쳐줘'
 const STATUS_ON = 'Korean translation: on\nmodel: haiku\nscope: typed prompts and final answers in the interactive terminal session\npending: no'
@@ -151,10 +166,8 @@ test('Korean input is translated once and submitted once with its other fields k
   expect(w.fills).toHaveLength(0)
 })
 
-declare const h: (...args: any[]) => any
 test('the prompt row shows the Korean original above the English that was sent, and only for a translated composer prompt', async ($, on) => {
   const w = world(on)
-  on('ui.render', ($, e: any) => h($.ui.resolve(e).Text, null, e.props.text))
   await start($)
   await submit($, KOREAN)
   const english = w.submitted[0].text
@@ -408,13 +421,15 @@ test('a finished parent turn gets one Korean notice, appended after the hook has
   // turn.complete has resolved with the English answer while the translation is still in flight.
   expect(result).toEqual({ text: answer })
   expect(w.model).toHaveLength(2)
-  expect(w.notes()).toEqual([])
+  expect(await shown($, answer)).toBeUndefined()
   expect((await command($, 'status')).text).toEndWith('pending: yes')
 
   g.open()
   await settle()
-  expect(w.notes()).toEqual([`한국어 번역\n\n번역 ${answer}`])
-  expect(w.session.appended()[0]).toMatchObject({ door: 'note', origin: { kind: 'plugin', name: 'korean-translation' }, message: { type: 'system' } })
+  expect(await shown($, answer)).toBe(BENEATH(`번역 ${answer}`))
+  expect(await shown($, answer, { isSummary: true })).toBeUndefined()
+  expect(w.redraws).toBe(1)
+  expect(w.session.appended()).toHaveLength(0)
   expect(w.model[1]).toMatchObject({ model: 'haiku' })
   expect(w.model[1].system).toStartWith('Translate the supplied document into Korean.')
   expect(w.model[1].prompt).not.toContain('npm test')
@@ -431,7 +446,7 @@ test('the answer to an English prompt is translated too', async ($, on) => {
   await turn($)
   await settle()
   expect(w.model).toHaveLength(1)
-  expect(w.notes()).toEqual(['한국어 번역\n\n번역 The build passed.'])
+  expect(await shown($)).toBe(BENEATH('번역 The build passed.'))
 })
 
 const SKIPPED: [string, object][] = [
@@ -477,7 +492,7 @@ test('a turn delivered twice is translated once', async ($, on) => {
   await turn($)
   await settle()
   expect(w.model).toHaveLength(1)
-  expect(w.session.appended()).toHaveLength(1)
+  expect(w.redraws).toBe(1)
 })
 
 const STALE: [string, ($: any) => Promise<unknown>][] = [
@@ -501,7 +516,8 @@ for (const [name, act] of STALE) {
     await act($)
     g.open()
     await settle()
-    expect(w.session.appended()).toHaveLength(0)
+    expect(w.redraws).toBe(0)
+    expect(await shown($)).toBeUndefined()
     // Nothing about the discarded translation is reported, and it is no longer pending.
     expect(w.logs.filter(line => line.includes('failed'))).toHaveLength(0)
     expect(w.model).toHaveLength(1)
@@ -521,7 +537,7 @@ test('a subagent turn starting leaves the output translation in flight', async (
   await $.turn.start({ text: 'explore', turnId: 'a1', agentId: 'agent-1' })
   g.open()
   await settle()
-  expect(w.notes()).toEqual(['한국어 번역\n\n번역 The build passed.'])
+  expect(await shown($)).toBe(BENEATH('번역 The build passed.'))
 })
 
 test('an automated prompt delivered into a marked turn leaves its answer translated; one starting its own turn does not', async ($, on) => {
@@ -531,12 +547,12 @@ test('an automated prompt delivered into a marked turn leaves its answer transla
   await submit($, 'task done', { origin: { kind: 'task-notification' }, turnId: 't1' })
   await turn($)
   await settle()
-  expect(w.notes()).toHaveLength(1)
+  expect(w.redraws).toBe(1)
 
   await submit($, 'task done', { origin: { kind: 'task-notification' } })
   await turn($, { turnId: 't2' })
   await settle()
-  expect(w.notes()).toHaveLength(1)
+  expect(w.redraws).toBe(1)
 })
 
 test('a failed output translation leaves the English answer and one warning without its text', async ($, on) => {
