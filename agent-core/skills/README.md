@@ -31,6 +31,8 @@ The all-host migration gate preserves legacy-rendered resources and their existi
 
 [korean](korean/SKILL.md) restates the previous assistant answer in natural Korean while preserving its meaning, uncertainty, code, and links.
 
+[herdr-core](herdr-core/SKILL.md) points to the installed `hc --skill` manual for running programs and agents in persistent herdr-core terminals. It applies only when the user explicitly asks for Herdr or `hc`, and it keeps the runtime's delegation rules above the manual. The Pi and Claude adapters carry the matching exception to their native-subagent default.
+
 [diagnosing-bugs](diagnosing-bugs/SKILL.md) is maintained locally to support evidence-based investigation when reproduction is unavailable, bounded intermittent and performance checks, and diagnosis-only requests. The next successful switch backs up and replaces installations still recorded under `matt` with this local source. First-time legacy path ownership still requires the explicit handoff described in [Agent core](../README.md#skill-설치와-복구).
 
 [codebase-design](codebase-design/SKILL.md) is maintained locally to connect caller evidence to module designs, preserve behavior during deepening, and compare alternatives in proportion to the decision. It also serves vocabulary-only requests from other skills. For example, ask it to find repeated caller coordination in a named module, compare two interface designs, or identify a seam that would make failure behavior testable. The same switch-time backup and replacement applies to existing `matt` installations.

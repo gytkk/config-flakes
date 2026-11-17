@@ -61,6 +61,10 @@ behavior.
 - Delegate independent subtasks and continue useful work while they run. Prefer
   asynchronous or background subagents over spawn-and-block workflows.
 - Intervene when a subagent goes off track or lacks relevant context.
+- Launch agents through herdr-core's `hc` only when the user explicitly asks
+  for Herdr or `hc` for that task. Then follow `hc --skill` for mechanics, make
+  `hc` that task's only launcher, and apply these delegation rules to its
+  children.
 - For long-running builds, use fresh-context verification on a reasonable
   cadence instead of relying only on self-critique.
 
