@@ -45,9 +45,11 @@ The [Claude-specific instructions](../../agent-core/adapters/claude.md#response-
 
 ## Korean translation mod
 
-The `korean-translation@gytkk` mod in `modules/claude/marketplace/mods/korean-translation` implements the [Korean conversation translation specification](korean-translation-spec.md). It translates a typed Korean prompt into English with the `haiku` alias before the working model receives it, and redraws the prompt row to show the Korean original above the English that was sent. The original is kept in memory only, as are the answer translations, so after a reload or resume earlier rows show English alone. After each final answer it redraws the answer row with a Korean translation beneath the English. Neither redraw changes the stored message or what the model reads. While translation is on, the mod attaches the `[korean-translation: active]` tag to each typed prompt, and the [response-language rule](../../agent-core/adapters/claude.md#response-language) makes the working model answer that prompt in English only. A prompt without the tag gets the ordinary English-plus-Korean rule.
+The `korean-translation@gytkk` mod in `modules/claude/marketplace/mods/korean-translation` implements the [Korean conversation translation specification](korean-translation-spec.md). It translates a typed Korean prompt into English with the `haiku` alias before the working model receives it, and places a display-only `입력 원문` row with the Korean original above the English prompt row. After each final answer of a translated turn, it places a display-only `한국어 번역` row beneath the English answer. These rows are kept in memory only, so after a reload or resume earlier turns show English alone, and they do not change the stored messages or what the model reads. Output translations run one at a time per session; a new prompt does not cancel the previous answer's translation, but an interruption, `/translate off`, or the end of the session does. While translation is on, the mod attaches the `[korean-translation: active]` tag and a per-prompt request tag to each typed prompt, and translates only the answer of a turn whose latest user message carries a request tag it issued. Under the [response-language rule](../../agent-core/adapters/claude.md#response-language), the active tag makes the working model answer that prompt in English only. A prompt without the tag gets the ordinary English-plus-Korean rule.
 
-`/translate on`, `/translate off`, and `/translate status` control it without starting a model turn. Translation starts enabled, and the toggle is kept in memory only, so a reload or a new session turns it on again.
+`/translate on`, `/translate off`, and `/translate status` control it without starting a model turn. Translation starts enabled, and the toggle is kept in memory only, so a reload or a new session turns it on again. `/translate status` also shows each pending translation's phase, attempt count, and elapsed time, and the last failure.
+
+Before it accepts a translation, the mod checks that protected literals come back unchanged, that the Markdown block structure (list markers, ordered numbers, checkboxes, nesting, headings, quotes, tables, and code fences) matches the source, and that the result is in the target language without a copied English sentence. A failed check gets one retry, shared across all checks, within a 60-second deadline. A failure shows a bracketed code such as `[structure]` or `[deadline]` instead of prompt text or provider payloads.
 
 Limits:
 
@@ -66,7 +68,7 @@ claude plugin test modules/claude/marketplace/mods/korean-translation
 
 With mumu enabled, the `claude` launcher puts `--settings` before `plugin`, and `claude plugin test` refuses that invocation; run the test through the underlying Claude executable instead, which `CLAUDE_CODE_EXECPATH` names inside a Claude session.
 
-The live terminal acceptance in the specification has not been run, so behavior with a real model, context exclusion of the notices, and long-text rendering are unverified.
+An isolated PTY smoke run of Claude Code 2.1.325 with a stub model renders the original, English, and Korean rows with list markers in classic and fullscreen modes and keeps the display rows out of the next model request. The live terminal acceptance in the specification has not been run with a real model, so translation quality and long-text rendering are unverified.
 
 ## Herdr subagent sidebar
 

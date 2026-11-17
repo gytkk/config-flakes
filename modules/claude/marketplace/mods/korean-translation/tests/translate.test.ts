@@ -74,6 +74,8 @@ test('only unprotected prose decides whether a text needs translation', () => {
   expect(needsTranslation('```\n한글\n```\n', 'English')).toBe(false)
   expect(needsTranslation('fix this', 'English')).toBe(false)
   expect(needsTranslation('The build passed.', 'Korean')).toBe(true)
+  expect(needsTranslation('빌드가 통과했습니다. API 상태를 확인하세요.', 'Korean')).toBe(false)
+  expect(needsTranslation('한국어 번역\n\nThe build passed.', 'Korean')).toBe(true)
   expect(needsTranslation('`npm test`\n```\nok done\n```\n', 'Korean')).toBe(false)
   expect(needsTranslation('', 'Korean')).toBe(false)
   expect(needsTranslation('42.', 'Korean')).toBe(false)

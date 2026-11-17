@@ -1,0 +1,3 @@
+# Claude generates these from the exact CLI build when loading a development directory.
+/.claude-plugin/types/
+/tsconfig.json

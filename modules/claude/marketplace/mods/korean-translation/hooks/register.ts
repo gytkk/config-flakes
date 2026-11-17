@@ -1,211 +1,282 @@
 import type { EngineInterface, Register } from 'claude-code'
-import {
-  byteLength,
-  DEADLINE_MS,
-  hasHangul,
-  type Language,
-  MARKER,
-  MAX_BYTES,
-  MAX_TOKENS,
-  MODEL,
-  needsTranslation,
-  protect,
-  systemPrompt,
-} from './translate'
+import { type FailureCode, MARKER, MODEL, needsTranslation, TranslationError, TranslationRun } from './translate'
 
-// Messages thrown here are shown to the user, so they never carry prompt text or provider payloads.
-class TranslationError extends Error {}
+type Phase = 'pending' | 'translating' | 'ready' | 'failed' | 'cancelled'
+type Row = {
+  id: string
+  direction: 'input' | 'output'
+  phase: Phase
+  text?: string
+  run?: TranslationRun
+  error?: FailureCode
+  abort: AbortController
+}
+type State = {
+  supported: boolean
+  enabled: boolean
+  generation: number
+  session: number
+  input?: Row
+  requests: Set<string>
+  turns: Map<string, boolean>
+  rows: Map<string, Row>
+  queue: Row[]
+  draining: boolean
+  lastFailure?: string
+}
 
 const USAGE = 'Usage: /translate on|off|status'
 const DROP_HINT = 'Run /translate off to send the prompt without translation.'
+const MAX_ROWS = 128
+const MAX_PENDING = 4
+const requestTag = (id: string) => `[korean-translation-request:${id}]`
+const failureCode = (error: unknown): FailureCode => error instanceof TranslationError ? error.code : 'unexpected'
+const diagnostic = (row: Row) => `${row.direction}: ${row.phase}${row.error ? ` [${row.error}]` : ''}; attempts: ${row.run?.attempts ?? 0}; elapsed: ${row.run?.elapsedMs ?? 0} ms`
+const rowId = () => `translation-${crypto.randomUUID()}`
 
-async function translate($: EngineInterface, source: string, language: Language, signal: AbortSignal): Promise<string> {
-  if (byteLength(source) > MAX_BYTES) throw new TranslationError('the text exceeds 64 KiB')
-  const guarded = protect(source)
-  const deadline = Date.now() + DEADLINE_MS
-  for (let isRetry = false; ; isRetry = true) {
-    const timeoutMs = deadline - Date.now()
-    if (signal.aborted || timeoutMs <= 0) throw new TranslationError('it was cancelled or timed out')
-    const reply = await $.model
-      .complete(
-        { model: MODEL, system: systemPrompt(language, isRetry), prompt: guarded.text, maxTokens: MAX_TOKENS, effort: 'low', timeoutMs },
-        { signal },
-      )
-      .catch(() => {
-        // The engine refused to send the request (a blocked model, organization policy); its text is not shown.
-        throw new TranslationError(`the ${MODEL} request was refused`)
-      })
-    if (!reply.isAnswered) {
-      if (reply.reason === 'api-error') throw new TranslationError(`${MODEL} returned an API error (${reply.error})`)
-      throw new TranslationError(reply.reason === 'aborted' ? 'it was cancelled or timed out' : `${MODEL} returned no text`)
-    }
-    // The result carries no stop reason, so a reply that used the whole token limit is treated as truncated.
-    if (reply.usage.output_tokens >= MAX_TOKENS) throw new TranslationError('the translation exceeded the output limit')
-    if (!reply.text.trim() || byteLength(reply.text) > MAX_BYTES * 4) throw new TranslationError(`${MODEL} returned a malformed reply`)
-    const restored = guarded.restore(reply.text.trim())
-    if (restored !== undefined) return restored
-    if (isRetry) throw new TranslationError('the translation changed protected code, paths, or links')
+async function translate($: EngineInterface, run: TranslationRun, signal: AbortSignal): Promise<string> {
+  for (;;) {
+    if (signal.aborted) return run.fail('deadline')
+    const reply = await $.model.complete(run.request(), { signal }).catch(() => run.fail(signal.aborted ? 'deadline' : 'refused'))
+    if (signal.aborted) return run.fail('deadline')
+    if (!reply.isAnswered) return run.fail(reply.reason === 'api-error' ? 'provider' : reply.reason === 'aborted' ? 'deadline' : 'empty')
+    const text = run.accept(reply.text, reply.usage.output_tokens)
+    if (text !== undefined) return text
   }
 }
 
-const reasonOf = (error: unknown): string => (error instanceof TranslationError ? error.message : 'of an unexpected error')
+function cancel(state: State) {
+  state.generation++
+  state.input?.abort.abort()
+  state.input?.run?.cancel()
+  for (const row of state.rows.values()) {
+    if (row.phase === 'pending' || row.phase === 'translating') {
+      row.phase = 'cancelled'
+      row.abort.abort()
+      row.run?.cancel()
+    }
+  }
+  state.queue = []
+  state.requests.clear()
+  state.turns.clear()
+}
+
+// One worker per session; starting a new model turn does not cancel its predecessor's translation.
+async function drain($: EngineInterface, state: State) {
+  if (state.draining) return
+  state.draining = true
+  const generation = state.generation
+  try {
+    while (state.queue.length && generation === state.generation) {
+      const row = state.queue.shift()!
+      if (row.abort.signal.aborted) continue
+      row.phase = 'translating'
+      $.ui.invalidate('ui.render')
+      try {
+        row.text = await translate($, row.run!, row.abort.signal)
+        if (generation !== state.generation || row.abort.signal.aborted) continue
+        row.phase = 'ready'
+      } catch (error) {
+        if (generation !== state.generation || row.abort.signal.aborted) continue
+        row.phase = 'failed'
+        row.error = failureCode(error)
+        state.lastFailure = diagnostic(row)
+        $.ui.log(`Korean translation failed. ${state.lastFailure}. The English answer is unchanged.`)
+      }
+      $.ui.invalidate('ui.render')
+    }
+  } finally {
+    state.draining = false
+    if (state.queue.length) await drain($, state)
+  }
+}
 
 export const register: Register = on => {
-  // Module state is memory-only: a reload or a replaced session starts enabled again.
-  let isSupported = false
-  let isEnabled = true
-  let generation = 0
-  // Whether the latest main-loop prompt carried MARKER, so its answer is English-only and needs the display translation.
-  // shortcut: an automated prompt delivered into a marked turn clears this and that turn's answer is left untranslated; key it by turn id if that happens in practice.
-  let isMarked = false
-  let isInputPending = false
-  let output: AbortController | undefined
-  let lastTurnId: string | undefined
-  // English prompt as sent -> Korean original as typed, so the prompt row shows both.
-  // shortcut: memory-only, so after a reload or resume earlier prompt rows show English alone; persist in $.state if that matters.
-  const originals = new Map<string, string>()
-  // English answer -> Korean translation, drawn beneath the answer row. Memory-only like `originals`.
-  const translations = new Map<string, string>()
+  const state: State = { supported: false, enabled: true, generation: 0, session: 0, requests: new Set(), turns: new Map(), rows: new Map(), queue: [], draining: false }
 
-  const invalidate = () => {
-    generation++
-    output?.abort()
-    output = undefined
-  }
-
-  const status = () =>
-    [
-      `Korean translation: ${isEnabled ? 'on' : 'off'}`,
-      `model: ${MODEL}`,
-      'scope: typed prompts and final answers in the interactive terminal session',
-      `pending: ${isInputPending || output ? 'yes' : 'no'}`,
-    ].join('\n')
+  const status = () => [
+    `Korean translation: ${state.enabled ? 'on' : 'off'}`,
+    `model: ${MODEL}`,
+    'scope: typed prompts and final answers in the interactive terminal session',
+    `pending: ${state.input || [...state.rows.values()].some(row => row.phase === 'pending' || row.phase === 'translating') ? 'yes' : 'no'}`,
+    ...(state.input ? [diagnostic(state.input)] : []),
+    ...[...state.rows.values()].filter(row => row.phase === 'pending' || row.phase === 'translating').map(diagnostic),
+    ...(state.lastFailure ? [`last failure: ${state.lastFailure}`] : []),
+  ].join('\n')
 
   on('session.start', async ($, e, next) => {
-    isSupported = e.isInteractive && e.surface === 'terminal'
-    if (isSupported) {
-      await $.command.register({
-        name: 'translate',
-        description: 'Turn Korean conversation translation on or off',
-        argumentHint: 'on|off|status',
-        immediate: true,
-      })
-      await $.ui.log(`Korean translation: on (${MODEL}). /translate off disables it for this session.`)
+    state.supported = e.isInteractive && e.surface === 'terminal'
+    if (state.supported) {
+      await $.command.register({ name: 'translate', description: 'Turn Korean conversation translation on or off', argumentHint: 'on|off|status', immediate: true })
+      $.ui.log(`Korean translation: on (${MODEL}). /translate off disables it for this session.`)
     }
     return next(e)
   })
 
-  on('command.run', { command: 'translate' }, (_, e) => {
+  on('command.run', { command: 'translate' }, ($, e) => {
     const arg = e.args.trim()
-    if (arg === 'on') isEnabled = true
+    if (arg === 'on') state.enabled = true
     else if (arg === 'off') {
-      isEnabled = false
-      invalidate()
+      state.enabled = false
+      cancel(state)
+      $.ui.invalidate('ui.render')
     } else if (arg !== '' && arg !== 'status') return { text: USAGE }
     return { text: status() }
   })
 
   on('prompt.submit', async ($, e, next) => {
-    if (!isSupported || e.origin.kind !== 'composer') {
-      // A prompt delivered into a running turn (turnId set) leaves that turn's marking alone.
-      if (e.turnId === undefined) isMarked = false
-      return next(e)
+    if (!state.supported || !state.enabled || e.origin.kind !== 'composer' || e.command || e.isMeta) return next(e)
+    if (state.requests.size >= MAX_ROWS || state.rows.size >= MAX_ROWS) return { drop: `Korean translation reached its session limit. ${DROP_HINT}` }
+    const id = rowId()
+    const generation = state.generation
+    const session = state.session
+    const context = [...(e.context ?? []), `${MARKER}\n${requestTag(id)}`]
+    let text = e.text
+    if (needsTranslation(text, 'English')) {
+      if (state.input) return { drop: 'An input translation is already running. Wait or cancel it before submitting again.' }
+      const row: Row = { id, direction: 'input', phase: 'translating', abort: new AbortController() }
+      const abort = () => row.abort.abort()
+      next.signal.addEventListener('abort', abort, { once: true })
+      if (next.signal.aborted) abort()
+      state.input = row
+      $.ui.status('Translating to English... (esc cancels)')
+      try {
+        row.run = new TranslationRun(text, 'English')
+        text = await translate($, row.run, row.abort.signal)
+        if (generation !== state.generation || row.abort.signal.aborted) throw new TranslationError('deadline')
+        row.text = e.text
+        row.phase = 'ready'
+        state.rows.set(id, row)
+        const placed = await $.ui.place({ id })
+        if (!placed.isPlaced) throw new TranslationError('unexpected')
+      } catch (error) {
+        state.rows.delete(id)
+        row.phase = row.abort.signal.aborted ? 'cancelled' : 'failed'
+        row.error = failureCode(error)
+        if (generation === state.generation) {
+          state.lastFailure = diagnostic(row)
+          if ((await $.prompt.read()).text === '') await $.prompt.fill({ text: e.text })
+        } else if (session === state.session && !state.enabled && (await $.prompt.read()).text === '') {
+          // Disabling in this session still lets the person recover their draft.
+          await $.prompt.fill({ text: e.text })
+        }
+        return { drop: `Korean translation failed [${row.error}]. ${DROP_HINT}` }
+      } finally {
+        next.signal.removeEventListener('abort', abort)
+        if (state.input === row) {
+          state.input = undefined
+          $.ui.status(undefined)
+        }
+      }
     }
-    isMarked = isEnabled
-    if (!isEnabled) return next(e)
-    const context = [...(e.context ?? []), MARKER]
-    // The engine does not apply a text rewrite to slash commands or hidden prompts; they pass through unchanged.
-    if (e.command || e.isMeta || !needsTranslation(e.text, 'English')) return next({ ...e, context })
-
-    const mine = generation
-    isInputPending = true
-    await $.ui.status('Translating to English... (esc cancels)')
-    let text: string
-    try {
-      text = await translate($, e.text, 'English', next.signal)
-      if (mine !== generation || !isEnabled || next.signal.aborted) throw new TranslationError('it was cancelled')
-    } catch (error) {
-      // Put the Korean draft back unless the person has already typed something else.
-      if ((await $.prompt.read()).text === '') await $.prompt.fill({ text: e.text })
-      return { drop: `Korean translation failed because ${reasonOf(error)}. ${DROP_HINT}` }
-    } finally {
-      isInputPending = false
-      await $.ui.status(undefined)
-    }
-    originals.set(text, e.text)
-    return next({ ...e, text, context })
+    if (generation !== state.generation || next.signal.aborted) return { drop: `Korean translation was cancelled. ${DROP_HINT}` }
+    state.requests.add(id)
+    const result = await next({ ...e, text, context })
+    if (result.drop !== undefined) state.requests.delete(id)
+    return result
   }).catch(async ($, e, next) => {
     if (next.called) return next(e)
-    // Fail closed only for prompts this hook would have translated.
-    if (!(isSupported && isEnabled && e.origin.kind === 'composer' && !e.command && !e.isMeta && hasHangul(e.text))) return next(e)
+    if (!(state.supported && e.origin.kind === 'composer' && !e.command && !e.isMeta && needsTranslation(e.text, 'English'))) return next(e)
     try {
       if ((await $.prompt.read()).text === '') await $.prompt.fill({ text: e.text })
     } catch {
-      // The drop below matters more than the draft: a throw here would let the untranslated prompt through.
+      // Refusing submission is still possible when restoring the editor is not.
     }
-    return { drop: `Korean translation failed. ${DROP_HINT}` }
+    return { drop: `Korean translation failed [unexpected]. ${DROP_HINT}` }
   })
 
-  // Redraws the prompt row alone with both languages; the stored message and what the model reads stay English.
-  on('ui.render', { component: 'UserMessage' }, (_, e, next) => {
-    const original = e.props.origin.kind === 'composer' ? originals.get(e.props.text) : undefined
-    return original === undefined ? next(e) : next({ ...e, props: { ...e.props, text: `${original}\n\n[English] ${e.props.text}` } })
-  })
-
-  // Redraws the answer row alone with the Korean beneath the English; the stored message stays English.
-  // shortcut: matched by the block's text, so an answer the surface draws differently from turn.complete's `answer` gets no translation; key by message id if that happens.
-  on('ui.render', { component: 'AssistantMessage' }, (_, e, next) => {
-    const korean = e.props.isSummary ? undefined : translations.get(e.props.text.trim())
-    return korean === undefined ? next(e) : next({ ...e, props: { ...e.props, text: `${e.props.text}\n\n---\n\n**한국어 번역**\n\n${korean}` } })
-  })
-
-  // Any new main-loop turn, typed, queued, or automated, cancels the preceding turn's unfinished output translation.
-  on('turn.start', (_, e, next) => {
-    if (e.agentId === undefined) {
-      output?.abort()
-      output = undefined
+  on('turn.start', async ($, e, next) => {
+    if (!state.supported || e.agentId !== undefined) return next(e)
+    const generation = state.generation
+    let eligible = false
+    if (state.enabled && e.text) {
+      // The target API exposes the conversation, not a last-row filter. Inspect only its latest user message.
+      const messages = await $.session.messages({ as: 'api' })
+      const latest = [...messages].reverse().find(message => message.role === 'user')
+      const text = latest?.content.filter(block => block.type === 'text').map(block => block.text).join('\n') ?? ''
+      const ids = [...text.matchAll(/\[korean-translation-request:(translation-[a-z0-9-]+)\]/g)]
+      const id = ids.at(-1)?.[1]
+      if (id && state.requests.has(id)) {
+        eligible = true
+        state.requests.delete(id)
+      }
     }
+    if (generation === state.generation) state.turns.set(e.turnId, eligible)
+    return next(e)
+  }).catch(($, e, next) => {
+    state.turns.set(e.turnId, false)
+    $.ui.log('Korean translation could not identify this turn [turn-context]. Its answer will not be translated.')
     return next(e)
   })
 
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
-    if (e.agentId !== undefined || e.reason !== 'answer' || e.isAborted) return result
-    if (!isSupported || !isEnabled || !isMarked || e.turnId === lastTurnId) return result
-    lastTurnId = e.turnId
-    if (!needsTranslation(e.answer, 'Korean')) return result
-
-    output?.abort()
-    const mine = generation
-    const abort = (output = new AbortController())
-    const isStale = () => mine !== generation || abort.signal.aborted || !isEnabled
-    // Not awaited: the turn ends at once and the answer row is redrawn with the translation when it arrives.
-    void translate($, e.answer, 'Korean', abort.signal)
-      .then(
-        text => {
-          if (isStale()) return
-          translations.set(e.answer.trim(), text)
-          $.ui.invalidate('ui.render')
-        },
-        error => (isStale() ? undefined : $.ui.log(`Korean translation failed because ${reasonOf(error)}. The English answer is unchanged.`)),
-      )
-      .catch(() => undefined)
-      .finally(() => {
-        if (output === abort) output = undefined
+    if (e.agentId !== undefined) return result
+    const eligible = state.turns.get(e.turnId)
+    state.turns.delete(e.turnId)
+    if (e.isAborted) {
+      cancel(state)
+      $.ui.invalidate('ui.render')
+      return result
+    }
+    if (!eligible || !state.supported || !state.enabled || e.reason !== 'answer' || !needsTranslation(e.answer, 'Korean')) return result
+    const pending = [...state.rows.values()].filter(row => row.phase === 'pending' || row.phase === 'translating').length
+    if (pending >= MAX_PENDING || state.rows.size >= MAX_ROWS) {
+      $.ui.log('Korean translation skipped [capacity]. The English answer is unchanged.')
+      return result
+    }
+    const row: Row = { id: rowId(), direction: 'output', phase: 'pending', abort: new AbortController() }
+    const generation = state.generation
+    try {
+      row.run = new TranslationRun(e.answer, 'Korean')
+      state.rows.set(row.id, row)
+      const placed = await $.ui.place({ id: row.id })
+      if (!placed.isPlaced) throw new TranslationError('unexpected')
+      if (generation !== state.generation || row.abort.signal.aborted) return result
+      state.queue.push(row)
+      void drain($, state).catch(error => {
+        if (generation !== state.generation || row.abort.signal.aborted) return
+        row.phase = 'failed'
+        row.error = failureCode(error)
+        state.lastFailure = diagnostic(row)
+        $.ui.log(`Korean translation failed. ${state.lastFailure}. The English answer is unchanged.`)
       })
+    } catch (error) {
+      row.phase = 'failed'
+      row.error = failureCode(error)
+      state.lastFailure = diagnostic(row)
+      $.ui.log(`Korean translation failed. ${state.lastFailure}. The English answer is unchanged.`)
+    }
     return result
   })
 
-  on('session.end', async ($, e, next) => {
-    invalidate()
-    isMarked = false
-    lastTurnId = undefined
-    originals.clear()
-    translations.clear()
-    // After /clear or a resume the process goes on with no session.start, so the opt-out resets here.
-    if (!isEnabled && (e.reason === 'clear' || e.reason === 'resume')) {
-      isEnabled = true
-      await $.ui.log('Korean translation: on again for the new session.')
+  on('ui.render', { component: 'Placed' }, ($, e, next) => {
+    if (e.props.plugin !== $.plugin.name) return next(e)
+    const row = state.rows.get(e.props.id)
+    if (!row) return next(e)
+    const { Box, Markdown, Text } = $.ui.resolve(e)
+    if (row.phase === 'ready') {
+      if (row.direction === 'input') return Markdown({ text: `**입력 원문**\n\n${row.text}` })
+      return Box({ flexDirection: 'column', marginTop: 1, children: [
+        Text({ dimColor: true, children: ['한국어 번역'] }),
+        Box({ key: 'translation-output-row', flexDirection: 'row', children: [
+          Box({ width: 2, flexShrink: 0, children: [Text({ children: ['⏺'] })] }),
+          Box({ flexDirection: 'column', flexGrow: 1, flexShrink: 1, children: [Markdown({ key: 'translation-body', text: row.text! })] }),
+        ] }),
+      ] })
+    }
+    return Text({ children: [`Korean translation: ${diagnostic(row)}${row.phase === 'failed' || row.phase === 'cancelled' ? '. The English answer is unchanged.' : ''}`] })
+  })
+
+  on('session.end', ($, e, next) => {
+    cancel(state)
+    state.session++
+    state.input = undefined
+    state.rows.clear()
+    state.lastFailure = undefined
+    if (!state.enabled && (e.reason === 'clear' || e.reason === 'resume')) {
+      state.enabled = true
+      $.ui.log('Korean translation: on again for the new session.')
     }
     return next(e)
   })

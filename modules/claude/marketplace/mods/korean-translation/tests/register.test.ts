@@ -5,568 +5,500 @@ const TAG = '[korean-translation: active]'
 const USAGE = { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 }
 const answered = (text: string, output_tokens = 1) => ({ value: { isAnswered: true, text, usage: { ...USAGE, output_tokens } } })
 const failed = (fields: object) => ({ value: { isAnswered: false, usage: USAGE, ...fields } })
+const koreanReply = (prompt: string) => prompt
+  .replaceAll('The build passed.', '빌드가 통과했습니다.')
+  .replace(/^Run (.+) first\.$/gm, '$1를 먼저 실행하세요.')
+  .replaceAll('- It passed.', '- 검사가 통과했습니다.')
+  .replace(/^- See (.+)$/gm, '- $1를 확인하세요.')
+// Wiring stub only. Validation tests use complete bilingual prose fixtures.
+const translator = (e: any) => answered(e.system.includes('into Korean') ? koreanReply(e.prompt) : e.prompt.replace(/\p{Script=Hangul}+/gu, 'word'))
+const KOREAN = '이 함수를 고쳐줘'
+const SECRET = 'sk-provider-detail policy body'
 
-// Keeps placeholders in place: Hangul becomes "word" on the way in, the answer gains a Korean lead on the way out.
-const translator = (e: any) =>
-  answered(e.system.includes('into Korean') ? `번역 ${e.prompt}` : e.prompt.replace(/\p{Script=Hangul}+/gu, 'word'))
-
-// The engine beneath the mod. `reply` answers each model call; `box` is what the prompt box holds.
-function world(on: On, reply: (e: any, call: number) => unknown = translator) {
-  const w = {
-    reply,
-    box: '',
-    isReadDenied: false,
-    model: [] as any[],
-    logs: [] as string[],
-    status: [] as (string | undefined)[],
-    fills: [] as any[],
-    submitted: [] as any[],
-    registered: [] as any[],
-    session: mock.session(on),
-    redraws: 0,
-  }
-  on('model.complete', async (_, e) => {
-    w.model.push(e)
-    return (await w.reply(e, w.model.length)) as any
-  })
-  on('ui.log', (_, e) => {
-    w.logs.push(e.text)
-    return { value: undefined }
-  })
-  on('ui.status', (_, e) => {
-    w.status.push(e.text)
-    return { value: undefined }
-  })
-  on('command.register', (_, e) => {
-    w.registered.push(e)
-    return { value: { command: e.name } }
-  })
-  on('prompt.read', () => (w.isReadDenied ? { deny: 'no prompt box' } : { value: { text: w.box, cursor: 0 } }))
-  on('prompt.fill', (_, e) => {
-    w.fills.push(e)
-    return { isFilled: true }
-  })
-  on('session.start', (_, e) => ({ cwd: e.cwd }))
-  on('session.end', (_, e) => ({ sessionId: e.sessionId }))
-  on('prompt.submit', (_, e) => {
-    w.submitted.push(e)
-    return { text: e.text, context: e.context }
-  })
-  on('turn.start', (_, e) => ({ turnId: e.turnId }))
-  on('ui.invalidate', () => {
-    w.redraws++
-    return { value: undefined }
-  })
-  on('ui.render', ($, e: any) => h($.ui.resolve(e).Text, null, e.props.text))
-  on('turn.complete', (_, e) => ({ text: e.answer }))
-  return w
-}
-
-const start = ($: any, over: object = {}) => $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true, ...over })
-const submit = ($: any, text: string, over: object = {}) => $.prompt.submit({ text, wait: false, origin: { kind: 'composer' }, ...over })
-const turn = ($: any, over: object = {}) =>
-  $.turn.complete({ answer: 'The build passed.', durationMs: 1, isAborted: false, turnId: 't1', reason: 'answer', ...over })
-const command = ($: any, args: string) =>
-  $.command.run({ command: 'translate', args, origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } })
-const end = ($: any, reason: string) => $.session.end({ reason, sessionId: 's1', resume: { id: 's1' } })
-
-// The output translation runs after its hook has returned, so a test waits for it in real time.
-declare const setTimeout: (run: (value: unknown) => void, ms: number) => unknown
-const settle = () => new Promise(resolve => setTimeout(resolve, 40))
 function gate() {
   let open!: () => void
-  const opened = new Promise<void>(resolve => (open = resolve))
+  const opened = new Promise<void>(resolve => { open = resolve })
   return { opened, open }
 }
 
-declare const h: (...args: any[]) => any
-// What the answer row draws beneath the English answer: the Korean translation, or undefined when there is none.
-const shown = async ($: any, answer = 'The build passed.', props: object = {}) => {
-  const ui = await $.ui.mount({ plugin: 'korean-translation', surface: 'terminal', component: 'AssistantMessage', requestId: 'a1', props: { text: answer, isFirstOfReply: true, ...props } })
-  const text: string = (await ui.find({ type: 'Text' }))?.text
-  await ui.unmount()
-  return text === answer ? undefined : text.slice(answer.length)
+function world($: any, on: On, reply: (e: any, call: number) => unknown = translator) {
+  let change = gate()
+  const emit = () => { const previous = change; change = gate(); previous.open() }
+  const w = {
+    box: '', isReadDenied: false, placeAllowed: true, messagesDenied: false,
+    model: [] as any[], logs: [] as string[], status: [] as (string | undefined)[], fills: [] as any[],
+    submitted: [] as any[], registered: [] as any[], placed: [] as string[], signals: [] as AbortSignal[],
+    api: [] as any[], redraws: 0, session: mock.session(on),
+    async until(condition: () => boolean) { while (!condition()) await change.opened },
+    async idle(): Promise<void> {
+      for (;;) {
+        const changed = change.opened
+        if (!(await w.command('status')).text.includes('pending: yes')) return
+        await changed
+      }
+    },
+    start: (over: object = {}) => $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true, ...over }),
+    command: (args: string) => $.command.run({ command: 'translate', args, origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } }),
+    async submit(text: string, over: object = {}, turnId: string | null = 't1'): Promise<any> {
+      const result = await $.prompt.submit({ text, wait: false, origin: { kind: 'composer' }, ...over })
+      if (result.drop === undefined && turnId) await w.begin(turnId)
+      return result
+    },
+    async begin(turnId: string, index?: number): Promise<void> {
+      const prompt = w.submitted[index ?? w.submitted.length - 1]
+      w.api = prompt ? [{ role: 'user', content: [{ type: 'text', text: prompt.text }, ...(prompt.context ?? []).map((text: string) => ({ type: 'text', text }))] }] : []
+      await $.turn.start({ text: prompt?.text ?? '', turnId })
+    },
+    complete: (over: object = {}) => $.turn.complete({ answer: 'The build passed.', durationMs: 1, isAborted: false, turnId: 't1', reason: 'answer', ...over }),
+    end: (reason = 'clear') => $.session.end({ reason, sessionId: 's1', resume: { id: 's1' } }),
+    async row(index: number, plugin = 'korean-translation'): Promise<string | undefined> {
+      const id = w.placed[index]
+      if (!id) return undefined
+      const ui = await $.ui.mount({ plugin: 'korean-translation', surface: 'terminal', component: 'Placed', requestId: `placed-${id}`, props: { id, plugin } })
+      const leaf = (await ui.find({ type: 'Markdown' })) ?? (await ui.find({ type: 'Text' }))
+      const text = leaf?.text
+      await ui.unmount()
+      return text
+    },
+  }
+  on('model.complete', async (_, e, next) => {
+    w.model.push(e)
+    w.signals.push(next.signal)
+    emit()
+    return await reply(e, w.model.length) as any
+  })
+  on('ui.log', (_, e) => { w.logs.push(e.text); emit(); return { value: undefined } })
+  on('ui.status', (_, e) => { w.status.push(e.text); emit(); return { value: undefined } })
+  on('command.register', (_, e) => { w.registered.push(e); return { value: { command: e.name } } })
+  on('prompt.read', () => w.isReadDenied ? { deny: 'no prompt box' } : { value: { text: w.box, cursor: 0 } })
+  on('prompt.fill', (_, e) => { w.fills.push(e); return { isFilled: true } })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('session.end', (_, e) => ({ sessionId: e.sessionId }))
+  on('prompt.submit', (_, e) => { w.submitted.push(e); return { text: e.text, context: e.context } })
+  on('session.messages', () => w.messagesDenied ? { deny: 'not available' } : { value: w.api })
+  on('turn.start', (_, e) => ({ turnId: e.turnId }))
+  on('turn.complete', (_, e) => ({ text: e.answer }))
+  on('ui.invalidate', () => { w.redraws++; emit(); return { value: undefined } })
+  on('ui.place', (_, e) => {
+    if (!w.placeAllowed) return { value: { isPlaced: false, reason: 'test surface unavailable' } }
+    w.placed.push(e.id)
+    emit()
+    return { value: { isPlaced: true, requestId: `placed-${e.id}` } }
+  })
+  return w
 }
-const BENEATH = (korean: string) => `\n\n---\n\n**한국어 번역**\n\n${korean}`
 
-const KOREAN = '이 함수를 고쳐줘'
-const STATUS_ON = 'Korean translation: on\nmodel: haiku\nscope: typed prompts and final answers in the interactive terminal session\npending: no'
-const STATUS_OFF = STATUS_ON.replace(': on', ': off')
-
-// ---- load and controls
-
-test('loading in an interactive terminal registers /translate and announces the state without a model call', async ($, on) => {
-  const w = world(on)
-  await start($)
-  expect(w.registered).toEqual([
-    { name: 'translate', description: 'Turn Korean conversation translation on or off', argumentHint: 'on|off|status', immediate: true },
-  ])
-  expect(w.logs).toEqual(['Korean translation: on (haiku). /translate off disables it for this session.'])
-  expect(w.model).toHaveLength(0)
-})
-
-test('/translate reports, switches and rejects without a model call or a working-model prompt', async ($, on) => {
-  const w = world(on)
-  await start($)
-  expect(await command($, '')).toEqual({ text: STATUS_ON })
-  expect(await command($, 'status')).toEqual({ text: STATUS_ON })
-  expect(await command($, 'off')).toEqual({ text: STATUS_OFF })
-  expect(await command($, 'bogus')).toEqual({ text: 'Usage: /translate on|off|status' })
-  expect(await command($, 'ON')).toEqual({ text: 'Usage: /translate on|off|status' })
-  expect(await command($, '')).toEqual({ text: STATUS_OFF })
-  expect(await command($, ' on ')).toEqual({ text: STATUS_ON })
-  expect(await command($, 'bogus')).toEqual({ text: 'Usage: /translate on|off|status' })
-  expect(await command($, 'status')).toEqual({ text: STATUS_ON })
-  expect(w.model).toHaveLength(0)
-  expect(w.submitted).toHaveLength(0)
-  expect(w.session.appended()).toHaveLength(0)
-})
-
-test('a /clear or resume after /translate off announces that translation is on again', async ($, on) => {
-  const w = world(on)
-  await start($)
-  await end($, 'clear')
+test('load and controls make no model calls, and invalid controls preserve state', async ($, on) => {
+  const w = world($, on)
+  await w.start()
+  expect(w.registered[0]).toMatchObject({ name: 'translate', immediate: true })
   expect(w.logs).toHaveLength(1)
-  await command($, 'off')
-  await end($, 'resume')
-  expect(w.logs.slice(1)).toEqual(['Korean translation: on again for the new session.'])
-  expect(await command($, 'status')).toEqual({ text: STATUS_ON })
+  expect((await w.command('')).text).toContain('Korean translation: on')
+  expect((await w.command('off')).text).toContain('Korean translation: off')
+  expect(await w.command('bogus')).toEqual({ text: 'Usage: /translate on|off|status' })
+  expect((await w.command('status')).text).toContain('Korean translation: off')
+  expect((await w.command(' on ')).text).toContain('Korean translation: on')
+  expect(w.model).toHaveLength(0)
 })
 
-// ---- input
+test('clear/resume resets a disabled toggle and announces it', async ($, on) => {
+  const w = world($, on)
+  await w.start()
+  await w.command('off')
+  await w.end('resume')
+  expect((await w.command('status')).text).toContain('Korean translation: on')
+  expect(w.logs.at(-1)).toContain('on again')
+})
 
-test('Korean input is translated once and submitted once with its other fields kept', async ($, on) => {
-  const w = world(on, () => answered('Fix this function'))
-  await start($)
-  const attachments = [{ type: 'image', mediaType: 'image/png', id: 'img-1' }]
-  const result = await submit($, KOREAN, { attachments, wait: true, turnId: 'turn-9', context: ['earlier note'] })
-
+test('input is submitted once with attachments intact and the original in its own display-only row', async ($, on) => {
+  const w = world($, on, () => answered('Fix this function'))
+  await w.start()
+  const attachments = [{ type: 'image', id: 'img-1' }]
+  const result = await w.submit(KOREAN, { attachments, context: ['kept'] })
   expect(result.text).toBe('Fix this function')
   expect(w.submitted).toHaveLength(1)
-  const sent = w.submitted[0]
-  expect(sent.text).toBe('Fix this function')
-  expect(sent.attachments).toEqual(attachments)
-  expect(sent.wait).toBe(true)
-  expect(sent.turnId).toBe('turn-9')
-  expect(sent.origin).toEqual({ kind: 'composer' })
-  expect(sent.context).toHaveLength(2)
-  expect(sent.context[0]).toBe('earlier note')
-  expect(sent.context[1]).toStartWith(TAG)
-
-  // Haiku gets the protected text and the instructions, nothing of the attachments or the conversation.
-  expect(w.model).toHaveLength(1)
-  expect(Object.keys(w.model[0]).sort()).toEqual(['effort', 'maxTokens', 'model', 'prompt', 'system', 'timeoutMs'])
-  expect(w.model[0]).toMatchObject({ model: 'haiku', prompt: KOREAN, maxTokens: 32000 })
-  expect(w.model[0].system).toStartWith('Translate the supplied document into English.')
-  expect(w.model[0].timeoutMs).toBeLessThanOrEqual(60000)
-
-  // Nothing is appended for the model or the transcript; the indication is shown, then cleared.
+  expect(w.submitted[0]).toMatchObject({ attachments, origin: { kind: 'composer' }, wait: false })
+  expect(w.submitted[0].context[0]).toBe('kept')
+  expect(w.submitted[0].context[1]).toStartWith(TAG)
+  expect(w.model[0]).toMatchObject({ model: 'haiku', prompt: KOREAN })
+  expect(w.model[0].attachments).toBeUndefined()
+  expect(await w.row(0)).toBe(`**입력 원문**\n\n${KOREAN}`)
   expect(w.session.appended()).toHaveLength(0)
-  expect(w.status).toEqual(['Translating to English... (esc cancels)', undefined])
-  expect(w.fills).toHaveLength(0)
+  expect((await w.command('status')).text).toEndWith('pending: no')
 })
 
-test('the prompt row shows the Korean original above the English that was sent, and only for a translated composer prompt', async ($, on) => {
-  const w = world(on)
-  await start($)
-  await submit($, KOREAN)
-  const english = w.submitted[0].text
-  const row = (props: object) =>
-    $.ui.mount({ plugin: 'korean-translation', surface: 'terminal', component: 'UserMessage', requestId: 'm1', props: { text: english, origin: { kind: 'composer' }, isExpanded: true, ...props } } as any)
-
-  let ui = await row({})
-  expect((await ui.find({ type: 'Text' }))?.text).toBe(`${KOREAN}\n\n[English] ${english}`)
-  await ui.unmount()
-
-  ui = await row({ origin: { kind: 'peer' } })
-  expect((await ui.find({ type: 'Text' }))?.text).toBe(english)
-  await ui.unmount()
-
-  ui = await row({ text: 'typed in English' })
-  expect((await ui.find({ type: 'Text' }))?.text).toBe('typed in English')
-  await ui.unmount()
-
-  await end($, 'clear')
-  ui = await row({})
-  expect((await ui.find({ type: 'Text' }))?.text).toBe(english)
-  await ui.unmount()
+test('identical English translations retain distinct Korean originals', async ($, on) => {
+  const w = world($, on, () => answered('Fix this function'))
+  await w.start()
+  await w.submit('함수를 고쳐줘', {}, 't1')
+  await w.submit('이 함수 수정해줘', {}, 't2')
+  expect(w.placed[0]).not.toBe(w.placed[1])
+  expect(await w.row(0)).toContain('함수를 고쳐줘')
+  expect(await w.row(1)).toContain('이 함수 수정해줘')
 })
 
-test('mixed input keeps code, paths and links out of the request and intact in the prompt', async ($, on) => {
-  const w = world(on)
-  await start($)
-  const text = '`foo($&)` 를 ./src/a.ts 에서 고치고 https://example.com/x?y=1 참고해 and keep going\n```ts\nconst 값 = 1\n```\n'
-  const result = await submit($, text)
-
-  expect(w.model).toHaveLength(1)
+test('mixed input keeps literals out of Haiku and intact after restoration', async ($, on) => {
+  const w = world($, on)
+  await w.start()
+  const result = await w.submit('`foo($&)` 를 ./src/a.ts 에서 고치고 https://example.com/x?y=1 참고해 and keep going\n```ts\nconst 값 = 1\n```\n')
   for (const literal of ['foo(', './src/a.ts', 'https://', 'const 값']) expect(w.model[0].prompt).not.toContain(literal)
-  expect(w.model[0].prompt).toContain('and keep going')
-  expect(w.submitted).toHaveLength(1)
   expect(result.text).toBe('`foo($&)` word ./src/a.ts word word https://example.com/x?y=1 word and keep going\n```ts\nconst 값 = 1\n```\n')
 })
 
-const UNTRANSLATED: [string, string, object][] = [
-  ['English-only input', 'fix the build', {}],
-  ['input whose only Korean is inside protected literals', 'rename `함수` in ./src/a.ts\n```\n주석\n```\n', {}],
-  ['a slash command', '/review 이 변경을 봐줘', { command: { name: 'review', args: '이 변경을 봐줘' } }],
-  ['a hidden (isMeta) prompt', KOREAN, { isMeta: true }],
-]
-for (const [name, text, over] of UNTRANSLATED) {
-  test(`${name} passes through unchanged with the marker and no model call`, async ($, on) => {
-    const w = world(on)
-    await start($)
-    const result = await submit($, text, over)
-    expect(result.text).toBe(text)
-    expect(w.submitted).toHaveLength(1)
-    expect(w.submitted[0]).toMatchObject({ text, wait: false, origin: { kind: 'composer' }, ...over })
-    expect(w.submitted[0].context).toHaveLength(1)
+for (const text of ['fix the build', 'rename `함수` in ./src/a.ts\n```\n주석\n```']) {
+  test(`no input request is needed for ${JSON.stringify(text)}`, async ($, on) => {
+    const w = world($, on)
+    await w.start()
+    expect((await w.submit(text)).text).toBe(text)
     expect(w.submitted[0].context[0]).toStartWith(TAG)
     expect(w.model).toHaveLength(0)
-    expect(w.session.appended()).toHaveLength(0)
-    expect(w.status).toHaveLength(0)
+    expect(w.placed).toHaveLength(0)
   })
 }
 
-for (const origin of [{ kind: 'sdk' }, { kind: 'bridge' }, { kind: 'scheduled-trigger' }, { kind: 'task-notification' }, { kind: 'peer' }]) {
-  test(`a Korean prompt of origin ${origin.kind} is not rewritten or marked`, async ($, on) => {
-    const w = world(on)
-    await start($)
-    await submit($, KOREAN, { origin, context: ['kept'] })
-    expect(w.submitted).toHaveLength(1)
-    expect(w.submitted[0]).toMatchObject({ text: KOREAN, origin, context: ['kept'] })
+for (const over of [{ command: { name: 'review', args: KOREAN } }, { isMeta: true }, ...['sdk', 'bridge', 'scheduled-trigger', 'task-notification', 'peer'].map(kind => ({ origin: { kind } }))]) {
+  test(`excluded prompt ${JSON.stringify(over)} is neither rewritten nor marked`, async ($, on) => {
+    const w = world($, on)
+    await w.start()
+    await w.submit(KOREAN, { context: ['kept'], ...over })
+    await w.complete()
+    await w.idle()
+    expect(w.submitted[0]).toMatchObject({ text: KOREAN, context: ['kept'] })
     expect(w.model).toHaveLength(0)
-    // Its answer is not translated either.
-    await turn($)
-    await settle()
-    expect(w.model).toHaveLength(0)
-    expect(w.session.appended()).toHaveLength(0)
   })
 }
 
-const UNSUPPORTED: [string, object][] = [
-  ['a non-interactive run', { isInteractive: false }],
-  ['the desktop surface', { surface: 'desktop' }],
-  ['a session with no surface', { surface: null }],
-]
-for (const [name, session] of UNSUPPORTED) {
-  test(`${name} gets no command, no announcement and no translation`, async ($, on) => {
-    const w = world(on)
-    await start($, session)
-    await submit($, KOREAN)
-    await turn($)
-    await settle()
+for (const session of [{ isInteractive: false }, { surface: 'desktop' }, { surface: null }]) {
+  test(`unsupported session ${JSON.stringify(session)} performs no translation`, async ($, on) => {
+    const w = world($, on)
+    await w.start(session)
+    await w.submit(KOREAN)
+    await w.complete()
+    expect(w.model).toHaveLength(0)
     expect(w.registered).toHaveLength(0)
     expect(w.logs).toHaveLength(0)
-    expect(w.submitted).toHaveLength(1)
-    expect(w.submitted[0].text).toBe(KOREAN)
-    expect(w.submitted[0].context).toBeUndefined()
-    expect(w.model).toHaveLength(0)
-    expect(w.session.appended()).toHaveLength(0)
   })
 }
 
-test('after /translate off, Korean input and its answer pass with no marker and no model call', async ($, on) => {
-  const w = world(on)
-  await start($)
-  await command($, 'off')
-  await submit($, KOREAN)
-  await turn($)
-  await settle()
-  expect(w.submitted).toHaveLength(1)
-  expect(w.submitted[0].text).toBe(KOREAN)
+test('off leaves input and output unchanged without markers', async ($, on) => {
+  const w = world($, on)
+  await w.start()
+  await w.command('off')
+  await w.submit(KOREAN)
+  await w.complete()
   expect(w.submitted[0].context).toBeUndefined()
   expect(w.model).toHaveLength(0)
-  expect(w.session.appended()).toHaveLength(0)
-
-  // Turning it back on marks the next prompt again; the earlier turn is not backfilled.
-  await command($, 'on')
-  await settle()
+  await w.command('on')
   expect(w.model).toHaveLength(0)
-  await submit($, 'fix the build')
-  expect(w.submitted[1].context[0]).toStartWith(TAG)
 })
 
-// ---- input failures
-
-const SECRET = 'sk-provider-detail policy body'
 const FAILURES: [string, () => unknown, string][] = [
-  ['an API error', () => failed({ reason: 'api-error', status: 529, error: 'overloaded' }), 'haiku returned an API error (overloaded)'],
-  ['an aborted call', () => failed({ reason: 'aborted' }), 'it was cancelled or timed out'],
-  ['an empty reply', () => failed({ reason: 'empty-reply' }), 'haiku returned no text'],
-  ['a blank answer', () => answered(' \n '), 'haiku returned a malformed reply'],
-  ['an answer that used the whole output limit', () => answered('Fix this', 32000), 'the translation exceeded the output limit'],
-  ['a refused call', () => ({ deny: SECRET }), 'the haiku request was refused'],
+  ['API error', () => failed({ reason: 'api-error', error: SECRET }), 'provider'],
+  ['abort', () => failed({ reason: 'aborted' }), 'deadline'],
+  ['empty', () => failed({ reason: 'empty-reply' }), 'empty'],
+  ['blank', () => answered(' \n '), 'malformed'],
+  ['output limit', () => answered('Fix this', 32000), 'output-limit'],
+  ['refusal', () => ({ deny: SECRET }), 'refused'],
 ]
-for (const [name, reply, reason] of FAILURES) {
-  test(`${name} drops the prompt, restores the draft and is not retried`, async ($, on) => {
-    const w = world(on, reply)
-    await start($)
-    const result = await submit($, KOREAN, { attachments: [{ type: 'image', id: 'img-1' }] })
-
-    expect(result).toEqual({ drop: `Korean translation failed because ${reason}. Run /translate off to send the prompt without translation.` })
-    expect(result.drop).not.toContain(KOREAN)
-    expect(result.drop).not.toContain('sk-provider')
+for (const [name, reply, code] of FAILURES) {
+  test(`input ${name} restores the draft and reports a sanitized reason without retry`, async ($, on) => {
+    const w = world($, on, reply)
+    await w.start()
+    const result = await w.submit(KOREAN)
+    expect(result.drop).toContain(`[${code}]`)
+    expect(result.drop).not.toContain(SECRET)
     expect(w.submitted).toHaveLength(0)
     expect(w.model).toHaveLength(1)
-    expect(w.fills).toHaveLength(1)
-    expect(w.fills[0]).toMatchObject({ text: KOREAN, mode: 'replace' })
-    expect(w.session.appended()).toHaveLength(0)
-    expect(w.logs).toHaveLength(1)
-    expect(w.status).toEqual(['Translating to English... (esc cancels)', undefined])
-    // A failed input translation leaves nothing pending.
-    expect(await command($, 'status')).toEqual({ text: STATUS_ON })
+    expect(w.fills[0].text).toBe(KOREAN)
+    expect((await w.command('status')).text).toContain(`last failure: input: failed [${code}]`)
+    expect(w.placed).toHaveLength(0)
   })
 }
 
-test('a failed translation does not overwrite what the person typed meanwhile', async ($, on) => {
-  const w = world(on, () => failed({ reason: 'api-error', status: 500, error: 'server_error' }))
+test('input failure preserves a newer draft and catches failed editor restoration', async ($, on) => {
+  const w = world($, on, () => failed({ reason: 'empty-reply' }))
+  await w.start()
   w.box = 'newer draft'
-  await start($)
-  const result = await submit($, KOREAN)
-  expect(result.drop).toContain('server_error')
-  expect(w.submitted).toHaveLength(0)
+  await w.submit(KOREAN)
   expect(w.fills).toHaveLength(0)
+  w.isReadDenied = true
+  expect((await w.submit(KOREAN)).drop).toContain('[unexpected]')
+  expect(w.submitted).toHaveLength(0)
 })
 
-test('a reply that breaks a placeholder is retried exactly once from the same protected text', async ($, on) => {
-  const w = world(on, (e, call) => (call === 1 ? answered('Fix the function') : translator(e)))
-  await start($)
-  const result = await submit($, '`foo()` 함수를 고쳐줘')
-
-  expect(result.text).toBe('`foo()` word word')
-  expect(w.submitted).toHaveLength(1)
+test('one placeholder retry uses the original input and repairs the translation', async ($, on) => {
+  const w = world($, on, (e, call) => call === 1 ? answered('Fix the function') : translator(e))
+  await w.start()
+  expect((await w.submit('`foo()` 함수를 고쳐줘')).text).toBe('`foo()` word word')
   expect(w.model).toHaveLength(2)
   expect(w.model[1].prompt).toBe(w.model[0].prompt)
-  expect(w.model[0].system).not.toContain('previous attempt failed')
-  expect(w.model[1].system).toContain('previous attempt failed placeholder validation')
+  expect(w.model[1].system).toContain('validation (placeholders)')
   expect(w.model[1].timeoutMs).toBeLessThanOrEqual(w.model[0].timeoutMs)
-  expect(w.fills).toHaveLength(0)
 })
 
-test('a second placeholder failure drops the prompt after two calls', async ($, on) => {
-  const w = world(on, e => answered(`${e.prompt} ${e.prompt}`))
-  await start($)
-  const result = await submit($, '`foo()` 함수를 고쳐줘')
-  expect(result).toEqual({
-    drop: 'Korean translation failed because the translation changed protected code, paths, or links. Run /translate off to send the prompt without translation.',
-  })
+test('different validation failures still allow only two attempts', async ($, on) => {
+  const w = world($, on, (e, call) => call === 1 ? answered(e.prompt) : answered('Fix the function'))
+  await w.start()
+  expect((await w.submit('`foo()` 함수를 고쳐줘')).drop).toContain('[placeholders]')
   expect(w.model).toHaveLength(2)
+  expect(w.model[1].system).toContain('validation (unchanged)')
   expect(w.submitted).toHaveLength(0)
-  expect(w.fills).toHaveLength(1)
 })
 
-test('a source over 64 KiB of UTF-8 is dropped without a model call; one at the limit is sent whole', async ($, on) => {
-  const w = world(on, () => answered('ok then'))
-  await start($)
-  const atLimit = `${'가'.repeat(21845)}a` // 65,536 bytes in 21,846 characters
-  const over = `${atLimit}a`
-
-  const dropped = await submit($, over)
-  expect(dropped).toEqual({ drop: 'Korean translation failed because the text exceeds 64 KiB. Run /translate off to send the prompt without translation.' })
+test('UTF-8 source limit rejects oversize input without a model request', async ($, on) => {
+  const w = world($, on, () => answered('ok then'))
+  await w.start()
+  const atLimit = `${'가'.repeat(21845)}a`
+  expect((await w.submit(atLimit + 'a')).drop).toContain('[source-limit]')
   expect(w.model).toHaveLength(0)
-  expect(w.submitted).toHaveLength(0)
-  expect(w.fills[0].text).toBe(over)
-
-  await submit($, atLimit)
-  expect(w.model).toHaveLength(1)
+  await w.submit(atLimit)
   expect(w.model[0].prompt).toBe(atLimit)
-  expect(w.submitted).toHaveLength(1)
 })
 
-test('/translate off while the input translation runs drops the prompt instead of sending it', async ($, on) => {
-  const g = gate()
-  const w = world(on, async () => {
-    await g.opened
-    return answered('Fix this function')
-  })
-  await start($)
-  const pending = submit($, KOREAN)
-  await settle()
-  expect(w.model).toHaveLength(1)
-  expect((await command($, 'status')).text).toEndWith('pending: yes')
-  await command($, 'off')
-  g.open()
-  const result = await pending
-  expect(result.drop).toStartWith('Korean translation failed because it was cancelled')
-  expect(w.submitted).toHaveLength(0)
-  expect(w.session.appended()).toHaveLength(0)
-  expect(w.fills).toHaveLength(1)
-  expect(await command($, 'status')).toEqual({ text: STATUS_OFF })
-})
-
-// $.ui.status is fire-and-forget (a denial is dropped, not thrown), so the throw comes from $.prompt.read in the failure path.
-test('a hook that throws falls to its catch handler, which keeps untranslated Korean from being sent', async ($, on) => {
-  const w = world(on, () => failed({ reason: 'empty-reply' }))
-  w.isReadDenied = true
-  await start($)
-  const result = await submit($, KOREAN)
-  expect(result).toEqual({ drop: 'Korean translation failed. Run /translate off to send the prompt without translation.' })
-  expect(w.submitted).toHaveLength(0)
-  expect(w.model).toHaveLength(1)
-})
-
-// ---- output
-
-test('a finished parent turn gets one Korean notice, appended after the hook has returned', async ($, on) => {
-  const g = gate()
-  const w = world(on, async e => {
-    if (e.system.includes('into Korean')) await g.opened
-    return translator(e)
-  })
-  await start($)
-  await submit($, KOREAN)
-  const answer = 'Run `npm test` first.\n\n- It passed.\n- See ./src/a.ts'
-  const result = await turn($, { answer })
-
-  // turn.complete has resolved with the English answer while the translation is still in flight.
-  expect(result).toEqual({ text: answer })
-  expect(w.model).toHaveLength(2)
-  expect(await shown($, answer)).toBeUndefined()
-  expect((await command($, 'status')).text).toEndWith('pending: yes')
-
-  g.open()
-  await settle()
-  expect(await shown($, answer)).toBe(BENEATH(`번역 ${answer}`))
-  expect(await shown($, answer, { isSummary: true })).toBeUndefined()
-  expect(w.redraws).toBe(1)
-  expect(w.session.appended()).toHaveLength(0)
-  expect(w.model[1]).toMatchObject({ model: 'haiku' })
-  expect(w.model[1].system).toStartWith('Translate the supplied document into Korean.')
-  expect(w.model[1].prompt).not.toContain('npm test')
-  // The translation is shown, never submitted as a prompt.
-  expect(w.submitted).toHaveLength(1)
-  expect(w.logs).toHaveLength(1)
-  expect(await command($, 'status')).toEqual({ text: STATUS_ON })
-})
-
-test('the answer to an English prompt is translated too', async ($, on) => {
-  const w = world(on)
-  await start($)
-  await submit($, 'fix the build')
-  await turn($)
-  await settle()
-  expect(w.model).toHaveLength(1)
-  expect(await shown($)).toBe(BENEATH('번역 The build passed.'))
-})
-
-const SKIPPED: [string, object][] = [
-  ['a subagent turn', { agentId: 'agent-1' }],
-  ['an interrupted turn', { isAborted: true }],
-  ['a turn that ended aborted', { reason: 'aborted', isAborted: true }],
-  ['a turn that ended in an error', { reason: 'error' }],
-  ['a refused turn', { reason: 'refusal', refusal: { category: null } }],
-  ['an empty answer', { answer: '' }],
-  ['an answer with nothing but code', { answer: '```sh\nnpm test\n```\n' }],
-  ['an answer already in Korean', { answer: '빌드가 통과했습니다.' }],
-]
-for (const [name, over] of SKIPPED) {
-  test(`${name} is not translated`, async ($, on) => {
-    const w = world(on)
-    await start($)
-    await submit($, 'fix the build')
-    const result = await turn($, over)
-    await settle()
-    expect(result).toEqual({ text: 'answer' in over ? over.answer : 'The build passed.' })
-    expect(w.model).toHaveLength(0)
-    expect(w.session.appended()).toHaveLength(0)
-    expect(w.logs).toHaveLength(1)
-  })
-}
-
-test('a turn with no marked prompt before it is not translated', async ($, on) => {
-  const w = world(on)
-  await start($)
-  await turn($)
-  await settle()
-  expect(w.model).toHaveLength(0)
-  expect(w.session.appended()).toHaveLength(0)
-})
-
-test('a turn delivered twice is translated once', async ($, on) => {
-  const w = world(on)
-  await start($)
-  await submit($, 'fix the build')
-  await turn($)
-  await turn($)
-  await settle()
-  await turn($)
-  await settle()
-  expect(w.model).toHaveLength(1)
-  expect(w.redraws).toBe(1)
-})
-
-const STALE: [string, ($: any) => Promise<unknown>][] = [
-  ['a new main-loop turn', $ => $.turn.start({ text: 'next request', turnId: 't2' })],
-  ['/translate off', $ => command($, 'off')],
-  ['the end of the session', $ => end($, 'clear')],
-]
-for (const [name, act] of STALE) {
-  test(`${name} discards the output translation still in flight`, async ($, on) => {
+for (const replaceSession of [false, true]) {
+  test(`pending input is cancelled safely; session replacement=${replaceSession}`, async ($, on) => {
     const g = gate()
-    const w = world(on, async e => {
-      await g.opened
-      return translator(e)
-    })
-    await start($)
-    await submit($, 'fix the build')
-    await turn($)
-    await settle()
-    expect(w.model).toHaveLength(1)
-
-    await act($)
+    const w = world($, on, async () => { await g.opened; return answered('Fix this function') })
+    await w.start()
+    const pending = w.submit(KOREAN)
+    await w.until(() => w.model.length === 1)
+    if (replaceSession) await w.end()
+    else await w.command('off')
     g.open()
-    await settle()
-    expect(w.redraws).toBe(0)
-    expect(await shown($)).toBeUndefined()
-    // Nothing about the discarded translation is reported, and it is no longer pending.
-    expect(w.logs.filter(line => line.includes('failed'))).toHaveLength(0)
-    expect(w.model).toHaveLength(1)
-    expect((await command($, 'status')).text).toEndWith('pending: no')
+    expect((await pending).drop).toContain('[deadline]')
+    expect(w.submitted).toHaveLength(0)
+    expect(w.fills).toHaveLength(replaceSession ? 0 : 1)
   })
 }
 
-test('a subagent turn starting leaves the output translation in flight', async ($, on) => {
-  const g = gate()
-  const w = world(on, async e => {
-    await g.opened
-    return translator(e)
+for (const prefix of ['', '한국어 번역\n\n']) {
+  test(`English copy with ${JSON.stringify(prefix)} is never displayed as Korean`, async ($, on) => {
+    const w = world($, on, e => answered(prefix + e.prompt))
+    await w.start()
+    await w.submit('fix the build')
+    await w.complete()
+    await w.idle()
+    expect(w.model).toHaveLength(2)
+    expect(await w.row(0)).toContain('failed [unchanged]')
+    expect(await w.row(0)).not.toContain('**한국어 번역**')
+    expect((await w.command('status')).text).toContain('attempts: 2')
   })
-  await start($)
-  await submit($, 'fix the build')
-  await turn($)
+}
+
+test('output is placed pending after the answer and updates in place, without changing messages', async ($, on) => {
+  const g = gate()
+  const w = world($, on, async e => { await g.opened; return translator(e) })
+  await w.start()
+  await w.submit('fix the build')
+  const answer = 'Run `npm test` first.\n\n- It passed.\n- See ./src/a.ts'
+  expect(await w.complete({ answer })).toEqual({ text: answer })
+  await w.until(() => w.model.length === 1)
+  expect(await w.row(0)).toContain('translating')
+  g.open()
+  await w.idle()
+  expect(await w.row(0)).toBe('`npm test`를 먼저 실행하세요.\n\n- 검사가 통과했습니다.\n- ./src/a.ts를 확인하세요.')
+  expect(await w.row(0, 'another-plugin')).toBeUndefined()
+  expect(w.placed).toHaveLength(1)
+  expect(w.session.appended()).toHaveLength(0)
+  expect(w.submitted).toHaveLength(1)
+  await w.row(0)
+  expect(w.model).toHaveLength(1)
+})
+
+for (const over of [{ agentId: 'a1' }, { reason: 'aborted', isAborted: true }, { reason: 'error' }, { reason: 'refusal', refusal: { category: null } }, { answer: '' }, { answer: '```sh\nnpm test\n```' }, { answer: '빌드가 통과했습니다.' }]) {
+  test(`completion ${JSON.stringify(over)} is not translated`, async ($, on) => {
+    const w = world($, on)
+    await w.start()
+    await w.submit('fix the build')
+    await w.complete(over)
+    expect(w.model).toHaveLength(0)
+    expect(w.placed).toHaveLength(0)
+  })
+}
+
+test('duplicate completion and completion with no eligible start do not make extra calls', async ($, on) => {
+  const w = world($, on)
+  await w.start()
+  await w.complete()
+  expect(w.model).toHaveLength(0)
+  await w.submit('fix the build')
+  await w.complete()
+  await w.complete()
+  await w.idle()
+  await w.complete()
+  expect(w.model).toHaveLength(1)
+})
+
+test('identical answers have separate rows and a new turn does not cancel older translation', async ($, on) => {
+  const g = gate()
+  const w = world($, on, async (_, call) => { if (call === 1) await g.opened; return answered(call === 1 ? '첫 번째 빌드가 통과했습니다.' : '두 번째 빌드가 통과했습니다.') })
+  await w.start()
+  await w.submit('fix the build', {}, 't1')
+  await w.complete()
+  await w.until(() => w.model.length === 1)
+  await w.submit('fix the build', {}, 't2')
+  await w.complete({ turnId: 't2' })
+  expect(w.model).toHaveLength(1)
+  expect(await w.row(1)).toContain('pending')
+  g.open()
+  await w.idle()
+  expect(w.placed[0]).not.toBe(w.placed[1])
+  expect(await w.row(0)).toBe('첫 번째 빌드가 통과했습니다.')
+  expect(await w.row(1)).toBe('두 번째 빌드가 통과했습니다.')
+})
+
+for (const action of ['off', 'clear', 'aborted']) {
+  test(`${action} cancels pending output and rejects late results`, async ($, on) => {
+    const g = gate()
+    const w = world($, on, async e => { await g.opened; return translator(e) })
+    await w.start()
+    await w.submit('fix the build')
+    await w.complete()
+    await w.until(() => w.model.length === 1)
+    if (action === 'off') await w.command('off')
+    else if (action === 'clear') await w.end()
+    else await w.complete({ turnId: 't2', reason: 'aborted', isAborted: true })
+    g.open()
+    await w.idle()
+    expect(await w.row(0)).not.toBe('빌드가 통과했습니다.')
+    expect(w.logs.some(line => line.includes('failed'))).toBe(false)
+  })
+}
+
+test('queued unmarked prompts cannot change an already started turn eligibility', async ($, on) => {
+  const w = world($, on)
+  await w.start()
+  await w.submit('fix the build', {}, 't1')
+  await w.submit('task done', { origin: { kind: 'task-notification' } }, null)
+  await w.complete()
+  await w.idle()
+  expect(w.model).toHaveLength(1)
+  await w.begin('t2')
+  await w.complete({ turnId: 't2' })
+  expect(w.model).toHaveLength(1)
+})
+
+test('queued identical prompts are distinguished by request nonces', async ($, on) => {
+  const w = world($, on)
+  await w.start()
+  await w.submit('fix the build', {}, null)
+  await w.submit('fix the build', { origin: { kind: 'peer' } }, null)
+  await w.begin('t1', 0)
+  await w.complete()
+  await w.idle()
+  await w.begin('t2', 1)
+  await w.complete({ turnId: 't2' })
+  expect(w.model).toHaveLength(1)
+})
+
+test('output provider failure leaves English intact and shows a sanitized diagnostic', async ($, on) => {
+  const w = world($, on, () => failed({ reason: 'api-error', error: SECRET }))
+  await w.start()
+  await w.submit('fix the build')
+  expect(await w.complete()).toEqual({ text: 'The build passed.' })
+  await w.idle()
+  expect(await w.row(0)).toContain('failed [provider]')
+  expect(w.logs.join('\n')).not.toContain(SECRET)
+  expect(w.model).toHaveLength(1)
+})
+
+test('placement failure spends no translation call and does not guess a matching answer row', async ($, on) => {
+  const w = world($, on)
+  await w.start()
+  await w.submit('fix the build')
+  w.placeAllowed = false
+  await w.complete()
+  expect(w.model).toHaveLength(0)
+  expect(w.logs.at(-1)).toContain('failed')
+})
+
+test('an unavailable conversation context produces an explicit diagnostic', async ($, on) => {
+  const w = world($, on)
+  await w.start()
+  w.messagesDenied = true
+  await w.submit('fix the build')
+  await w.complete()
+  expect(w.model).toHaveLength(0)
+  expect(w.logs.at(-1)).toContain('[turn-context]')
+})
+
+test('new-session work resumes after an old cancelled provider call returns', async ($, on) => {
+  const g = gate()
+  const w = world($, on, async (e, call) => { if (call === 1) await g.opened; return translator(e) })
+  await w.start()
+  await w.submit('fix the build')
+  await w.complete()
+  await w.until(() => w.model.length === 1)
+  await w.end()
+  await w.submit('fix the next build', {}, 't2')
+  await w.complete({ turnId: 't2' })
+  g.open()
+  await w.idle()
+  expect(await w.row(0)).toBeUndefined()
+  expect(await w.row(1)).toBe('빌드가 통과했습니다.')
+  expect(w.model).toHaveLength(2)
+})
+
+test('a subagent start does not affect pending parent translation', async ($, on) => {
+  const g = gate()
+  const w = world($, on, async e => { await g.opened; return translator(e) })
+  await w.start()
+  await w.submit('fix the build')
+  await w.complete()
+  await w.until(() => w.model.length === 1)
   await $.turn.start({ text: 'explore', turnId: 'a1', agentId: 'agent-1' })
   g.open()
-  await settle()
-  expect(await shown($)).toBe(BENEATH('번역 The build passed.'))
+  await w.idle()
+  expect(await w.row(0)).toBe('빌드가 통과했습니다.')
 })
 
-test('an automated prompt delivered into a marked turn leaves its answer translated; one starting its own turn does not', async ($, on) => {
-  const w = world(on)
-  await start($)
-  await submit($, 'fix the build')
-  await submit($, 'task done', { origin: { kind: 'task-notification' }, turnId: 't1' })
-  await turn($)
-  await settle()
-  expect(w.redraws).toBe(1)
-
-  await submit($, 'task done', { origin: { kind: 'task-notification' } })
-  await turn($, { turnId: 't2' })
-  await settle()
-  expect(w.redraws).toBe(1)
-})
-
-test('a failed output translation leaves the English answer and one warning without its text', async ($, on) => {
-  const w = world(on, () => ({ deny: SECRET }))
-  await start($)
-  await submit($, 'fix the build')
-  const answer = 'The secret plan passed.'
-  const result = await turn($, { answer })
-  await settle()
-
-  expect(result).toEqual({ text: answer })
+test('a second input cannot race the in-flight input translator', async ($, on) => {
+  const g = gate()
+  const w = world($, on, async () => { await g.opened; return answered('Fix this function') })
+  await w.start()
+  const pending = w.submit(KOREAN)
+  await w.until(() => w.model.length === 1)
+  expect((await w.submit('다음 함수도 고쳐줘')).drop).toContain('already running')
+  g.open()
+  await pending
   expect(w.model).toHaveLength(1)
-  expect(w.session.appended()).toHaveLength(0)
   expect(w.submitted).toHaveLength(1)
-  expect(w.logs.slice(1)).toEqual(['Korean translation failed because the haiku request was refused. The English answer is unchanged.'])
-  expect(await command($, 'status')).toEqual({ text: STATUS_ON })
+})
+
+test('list damage is retried and the displayed body uses Markdown beside a fixed response gutter', async ($, on) => {
+  const answer = '- First option.\n  - Child option.\n- Second option.'
+  const translated = '- 첫 번째 옵션입니다.\n  - 하위 옵션입니다.\n- 두 번째 옵션입니다.'
+  const w = world($, on, (_, call) => answered(call === 1 ? '옵션을 확인하세요.' : translated))
+  await w.start()
+  await w.submit('explain the options')
+  await w.complete({ answer })
+  await w.idle()
+  expect(w.model).toHaveLength(2)
+  expect(w.model[1].system).toContain('validation (structure)')
+  expect(w.placed).toHaveLength(1)
+  const id = w.placed[0]!
+  const ui = await $.ui.mount({ plugin: 'korean-translation', surface: 'terminal', component: 'Placed', requestId: 'format-check', props: { id, plugin: 'korean-translation' } })
+  expect((await ui.find({ key: 'translation-body' }))?.text).toBe(translated)
+  expect(await ui.find({ type: 'Text', text: '⏺' })).toBeDefined()
+  const tree = await ui.drawn() as any
+  expect(tree.children[1]).toMatchObject({ type: 'Box', props: { flexDirection: 'row' } })
+  expect(tree.children[1].children[0]).toMatchObject({ type: 'Box', props: { width: 2, flexShrink: 0 } })
+  expect(tree.children[1].children[1]).toMatchObject({ type: 'Box', props: { flexDirection: 'column', flexGrow: 1, flexShrink: 1 } })
+  await ui.unmount()
+})
+
+test('output queue is bounded while older work remains pending', async ($, on) => {
+  const g = gate()
+  const w = world($, on, async e => { await g.opened; return translator(e) })
+  await w.start()
+  for (let i = 0; i < 5; i++) {
+    await w.submit('fix the build', {}, `t${i}`)
+    await w.complete({ turnId: `t${i}` })
+  }
+  expect(w.model).toHaveLength(1)
+  expect(w.placed).toHaveLength(4)
+  expect(w.logs.at(-1)).toContain('[capacity]')
+  g.open()
+  await w.idle()
+  expect(w.model).toHaveLength(4)
 })
