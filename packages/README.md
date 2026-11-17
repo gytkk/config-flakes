@@ -52,13 +52,13 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 
 | App | Version |
 |-----|---------|
-| claude-code | 2.1.325 |
+| claude-code | 2.1.326 |
 | codex | 0.169.0 |
 | codexbar | 0.84.0 |
 | gksdud | 2.1.0 |
 | herdr | 0.9.5 |
 | herdr-core | 0.1.21 |
-| notion-cli | 0.23.30 |
+| notion-cli | 0.23.31 |
 | pantry | main-69de978b5555 |
 | pi | 1.5.2 |
 
