@@ -43,6 +43,10 @@ Global development guidelines are rendered from shared rules under `agent-core/r
 
 The [Claude-specific instructions](../../agent-core/adapters/claude.md#response-language) require messages with two or more paragraphs before translation to include the English original followed by a complete Korean translation. Apply Home Manager and start a new Claude Code session to load instruction changes.
 
+## Proposed Korean translation mod
+
+The [Korean conversation translation specification](korean-translation-spec.md) defines a native Claude Code mod that uses Haiku to translate Korean input into English and append a display-only Korean translation after the working model's English answer. It covers failure handling, context separation, controls, integration, and acceptance checks. This is a proposal only; the mod is not implemented or enabled, and the current response-language instructions remain unchanged.
+
 ## Herdr subagent sidebar
 
 Inside Herdr TUI, Claude's Agents entry displays native subagents with a status icon, name, and actual model, followed by an excerpt of the latest assistant message in the generated Herdr theme's secondary text color. Before a message is available, the activity can show the tool name. Thinking blocks, tool arguments, and tool results are not displayed. Children share the parent's pane; this integration does not create terminal panes.
