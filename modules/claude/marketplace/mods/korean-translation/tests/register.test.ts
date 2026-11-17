@@ -145,11 +145,38 @@ test('Korean input is translated once and submitted once with its other fields k
   expect(w.model[0].system).toStartWith('Translate the supplied document into English.')
   expect(w.model[0].timeoutMs).toBeLessThanOrEqual(60000)
 
-  // The original is a display-only system note; the indication is shown, then cleared.
-  expect(w.session.appended()).toHaveLength(1)
-  expect(w.session.appended()[0]).toMatchObject({ door: 'note', message: { type: 'system', content: [{ type: 'text', text: `Korean original:\n${KOREAN}` }] } })
+  // Nothing is appended for the model or the transcript; the indication is shown, then cleared.
+  expect(w.session.appended()).toHaveLength(0)
   expect(w.status).toEqual(['Translating to English... (esc cancels)', undefined])
   expect(w.fills).toHaveLength(0)
+})
+
+declare const h: (...args: any[]) => any
+test('the prompt row shows the Korean original above the English that was sent, and only for a translated composer prompt', async ($, on) => {
+  const w = world(on)
+  on('ui.render', ($, e: any) => h($.ui.resolve(e).Text, null, e.props.text))
+  await start($)
+  await submit($, KOREAN)
+  const english = w.submitted[0].text
+  const row = (props: object) =>
+    $.ui.mount({ plugin: 'korean-translation', surface: 'terminal', component: 'UserMessage', requestId: 'm1', props: { text: english, origin: { kind: 'composer' }, isExpanded: true, ...props } } as any)
+
+  let ui = await row({})
+  expect((await ui.find({ type: 'Text' }))?.text).toBe(`${KOREAN}\n\n[English] ${english}`)
+  await ui.unmount()
+
+  ui = await row({ origin: { kind: 'peer' } })
+  expect((await ui.find({ type: 'Text' }))?.text).toBe(english)
+  await ui.unmount()
+
+  ui = await row({ text: 'typed in English' })
+  expect((await ui.find({ type: 'Text' }))?.text).toBe('typed in English')
+  await ui.unmount()
+
+  await end($, 'clear')
+  ui = await row({})
+  expect((await ui.find({ type: 'Text' }))?.text).toBe(english)
+  await ui.unmount()
 })
 
 test('mixed input keeps code, paths and links out of the request and intact in the prompt', async ($, on) => {
@@ -381,13 +408,13 @@ test('a finished parent turn gets one Korean notice, appended after the hook has
   // turn.complete has resolved with the English answer while the translation is still in flight.
   expect(result).toEqual({ text: answer })
   expect(w.model).toHaveLength(2)
-  expect(w.notes()).toEqual([`Korean original:\n${KOREAN}`])
+  expect(w.notes()).toEqual([])
   expect((await command($, 'status')).text).toEndWith('pending: yes')
 
   g.open()
   await settle()
-  expect(w.notes()).toEqual([`Korean original:\n${KOREAN}`, `한국어 번역\n\n번역 ${answer}`])
-  expect(w.session.appended()[1]).toMatchObject({ door: 'note', origin: { kind: 'plugin', name: 'korean-translation' }, message: { type: 'system' } })
+  expect(w.notes()).toEqual([`한국어 번역\n\n번역 ${answer}`])
+  expect(w.session.appended()[0]).toMatchObject({ door: 'note', origin: { kind: 'plugin', name: 'korean-translation' }, message: { type: 'system' } })
   expect(w.model[1]).toMatchObject({ model: 'haiku' })
   expect(w.model[1].system).toStartWith('Translate the supplied document into Korean.')
   expect(w.model[1].prompt).not.toContain('npm test')

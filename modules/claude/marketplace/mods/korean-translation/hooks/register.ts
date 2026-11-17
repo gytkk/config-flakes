@@ -63,6 +63,9 @@ export const register: Register = on => {
   let isInputPending = false
   let output: AbortController | undefined
   let lastTurnId: string | undefined
+  // English prompt as sent -> Korean original as typed, so the prompt row shows both.
+  // shortcut: memory-only, so after a reload or resume earlier prompt rows show English alone; persist in $.state if that matters.
+  const originals = new Map<string, string>()
 
   const invalidate = () => {
     generation++
@@ -129,10 +132,8 @@ export const register: Register = on => {
       isInputPending = false
       await $.ui.status(undefined)
     }
-    const result = await next({ ...e, text, context })
-    // Shown only once the English prompt has entered; a refused notice changes nothing the model reads.
-    if (result.drop === undefined) await $.session.append(notice(`Korean original:\n${e.text}`)).catch(() => undefined)
-    return result
+    originals.set(text, e.text)
+    return next({ ...e, text, context })
   }).catch(async ($, e, next) => {
     if (next.called) return next(e)
     // Fail closed only for prompts this hook would have translated.
@@ -143,6 +144,12 @@ export const register: Register = on => {
       // The drop below matters more than the draft: a throw here would let the untranslated prompt through.
     }
     return { drop: `Korean translation failed. ${DROP_HINT}` }
+  })
+
+  // Redraws the prompt row alone with both languages; the stored message and what the model reads stay English.
+  on('ui.render', { component: 'UserMessage' }, (_, e, next) => {
+    const original = e.props.origin.kind === 'composer' ? originals.get(e.props.text) : undefined
+    return original === undefined ? next(e) : next({ ...e, props: { ...e.props, text: `${original}\n\n[English] ${e.props.text}` } })
   })
 
   // Any new main-loop turn, typed, queued, or automated, cancels the preceding turn's unfinished output translation.
@@ -186,6 +193,7 @@ export const register: Register = on => {
     invalidate()
     isMarked = false
     lastTurnId = undefined
+    originals.clear()
     // After /clear or a resume the process goes on with no session.start, so the opt-out resets here.
     if (!isEnabled && (e.reason === 'clear' || e.reason === 'resume')) {
       isEnabled = true
