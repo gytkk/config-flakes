@@ -123,6 +123,7 @@
     "ty-lsp@gytkk": true,
     "terraform-ls@gytkk": true,
     "nixd-lsp@gytkk": true,
+    "korean-translation@gytkk": true,
     "cc-plugin-you-should-know@builtin": true,
     "ark@ark": true
   },

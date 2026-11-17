@@ -41,11 +41,32 @@ Inside Herdr, the status line also reports the selected model for the [Agents si
 
 Global development guidelines are rendered from shared rules under `agent-core/rules/` and `agent-core/adapters/claude.md`, then deployed to `~/.claude/CLAUDE.md`.
 
-The [Claude-specific instructions](../../agent-core/adapters/claude.md#response-language) require messages with two or more paragraphs before translation to include the English original followed by a complete Korean translation. Apply Home Manager and start a new Claude Code session to load instruction changes.
+The [Claude-specific instructions](../../agent-core/adapters/claude.md#response-language) require messages with two or more paragraphs before translation to include the English original followed by a complete Korean translation, except for a turn that the [Korean translation mod](#korean-translation-mod) tags as translated by its display layer, where the response is English only. Apply Home Manager and start a new Claude Code session to load instruction changes.
 
-## Proposed Korean translation mod
+## Korean translation mod
 
-The [Korean conversation translation specification](korean-translation-spec.md) defines a native Claude Code mod that uses Haiku to translate Korean input into English and append a display-only Korean translation after the working model's English answer. It covers failure handling, context separation, controls, integration, and acceptance checks. This is a proposal only; the mod is not implemented or enabled, and the current response-language instructions remain unchanged.
+The `korean-translation@gytkk` mod in `modules/claude/marketplace/mods/korean-translation` implements the [Korean conversation translation specification](korean-translation-spec.md). It translates a typed Korean prompt into English with the `haiku` alias before the working model receives it, and keeps the Korean original as a display-only notice. After each final answer it appends a Korean translation as a display-only notice. While translation is on, the mod attaches the `[korean-translation: active]` tag to each typed prompt, and the [response-language rule](../../agent-core/adapters/claude.md#response-language) makes the working model answer that prompt in English only. A prompt without the tag gets the ordinary English-plus-Korean rule.
+
+`/translate on`, `/translate off`, and `/translate status` control it without starting a model turn. Translation starts enabled, and the toggle is kept in memory only, so a reload or a new session turns it on again.
+
+Limits:
+
+- It runs only in the parent interactive terminal session. Subagents, non-interactive runs, and other surfaces are not translated.
+- It translates typed prose only. Slash commands, shell-mode input, automated prompts, tool output, and intermediate commentary pass through unchanged.
+- Fenced code, inline code, URLs, and paths are protected from the translator, but paths containing spaces or non-ASCII characters are not recognized as paths.
+- Each translation is a Haiku request that spends the user's own usage.
+- If an input translation fails, the prompt is not sent; run `/translate off` and resubmit.
+
+The mod targets Claude Code 2.1.325, and the mod API is early access, so review it when the CLI pin changes. Its tests stub model calls and UI effects:
+
+```bash
+claude plugin validate modules/claude/marketplace/mods/korean-translation
+claude plugin test modules/claude/marketplace/mods/korean-translation
+```
+
+With mumu enabled, the `claude` launcher puts `--settings` before `plugin`, and `claude plugin test` refuses that invocation; run the test through the underlying Claude executable instead, which `CLAUDE_CODE_EXECPATH` names inside a Claude session.
+
+The live terminal acceptance in the specification has not been run, so behavior with a real model, context exclusion of the notices, and long-text rendering are unverified.
 
 ## Herdr subagent sidebar
 
@@ -103,6 +124,7 @@ The writable shared settings also contain an enabled `ark@ark` entry and its `de
 
 - `document-skills`, `commit-commands`, `security-guidance`
 - `devils-advocate` (runtime-specific multi-pass review command and agent)
+- `korean-translation` (local mod; see [Korean translation mod](#korean-translation-mod))
 - `ralph-loop`, `superpowers`
 - `ponytail@ponytail` (minimal implementation guidance, review commands, and session hooks)
 - `impeccable@impeccable` (frontend design skill and automatic design checks)

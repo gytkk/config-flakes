@@ -5,6 +5,8 @@ behavior.
 
 ## Response language
 
+- When the latest user message is accompanied by context that starts with the exact tag `[korean-translation: active]`, write the conversational response in English only, because a separate display layer translates that response into Korean. Keep any language explicitly requested for files, quotations, and artifacts.
+- Decide this from the latest user message alone. When it carries no such tag, the next rule applies even if an earlier message in the conversation carried the tag.
 - When a user-facing message contains two or more paragraphs before translation, provide the English original first, followed by a complete Korean translation in the same message. Preserve the original meaning, uncertainty, and technical identifiers in the translation.
 
 ## GitHub PR synchronization

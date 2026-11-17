@@ -63,11 +63,12 @@ let
     # openai/codex-plugin-cc — Official Codex plugin for Claude Code
     "codex@openai-codex"
 
-    # local gytkk marketplace (modules/claude/marketplace) - runtime-specific skill and LSP plugins
+    # local gytkk marketplace (modules/claude/marketplace) - runtime-specific skill, LSP, and mod plugins
     "devils-advocate@gytkk"
     "ty-lsp@gytkk"
     "terraform-ls@gytkk"
     "nixd-lsp@gytkk"
+    "korean-translation@gytkk"
   ]
   ++ lib.optional cfg.mumu.enable "mumu@mumu";
 

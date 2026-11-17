@@ -1,6 +1,6 @@
 # Korean conversation translation mod specification
 
-Status: proposed, not implemented. This document specifies a Claude Code mod; it does not enable a plugin, change response-language instructions, or authorize deployment. The implementation target is Claude Code 2.1.325, matching the installed CLI and the pin in `packages/apps/claude-code/package.nix` when this specification was written. Live mod behavior has not been verified.
+Status: implemented as the `korean-translation` plugin in the `gytkk` marketplace and checked with stubbed mod tests only. Live behavior is unverified: the live terminal acceptance below has not been run. This document specifies a Claude Code mod and does not authorize deployment; [the Claude module README](README.md#korean-translation-mod) documents the implemented mod. The implementation target is Claude Code 2.1.325, matching the installed CLI and the pin in `packages/apps/claude-code/package.nix` when this specification was written.
 
 ## Outcome and scope
 
