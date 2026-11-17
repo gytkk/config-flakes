@@ -4,11 +4,11 @@ Status: implemented as the `korean-translation` plugin in the `gytkk` marketplac
 
 ## Outcome and scope
 
-In an interactive parent terminal session, the user writes Korean, Haiku translates the request into English, and the working model receives the English request. The working model's English answer streams normally. After the turn completes, Haiku translates the final answer into Korean and the interface shows it below the English original. Translation does not change the selected working model.
+In an interactive parent terminal session, the user writes Korean, Sonnet translates the request into English, and the working model receives the English request. The working model's English answer streams normally. After the turn completes, Sonnet translates the final answer into Korean and the interface shows it below the English original. Translation does not change the selected working model.
 
 The design follows the context separation of the [Pi translation extension](../pi/README.md#korean-conversation-translation), but uses Claude Code's native mod APIs and existing session credentials. It does not import Pi code or read Pi credentials or session state.
 
-The first release covers ordinary typed prose in the parent terminal session and the final conversational answer. It excludes intermediate commentary, thinking, tool calls/results, file contents, system instructions, subagents, teammates, scheduled or injected prompts, and historical-message backfill. Images and attachments remain attached to the working-model request but are not sent to Haiku. Desktop, IDE panels, Remote Control-specific presentation, cloud sessions, Agent SDK, and non-interactive runs are outside the initial supported surface; the mod must not translate unattended sessions merely because its plugin loads there.
+The first release covers ordinary typed prose in the parent terminal session and the final conversational answer. It excludes intermediate commentary, thinking, tool calls/results, file contents, system instructions, subagents, teammates, scheduled or injected prompts, and historical-message backfill. Images and attachments remain attached to the working-model request but are not sent to Sonnet. Desktop, IDE panels, Remote Control-specific presentation, cloud sessions, Agent SDK, and non-interactive runs are outside the initial supported surface; the mod must not translate unattended sessions merely because its plugin loads there.
 
 ## User-visible behavior
 
@@ -32,7 +32,7 @@ Display text must wrap correctly and preserve paragraphs and lists. Long answers
 
 ### Controls and lifecycle
 
-Expose `/translate on`, `/translate off`, and `/translate status` without starting a working-model turn. With no argument, report status; invalid arguments show usage without changing state. Status identifies whether translation is enabled, the `haiku` model alias, the supported terminal scope, and whether a translation is pending. Resolve any command-name collision before release rather than replacing another plugin's command.
+Expose `/translate on`, `/translate off`, and `/translate status` without starting a working-model turn. With no argument, report status; invalid arguments show usage without changing state. Status identifies whether translation is enabled, the `sonnet` model alias, the supported terminal scope, and whether a translation is pending. Resolve any command-name collision before release rather than replacing another plugin's command.
 
 The first release defaults to enabled when the mod loads in a supported interactive session. The toggle is memory-only and returns to enabled when the mod reloads or the session is replaced. Announce the effective state on load so reload does not silently undo an opt-out. Durable per-session preferences and replay of saved translations are deferred; do not promise Pi's branch-persistent behavior.
 
@@ -44,7 +44,7 @@ On interruption, disabling, reload, clear, resume, branch change, or session end
 | --- | --- | --- |
 | `session.start` | Register controls and report effective state | Loading the mod does not make a model call |
 | `prompt.submit` | Filter eligible input, translate it, and rewrite only its text | Call `next` once on success; do not re-submit through `$.prompt.submit` |
-| `$.model.complete` | Translate with `model: 'haiku'` | Use a standalone prompt and translator system instruction, not `$.model.fork` or conversation history |
+| `$.model.complete` | Translate with `model: 'sonnet'` | Use a standalone prompt and translator system instruction, not `$.model.fork` or conversation history |
 | `turn.complete` | Translate the eligible parent turn's final `e.answer` | Skip events with `e.agentId` or `e.isAborted`; do not trigger another working-model turn |
 | `$.ui.place` with a `ui.render` handler for `Placed` | Preserve original input and show Korean output in display-only rows | Verify context exclusion and long-text rendering on the target build |
 | `command.run` | Handle translation controls | No model calls for controls |
@@ -58,15 +58,15 @@ Keep mods API calls statically discoverable by Claude's validator. Use literal e
 
 ## Translation contract and failures
 
-Use the `haiku` alias through `$.model.complete`, with session-native authentication and an explicit output-token limit sufficient for the supported input size. If Haiku is unavailable or organization policy denies it, report the failure without switching models or extracting credentials. Translation consumes the user's plan/API/cloud-provider usage. Do not claim it is free or that native cost totals include it unless verified on the target build.
+Use the `sonnet` alias through `$.model.complete`, with session-native authentication and an explicit output-token limit sufficient for the supported input size. If Sonnet is unavailable or organization policy denies it, report the failure without switching models or extracting credentials. Translation consumes the user's plan/API/cloud-provider usage. Do not claim it is free or that native cost totals include it unless verified on the target build.
 
-Before calling Haiku, replace fenced code, inline code, recognized URLs, and recognized path tokens with collision-safe placeholders. Restore each literal byte-for-byte only after every expected placeholder appears exactly once and no unexpected placeholder appears. Keep identifiers and commands inside code formatting unchanged. Document the limits of path recognition, especially paths containing spaces or non-ASCII characters. These checks protect literal bytes, not translation quality or the relationship between prose and literals.
+Before calling Sonnet, replace fenced code, inline code, recognized URLs, and recognized path tokens with collision-safe placeholders. Restore each literal byte-for-byte only after every expected placeholder appears exactly once and no unexpected placeholder appears. Keep identifiers and commands inside code formatting unchanged. Document the limits of path recognition, especially paths containing spaces or non-ASCII characters. These checks protect literal bytes, not translation quality or the relationship between prose and literals.
 
 Each direction accepts at most 64 KiB of UTF-8 source text and has a 60-second total deadline, including any retry. Do not truncate source text to fit. Configure the host hook deadline so its default timeout does not preempt the translation deadline. Propagate `next.signal` through supported cancellation mechanisms and reject late results even if the provider cannot cancel the remote request.
 
 Check both rejected calls and `isAnswered: false` results. Reject empty, detectably truncated, or malformed responses. Validate target-language prose as well as placeholder integrity: after excluding protected literals and translation labels, reject an English-to-Korean result that copies the English source unchanged or contains no Hangul despite a source containing English conversational sentences. A Korean heading alone does not satisfy this check. Do not impose a fixed Hangul percentage, since valid technical explanations can contain many English identifiers. Also reject an English-to-Korean result that leaves an English sentence of eight or more words unchanged, and a result in either direction whose Markdown block structure differs from the source: list markers, ordered-list numbers, checkbox states, nesting indentation, heading levels, blockquote depth, table rows and columns, and code fences must match. These deterministic checks catch obvious non-translations and flattened structure; they do not prove that every sentence was translated or that its meaning is correct.
 
-One retry is allowed for a placeholder or structure failure or an obvious non-translation, starting from the original protected source with a reminder about the failed requirement and using the remaining deadline. The retry limit is shared across both validation failures, not one retry per failure type. Other failures are not retried. If the retry still fails, follow the input/output failure behavior below rather than displaying the unchanged English body as a Korean translation. Output limits that cannot accommodate the full translation must produce an explicit failure, not a partial translation presented as complete.
+One retry is allowed for a placeholder or structure failure or an obvious non-translation, starting from the original protected source with a reminder about the failed requirement and using the remaining deadline. When only placeholders failed and the reply has the same number of non-blank lines as the source, the retry sends only the lines whose placeholders were wrong, names those placeholders, and keeps the other translated lines. A retried line that is still wrong stays in the source language while the rest of the translation is accepted; if no retried line is repaired, the translation fails. The retry limit is shared across both validation failures, not one retry per failure type. Other failures are not retried. If the retry still fails, follow the input/output failure behavior below rather than displaying the unchanged English body as a Korean translation. Output limits that cannot accommodate the full translation must produce an explicit failure, not a partial translation presented as complete.
 
 | Failure | Required result |
 | --- | --- |
@@ -77,7 +77,7 @@ One retry is allowed for a placeholder or structure failure or an obvious non-tr
 | Hook throw or host timeout | Use the documented hook `.catch` behavior to prevent untranslated input from being sent; do not rely solely on an inner `try/catch` |
 | Mod unavailable, disabled by policy, or not loaded | Leave ordinary Claude behavior intact; no guarantee of translation applies |
 
-Do not log raw prompts, answers, credentials, or provider error payloads for diagnostics. Send only the protected text and translation instructions to Haiku. Keep pending text in memory and avoid a separate translation database. Display-only means excluded from model context, not necessarily absent from Claude's saved transcript or logs; verify and document actual retention behavior before release.
+Do not log raw prompts, answers, credentials, or provider error payloads for diagnostics. Send only the protected text and translation instructions to Sonnet. Keep pending text in memory and avoid a separate translation database. Display-only means excluded from model context, not necessarily absent from Claude's saved transcript or logs; verify and document actual retention behavior before release.
 
 ## Response-language policy
 
@@ -113,7 +113,7 @@ Use `claude plugin validate` against the plugin directory and the native `claude
 Tests must cover:
 
 - Korean and mixed-language input rewriting; English-only, protected-only, command, automation, unsupported-surface, and subagent pass-through.
-- Exactly one working-model submission, preservation of non-text fields, exclusion of attachments/history from Haiku, and absence of translation recursion.
+- Exactly one working-model submission, preservation of non-text fields, exclusion of attachments/history from Sonnet, and absence of translation recursion.
 - Placeholder restoration, collisions, missing/duplicated/unknown placeholders, Unicode byte limits, incomplete output, and the single bounded retry.
 - Markdown structure: dropped or changed bullets, collapsed nesting, changed ordered numbers or checkbox states, heading, quote, and table changes are rejected, while a faithful translation of nested lists, headings, quotes, tables, and fenced code passes.
 - Non-translation detection with an unchanged English answer, an English copy prefixed by a Korean translation heading, and English prose containing only protected Korean literals. A valid Korean explanation containing English technical identifiers must pass. Verify that mixed validation failures still allow only one retry.

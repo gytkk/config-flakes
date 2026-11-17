@@ -64,6 +64,36 @@ test('a repaired reply succeeds after a placeholder failure', () => {
   expect(() => run.request()).toThrow()
 })
 
+const LINES = '- Run `npm test` first.\n\n- Then open `README.md` again.\n- The build passed.'
+
+test('a placeholder failure retries only the wrong lines and names the placeholders', () => {
+  const run = new TranslationRun(LINES, 'Korean')
+  const [first, , second] = run.request().prompt.split('\n')
+  const token = (line: string) => line.match(/\{\{KEEP_[^}]+\}\}/)![0]
+  expect(run.accept(`- 먼저 ${token(first!)}를 실행하세요.\n- 그런 다음 다시 여세요.\n- 빌드가 통과했습니다.`, 10)).toBeUndefined()
+  const retry = run.request()
+  expect(retry.prompt).toBe(second)
+  expect(retry.system).toContain(`missing or repeated: ${token(second!)}`)
+  expect(run.accept(`- 그런 다음 ${token(second!)}를 다시 여세요.`, 10)).toBe('- 먼저 `npm test`를 실행하세요.\n\n- 그런 다음 `README.md`를 다시 여세요.\n- 빌드가 통과했습니다.')
+})
+
+test('a line that fails its retry stays in the source language', () => {
+  const run = new TranslationRun(LINES, 'Korean')
+  const token = run.request().prompt.match(/\{\{KEEP_[^}]+\}\}/)![0]
+  const reply = `- 먼저 ${token}를 실행하세요.\n- 그런 다음 다시 여세요.\n- 빌드가 통과했습니다.`
+  expect(run.accept(reply, 10)).toBeUndefined()
+  run.request()
+  expect(run.accept('- 그런 다음 다시 여세요.', 10)).toBe('- 먼저 `npm test`를 실행하세요.\n\n- Then open `README.md` again.\n- 빌드가 통과했습니다.')
+})
+
+test('a retry that repairs no line still fails', () => {
+  const run = new TranslationRun('Run `npm test`.', 'Korean')
+  run.request()
+  expect(run.accept('테스트를 실행하세요.', 10)).toBeUndefined()
+  run.request()
+  expect(() => run.accept('테스트를 실행하세요.', 10)).toThrow('protected code')
+})
+
 test('retry uses the remaining deadline and a late provider success is rejected', () => {
   let now = 100
   const run = new TranslationRun('The build passed.', 'Korean', () => now)

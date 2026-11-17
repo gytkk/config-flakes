@@ -120,7 +120,7 @@ test('input is submitted once with attachments intact and the original in its ow
   expect(w.submitted[0]).toMatchObject({ attachments, origin: { kind: 'composer' }, wait: false })
   expect(w.submitted[0].context[0]).toBe('kept')
   expect(w.submitted[0].context[1]).toStartWith(TAG)
-  expect(w.model[0]).toMatchObject({ model: 'haiku', prompt: KOREAN })
+  expect(w.model[0]).toMatchObject({ model: 'sonnet', prompt: KOREAN })
   expect(w.model[0].attachments).toBeUndefined()
   expect(await w.row(0)).toBe(`**입력 원문**\n\n${KOREAN}`)
   expect(w.session.appended()).toHaveLength(0)
@@ -137,7 +137,7 @@ test('identical English translations retain distinct Korean originals', async ($
   expect(await w.row(1)).toContain('이 함수 수정해줘')
 })
 
-test('mixed input keeps literals out of Haiku and intact after restoration', async ($, on) => {
+test('mixed input keeps literals out of Sonnet and intact after restoration', async ($, on) => {
   const w = world($, on)
   await w.start()
   const result = await w.submit('`foo($&)` 를 ./src/a.ts 에서 고치고 https://example.com/x?y=1 참고해 and keep going\n```ts\nconst 값 = 1\n```\n')

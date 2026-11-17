@@ -22,6 +22,19 @@ test('restore puts every literal back byte for byte, in any order', () => {
   )
 })
 
+test('word pairs stay prose and a Markdown link keeps its closing parenthesis', () => {
+  const guarded = protect('read/write and/or hooks/register.ts a/b/c (on/off) [docs](https://example.com/a) I/O.', ID)
+  expect(guarded.text).toBe(`read/write and/or ${keep(1)} ${keep(2)} (on/off) [docs](${keep(0)}) I/O.`)
+})
+
+test('placeholders can be checked against one line and the wrong ones are named', () => {
+  const guarded = protect('`a` 그리고\n`b` 그리고 `c`', ID)
+  const [first, second] = guarded.text.split('\n')
+  expect(guarded.restore(`${keep(0)} and`, first)).toBe('`a` and')
+  expect(guarded.restore(`${keep(0)} and`, second)).toBeUndefined()
+  expect(guarded.wrong(`${keep(0)} ${keep(1)} ${keep(1)}`)).toEqual([keep(1), keep(2)])
+})
+
 test('an unclosed fence is protected to the end of the text', () => {
   const source = '설명\n```\ncode 한글'
   const guarded = protect(source, ID)
