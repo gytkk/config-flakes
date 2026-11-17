@@ -16,7 +16,7 @@ class InstallTests(unittest.TestCase):
     def test_preserves_personal_keys_and_settings_and_keeps_original_backup(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)
-            original = {"global": {"cmd-[": "agent.prev", "cmd-e": "app.palette"}, "terminal": {"ctrl-r": "terminal"}}
+            original = {"global": {"cmd-[": "space.prev", "cmd-]": "space.next", "cmd-e": "app.palette"}, "terminal": {"ctrl-r": "terminal"}}
             keys = home / "keys.json"
             keys.write_text(json.dumps(original))
             settings = home / "settings.json"
@@ -41,6 +41,10 @@ class InstallTests(unittest.TestCase):
             installer.install(ROOT / "files", home)
             merged = json.loads(keys.read_text())
             self.assertEqual(merged["global"]["cmd-e"], "app.palette")
+            for key in ("cmd-[", "cmd-shift-["):
+                self.assertEqual(merged["global"][key], "agent.prev")
+            for key in ("cmd-]", "cmd-shift-]"):
+                self.assertEqual(merged["global"][key], "agent.next")
             for key in ("alt-up", "alt-["):
                 self.assertEqual(merged["global"][key], "space.prev")
             for key in ("alt-down", "alt-]"):

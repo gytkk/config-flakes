@@ -1,7 +1,7 @@
 {
   "global": {
-    "cmd-[": "space.prev",
-    "cmd-]": "space.next",
+    "cmd-[": "agent.prev",
+    "cmd-]": "agent.next",
     "alt-[": "space.prev",
     "alt-]": "space.next",
     "alt-up": "space.prev",
