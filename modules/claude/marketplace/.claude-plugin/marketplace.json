@@ -81,7 +81,7 @@
     {
       "name": "korean-translation",
       "description": "Translates Korean prompts into English with Sonnet and shows a Korean translation beneath each final answer",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "author": {
         "name": "gytkk"
       },

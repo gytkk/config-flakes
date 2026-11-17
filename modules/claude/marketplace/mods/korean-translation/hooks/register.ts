@@ -23,6 +23,7 @@ type State = {
   queue: Row[]
   draining: boolean
   lastFailure?: string
+  ticker?: { cancel: () => void }
 }
 
 const USAGE = 'Usage: /translate on|off|status'
@@ -33,6 +34,18 @@ const requestTag = (id: string) => `[korean-translation-request:${id}]`
 const failureCode = (error: unknown): FailureCode => error instanceof TranslationError ? error.code : 'unexpected'
 const diagnostic = (row: Row) => `${row.direction}: ${row.phase}${row.error ? ` [${row.error}]` : ''}; attempts: ${row.run?.attempts ?? 0}; elapsed: ${row.run?.elapsedMs ?? 0} ms`
 const rowId = () => `translation-${crypto.randomUUID()}`
+const isActive = (row: Row) => row.phase === 'pending' || row.phase === 'translating'
+const FRAME_MS = 100
+const GLOW = 4
+const progress = (row: Row) => `Korean translation: ${row.phase}... ${((row.run?.elapsedMs ?? 0) / 1000).toFixed(1)}s${(row.run?.attempts ?? 0) > 1 ? ` (attempt ${row.run!.attempts})` : ''}`
+// A bright window sweeps across the dim line; the frame comes from elapsed time, so each redraw advances it.
+function shimmer(line: string, elapsedMs: number): [string, string, string] {
+  const chars = [...line]
+  const at = Math.floor(elapsedMs / FRAME_MS) % (chars.length + GLOW * 2) - GLOW
+  const start = Math.max(0, at)
+  const end = Math.max(0, at + GLOW)
+  return [chars.slice(0, start).join(''), chars.slice(start, end).join(''), chars.slice(end).join('')]
+}
 
 async function translate($: EngineInterface, run: TranslationRun, signal: AbortSignal): Promise<string> {
   for (;;) {
@@ -43,6 +56,17 @@ async function translate($: EngineInterface, run: TranslationRun, signal: AbortS
     const text = run.accept(reply.text, reply.usage.output_tokens)
     if (text !== undefined) return text
   }
+}
+
+// Redraws in-progress rows so their shimmer and elapsed time advance; stops once no row is in progress.
+function animate($: EngineInterface, state: State) {
+  state.ticker ??= $.clock.every(FRAME_MS, () => {
+    if (![...state.rows.values()].some(isActive)) {
+      state.ticker?.cancel()
+      state.ticker = undefined
+    }
+    $.ui.invalidate('ui.render')
+  })
 }
 
 function cancel(state: State) {
@@ -234,6 +258,7 @@ export const register: Register = on => {
       if (!placed.isPlaced) throw new TranslationError('unexpected')
       if (generation !== state.generation || row.abort.signal.aborted) return result
       state.queue.push(row)
+      animate($, state)
       void drain($, state).catch(error => {
         if (generation !== state.generation || row.abort.signal.aborted) return
         row.phase = 'failed'
@@ -265,7 +290,15 @@ export const register: Register = on => {
         ] }),
       ] })
     }
-    return Text({ children: [`Korean translation: ${diagnostic(row)}${row.phase === 'failed' || row.phase === 'cancelled' ? '. The English answer is unchanged.' : ''}`] })
+    if (isActive(row)) {
+      const [before, glow, after] = shimmer(progress(row), row.run?.elapsedMs ?? 0)
+      return Box({ marginTop: 1, children: [Text({ children: [
+        Text({ dimColor: true, children: [before] }),
+        Text({ weight: 'bold', children: [glow] }),
+        Text({ dimColor: true, children: [after] }),
+      ] })] })
+    }
+    return Box({ marginTop: 1, children: [Text({ children: [`Korean translation: ${diagnostic(row)}. The English answer is unchanged.`] })] })
   })
 
   on('session.end', ($, e, next) => {

@@ -293,7 +293,7 @@ test('output is placed pending after the answer and updates in place, without ch
   const answer = 'Run `npm test` first.\n\n- It passed.\n- See ./src/a.ts'
   expect(await w.complete({ answer })).toEqual({ text: answer })
   await w.until(() => w.model.length === 1)
-  expect(await w.row(0)).toContain('translating')
+  expect(await w.row(0)).toMatch(/^Korean translation: translating\.\.\. \d+\.\ds$/)
   g.open()
   await w.idle()
   expect(await w.row(0)).toBe('`npm test`를 먼저 실행하세요.\n\n- 검사가 통과했습니다.\n- ./src/a.ts를 확인하세요.')
