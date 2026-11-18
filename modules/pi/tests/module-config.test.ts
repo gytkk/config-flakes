@@ -26,6 +26,7 @@ test("activation settings combine general settings with the explicit package sel
     { source: "npm:pi-interactive-shell@0.18.0", skills: [], prompts: [] },
     "npm:pi-web-access@0.46.0",
     { source: "npm:pi-subagents@0.84.0", skills: [], prompts: [] },
+    "npm:pi-claude-subscription@0.2.4",
   ]);
   expect(moduleConfig.enabled.activation).toEqual({ before: ["linkGeneration"], after: ["writeBoundary"] });
 });

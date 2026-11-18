@@ -35,6 +35,7 @@ let
       skills = [ ];
       prompts = [ ];
     }
+    "npm:pi-claude-subscription@0.2.4"
   ];
 
   localExtensions = {

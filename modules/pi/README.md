@@ -93,6 +93,10 @@ pi auth check --provider openai --json --no-refresh
 
 The parent and delegated chat models use `openai`. The legacy `openai-codex` provider is not used. On existing installations, remove its saved credential through `/logout` and select `openai-codex`; its models then disappear from the authenticated model picker without affecting the `openai` login or historical sessions. In Pi 1.1, its GPT-6 Luna classifier is a separate model type and requires an API key; ChatGPT OAuth supports the chat model but not the Decisions API classifier. Use the existing `with-openai` wrapper in a separate process for API-key clients rather than replacing the subscription credential. See the [OpenAI API module](../openai-api/README.md).
 
+### Claude subscription
+
+Pi's built-in `/login anthropic` subscription login is billed as per-token extra usage, not Claude plan limits. `pi-claude-subscription` instead sends Claude requests through the Claude Agent SDK, which runs Claude Code with its own login, so sign in with `claude` and `/login` first; the extension does not read Pi's credentials. Select a model such as `/model claude-sdk/claude-sonnet-5-5`. The extension uses Claude Code's system prompt by default because Anthropic bills requests with Pi's prompt as extra usage, disables Claude Code's built-in tools so only Pi's tools run, and writes session transcripts under `~/.claude/projects`. Anthropic can change this routing at any time, and subscription use through the Agent SDK remains subject to Anthropic's terms for the plan.
+
 `pkgs.pi` calls the official upstream Nix package definition from a pinned source release. [App package maintenance](../../packages/README.md#updates-and-ci) owns that source pin. Apply Home Manager to install the pinned Pi version and synchronize common settings.
 
 `files/web-search.json` sets the default Web Access workflow to `none`, so
@@ -110,6 +114,7 @@ The `extensionPackages` list in `modules/pi/default.nix` is intentionally versio
 | `pi-lens` | `4.4.12` | LSP diagnostics/navigation, semantic rename, AST search and replacement preview |
 | `pi-web-access` | `0.46.0` | Web search, source checks, and content fetching |
 | `pi-subagents` | `0.84.0` | Foreground-first delegated Pi sessions |
+| [`pi-claude-subscription`](https://github.com/jkeskikangas/pi-claude-subscription) | `0.2.4` | Claude models through the Claude Agent SDK and the Claude Code login |
 
 Versioned npm packages are skipped by `pi update --extensions`. Update pins
 through a reviewed repository change, and review package source and release
