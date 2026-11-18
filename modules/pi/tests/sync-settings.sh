@@ -6,7 +6,7 @@ TEST_ROOT=$(mktemp -d)
 trap 'rm -rf "$TEST_ROOT"' EXIT
 common="$TEST_ROOT/common.json"
 local_settings="$TEST_ROOT/agent/settings.json"
-printf '{"theme":"system","defaultProvider":"openai","subagents":{"defaultModel":"openai/gpt-6.1-sol"}}\n' > "$common"
+printf '{"theme":"system","defaultProvider":"openai","subagents":{"defaultModel":"openai/gpt-6.2-sol"}}\n' > "$common"
 
 bash "$SYNC" "$common" "$local_settings"
 [ ! -L "$local_settings" ]
@@ -21,7 +21,7 @@ ln -s "$TEST_ROOT/legacy.json" "$local_settings"
 bash "$SYNC" "$common" "$local_settings"
 [ ! -L "$local_settings" ]
 cmp "$TEST_ROOT/legacy.json" "$TEST_ROOT/legacy-original.json"
-jq -e '.deviceId == "machine-a" and .trackingId == "local-tracking" and .lastChangelogVersion == "1.1.0" and .localSetting == true and .subagents == {defaultModel:"openai/gpt-6.1-sol"}' "$local_settings" >/dev/null
+jq -e '.deviceId == "machine-a" and .trackingId == "local-tracking" and .lastChangelogVersion == "1.1.0" and .localSetting == true and .subagents == {defaultModel:"openai/gpt-6.2-sol"}' "$local_settings" >/dev/null
 jq -e 'has("powerline") == false and has("bashMode") == false and has("workingVibe") == false' "$local_settings" >/dev/null
 echo 'PASS: symlink migration retires Powerline settings and preserves local metadata without changing its source'
 

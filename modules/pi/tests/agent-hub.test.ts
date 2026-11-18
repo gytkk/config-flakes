@@ -12,7 +12,7 @@ import { createViewer, displayText } from "../files/extensions/agent-hub/view";
 import { acceptanceEvidence, completionText } from "../files/extensions/agent-hub/completion";
 
 const owner = { sessionId: "parent-a", sessionFile: "/sessions/parent-a.jsonl" };
-const result = (index = 0) => ({ index, agent: "worker", task: "[prompt redacted]", exitCode: 0, model: "openai/gpt-6.1-sol", sessionFile: "/sessions/child.jsonl", finalOutput: "Implementation done", usage: { input: 20, output: 30, cacheRead: 0, cacheWrite: 0, cost: 0, turns: 1 } });
+const result = (index = 0) => ({ index, agent: "worker", task: "[prompt redacted]", exitCode: 0, model: "openai/gpt-6.2-sol", sessionFile: "/sessions/child.jsonl", finalOutput: "Implementation done", usage: { input: 20, output: 30, cacheRead: 0, cacheWrite: 0, cost: 0, turns: 1 } });
 const details = (rows = [result()]) => ({ mode: rows.length > 1 ? "parallel" : "single", runId: "exact-run-123", results: rows });
 const callEntry = (args: unknown = { agent: "worker", task: "Implement exactly this task" }, id = "call-a") => ({ type: "message", message: { role: "assistant", content: [{ type: "toolCall", name: "subagent", id, arguments: args }] } });
 const toolEntry = (value: unknown = details(), id = "call-a") => ({ type: "message", message: { role: "toolResult", toolName: "subagent", toolCallId: id, details: value } });

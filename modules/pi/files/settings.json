@@ -15,13 +15,13 @@
     }
   },
   "subagents": {
-    "defaultModel": "openai/gpt-6.1-sol",
+    "defaultModel": "openai/gpt-6.2-sol",
     "defaultThinking": "medium",
     "modelScope": {
       "enforce": true,
       "allow": [
         "openai/gpt-6-luna",
-        "openai/gpt-6.1-sol",
+        "openai/gpt-6.2-sol",
         "openai/gpt-6-astra"
       ]
     },
@@ -61,7 +61,7 @@
         ]
       },
       "planner": {
-        "model": "openai/gpt-6.1-sol",
+        "model": "openai/gpt-6.2-sol",
         "defaultContext": "fresh"
       },
       "oracle": {

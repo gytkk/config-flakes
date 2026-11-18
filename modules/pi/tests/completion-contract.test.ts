@@ -89,7 +89,7 @@ test("installed 0.84 discovery, structured_output, acceptance and configured /ru
       const worker = discovery.agents.find(a => a.name === 'worker');
       assert.equal(worker.source, 'user');
       assert.equal(worker.acceptanceRole, 'writer');
-      assert.equal(worker.model, 'openai/gpt-6.1-sol');
+      assert.equal(worker.model, 'openai/gpt-6.2-sol');
       assert.equal(worker.thinking, 'high');
       const reviewer = discovery.agents.find(a => a.name === 'reviewer');
       assert.equal(reviewer.source, 'user');
