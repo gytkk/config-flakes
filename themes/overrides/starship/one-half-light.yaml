@@ -7,10 +7,8 @@ meta:
 
 slots:
   foam: "{palette.blue}"
-  rose: "{palette.base14}"
+  rose: "{palette.magenta}"
   format: |-
-    [](rose)\
-    [ 󰉋 ](bg:rose fg:text)\
     $directory\
     $git_branch\
     $git_status\
@@ -42,8 +40,8 @@ slots:
 
 modules:
   directory:
-    style: "fg:text bg:#61afef"
-    format: "[](fg:rose bg:#61afef)[ $path ]($style)[](fg:#61afef bg:layer3)"
+    style: "bold fg:#225873 bg:#e2eeed"
+    format: "[](fg:#e4d8ea)[ 󰉋 ](fg:#643269 bg:#e4d8ea)[](fg:#e4d8ea bg:#e2eeed)[ $path ]($style)[](fg:#e2eeed bg:layer3)"
   git_branch:
     style: "fg:foam bg:layer3"
     format: "[ $symbol $branch ]($style)"

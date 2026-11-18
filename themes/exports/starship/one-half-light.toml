@@ -4,8 +4,6 @@
 
 palette = "one_half_light"
 format = """
-[](rose)\
-[ 󰉋 ](bg:rose fg:text)\
 $directory\
 $git_branch\
 $git_status\
@@ -39,8 +37,8 @@ $character"""
 "symbol" = " "
 
 [directory]
-"style" = "fg:text bg:#61afef"
-"format" = "[](fg:rose bg:#61afef)[ $path ]($style)[](fg:#61afef bg:layer3)"
+"style" = "bold fg:#225873 bg:#e2eeed"
+"format" = "[](fg:#e4d8ea)[ 󰉋 ](fg:#643269 bg:#e4d8ea)[](fg:#e4d8ea bg:#e2eeed)[ $path ]($style)[](fg:#e2eeed bg:layer3)"
 "truncation_length" = 4
 "truncation_symbol" = "…/"
 
@@ -170,7 +168,7 @@ subtle = "#383a42"
 text = "#383a42"
 love = "#e45649"
 gold = "#c18401"
-rose = "#c678dd"
+rose = "#a626a4"
 pine = "#50a14f"
 foam = "#0184bc"
 iris = "#d65d0e"
