@@ -20,7 +20,7 @@
     },
     "agentOverrides": {
       "scout": {
-        "model": "claude-sdk/claude-opus-5-5",
+        "model": "claude-sdk/claude-sonnet-5-5",
         "tools": [
           "read",
           "grep",
@@ -31,7 +31,7 @@
         ]
       },
       "researcher": {
-        "model": "claude-sdk/claude-opus-5-5",
+        "model": "claude-sdk/claude-fable-5-2",
         "thinking": "low"
       },
       "worker": {
@@ -43,7 +43,7 @@
         "thinking": "xhigh"
       },
       "oracle": {
-        "model": "claude-sdk/claude-opus-5-5",
+        "model": "claude-sdk/claude-fable-5-2",
         "defaultContext": "fresh"
       },
       "delegate": {
