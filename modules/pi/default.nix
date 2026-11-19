@@ -155,13 +155,32 @@ in
         ".pi/agent/agents/worker.md".source = mkSymlink "agents/worker.md";
         ".pi/agent/interactive-shell.json".source = mkSymlink "files/interactive-shell.json";
         ".pi-lens/config.json".source = mkSymlink "files/lens.json";
-        ".pi/agent/mcp.json".source = mkSymlink "files/mcp.json";
         ".pi/agent/models.json".source = mkSymlink "files/models.json";
         ".pi/web-search.json".source = mkSymlink "files/web-search.json";
         ".pi/agent/themes/one-half-light.json".source = themeExports.file "pi" "one-half-light.json";
         ".pi/agent/extensions/subagent/config.json".source =
           mkSymlink "files/extensions/subagent/config.json";
       };
+
+    home.activation.piMcp = lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
+      (
+        export PATH=${
+          lib.escapeShellArg (
+            lib.concatStringsSep ":" (
+              (lib.optional cfg.installPackage "${pkgs.pi}/bin")
+              ++ cfg.launchEnvironment.pathHead
+              ++ [
+                (lib.makeBinPath [
+                  pkgs.coreutils
+                  pkgs.jq
+                ])
+              ]
+            )
+          )
+        }:$PATH
+        run ${pkgs.bash}/bin/bash ${./files/seed-mcp.sh} ${lib.escapeShellArg "${flakeDirectory}/modules/pi/files/mcp.json"}
+      )
+    '';
 
     # Preserve installation-local metadata before Home Manager removes the old symlink.
     home.activation.piSettings = lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''

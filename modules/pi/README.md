@@ -13,7 +13,7 @@ symlinks.
 | `files/web-search.json` | `~/.pi/web-search.json` | Web Access defaults |
 | `modules/pi/files/interactive-shell.json` | `~/.pi/agent/interactive-shell.json` | Lean, on-demand shell tools; semantic transmission disabled |
 | `modules/pi/files/lens.json` | `~/.pi-lens/config.json` | Lens policy and LSP launcher overrides |
-| `files/mcp.json` | `~/.pi/agent/mcp.json` | Native MCP server configuration |
+| `modules/pi/files/seed-mcp.sh` | `~/.pi/agent/mcp.json` | Writable per-device server configuration; activation adds missing shared servers |
 | `modules/pi/files/models.json` | `~/.pi/agent/models.json` | Context-window overrides for the configured OpenAI chat models |
 | `agent-core/rules/` and `agent-core/adapters/pi.md` | `~/.pi/agent/AGENTS.md` | Generated shared and Pi-specific instructions |
 | `agent-core/rules/OPERATING.md` | `~/.pi/agent/APPEND_SYSTEM.md` | Operating invariants added to Pi's system prompt |
@@ -471,14 +471,20 @@ For an interactive smoke check, use a disposable directory: create and update to
 
 ## MCP integration
 
-`files/mcp.json` configures Pi's built-in MCP extension with:
+Home Manager uses `pi mcp add` to add `nixos` and `context7` only if their names are missing. On the first switch from the old checkout symlink, activation copies its contents into a private regular file before adding servers. Keep `modules/pi/files/mcp.json` available for devices that have not switched yet. Existing entries, including Plane and device-specific settings, are preserved. Fresh devices do not get Plane automatically.
 
-- `nixos`, provided by the installed `mcp-nixos` executable
-- `context7`, using its remote MCP endpoint
+Use `pi mcp add` on the target device to add a server or replace its entire definition under the same name. For example:
+
+```bash
+pi mcp add docs --url https://example.com/mcp
+pi mcp remove docs
+```
+
+Removing a shared server makes activation add it again on the next switch. Disable it in `/mcp` instead if you want it to stay off. For Plane on a new device, copy the `plane` entry from the legacy file into the device's `mcpServers` object: Pi's add command does not expose the OAuth metadata URL and scope.
 
 Pi connects these servers in the background at session startup. Their default `codemode` exposure enables the built-in `codemode` tool, whose scripts discover and call server tools without loading every schema into the prompt. Use `/mcp` for connection status and `pi mcp list` for a standalone connection check. The module does not install `pi-mcp-adapter`, its `mcp`/`mcpScript` tools, or its footer status.
 
-Cloudflare operations use the `cf` CLI installed by the common Home Manager profile. See [Cloudflare CLI setup](../../README.md#cloudflare-cli) for authentication and command discovery. Restart Pi after changing its MCP configuration.
+Cloudflare operations use the `cf` CLI installed by the common Home Manager profile. See [Cloudflare CLI setup](../../README.md#cloudflare-cli) for authentication and command discovery. Run `/reload` in an open Pi session after changing its MCP configuration.
 
 ## jari workers
 
@@ -526,7 +532,7 @@ Without that variable the Lens test is explicitly skipped, **not verified**. It 
 After changing this module:
 
 1. Validate edited JSON files with `jq -e . <file>`.
-2. Run `bash modules/pi/tests/run.sh` and `bash modules/pi/tests/sync-settings.sh` for extension and device-local settings checks. Run `nixfmt modules/pi/default.nix` when the Nix module changes.
+2. Run `bash modules/pi/tests/run.sh`, `bash modules/pi/tests/sync-settings.sh`, and `bash modules/pi/tests/seed-mcp.sh` for extension and device-local configuration checks. Run `nixfmt modules/pi/default.nix` when the Nix module changes.
 3. Run `nix flake check --no-build` when module wiring changes.
 4. Apply the Home Manager configuration manually:
 
