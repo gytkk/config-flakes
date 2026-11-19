@@ -38,8 +38,8 @@ function component(wrappers: MessageRendererWrapper[], customType?: string, rend
 }
 function expectFrame(row: CustomMessageComponent, width = 70) {
   const lines = plain(row.render(width));
-  expect(lines.filter((line) => line.startsWith("▄"))).toHaveLength(1);
-  expect(lines.filter((line) => line.startsWith("▀"))).toHaveLength(1);
+  expect(lines.filter((line) => line === `╭${"─".repeat(width - 2)}╮`)).toHaveLength(1);
+  expect(lines.filter((line) => line === `╰${"─".repeat(width - 2)}╯`)).toHaveLength(1);
   for (const line of lines) expect(visibleWidth(line)).toBeLessThanOrEqual(width);
 }
 
