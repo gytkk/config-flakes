@@ -10,34 +10,27 @@ vim.api.nvim_create_autocmd({ "FileType", "BufWinEnter" }, {
   end,
 })
 
-local function refreshReloadedBuffer(buf)
-  if not vim.api.nvim_buf_is_valid(buf) or vim.bo[buf].buftype ~= "" then return end
-
-  local has_treesitter = pcall(vim.treesitter.get_parser, buf)
-  if has_treesitter then
-    pcall(vim.treesitter.stop, buf)
-    pcall(vim.treesitter.start, buf)
-  end
-
-  vim.bo[buf].syntax = "ON"
-  pcall(vim.api.nvim_buf_call, buf, function()
-    vim.cmd("silent! syntax sync fromstart")
-  end)
-
-  vim.schedule(function()
-    if not vim.api.nvim_buf_is_valid(buf) then return end
-
-    -- Drop extmarks anchored to the pre-reload text and request fresh hints.
-    if vim.lsp.inlay_hint.is_enabled({ bufnr = buf }) then
-      vim.lsp.inlay_hint.enable(false, { bufnr = buf })
-      vim.lsp.inlay_hint.enable(true, { bufnr = buf })
-    end
-
-    if vim.api.nvim_get_current_buf() == buf then
-      vim.cmd("redraw!")
-    end
-  end)
-end
+-- Neovim invalidates Tree-sitter and syntax state on reload without restarting either.
+-- Its LSP close/open cycle also clears and refreshes hints for syncing clients.
+vim.api.nvim_create_autocmd("FileChangedShellPost", {
+  desc = "Refresh inlay hints for clients without document open/close sync",
+  callback = function(event)
+    local buf = event.buf
+    vim.schedule(function()
+      if not vim.api.nvim_buf_is_loaded(buf) or vim.bo[buf].buftype ~= "" then return end
+      local opts = { bufnr = buf }
+      if not vim.lsp.inlay_hint.is_enabled(opts) then return end
+      for _, client in ipairs(vim.lsp.get_clients({ bufnr = buf, method = "textDocument/inlayHint" })) do
+        if not client:supports_method("textDocument/didOpen", buf)
+            or not client:supports_method("textDocument/didClose", buf) then
+          vim.lsp.inlay_hint.enable(false, opts)
+          vim.lsp.inlay_hint.enable(true, opts)
+          break
+        end
+      end
+    end)
+  end,
+})
 
 vim.api.nvim_create_autocmd({ "InsertEnter", "TextChanged", "BufLeave", "FileChangedShellPost" }, {
   desc = "Clear completed search highlights and the Noice search count",
@@ -64,19 +57,19 @@ vim.api.nvim_create_autocmd("BufEnter", {
 })
 
 vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI", "TermClose", "TermLeave" }, {
-  callback = function()
+  nested = true, -- Let reload hooks run when checktime reloads synchronously.
+  callback = function(event)
     if vim.fn.mode() == "c" then return end
 
     local buf = vim.api.nvim_get_current_buf()
     if vim.bo[buf].buftype ~= "" or vim.bo[buf].modified then return end
 
-    vim.cmd("checktime")
-  end,
-})
-
-vim.api.nvim_create_autocmd("FileChangedShellPost", {
-  callback = function(event)
-    refreshReloadedBuffer(event.buf)
+    if event.event == "FocusGained" then
+      -- An unscoped :checktime defers itself inside autocmds.
+      vim.schedule(vim.cmd.checktime)
+    else
+      vim.cmd.checktime({ count = buf })
+    end
   end,
 })
 
