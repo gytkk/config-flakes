@@ -6,13 +6,19 @@ import { promptTheme } from "./fixtures/prompt-theme";
 describe("prompt statusline", () => {
   function fixture(gitStatus = "") {
     const statuses = new Map([["codex-fast-mode", "off"], ["codex-usage", "---------- 9% (⏳ 3d 14h)"]]);
+    let leaf = 0;
+    let getContextUsage = () => ({ percent: 11, contextWindow: 1_000_000 });
     const ctx = {
       model: { id: "test-model", provider: "openai", reasoning: true, contextWindow: 1_000_000 },
       thinkingLevel: "high",
       sessionManager: {
         getCwd: () => "/workspace/한글-project",
+        getSessionId: () => "session",
+        getLeafId: () => `leaf-${leaf}`,
       },
-      getContextUsage: () => ({ percent: 11, contextWindow: 1_000_000 }),
+      // Context usage changes only when the session gains an entry, so replacing it advances the leaf.
+      get getContextUsage() { return getContextUsage; },
+      set getContextUsage(next) { getContextUsage = next; leaf++; },
       ui: { theme: promptTheme() },
     };
     const data = { getGitBranch: () => "main", getExtensionStatuses: () => statuses };
@@ -206,6 +212,21 @@ describe("prompt statusline", () => {
     ctx.model = undefined as never;
     expect(line()).toContain("?%");
     expect(line()).not.toContain("?% /");
+  });
+
+  test("computes context usage once per session leaf and model", () => {
+    const { ctx, render } = fixture();
+    let calls = 0;
+    ctx.getContextUsage = () => { calls++; return { percent: 40, contextWindow: 1_000_000 }; };
+    for (let i = 0; i < 50; i++) render(200);
+    expect(calls).toBe(1);
+    ctx.model = { ...ctx.model };
+    render(200);
+    expect(calls).toBe(2);
+    const getLeafId = ctx.sessionManager.getLeafId;
+    (ctx.sessionManager as { getLeafId: () => string }).getLeafId = () => `${getLeafId()}-next`;
+    expect(stripTerminalSequences(render(200))).toContain("40%");
+    expect(calls).toBe(3);
   });
 
   test("bounds real ANSI and wide text at every width", () => {

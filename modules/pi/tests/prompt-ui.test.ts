@@ -37,7 +37,7 @@ function createEditor(mode = "tui", commands: string[] = [], fastOrder?: "before
   const ctx = {
     mode,
     model: { id: "test-model", provider: "openai" },
-    sessionManager: { getCwd: () => "/workspace", getBranch: () => [] },
+    sessionManager: { getCwd: () => "/workspace", getBranch: () => [], getSessionId: () => "session", getLeafId: () => null },
     getContextUsage: () => ({ percent: 11 }),
     ui: {
       notify: mock(() => {}),

@@ -22,6 +22,17 @@ export function createStatusLine(
   footerData: ReadonlyFooterDataProvider,
   getGitStatus: () => string = () => "",
 ): (width: number, hiddenLines?: number) => string {
+  // getContextUsage rebuilds the session projection, so render-time calls stall typing in long sessions.
+  let usageCache: { sessionId: string; leafId: string | null; model: unknown; usage: ReturnType<ExtensionContext["getContextUsage"]> } | undefined;
+  const contextUsageFor = () => {
+    const sessionId = ctx.sessionManager.getSessionId();
+    const leafId = ctx.sessionManager.getLeafId();
+    const model = ctx.model;
+    if (usageCache?.sessionId !== sessionId || usageCache.leafId !== leafId || usageCache.model !== model) {
+      usageCache = { sessionId, leafId, model, usage: ctx.getContextUsage() };
+    }
+    return usageCache.usage;
+  };
   return (width, hiddenLines = 0) => {
     if (width <= 0) return "";
     const theme = ctx.ui.theme;
@@ -46,7 +57,7 @@ export function createStatusLine(
       "fast", { fg: "syntaxKeyword", bold: true },
     ));
     let model = modelParts.join(border(" · "));
-    const contextUsage = ctx.getContextUsage();
+    const contextUsage = contextUsageFor();
     const percent = contextUsage?.percent;
     const contextWindow = contextUsage?.contextWindow ?? ctx.model?.contextWindow;
     const bounded = percent == null ? undefined : Math.max(0, Math.min(100, percent));
