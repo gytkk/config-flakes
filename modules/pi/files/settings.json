@@ -3,7 +3,7 @@
   "defaultProvider": "openai",
   "quietStartup": "header",
   "defaultModel": "gpt-6.2-astra",
-  "defaultThinkingLevel": "high",
+  "defaultThinkingLevel": "medium",
   "showCacheMissNotices": true,
   "compaction": {
     "enabled": true,
