@@ -5,7 +5,7 @@ import { promptTheme } from "./fixtures/prompt-theme";
 
 describe("prompt statusline", () => {
   function fixture(gitStatus = "") {
-    const statuses = new Map([["codex-fast-mode", "off"], ["codex-usage", "---------- 9% (⏳ 3d 14h)"]]);
+    const statuses = new Map([["codex-fast-mode", "off"], ["subscription-usage", "---------- 9% (⏳ 3d 14h)"]]);
     let leaf = 0;
     let getContextUsage = () => ({ percent: 11, contextWindow: 1_000_000 });
     const ctx = {
@@ -39,7 +39,7 @@ describe("prompt statusline", () => {
     statuses.set("custom", "other extension");
     expect(line()).toEndWith("test-model \uE0B4 · high · fast");
     expect(line()).toContain("other extension");
-    statuses.set("codex-usage", "weekly unavailable (/codex-usage)");
+    statuses.set("subscription-usage", "weekly unavailable (/usage)");
     expect(line()).toContain("weekly unavailable");
     statuses.clear();
     expect(line()).not.toContain("⏳");
@@ -80,10 +80,10 @@ describe("prompt statusline", () => {
     ["#--------- 10% (⏳ unknown)", "#"],
     ["#######--- 79% (⏳ 3d 14h)", "#######"],
     ["########## 100% (⏳ unknown)", "##########"],
-    ["weekly unavailable (/codex-usage)", ""],
+    ["weekly unavailable (/usage)", ""],
   ])("colors only the filled quota cells green: %s", (usage, filled) => {
     const { statuses, ctx, render, line } = fixture();
-    statuses.set("codex-usage", usage);
+    statuses.set("subscription-usage", usage);
     expect(line()).toContain(usage);
     if (filled) {
       expect(render(300)).toContain(ctx.ui.theme.fg("success", filled) + usage.slice(filled.length));
@@ -231,7 +231,7 @@ describe("prompt statusline", () => {
 
   test("bounds real ANSI and wide text at every width", () => {
     const { statuses, render } = fixture();
-    statuses.set("codex-usage", "#######--- 79% (⏳ 3d 14h)");
+    statuses.set("subscription-usage", "#######--- 79% (⏳ 3d 14h)");
     for (let width = 0; width <= 320; width++) {
       expect(visibleWidth(render(width))).toBeLessThanOrEqual(width);
       expect(render(width)).not.toContain(CURSOR_MARKER);

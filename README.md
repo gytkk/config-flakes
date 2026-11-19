@@ -217,7 +217,7 @@ Codex, Claude, and Pi share the `openai-decisions` skill through agent-core for 
 
 ### Pi coding agent
 
-Pi uses the official upstream Nix package definition, the generated `one-half-light` theme, and the `openai` provider's ChatGPT login. Home Manager synchronizes common settings into a device-local writable file, keeping installation IDs out of the checkout. Its CodexBar-backed usage extension provides `/codex-usage` and footer usage status. See the [Pi module README](modules/pi/README.md) for authentication, native MCP integration, background shell tasks, on-demand web and subagent tools, pinned extensions, and verification steps.
+Pi uses the official upstream Nix package definition, the generated `one-half-light` theme, and the `openai` provider's ChatGPT login. Home Manager synchronizes common settings into a device-local writable file, keeping installation IDs out of the checkout. Its CodexBar-backed usage extension provides `/usage` and a footer status showing the Codex or Claude weekly quota for the selected model's provider. See the [Pi module README](modules/pi/README.md) for authentication, native MCP integration, background shell tasks, on-demand web and subagent tools, pinned extensions, and verification steps.
 
 ### Cloudflare CLI
 

@@ -41,7 +41,7 @@ let
   localExtensions = {
     "prompt-ui" = mkSymlink "files/extensions/prompt-ui";
     "codex-fast-mode.ts" = mkSymlink "files/extensions/codex-fast-mode.ts";
-    "codex-usage.ts" = mkSymlink "files/extensions/codex-usage.ts";
+    "subscription-usage.ts" = mkSymlink "files/extensions/subscription-usage.ts";
     "korean-translation" = mkSymlink "files/extensions/korean-translation";
     "rounded-tools.ts" = mkSymlink "files/extensions/rounded-tools.ts";
     "python-kernel" = mkSymlink "files/extensions/python-kernel";

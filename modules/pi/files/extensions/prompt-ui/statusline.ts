@@ -96,10 +96,10 @@ export function createStatusLine(
       "\uE0B0",
     );
     let location = identity(visibleWidth(cwd));
-    const extras = [...statuses].filter(([key]) => ![STATE_TYPE, "codex-usage"].includes(key))
+    const extras = [...statuses].filter(([key]) => ![STATE_TYPE, "subscription-usage"].includes(key))
       .filter(([key, value]) => key !== "pi-lens-lsp" || stripTerminalSequences(value).trim() !== "LSP Inactive")
       .map(([, value]) => sanitizeStatusText(value)).filter(Boolean);
-    let usage = sanitizeStatusText(statuses.get("codex-usage") ?? "")
+    let usage = sanitizeStatusText(statuses.get("subscription-usage") ?? "")
       .replace(/^#+/, (filled) => theme.fg("success", filled));
     const contentWidth = width - 1;
     const left = () => join([location, scroll]);

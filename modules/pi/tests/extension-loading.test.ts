@@ -90,7 +90,7 @@ test("discovers local prompt UI once with independent status providers and no Po
   expect(settings.packages.some((pkg: unknown) => typeof pkg === "string" && pkg.includes("pi-powerline-footer"))).toBe(false);
   const { agent, cwd } = await fixture();
   await writeFile(join(agent, "settings.json"), JSON.stringify(settings));
-  for (const name of ["prompt-ui", "codex-fast-mode.ts", "codex-usage.ts", "rounded-tools.ts"]) {
+  for (const name of ["prompt-ui", "codex-fast-mode.ts", "subscription-usage.ts", "rounded-tools.ts"]) {
     await symlink(join(moduleRoot, "files/extensions", name), join(agent, "extensions", name));
   }
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -101,7 +101,7 @@ test("discovers local prompt UI once with independent status providers and no Po
     expect(new Set(commands).size).toBe(commands.length);
     expect(commands).not.toContain("powerline");
     expect(commands).toContain("fast");
-    expect(commands).toContain("codex-usage");
+    expect(commands).toContain("usage");
   }
 }, 60_000);
 
@@ -116,7 +116,7 @@ test.skipIf(!lensPackage || !shellPackage)("migration packages coexist without d
   for (const [name, source] of [["prompt-ui", join(moduleRoot, "files/extensions/prompt-ui")], ["interactive-shell", shellPackage!], ["lens", lensPackage!]]) {
     await symlink(resolve(source), join(agent, "extensions", name));
   }
-  for (const name of ["codex-fast-mode.ts", "codex-usage.ts", "rounded-tools.ts"]) {
+  for (const name of ["codex-fast-mode.ts", "subscription-usage.ts", "rounded-tools.ts"]) {
     await symlink(join(moduleRoot, "files/extensions", name), join(agent, "extensions", name));
   }
   if (questionPackage) await symlink(resolve(questionPackage), join(agent, "extensions/questionnaire"));

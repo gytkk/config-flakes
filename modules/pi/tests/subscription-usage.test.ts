@@ -1,26 +1,30 @@
 import { afterEach, beforeEach, describe, expect, mock, setSystemTime, spyOn, test } from "bun:test";
-import codexUsage, { formatWeeklyUsage, parseWeeklyUsage } from "../files/extensions/codex-usage";
+import subscriptionUsage, { formatWeeklyUsage, parseWeeklyUsage, usageProviderFor } from "../files/extensions/subscription-usage";
 
 const originalTimeZone = process.env.TZ;
 beforeEach(() => { process.env.TZ = "UTC"; });
 
 const NOW = Date.parse("2026-11-02T03:00:00Z");
 const RESET = "2026-11-04T18:00:00Z";
-function payload(secondary: unknown = { usedPercent: 91, windowMinutes: 10080, resetsAt: RESET }) {
+function payload(secondary: unknown = { usedPercent: 91, windowMinutes: 10080, resetsAt: RESET }, provider = "codex") {
   return JSON.stringify([{
-    provider: "codex", source: "oauth",
+    provider, source: provider === "codex" ? "oauth" : "claude",
     usage: { secondary, updatedAt: new Date(NOW).toISOString() },
   }]);
 }
 const success = () => ({ stdout: payload(), stderr: "", code: 0, killed: false });
 const cleanups: (() => void)[] = [];
 
-function fixture(mode = "tui", exec = mock(async () => success())) {
+const CODEX_ARGS = ["usage", "--provider", "codex", "--source", "oauth", "--json", "--no-credits"];
+const CLAUDE_ARGS = ["usage", "--provider", "claude", "--source", "cli", "--json", "--no-credits"];
+
+function fixture(mode = "tui", exec = mock(async () => success()), modelProvider = "openai") {
   const handlers = new Map<string, Function>();
   const commands = new Map<string, { handler: Function }>();
   const statuses = new Map<string, string>();
   const ctx = {
     mode,
+    model: { provider: modelProvider, id: "test-model" } as { provider: string; id: string } | undefined,
     ui: {
       setStatus: mock((key: string, value?: string) => {
         if (value === undefined) statuses.delete(key);
@@ -29,7 +33,7 @@ function fixture(mode = "tui", exec = mock(async () => success())) {
       notify: mock(() => {}),
     },
   };
-  codexUsage({
+  subscriptionUsage({
     on: (name: string, handler: Function) => handlers.set(name, handler),
     registerCommand: (name: string, command: { handler: Function }) => commands.set(name, command),
     exec,
@@ -39,7 +43,11 @@ function fixture(mode = "tui", exec = mock(async () => success())) {
   return {
     handlers, commands, ctx, exec, statuses, stop,
     start: () => handlers.get("session_start")?.({}, ctx),
-    command: (args = "") => commands.get("codex-usage")!.handler(args, ctx),
+    select: (provider: string) => {
+      ctx.model = { provider, id: "test-model" };
+      return handlers.get("model_select")?.({ type: "model_select", model: ctx.model, source: "set" }, ctx);
+    },
+    command: (args = "") => commands.get("usage")!.handler(args, ctx),
   };
 }
 
@@ -52,6 +60,23 @@ afterEach(() => {
 });
 
 describe("CodexBar weekly data", () => {
+  test("maps model providers to subscription usage sources", () => {
+    expect(usageProviderFor("openai")).toBe("codex");
+    expect(usageProviderFor("openai-codex")).toBe("codex");
+    expect(usageProviderFor("claude-sdk")).toBe("claude");
+    expect(usageProviderFor("anthropic")).toBe("claude");
+    expect(usageProviderFor("google")).toBeUndefined();
+    expect(usageProviderFor(undefined)).toBeUndefined();
+  });
+
+  test("reads the Claude weekly lane only for Claude output", () => {
+    expect(parseWeeklyUsage(payload({ usedPercent: 73, windowMinutes: 10080, resetsAt: RESET }, "claude"), "claude"))
+      .toEqual({ remainingPercent: 27, resetsAt: Date.parse(RESET), updatedAt: NOW });
+    expect(() => parseWeeklyUsage(payload(), "claude")).toThrow("Claude account");
+    expect(() => parseWeeklyUsage(JSON.stringify([{ provider: "claude", error: { message: "private" } }]), "claude"))
+      .toThrow("Claude Code login");
+  });
+
   test("reads the weekly lane, preserves zero, and ignores account fields", () => {
     const data = parseWeeklyUsage(payload());
     expect(data).toEqual({ remainingPercent: 9, resetsAt: Date.parse(RESET), updatedAt: NOW });
@@ -139,10 +164,11 @@ describe("Codex usage lifecycle", () => {
     await f.command();
     expect(f.exec).toHaveBeenCalledTimes(1);
     expect(f.exec.mock.calls[0]).toEqual([
-      "codexbar", ["usage", "--provider", "codex", "--source", "oauth", "--json", "--no-credits"],
+      "codexbar", CODEX_ARGS,
       { timeout: 30_000, signal: expect.any(AbortSignal) },
     ]);
-    expect(f.statuses.get("codex-usage")).toBe("---------- 9% (⏳ 2d 15h)");
+    expect(f.statuses.get("subscription-usage")).toBe("---------- 9% (⏳ 2d 15h)");
+    expect(f.ctx.ui.notify.mock.calls[0][0]).toStartWith("Codex ---------- 9%");
     expect(f.ctx.ui.notify.mock.calls[0][0]).toContain("Codex CLI account, not Pi login");
     expect(f.ctx.ui.notify.mock.calls[0][0]).toContain("Reset: 2026-11-04 18:00");
     await f.command();
@@ -167,7 +193,7 @@ describe("Codex usage lifecycle", () => {
     tick();
     await f.command();
     expect(f.exec).toHaveBeenCalledTimes(2);
-    expect(f.statuses.get("codex-usage")).toBe("---------- 9% (⏳ 2d 14h)");
+    expect(f.statuses.get("subscription-usage")).toBe("---------- 9% (⏳ 2d 14h)");
     f.stop();
     expect(clear).toHaveBeenCalledWith(timer);
     expect(f.statuses.size).toBe(0);
@@ -202,12 +228,12 @@ describe("Codex usage lifecycle", () => {
     await f.command();
     f.exec.mockResolvedValueOnce({ stdout: "secret", stderr: "secret", code: 1, killed: false });
     await f.command();
-    expect(f.statuses.get("codex-usage")).toBe("weekly unavailable (/codex-usage)");
+    expect(f.statuses.get("subscription-usage")).toBe("weekly unavailable (/usage)");
     const calls = f.ctx.ui.notify.mock.calls;
     expect(calls.at(-1)).toEqual([expect.stringContaining("code 1"), "error"]);
     expect(JSON.stringify(calls)).not.toContain("secret");
     await f.command();
-    expect(f.statuses.get("codex-usage")).toContain("9% (⏳ ");
+    expect(f.statuses.get("subscription-usage")).toContain("9% (⏳ ");
   });
 
   test("reports missing binary and timeouts without leaking CLI errors", async () => {
@@ -240,7 +266,7 @@ describe("Codex usage lifecycle", () => {
     oldResolve({ ...success(), stdout: payload({ usedPercent: 100 }) });
     await pending;
     expect(f.ctx.ui.setStatus).toHaveBeenCalledTimes(updates);
-    expect(f.statuses.get("codex-usage")).toContain("9% (⏳ ");
+    expect(f.statuses.get("subscription-usage")).toContain("9% (⏳ ");
     expect(f.ctx.ui.notify).toHaveBeenCalledTimes(1);
   });
 
@@ -248,6 +274,80 @@ describe("Codex usage lifecycle", () => {
     const f = fixture("rpc");
     await f.command("unexpected");
     expect(f.exec).not.toHaveBeenCalled();
-    expect(f.ctx.ui.notify).toHaveBeenCalledWith("Usage: /codex-usage", "warning");
+    expect(f.ctx.ui.notify).toHaveBeenCalledWith("Usage: /usage", "warning");
+  });
+});
+
+describe("provider-aware usage", () => {
+  const claudeSuccess = () => ({ ...success(), stdout: payload({ usedPercent: 73, windowMinutes: 10080, resetsAt: RESET }, "claude") });
+  const byProvider = () => mock(async (_cmd: string, args: string[]) => args[2] === "claude" ? claudeSuccess() : success());
+
+  test("fetches Claude usage through the CLI source with a longer timeout", async () => {
+    setSystemTime(NOW);
+    const f = fixture("tui", byProvider(), "claude-sdk");
+    f.start();
+    await f.command();
+    expect(f.exec).toHaveBeenCalledTimes(1);
+    expect(f.exec.mock.calls[0]).toEqual(["codexbar", CLAUDE_ARGS, { timeout: 60_000, signal: expect.any(AbortSignal) }]);
+    expect(f.statuses.get("subscription-usage")).toBe("##-------- 27% (⏳ 2d 15h)");
+    const message = f.ctx.ui.notify.mock.calls[0][0];
+    expect(message).toStartWith("Claude ##-------- 27%");
+    expect(message).toContain("Claude Code account");
+  });
+
+  test("switches the status with the selected model and reuses cached readings", async () => {
+    setSystemTime(NOW);
+    const f = fixture("tui", byProvider());
+    f.start();
+    await f.command();
+    expect(f.statuses.get("subscription-usage")).toContain("9%");
+    f.select("claude-sdk");
+    expect(f.statuses.get("subscription-usage")).toBe("weekly loading...");
+    await f.command();
+    expect(f.statuses.get("subscription-usage")).toContain("27%");
+    const calls = f.exec.mock.calls.length;
+    f.select("openai");
+    expect(f.statuses.get("subscription-usage")).toContain("9%");
+    expect(f.exec).toHaveBeenCalledTimes(calls);
+    f.select("google");
+    expect(f.statuses.has("subscription-usage")).toBe(false);
+  });
+
+  test("polls Claude every five minutes and Codex every minute", async () => {
+    setSystemTime(NOW);
+    let tick: () => void = () => {};
+    spyOn(globalThis, "setInterval").mockImplementation(((callback: () => void) => {
+      tick = callback;
+      return { unref() {} };
+    }) as never);
+    spyOn(globalThis, "clearInterval").mockImplementation(() => {});
+    const f = fixture("tui", byProvider(), "claude-sdk");
+    f.start();
+    await Promise.resolve();
+    expect(f.exec).toHaveBeenCalledTimes(1);
+    for (let minute = 1; minute < 5; minute++) {
+      setSystemTime(NOW + minute * 60_000);
+      tick();
+    }
+    expect(f.exec).toHaveBeenCalledTimes(1);
+    setSystemTime(NOW + 5 * 60_000);
+    tick();
+    expect(f.exec).toHaveBeenCalledTimes(2);
+    f.select("openai");
+    expect(f.exec).toHaveBeenCalledTimes(3);
+    await new Promise((settled) => setTimeout(settled, 0));
+    setSystemTime(NOW + 6 * 60_000);
+    tick();
+    expect(f.exec).toHaveBeenCalledTimes(4);
+    expect(f.exec.mock.calls.map(([, args]) => args[2])).toEqual(["claude", "claude", "codex", "codex"]);
+  });
+
+  test("explains unsupported providers without launching a process", async () => {
+    const f = fixture("tui", byProvider(), "google");
+    f.start();
+    expect(f.statuses.has("subscription-usage")).toBe(false);
+    await f.command();
+    expect(f.exec).not.toHaveBeenCalled();
+    expect(f.ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("provider google"), "warning");
   });
 });
