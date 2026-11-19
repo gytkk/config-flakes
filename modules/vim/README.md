@@ -12,7 +12,7 @@ The module exposes every generated colorscheme from `themes/exports/nvim/`, load
 
 ## Features
 
-- Snacks provides file picking, explorer, notifications, status column, inlay hint toggles, lazygit, git browse, file rename, inline images, and GitHub issues and pull requests through `gh`. Scroll animation is disabled by default; `<leader>uS` toggles it for the current session.
+- Snacks provides file picking, explorer, notifications, status column, inlay hint toggles, lazygit, git browse, file rename, inline images, and GitHub issues and pull requests through `gh`. Indent guides highlight the active scope without animation. Page scrolling also has animation disabled by default; `<leader>uS` toggles scroll animation for the current session.
 - Persistence saves directory and branch-aware sessions and restores them on bare `nvim` startup.
 - Blink combines LSP, snippets, paths, and buffers in a completion menu. Minuet displays automatic AI suggestions as dimmed inline text.
 - Nix installs language servers; Rust uses rust-analyzer from the active rustup toolchain. Neovim watches Rust files to avoid a macOS server watcher startup stall.
@@ -35,6 +35,8 @@ Editing options inherit LazyVim defaults, including automatic writes during elig
 
 For `/` and `?` searches, entering insert mode, changing buffer text, leaving a buffer, or reloading an externally changed file clears search highlights and Noice's inline search count. Press `<Esc>` in normal mode to clear them manually. The pattern remains available, and `n` or `N` resumes the search with highlights and the count.
 
+When the current buffer is an unmodified file, idle and buffer-entry checks look for external edits to that file only. Regaining focus checks other loaded files as well. Reloads use Neovim's native syntax and Treesitter updates without forcing a full redraw.
+
 Open grep pickers rerun the current search after a file is saved, after Neovim reloads an externally changed file, and when Neovim regains focus. Results and preview refresh while preserving the query and scope, including a picker reopened with `<leader>sR`. External edits appear when Neovim detects the change or regains focus; there is no continuous filesystem polling.
 
 ## Blink and Minuet
@@ -44,7 +46,7 @@ Minuet requests OpenAI `gpt-6-luna` suggestions with no reasoning and displays t
 - `<Tab>` accepts a visible AI suggestion and closes the Blink menu. Without an AI suggestion, it follows Blink's `super-tab` rules: accept a menu item, advance an active snippet, or fall back to ordinary Tab behavior.
 - `<C-y>` requests an inline suggestion manually when none is available, bypassing the automatic filetype restriction and throttle.
 - `<Esc>` leaves insert mode and clears the inline suggestion.
-- Minuet uses a 6,000-character context window, a 900ms throttle, a 180ms debounce, and a 4-second timeout.
+- Minuet skips automatic suggestions when the current buffer exceeds 256 KiB, including unsaved edits. `<C-y>` still works above that limit. Minuet uses a 6,000-character context window, a 900ms throttle, a 180ms debounce, and a 4-second timeout.
 - Requests use OpenAI Fast mode at its Fast mode token rate, with a 1,024-token limit shared by reasoning and visible output. Automatic requests can run while an LSP menu is open. Actual API quality, latency, and usage require live verification.
 
 Store the API key in `secrets/openai-api-key.age`. NixOS decrypts it under `/run/agenix/openai-api-key`; home-only environments use Home Manager agenix through the [OpenAI API module](../openai-api/README.md). The vim module supplies the decrypted path as `vim.g.openai_api_key_path`. Environments without the OpenAI API module, such as `devsisters-jari`, receive an empty path: automatic suggestions stay off, and a manual `<C-y>` request reports the missing key.
@@ -87,7 +89,8 @@ EDITOR=vim agx -e openai-api-key.age
 - `<leader>cS`: LSP references and definitions in Trouble
 - `<leader>ud`: toggle diagnostics
 - `[d`, `]d`: previous and next diagnostic
-- `<leader>d`: toggle all diagnostics on the current line
+- `<leader>xf`: toggle the diagnostic float for the current line
+- `<leader>xd`: open the diagnostics location list
 - `<leader>xX`, `<leader>xx`: current-buffer and workspace diagnostics in Trouble
 - `<leader>uh`, `<leader>ul`, `<leader>uS`, `<leader>uw`: toggle inlay hints, line numbers, smooth scrolling, and wrap
 - `<leader>cf`: format the buffer or visual selection through LazyVim, including Markdown and YAML with automatic formatting disabled
@@ -108,10 +111,11 @@ Use the corresponding `nixos-rebuild switch --flake .#<host>` procedure on NixOS
 
 ## Regression checks
 
-Check folding defaults without loading plugins or touching saved sessions:
+Check folding defaults and external reload behavior without loading plugins or touching saved sessions:
 
 ```bash
 nvim --headless -u NONE -i NONE -l modules/vim/tests/folds.lua
+nvim --headless -u NONE -i NONE --noplugin -l modules/vim/tests/reload.lua
 ```
 
 After installing the preview plugin, check its lazy command, on-demand backend, localhost HTTP response, and shutdown without opening the default browser:
