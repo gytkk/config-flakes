@@ -77,6 +77,7 @@ in
     # jari leaves ~/.pi alone but runs its own pinned Pi from jari-worker.service's fixed
     # environment, which never reads the shell profile.
     pi = {
+      settingsFile = ../../../modules/pi/files/settings-devsisters.json;
       installPackage = false;
       launchEnvironment = {
         enable = true;

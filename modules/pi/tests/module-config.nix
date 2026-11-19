@@ -2,6 +2,20 @@ let
   flake = builtins.getFlake (toString ../../..);
   pkgs = import flake.inputs.nixpkgs { system = builtins.currentSystem; };
   lib = pkgs.lib.extend (_: _: import "${flake.inputs.home-manager}/lib" { lib = pkgs.lib; });
+  defaultSettings =
+    (import ../default.nix {
+      inherit lib pkgs;
+      config = { };
+      flakeDirectory = "/checkout";
+      themeExports = { };
+    }).options.modules.pi.settingsFile.default;
+  devsistersSettings =
+    (import ../../../systems/base/devsisters/home.nix {
+      inherit lib;
+      config = { };
+      username = "test";
+      homeDirectory = "/home/test";
+    }).modules.pi.settingsFile;
   evaluate =
     {
       herdrEnabled ? true,
@@ -19,6 +33,7 @@ let
         config = {
           modules.pi = {
             enable = true;
+            settingsFile = defaultSettings;
             installPackage = true;
             launchEnvironment = {
               enable = false;
@@ -55,11 +70,17 @@ in
 {
   enabled = evaluate { };
   disabled = evaluate { herdrEnabled = false; };
+  devsisters = evaluate { pi.settingsFile = devsistersSettings; };
   # A jari worker: its own pinned Pi, started with jari-worker.service's fixed environment.
   jari = evaluate {
     herdrEnabled = false;
     pi = {
       enable = true;
+      settingsFile =
+        (import ../../../systems/base/jari/home.nix {
+          inherit lib pkgs;
+          config = { };
+        }).modules.pi.settingsFile;
       installPackage = false;
       launchEnvironment = {
         enable = true;

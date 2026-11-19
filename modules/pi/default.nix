@@ -59,7 +59,7 @@ let
   ) localExtensions;
   commonSettings = pkgs.writeText "pi-common-settings.json" (
     builtins.toJSON (
-      builtins.fromJSON (builtins.readFile ./files/settings.json) // { packages = extensionPackages; }
+      builtins.fromJSON (builtins.readFile cfg.settingsFile) // { packages = extensionPackages; }
     )
   );
   # Nix supplies binaries; Lens must not install servers or analysis tools.
@@ -124,6 +124,12 @@ in
         description = "Directories moved to the front of Pi's PATH, in order, when launchEnvironment is enabled.";
       };
     };
+  };
+
+  options.modules.pi.settingsFile = lib.mkOption {
+    type = lib.types.path;
+    default = ./files/settings.json;
+    description = "General Pi settings to merge with the managed package selection.";
   };
 
   config = lib.mkIf cfg.enable {

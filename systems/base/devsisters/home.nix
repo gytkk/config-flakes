@@ -13,6 +13,8 @@
     ./tools.nix
   ];
 
+  modules.pi.settingsFile = ../../../modules/pi/files/settings-devsisters.json;
+
   # The current shadow rollout records personal sessions only.
   modules.agentSessionRecord.enable = lib.mkForce false;
 

@@ -31,6 +31,17 @@ test("activation settings combine general settings with the explicit package sel
   expect(moduleConfig.enabled.activation).toEqual({ before: ["linkGeneration"], after: ["writeBoundary"] });
 });
 
+test("Devsisters selects Opus through Claude SDK without changing package selection", () => {
+  const { defaultProvider, defaultModel, packages, subagents } = moduleConfig.devsisters.settings;
+  expect([defaultProvider, defaultModel]).toEqual(["claude-sdk", "claude-opus-5-5"]);
+  expect(packages).toEqual(settings.packages);
+  expect(subagents.defaultModel).toBe("claude-sdk/claude-opus-5-5");
+  expect(subagents.modelScope).toEqual({ enforce: true, strict: true, allow: ["claude-sdk/*"] });
+  for (const role of Object.values(subagents.agentOverrides) as { model?: string }[]) {
+    if (role.model) expect(role.model).toMatch(/^claude-sdk\//);
+  }
+});
+
 test("interactive shell uses managed lean, deferred, local-only configuration", () => {
   expect(moduleConfig.enabled.interactiveShellSource).toBe("/checkout/modules/pi/files/interactive-shell.json");
   expect(moduleConfig.disabled.interactiveShellSource).toBe(moduleConfig.enabled.interactiveShellSource);
@@ -100,7 +111,7 @@ test("only a launch-environment profile installs the extension, and a pinned Pi 
   const { [`${prefix}launch-environment.ts`]: launch, ...otherSources } = moduleConfig.jari.extensionSources;
   expect(launch).toBeDefined();
   expect(otherSources).toEqual(moduleConfig.disabled.extensionSources);
-  expect(moduleConfig.jari.settings).toEqual(settings);
+  expect(moduleConfig.jari.settings).toEqual(moduleConfig.devsisters.settings);
 });
 
 test("the launch-environment extension sets session variables and moves its PATH entries to the front once", async () => {

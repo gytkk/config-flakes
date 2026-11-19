@@ -1,0 +1,75 @@
+{
+  "theme": "one-half-light",
+  "defaultProvider": "claude-sdk",
+  "quietStartup": "header",
+  "defaultModel": "claude-opus-5-5",
+  "defaultThinkingLevel": "high",
+  "showCacheMissNotices": true,
+  "compaction": {
+    "enabled": true
+  },
+  "subagents": {
+    "defaultModel": "claude-sdk/claude-opus-5-5",
+    "defaultThinking": "high",
+    "modelScope": {
+      "enforce": true,
+      "strict": true,
+      "allow": [
+        "claude-sdk/*"
+      ]
+    },
+    "agentOverrides": {
+      "scout": {
+        "model": "claude-sdk/claude-opus-5-5",
+        "tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "bash",
+          "contact_supervisor"
+        ]
+      },
+      "researcher": {
+        "model": "claude-sdk/claude-opus-5-5",
+        "thinking": "low"
+      },
+      "worker": {
+        "thinking": "high",
+        "defaultContext": "fresh"
+      },
+      "reviewer": {
+        "model": "claude-sdk/claude-opus-5-5",
+        "thinking": "xhigh"
+      },
+      "oracle": {
+        "model": "claude-sdk/claude-opus-5-5",
+        "defaultContext": "fresh"
+      },
+      "delegate": {
+        "disabled": true
+      },
+      "claude-code": {
+        "disabled": true
+      },
+      "claude-code-writer": {
+        "disabled": true
+      },
+      "codex-exec": {
+        "disabled": true
+      },
+      "codex-exec-writer": {
+        "disabled": true
+      },
+      "cursor-agent": {
+        "disabled": true
+      },
+      "cursor-agent-writer": {
+        "disabled": true
+      }
+    }
+  },
+  "editorPaddingX": 1,
+  "outputPad": 1,
+  "showHardwareCursor": true
+}
