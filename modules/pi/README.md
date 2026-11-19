@@ -299,6 +299,12 @@ Apply Home Manager with Pi closed to remove Powerline from the managed package l
 
 Headless checks exercise the real Pi editor, status rendering across terminal widths, effective model/context values, provider independence, Git polling and disposal, paste/history/autocomplete, native compaction submission, and mouse cursor placement. Node/jiti checks cover discovery and coexistence with installed shell, Lens, and questionnaire packages. Actual Korean IME candidate placement and live overlay focus restoration still require a terminal check.
 
+### Automatic session titles
+
+In a parent Pi TUI, `modules/pi/files/extensions/auto-title.ts` asks `openai/gpt-6-luna` to name an unnamed session when you submit a text request. Naming runs alongside the main task. The extension sends up to 2,000 characters of request text using Pi's configured OpenAI authentication, even when the working model is from another provider. It does not include attached images, tool results, or conversation history.
+
+Pi saves the name and updates its terminal title, which lets Herdr Desktop distinguish sessions in the same repository. The extension makes one naming attempt per loaded session and never replaces an existing name; use `/name` if the task changes. To check it after applying Home Manager, start a new Pi session in Herdr and submit a task. The row should change from `π - <directory>` to `π - <task> - <directory>` without waiting for the task to finish.
+
 ### Terminal title on exit
 
 Pi sets the terminal title to `π - <directory>` and does not clear it on exit, so terminal applications can keep showing it after returning to the shell. `files/extensions/terminal-title-reset.ts` sends an empty title when the TUI process exits after a quit. It writes from a process `exit` listener because Pi 1.5 rewrites the title after `session_shutdown`. Session reload, new, resume, and fork leave the title to Pi.

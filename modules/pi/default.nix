@@ -39,6 +39,7 @@ let
   ];
 
   localExtensions = {
+    "auto-title.ts" = mkSymlink "files/extensions/auto-title.ts";
     "prompt-ui" = mkSymlink "files/extensions/prompt-ui";
     "codex-fast-mode.ts" = mkSymlink "files/extensions/codex-fast-mode.ts";
     "subscription-usage.ts" = mkSymlink "files/extensions/subscription-usage.ts";
