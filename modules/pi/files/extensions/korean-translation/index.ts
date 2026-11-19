@@ -7,7 +7,8 @@ import { failureMessage, needsTranslation, translate, TRANSLATION_MODEL, type Tr
 
 const ENTRY_TYPE = "korean-translation";
 const STATE_TYPE = "korean-translation-enabled";
-const TIMEOUT_MS = 60_000;
+const INPUT_TIMEOUT_MS = 60_000;
+const OUTPUT_TIMEOUT_MS = 180_000;
 type DisplayEntry = { direction: "input" | "output"; text: string; sourceId?: string; usage?: Translation["usage"] };
 type InputResult = { translation: Translation } | { error: unknown };
 
@@ -82,7 +83,7 @@ export default function koreanTranslation(pi: ExtensionAPI) {
     const sessionSignal = lifetime.signal;
     const result = await ctx.ui.custom<InputResult>((tui, theme, _keys, done) => {
       const loader = new BorderedLoader(tui, theme, "영어로 번역 중...");
-      const signal = AbortSignal.any([sessionSignal, loader.signal, AbortSignal.timeout(TIMEOUT_MS)]);
+      const signal = AbortSignal.any([sessionSignal, loader.signal, AbortSignal.timeout(INPUT_TIMEOUT_MS)]);
       // Finish through the request's settlement path, including Escape cancellation.
       translate(event.text, "English", ctx, signal).then(
         translation => done({ translation }),
@@ -112,7 +113,7 @@ export default function koreanTranslation(pi: ExtensionAPI) {
     const text = event.message.content.filter(block => block.type === "text").map(block => block.text).join("\n\n");
     if (!needsTranslation(text, "Korean")) return;
     const sessionSignal = lifetime.signal;
-    const signal = AbortSignal.any([sessionSignal, AbortSignal.timeout(TIMEOUT_MS), ...(ctx.signal ? [ctx.signal] : [])]);
+    const signal = AbortSignal.any([sessionSignal, AbortSignal.timeout(OUTPUT_TIMEOUT_MS), ...(ctx.signal ? [ctx.signal] : [])]);
     ctx.ui.setStatus(ENTRY_TYPE, "한국어로 번역 중...");
     try {
       const translation = await translate(text, "Korean", ctx, signal);

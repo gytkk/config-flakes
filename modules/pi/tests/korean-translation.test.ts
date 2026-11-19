@@ -264,7 +264,8 @@ describe("failures and lifecycle", () => {
     });
     expect(await h.output(answer("The check passed. `foo()`"))).toBeUndefined();
     expect(h.streamSimple).toHaveBeenCalledTimes(2);
-    expect(JSON.stringify(h.ui.notify.mock.calls)).toContain("cancelled or timed out");
+    expect(JSON.stringify(h.ui.notify.mock.calls)).toContain("Translation cancelled");
+    expect(JSON.stringify(h.ui.notify.mock.calls)).not.toContain("timed out");
     expect(h.ui.setStatus.mock.calls.at(-1)).toEqual(["korean-translation", undefined]);
   });
 
@@ -320,6 +321,22 @@ describe("failures and lifecycle", () => {
     expect(h.ui.notify).not.toHaveBeenCalled();
     expect(h.ctx.ui.getEditorText()).toBe("");
     expect(h.sm.getBranch()).toEqual([]);
+  });
+
+  test("a response can finish after a minute while input still times out", async () => {
+    const h = harness();
+    const elapsed = 65_000;
+    const original = AbortSignal.timeout;
+    AbortSignal.timeout = ms => ms <= elapsed
+      ? AbortSignal.abort(new DOMException("Deadline reached", "TimeoutError"))
+      : new AbortController().signal;
+    try {
+      expect((await h.output())?.entries[0].data.text).toBe("검사가 통과했습니다.");
+      expect(await h.input()).toEqual({ action: "handled" });
+      expect(JSON.stringify(h.ui.notify.mock.calls)).toContain("Translation timed out");
+    } finally {
+      AbortSignal.timeout = original;
+    }
   });
 
   test("output cancellation preserves the response and clears progress", async () => {

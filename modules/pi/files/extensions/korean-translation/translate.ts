@@ -13,7 +13,8 @@ class ProtectedTextError extends TranslationError {
 
 export function failureMessage(error: unknown): string {
   if (error instanceof TranslationError) return error.message;
-  if (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) return "Translation cancelled or timed out";
+  if (error instanceof Error && error.name === "TimeoutError") return "Translation timed out";
+  if (error instanceof Error && error.name === "AbortError") return "Translation cancelled";
   return "Translation request failed; check Pi authentication and network connectivity";
 }
 
