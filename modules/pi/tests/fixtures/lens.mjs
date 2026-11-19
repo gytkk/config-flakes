@@ -127,6 +127,8 @@ try {
   assert.equal(r.isError, false); assert.match(text(r), /answer/);
   r = await tool("lens_diagnostics", { path: "a.ts", source: "lsp" });
   assert.equal(r.details.unconfirmed, false); assert.ok(r.details.totalDiagnostics > 0);
+  assert.equal(widgets.has("pi-lens"), false, "diagnostics must not reveal the hidden widget");
+  await session.prompt("/lens-widget-toggle");
   const widget = widgets.get("pi-lens");
   assert.ok(widget, "Lens mounts its own status widget");
   for (const width of [40, 80, 160]) {
