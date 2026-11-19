@@ -2,7 +2,7 @@ vim.keymap.del("n", "<S-h>")
 vim.keymap.del("n", "<S-l>")
 
 local diagnosticWin
-vim.keymap.set("n", "<leader>d", function()
+vim.keymap.set("n", "<leader>xf", function()
   if diagnosticWin and vim.api.nvim_win_is_valid(diagnosticWin) then
     vim.api.nvim_win_close(diagnosticWin, true)
     diagnosticWin = nil
@@ -11,4 +11,4 @@ vim.keymap.set("n", "<leader>d", function()
     diagnosticWin = win
   end
 end, { desc = "Toggle Line Diagnostics" })
-vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Diagnostics List" })
+vim.keymap.set("n", "<leader>xd", vim.diagnostic.setloclist, { desc = "Diagnostics List" })
