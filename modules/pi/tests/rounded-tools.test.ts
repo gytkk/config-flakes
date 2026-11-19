@@ -58,15 +58,15 @@ function expectFilledFrame(lines: string[], background: ThemeBg) {
   const { h, s, l } = colorToOkhsl(theme.colors[background]);
   const border = foregroundAnsi(okhslColor(h, Math.min(1, s * 1.25), l + (l < 0.5 ? 0.10 : -0.10)), theme.getColorMode());
   for (const row of rows) {
-    const body = row[0].char === "│";
+    const body = row[0].char === "█";
     expect(row[0].bg).toBe(body ? bg : "");
     expect(row.at(-1)!.bg).toBe(body ? bg : "");
-    expect(row.slice(1, -1).every((cell) => cell.bg === bg)).toBe(true);
+    expect(row.slice(1, -1).every((cell) => cell.bg === (body ? bg : ""))).toBe(true);
     expect(row[0].fg).toBe(border);
     expect(row.at(-1)!.fg).toBe(border);
   }
-  expect(rows[0].every((cell) => cell.fg === border)).toBe(true);
-  expect(rows.at(-1)!.every((cell) => cell.fg === border)).toBe(true);
+  expect(rows[0].every((cell) => cell.char === "▄" && cell.fg === border)).toBe(true);
+  expect(rows.at(-1)!.every((cell) => cell.char === "▀" && cell.fg === border)).toBe(true);
 }
 
 function tool(name: string, args: unknown = {}, base?: ToolRenderers, outputPad = 1) {
@@ -87,11 +87,11 @@ function click(width: number, height: number, x: number, y: number): TuiMouseEve
 
 function expectOneFrame(lines: string[], width: number) {
   const text = plain(lines);
-  expect(text.filter((line) => line.startsWith("╭"))).toHaveLength(1);
-  expect(text.filter((line) => line.startsWith("╰"))).toHaveLength(1);
+  expect(text.filter((line) => line.startsWith("▄"))).toHaveLength(1);
+  expect(text.filter((line) => line.startsWith("▀"))).toHaveLength(1);
   for (const line of text.filter(Boolean)) {
     expect(visibleWidth(line)).toBe(width);
-    expect(line).toMatch(/^[╭│╰].*[╮│╯]$/);
+    expect(line).toMatch(/^(?:▄+|█.*█|▀+)$/);
   }
 }
 
@@ -106,7 +106,7 @@ test("registers a renderer resolver without overriding tools or execution", () =
 });
 
 describe("rounded tool composition", () => {
-  test("fills straight edges but not rounded corners through state and theme changes", () => {
+  test("keeps the outside halves of both caps unpainted across states and themes", () => {
     for (const pad of [0, 1]) {
       const row = tool("custom", {}, undefined, pad);
       for (const name of ["light", "dark"]) {
@@ -333,7 +333,7 @@ describe("installed Pi renderers", () => {
       data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7uoAAAAASUVORK5CYII=",
     }], details: undefined });
     const lines = row.render(70);
-    const bottom = plain(lines).findIndex((line) => line.startsWith("╰"));
+    const bottom = plain(lines).findIndex((line) => line.startsWith("▀"));
     const image = lines.findIndex((line) => line.includes("\x1b_G"));
     expect(image).toBeGreaterThan(bottom);
     expect(lines.filter((line) => line.includes("\x1b_G"))).toHaveLength(1);

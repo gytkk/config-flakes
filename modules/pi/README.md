@@ -317,9 +317,9 @@ Use `ask_user_question` with the package's existing `questions`, `header`, `mult
 
 `rpiv-todo` is selected separately as the task tracker. `rpiv-advisor` and other siblings are not installed implicitly, and the pi-subagents contract remains unchanged. The earlier pi-ask-user replacement is not selected.
 
-## Rounded tool and extension-message frames
+## Tool and extension-message cards
 
-`modules/pi/files/extensions/rounded-tools.ts` wraps each tool's call and text result in one rounded terminal border. It uses Pi's renderer resolver without replacing tool definitions or execution. Existing renderers retain syntax highlighting, edit previews, codemode nested-call status, streaming updates, and expansion controls. The tool background fills the content, padding, and straight borders. Only the four rounded corner cells keep the terminal background. The outline keeps the fill's hue with slightly stronger saturation. It is lighter on dark fills and darker on light fills so it remains visible even when the fill is gray. Pending, successful, and failed calls retain their theme backgrounds. Tools with their own shell retain their inner layout and explicit background colors; uncovered interior cells use the tool-state background. Panes narrower than five columns omit the border.
+`modules/pi/files/extensions/rounded-tools.ts` wraps each tool's call and text result in one square-edged terminal card. It uses Pi's renderer resolver without replacing tool definitions or execution. Existing renderers retain syntax highlighting, edit previews, codemode nested-call status, streaming updates, and expansion controls. Solid block glyphs form the sides. Half-block glyphs form the top (`▄`) and bottom (`▀`) edges on the terminal background, so their outer halves stay unpainted. The outline keeps the fill's hue with slightly stronger saturation. It is lighter on dark fills and darker on light fills so it remains visible even when the fill is gray. Pending, successful, and failed calls retain their theme backgrounds. Tools with their own shell retain their inner layout and explicit background colors; uncovered interior cells use the tool-state background. Panes narrower than five columns omit the border.
 
 Pi renders native image attachments below the text frame. Custom renderers that emit inline Kitty or iTerm2 graphics bypass the frame to preserve terminal image placement. Empty renderers stay hidden, and a failing renderer shows a warning with plain call or result text. Generic tools without renderers show their arguments and a collapsible text result.
 
@@ -363,7 +363,7 @@ PI_INTERACTIVE_SHELL_PACKAGE_DIR=/path/to/pi-interactive-shell \
   bash modules/pi/tests/run.sh interactive-shell.test.ts extension-loading.test.ts
 ```
 
-The Linux test uses real PTYs, disposable HOME/agent/project directories, package-generated notifications, and native overlay input/rendering, without a model or external semantic service. It checks quiet dispatch through actual success/failure exits, input, takeover/attach/stop, reload and replacement cleanup, native bash results, rounded frames, and artifact boundaries. The test explicitly skips without the package prerequisite; a skip is not migration completion. macOS and user Home Manager application require separate verification.
+The Linux test uses real PTYs, disposable HOME/agent/project directories, package-generated notifications, and native overlay input/rendering, without a model or external semantic service. It checks quiet dispatch through actual success/failure exits, input, takeover/attach/stop, reload and replacement cleanup, native bash results, tool cards, and artifact boundaries. The test explicitly skips without the package prerequisite; a skip is not migration completion. macOS and user Home Manager application require separate verification.
 
 ## Lens: diagnostics, navigation, and AST
 

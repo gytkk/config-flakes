@@ -107,7 +107,7 @@ function checkFrame(message) {
   for (const width of [20, 80, 120]) {
     const lines = component.render(width);
     assert(lines.every(line => visibleWidth(line) <= width));
-    assert(lines.some(line => stripTerminalSequences(line).startsWith("╭")));
+    assert(lines.some(line => stripTerminalSequences(line).startsWith("▄")));
   }
 }
 const watchdog = setTimeout(() => { console.error("fixture watchdog"); cleanup().finally(() => process.exit(1)); }, 90000);
@@ -157,7 +157,7 @@ try {
   const row = new pi.ToolExecutionComponent("interactive_shell", "shell-row", { sessionId: success.id }, { outputPad: 1 },
     resolver("interactive_shell", () => undefined), tui, cwd);
   row.updateResult(await call({ sessionId: success.id }));
-  assert(row.render(80).some(line => stripTerminalSequences(line).startsWith("╭")));
+  assert(row.render(80).some(line => stripTerminalSequences(line).startsWith("▄")));
   await tools.get("artifact").execute("register", { action: "register", path: log }, undefined, undefined, ctx);
   assert.equal(entries.length, 2, "explicit log registration succeeds");
 

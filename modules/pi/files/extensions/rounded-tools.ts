@@ -30,22 +30,21 @@ class RoundedFrame implements Component {
     const { h, s, l } = colorToOkhsl(this.theme.colors[this.background]);
     const color = okhslColor(h, Math.min(1, s * 1.25), l + (l < 0.5 ? 0.10 : -0.10));
     const border = (text: string) => this.theme.style(text, { fg: color });
-    const style = bg + border("│");
+    const side = border("█");
+    const style = bg + side;
     const cache = this.cache;
     if (cache && cache.width === width && cache.style === style && cache.source.length === lines.length
       && cache.source.every((line, index) => line === lines[index])) return cache.lines;
     // Restore the panel background after child resets without replacing deliberate inner backgrounds.
     const fill = (text: string) => this.theme.bg(this.background, text.replace(/\x1b\[(?:0|49)?m/g, `$&${bg}`));
-    const rule = (left: string, right: string) =>
-      border(left) + fill(border("─".repeat(innerWidth))) + border(right);
     const framed = !this.inset ? lines.map((line) => fill(truncateToWidth(line, width, ""))) : [
-      rule("╭", "╮"),
+      border("▄".repeat(width)),
       ...lines.map((line) => {
         const text = truncateToWidth(line, innerWidth, "");
         const padded = text + " ".repeat(Math.max(0, innerWidth - visibleWidth(text)));
-        return fill(border("│") + padded + "\x1b[0m" + border("│"));
+        return fill(side + padded + "\x1b[0m" + side);
       }),
-      rule("╰", "╯"),
+      border("▀".repeat(width)),
     ];
     this.cache = { width, style, source: lines.slice(), lines: framed };
     return framed;
