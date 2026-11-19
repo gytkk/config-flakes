@@ -7,6 +7,8 @@ type ToolResult = Parameters<NonNullable<ToolRenderers["renderResult"]>>[0];
 class RoundedFrame implements Component {
   private inset = 0;
   private contentHeight = 0;
+  // Pi renders the whole transcript every frame; reuse framed lines while the child returns the same strings.
+  private cache?: { width: number; style: string; source: string[]; lines: string[] };
 
   constructor(readonly content: Container | Box, public theme: Theme, public background: ThemeBg) {}
 
@@ -25,13 +27,16 @@ class RoundedFrame implements Component {
     this.contentHeight = lines.length;
     if (!lines.length) return [];
     const bg = this.theme.getBgAnsi(this.background);
-    // Restore the panel background after child resets without replacing deliberate inner backgrounds.
-    const fill = (text: string) => this.theme.bg(this.background, text.replace(/\x1b\[(?:0|49)?m/g, `$&${bg}`));
-    if (!this.inset) return lines.map((line) => fill(truncateToWidth(line, width, "")));
     const contrast = this.theme.appearance === "light" ? rgbColor(0, 0, 0) : rgbColor(255, 255, 255);
     const color = mixColors(this.theme.colors[this.background], contrast, 0.15, "srgb");
     const border = (text: string) => this.theme.style(text, { fg: color });
-    return [
+    const style = bg + border("│");
+    const cache = this.cache;
+    if (cache && cache.width === width && cache.style === style && cache.source.length === lines.length
+      && cache.source.every((line, index) => line === lines[index])) return cache.lines;
+    // Restore the panel background after child resets without replacing deliberate inner backgrounds.
+    const fill = (text: string) => this.theme.bg(this.background, text.replace(/\x1b\[(?:0|49)?m/g, `$&${bg}`));
+    const framed = !this.inset ? lines.map((line) => fill(truncateToWidth(line, width, ""))) : [
       border(`╭${"─".repeat(innerWidth)}╮`),
       ...lines.map((line) => {
         const text = truncateToWidth(line, innerWidth, "");
@@ -39,6 +44,8 @@ class RoundedFrame implements Component {
       }),
       border(`╰${"─".repeat(innerWidth)}╯`),
     ].map(fill);
+    this.cache = { width, style, source: lines.slice(), lines: framed };
+    return framed;
   }
 
   handleMouse(event: TuiMouseEvent) {
@@ -50,6 +57,7 @@ class RoundedFrame implements Component {
   }
 
   invalidate() {
+    this.cache = undefined;
     this.content.invalidate();
   }
 }

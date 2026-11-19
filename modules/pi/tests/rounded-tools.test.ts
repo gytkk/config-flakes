@@ -147,6 +147,24 @@ describe("rounded tool composition", () => {
     expect(plain(row.render(60)).join("\n")).not.toContain("partial");
   });
 
+  test("reuses an unchanged frame across renders and refreshes on content, state, theme, and width changes", () => {
+    const row = tool("custom");
+    row.render(60);
+    const renderers = roundToolRenderers("custom");
+    const ctx = { state: {}, isPartial: false, isError: false, outputPad: 1, expanded: false, keyHint: () => "" };
+    const frame = renderers.renderCall!({}, theme, ctx as never);
+    renderers.renderResult!(textResult("done"), {} as never, theme, ctx as never);
+    expect(frame.render(60)).toBe(frame.render(60));
+    row.updateResult(textResult("changed"));
+    expect(plain(row.render(60)).join("\n")).toContain("changed");
+    row.updateResult({ ...textResult("failed"), isError: true });
+    expectFilledFrame(row.render(60), "toolErrorBg");
+    initTheme("light", false);
+    row.invalidate();
+    expectFilledFrame(row.render(60), "toolErrorBg");
+    expectOneFrame(row.render(40), 40);
+  });
+
   test("keeps delegate state and lastComponent separate for both slots and tools", () => {
     const calls: unknown[] = [];
     const results: unknown[] = [];
