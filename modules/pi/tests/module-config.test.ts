@@ -91,3 +91,31 @@ test("generated settings replace managed packages while preserving device-local 
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("only a launch-environment profile installs the extension, and a pinned Pi skips the package", () => {
+  expect(moduleConfig.enabled.extensionSources[`${prefix}launch-environment.ts`]).toBeUndefined();
+  expect(moduleConfig.enabled.packages).toContain("pi");
+  expect(moduleConfig.jari.packages).not.toContain("pi");
+  expect(moduleConfig.jari.packages).toEqual(moduleConfig.enabled.packages.filter((name: string) => name !== "pi"));
+  const { [`${prefix}launch-environment.ts`]: launch, ...otherSources } = moduleConfig.jari.extensionSources;
+  expect(launch).toBeDefined();
+  expect(otherSources).toEqual(moduleConfig.disabled.extensionSources);
+  expect(moduleConfig.jari.settings).toEqual(settings);
+});
+
+test("the launch-environment extension sets session variables and moves its PATH entries to the front once", async () => {
+  const saved = { ...process.env };
+  try {
+    for (const name of Object.keys(moduleConfig.jari.sessionVariables)) delete process.env[name];
+    process.env.PATH = "/usr/bin:/profile/bin::/bin:/opt/jari/bin";
+    const { default: apply } = await import(moduleConfig.jari.extensionSources[`${prefix}launch-environment.ts`]);
+    apply();
+    apply();
+    expect(process.env.PATH).toBe("/opt/jari/bin:/profile/bin:/usr/bin:/bin");
+    expect(moduleConfig.jari.sessionVariables).toEqual({ ...moduleConfig.enabled.sessionVariables, PI_UNPATCHED: "1" });
+    for (const [name, value] of Object.entries(moduleConfig.jari.sessionVariables)) expect(process.env[name]).toBe(value);
+  } finally {
+    for (const name of Object.keys(process.env)) if (!(name in saved)) delete process.env[name];
+    Object.assign(process.env, saved);
+  }
+});

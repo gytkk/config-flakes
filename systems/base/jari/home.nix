@@ -13,13 +13,11 @@ let
     "/opt/node/bin"
   ];
 
-  pathHead = lib.concatStringsSep ":" (
-    jariPath
-    ++ [
-      "${config.home.profileDirectory}/bin"
-      "/nix/var/nix/profiles/default/bin"
-    ]
-  );
+  pathEntries = jariPath ++ [
+    "${config.home.profileDirectory}/bin"
+    "/nix/var/nix/profiles/default/bin"
+  ];
+  pathHead = lib.concatStringsSep ":" pathEntries;
 
   # Shared by bash and zsh. Agent shell snapshots source ~/.bashrc non-interactively,
   # so this must stay silent, builtin-only, and unable to fail.
@@ -75,7 +73,16 @@ in
     codex.enable = lib.mkForce false;
     herdr.enable = lib.mkForce false;
     herdrApp.enable = lib.mkForce false;
-    pi.enable = lib.mkForce false;
+
+    # jari leaves ~/.pi alone but runs its own pinned Pi from jari-worker.service's fixed
+    # environment, which never reads the shell profile.
+    pi = {
+      installPackage = false;
+      launchEnvironment = {
+        enable = true;
+        pathHead = pathEntries;
+      };
+    };
 
     # Every jari tab runs under jari's own tmux server, which reads the default
     # tmux config and must match the system tmux client.

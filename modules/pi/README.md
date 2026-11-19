@@ -24,7 +24,7 @@ symlinks.
 
 The module also installs:
 
-- `pkgs.pi`
+- `pkgs.pi`, unless `modules.pi.installPackage` is off ([jari workers](#jari-workers))
 - `pkgs.mcp-nixos`
 
 `settings.json` is a private, writable regular file on each machine, not a checkout symlink. Nix combines the general settings in `modules/pi/files/settings.json` with the `extensionPackages` selection in `modules/pi/default.nix` to generate the common settings. Home Manager merges these into the local file before linking the new generation; common top-level keys take precedence, while other local keys are preserved except the retired managed `powerline`, `bashMode`, and `workingVibe` keys. Pi creates `deviceId` on first ChatGPT login and keeps it, `trackingId`, and `lastChangelogVersion` local. The sync rejects these fields in common settings. Existing symlink installations are migrated without writing their local state back to the checkout.
@@ -470,6 +470,14 @@ Pi connects these servers in the background at session startup. Their default `c
 
 Cloudflare operations use the `cf` CLI installed by the common Home Manager profile. See [Cloudflare CLI setup](../../README.md#cloudflare-cli) for authentication and command discovery. Restart Pi after changing its MCP configuration.
 
+## jari workers
+
+The `devsisters-jari` profile installs everything above except `pkgs.pi`. jari runs its own pinned Pi from `/opt/jari-cli` in terminal and chat tabs and leaves `~/.pi` to this module. Because that Pi is built without [the local package patches](../../packages/apps/pi/patches.nix), Herdr file links and image paste labels are absent, and rounded tools leave extension messages unframed. The module sets `PI_UNPATCHED=1` there, so rounded tools skip their notice to apply Home Manager, which cannot add the frames.
+
+jari starts Pi from its worker service with a fixed `PATH` and environment that never reads the shell profile, so `mcp-nixos`, the Lens language servers, and the Lens install switches in `home.sessionVariables` would be missing. With `modules.pi.launchEnvironment.enable`, the module installs a generated `~/.pi/agent/extensions/launch-environment.ts`, which sets those session variables in Pi's process and moves the `pathHead` directories (jari's directories, then the Nix profiles, matching the shell's order) to the front of its `PATH`. MCP servers, Lens, the `bash` tool, and subagents started from Pi inherit the result.
+
+jari's Pi accepts the worker's Codex login only for the legacy `openai-codex` provider. The common settings and subagent model scope use `openai`, so run `/login openai` once in a jari Pi tab as described in [ChatGPT authentication](#chatgpt-authentication); until then Pi falls back to an authenticated `openai-codex` model and subagents fail the model scope.
+
 ## Theme
 
 Pi selects the generated `one-half-light` theme from `themes/exports/pi/one-half-light.json`. The built-in `system` theme remains available in `/settings` to derive colors from the terminal's background and ANSI palette.
@@ -478,7 +486,7 @@ The local prompt derives path and model badges from the active Pi theme: the pat
 
 ## Verification
 
-The test runner requires Nix, Bun, Node.js, jq, ripgrep, and an installed Pi matching the version in `packages/apps/pi/package.nix`. It locates the Nix-installed runtime through `pi` on PATH; for another installation layout, set `PI_TEST_NODE_MODULES` to that runtime's node_modules directory. It evaluates `modules/pi/tests/module-config.nix` with the root flake's pinned Nixpkgs and Home Manager libraries to obtain the generated common settings and extension links for both Herdr conditions, without building packages. It copies the module to a temporary directory, links the installed dependencies there, and uses a temporary Pi agent directory. It does not install dependencies or change the checkout, credentials, or live settings. Pass test filenames to run a subset:
+The test runner requires Nix, Bun, Node.js, jq, ripgrep, and an installed Pi matching the version in `packages/apps/pi/package.nix`. It locates the Nix-installed runtime through `pi` on PATH; for another installation layout, set `PI_TEST_NODE_MODULES` to that runtime's node_modules directory. It evaluates `modules/pi/tests/module-config.nix` with the root flake's pinned Nixpkgs and Home Manager libraries to obtain the generated common settings, packages, and extension links for both Herdr conditions and a jari profile, without building packages. It copies the module to a temporary directory, links the installed dependencies there, and uses a temporary Pi agent directory. It does not install dependencies or change the checkout, credentials, or live settings. Pass test filenames to run a subset:
 
 ```bash
 bash modules/pi/tests/run.sh module-config.test.ts subagent-profiles.test.ts

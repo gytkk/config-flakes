@@ -157,7 +157,7 @@ export default function (pi: ExtensionAPI) {
   const supportsMessageWrappers = typeof pi.registerMessageRendererWrapper === "function";
   if (supportsMessageWrappers) {
     pi.registerMessageRendererWrapper(roundMessage);
-  } else {
+  } else if (process.env.PI_UNPATCHED !== "1") {
     pi.on("session_start", (_event, ctx) => {
       if (ctx.mode === "tui") ctx.ui.notify("Apply Home Manager and restart Pi to frame all extension messages. Tool frames remain available.", "warning");
     });

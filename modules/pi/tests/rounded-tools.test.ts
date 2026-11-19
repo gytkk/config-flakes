@@ -340,3 +340,21 @@ test("loads once through Pi's Node/jiti extension discovery", async () => {
   expect(result.status).toBe(0);
   expect(JSON.parse(result.stdout)).toEqual({ errors: [], count: 1, renderers: 1 });
 }, 60_000);
+
+test("an unpatched Pi gets the Home Manager notice only where installing the patched Pi could add message frames", () => {
+  const saved = process.env.PI_UNPATCHED;
+  const sessionHandlers = (unpatched: string | undefined) => {
+    if (unpatched === undefined) delete process.env.PI_UNPATCHED;
+    else process.env.PI_UNPATCHED = unpatched;
+    const events: string[] = [];
+    roundedTools({ registerToolRenderer: () => {}, on: (event: string) => events.push(event) } as never);
+    return events;
+  };
+  try {
+    expect(sessionHandlers(undefined)).toEqual(["session_start"]);
+    expect(sessionHandlers("1")).toEqual([]);
+  } finally {
+    if (saved === undefined) delete process.env.PI_UNPATCHED;
+    else process.env.PI_UNPATCHED = saved;
+  }
+});
