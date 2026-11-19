@@ -16,7 +16,7 @@ class InstallTests(unittest.TestCase):
     def test_preserves_personal_keys_and_settings_and_keeps_original_backup(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)
-            original = {"global": {"cmd-[": "space.prev", "cmd-]": "space.next", "cmd-e": "app.palette"}, "terminal": {"ctrl-r": "terminal"}}
+            original = {"global": {"cmd-h": "app.hide", "cmd-[": "space.prev", "cmd-]": "space.next", "cmd-e": "app.palette"}, "terminal": {"ctrl-r": "terminal"}}
             keys = home / "keys.json"
             keys.write_text(json.dumps(original))
             settings = home / "settings.json"
@@ -45,10 +45,12 @@ class InstallTests(unittest.TestCase):
                 self.assertEqual(merged["global"][key], "agent.prev")
             for key in ("cmd-]", "cmd-shift-]"):
                 self.assertEqual(merged["global"][key], "agent.next")
-            for key in ("alt-up", "alt-["):
+            for key in ("alt-up", "alt-[", "cmd-k"):
                 self.assertEqual(merged["global"][key], "space.prev")
-            for key in ("alt-down", "alt-]"):
+            for key in ("alt-down", "alt-]", "cmd-j"):
                 self.assertEqual(merged["global"][key], "space.next")
+            self.assertEqual(merged["global"]["cmd-h"], "tab.prev")
+            self.assertEqual(merged["global"]["cmd-l"], "tab.next")
             self.assertEqual(merged["terminal"], original["terminal"])
             self.assertEqual(json.loads(settings.read_text()), original_settings)
             self.assertFalse((home / "settings.json.home-manager.bak").exists())
