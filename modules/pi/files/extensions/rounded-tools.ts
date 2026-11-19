@@ -40,10 +40,11 @@ class RoundedFrame implements Component {
       border(`╭${"─".repeat(innerWidth)}╮`),
       ...lines.map((line) => {
         const text = truncateToWidth(line, innerWidth, "");
-        return border("│") + text + " ".repeat(Math.max(0, innerWidth - visibleWidth(text))) + "\x1b[0m" + border("│");
+        const padded = text + " ".repeat(Math.max(0, innerWidth - visibleWidth(text)));
+        return border("│") + fill(padded) + "\x1b[0m" + border("│");
       }),
       border(`╰${"─".repeat(innerWidth)}╯`),
-    ].map(fill);
+    ];
     this.cache = { width, style, source: lines.slice(), lines: framed };
     return framed;
   }
