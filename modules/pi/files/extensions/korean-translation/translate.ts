@@ -17,10 +17,20 @@ export function failureMessage(error: unknown): string {
   return "Translation request failed; check Pi authentication and network connectivity";
 }
 
+// Sentence punctuation after a link belongs to the prose; a closing parenthesis stays when the link opened one.
+function trimUrl(url: string) {
+  while (/[.,;:!?'")]$/.test(url)) {
+    if (url.endsWith(")") && (url.match(/\(/g)?.length ?? 0) >= (url.match(/\)/g)?.length ?? 0)) break;
+    url = url.slice(0, -1);
+  }
+  return url;
+}
+
 // Keep executable and address-like spans out of the translation request.
 export function protectText(source: string) {
   const prefix = `PI_KEEP_${randomUUID().replaceAll("-", "")}_`;
   const values: string[] = [];
+  const urls = new Set<number>();
   const keep = (text: string) => `{{${prefix}${values.push(text) - 1}}}`;
   const lines = source.match(/[^\n]*\n|[^\n]+$/g) ?? [];
   let fenced = "";
@@ -47,7 +57,11 @@ export function protectText(source: string) {
   }
   if (fenced) text += keep(fenced);
   text = text.replace(/(`+)[\s\S]*?\1/g, keep);
-  text = text.replace(/(?:https?:\/\/|www\.)[^\s<>\[\]{}]+/g, keep);
+  text = text.replace(/(?:https?:\/\/|www\.)[^\s<>\[\]{}]+/g, match => {
+    const url = trimUrl(match);
+    urls.add(values.length);
+    return keep(url) + match.slice(url.length);
+  });
   text = text.replace(/(?:^|(?<=[\s(]))(?:~\/|\.{0,2}\/|[\w.-]+\/)[\w./@%+~:-]+/g, keep);
   // Slash commands are expanded by Pi after the input hook.
   text = text.replace(/^\/[\w:-]+(?=\s|$)/, keep);
@@ -63,7 +77,12 @@ export function protectText(source: string) {
       if (actual.length !== tokens.length || actual.some(token => !remaining.delete(token))) {
         throw new ProtectedTextError();
       }
-      const restored = translated.replace(tokenPattern, token => values[Number(token.slice(2 + prefix.length, -2))]);
+      // Korean particles attach to the preceding word; one attached to a bare URL becomes part of the terminal's link.
+      const restored = translated.replace(tokenPattern, (token, offset: number) => {
+        const index = Number(token.slice(2 + prefix.length, -2));
+        const next = translated[offset + token.length];
+        return urls.has(index) && next !== undefined && /[\p{L}\p{N}]/u.test(next) ? `${values[index]} ` : values[index];
+      });
       // A slash command must still be recognized by Pi after input translation.
       if (commandPrefix && /^\/[\w:-]+(?=\s|$)/.exec(restored)?.[0] !== commandPrefix) {
         throw new ProtectedTextError();

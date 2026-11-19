@@ -89,6 +89,13 @@ describe("literal preservation", () => {
       .toBe("`two`보다 먼저 `one`을 사용하세요.");
   });
 
+  test("keeps sentence punctuation and attached Korean text out of restored links", () => {
+    const protectedText = protectText("ark's PR is https://github.com/devsisters/ark/pull/422. See [wiki](https://en.wikipedia.org/wiki/Foo_(bar)).");
+    const [pr, wiki] = protectedText.text.match(/\{\{PI_KEEP_[^}]+\}\}/g)!;
+    expect(protectedText.restore(`ark의 PR은 ${pr}입니다. [위키](${wiki})를 보세요.`))
+      .toBe("ark의 PR은 https://github.com/devsisters/ark/pull/422 입니다. [위키](https://en.wikipedia.org/wiki/Foo_(bar))를 보세요.");
+  });
+
   test("rejects removed, repeated, altered, and invented placeholders", () => {
     const protectedText = protectText("`one` then `two`");
     const tokens = protectedText.text.match(/\{\{PI_KEEP_[^}]+\}\}/g)!;
