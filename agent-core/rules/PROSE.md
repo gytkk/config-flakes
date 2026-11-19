@@ -26,6 +26,7 @@ Apply these rules to documentation, comments, reports, prompts, commit messages,
 - Use ASCII punctuation in prose. Use straight quotes and rewrite em dashes, en dashes, and double hyphens as sentence punctuation.
 - Preserve established spelling and required hyphens in official names, identifiers, URLs, commands, and quotations.
 - Keep each Markdown paragraph on one source line. Add line breaks only for Markdown structure or meaning.
+- In conversational responses, write each URL as a Markdown link with a short label, such as `[devsisters/ark#422](https://github.com/devsisters/ark/pull/422)`. A terminal or translation layer decides where a bare URL ends from the characters after it, and a following period or Korean particle becomes part of the link. Where a bare URL is required, follow it with a space or line break, never with punctuation or a word.
 - Use sentence case for English headings and avoid decorative formatting or emojis.
 
 ## Korean prose
