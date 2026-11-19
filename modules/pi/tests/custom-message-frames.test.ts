@@ -38,7 +38,7 @@ function component(wrappers: MessageRendererWrapper[], customType?: string, rend
 }
 function expectFrame(row: CustomMessageComponent, width = 70) {
   const lines = plain(row.render(width));
-  expect(lines.filter((line) => line === `╭${"─".repeat(width - 2)}╮`)).toHaveLength(1);
+  expect(lines.filter((line) => /^╭─── .+ ─+╮$/.test(line))).toHaveLength(1);
   expect(lines.filter((line) => line === `╰${"─".repeat(width - 2)}╯`)).toHaveLength(1);
   for (const line of lines) expect(visibleWidth(line)).toBeLessThanOrEqual(width);
 }
@@ -65,6 +65,8 @@ describe.skipIf(!patched)("patched custom-message wrapper hook", () => {
     for (const type of ["pi-bg-bash", "pi-bg-bash-output", "web-search-results", "web-search-error", "subagent-notify", "future-extension"]) {
       const row = component(wrappers, type);
       expectFrame(row);
+      expect(plain(row.render(70)).filter(line => line.includes(type))).toHaveLength(1);
+      expect(row.render(70).join("")).not.toContain("\x1b[48;");
       expect(plain(row.render(70)).join("\n")).toContain("Preserved message");
       row.setExpanded(true);
       row.setOutputPad(0);

@@ -189,7 +189,7 @@ try {
   const row = new pi.ToolExecutionComponent("ast_grep_replace", "render", replacement, { outputPad: 1 }, renderers, { requestRender() {} }, cwd);
   const preview = await tool("ast_grep_replace", { ...replacement, apply: false }, true);
   row.updateResult(preview);
-  assert.ok(row.render(80).some(l => l.includes(`╭${"─".repeat(78)}╮`)));
+  assert.ok(row.render(80).some(l => l.includes("╭─── ast_grep_replace ")));
   row.setExpanded(true);
   assert.ok(row.render(100).some(l => l.includes("console.info")));
   console.log("rename concurrent-write refusal; package preview expansion inside rounded frame");

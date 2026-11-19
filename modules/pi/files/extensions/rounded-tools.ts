@@ -1,5 +1,5 @@
-import type { ExtensionAPI, MessageRendererWrapper, Theme, ThemeBg, ToolRenderers } from "@earendil-works/pi-coding-agent";
-import { Box, Container, Text, colorToOkhsl, okhslColor, truncateToWidth, visibleWidth, type Component, type TuiMouseEvent } from "@earendil-works/pi-tui";
+import type { ExtensionAPI, MessageRendererWrapper, Theme, ThemeColor, ToolRenderers } from "@earendil-works/pi-coding-agent";
+import { Box, Container, Text, Spacer, stripTerminalSequences, truncateToWidth, visibleWidth, type Component, type TuiMouseEvent } from "@earendil-works/pi-tui";
 
 type CallContext = Parameters<NonNullable<ToolRenderers["renderCall"]>>[2];
 type ToolResult = Parameters<NonNullable<ToolRenderers["renderResult"]>>[0];
@@ -10,7 +10,7 @@ class RoundedFrame implements Component {
   // Pi renders the whole transcript every frame; reuse framed lines while the child returns the same strings.
   private cache?: { width: number; style: string; source: string[]; lines: string[] };
 
-  constructor(readonly content: Container | Box, public theme: Theme, public background: ThemeBg) {}
+  constructor(readonly content: Container | Box, readonly title: string, public theme: Theme, public tone: ThemeColor) {}
 
   render(width: number): string[] {
     if (width <= 0) return [];
@@ -26,23 +26,20 @@ class RoundedFrame implements Component {
     }
     this.contentHeight = lines.length;
     if (!lines.length) return [];
-    const bg = this.theme.getBgAnsi(this.background);
-    const { h, s, l } = colorToOkhsl(this.theme.colors[this.background]);
-    const color = okhslColor(h, Math.min(1, s * 1.25), l + (l < 0.5 ? 0.10 : -0.10));
-    const border = (text: string) => this.theme.style(text, { fg: color });
+    const border = (text: string) => this.theme.fg(this.tone, text);
     const side = border("│");
-    const style = bg + side;
+    const style = side;
     const cache = this.cache;
     if (cache && cache.width === width && cache.style === style && cache.source.length === lines.length
       && cache.source.every((line, index) => line === lines[index])) return cache.lines;
-    // Restore the panel background after child resets without replacing deliberate inner backgrounds.
-    const fill = (text: string) => this.theme.bg(this.background, text.replace(/\x1b\[(?:0|49)?m/g, `$&${bg}`));
-    const framed = !this.inset ? lines.map((line) => fill(truncateToWidth(line, width, ""))) : [
-      border(`╭${"─".repeat(innerWidth)}╮`),
+    const label = innerWidth >= 7 ? truncateToWidth(this.title, innerWidth - 6, "…") : "";
+    const heading = label ? `─── ${label} ` : "";
+    const framed = !this.inset ? lines.map((line) => truncateToWidth(line, width, "")) : [
+      border(`╭${heading}${"─".repeat(innerWidth - visibleWidth(heading))}╮`),
       ...lines.map((line) => {
         const text = truncateToWidth(line, innerWidth, "");
         const padded = text + " ".repeat(Math.max(0, innerWidth - visibleWidth(text)));
-        return side + fill(padded) + "\x1b[0m" + side;
+        return side + padded + "\x1b[0m" + side;
       }),
       border(`╰${"─".repeat(innerWidth)}╯`),
     ];
@@ -72,10 +69,10 @@ type Row = {
   resultLast?: Component;
 };
 
-function fallbackCall(name: string, args: unknown, theme: Theme, ctx: CallContext): Component {
+function fallbackCall(args: unknown, ctx: CallContext): Component {
   const json = JSON.stringify(args, null, ctx.expanded ? 2 : undefined) ?? "";
   const summary = ctx.expanded ? json : truncateToWidth(json, 120, "…");
-  return new Text(`${theme.fg("toolTitle", theme.bold(name))}${summary ? `\n${summary}` : ""}`, 0, 0);
+  return new Text(summary, 0, 0);
 }
 
 function fallbackResult(result: ToolResult, theme: Theme, ctx: CallContext): Component {
@@ -83,7 +80,7 @@ function fallbackResult(result: ToolResult, theme: Theme, ctx: CallContext): Com
   const lines = text ? text.split("\n") : [];
   const shown = ctx.expanded ? lines : lines.slice(0, 10);
   if (shown.length < lines.length) shown.push(`… (${lines.length - shown.length} more lines, ${ctx.keyHint("app.tools.expand", "to expand")})`);
-  return new Text(theme.fg(ctx.isError ? "error" : "toolOutput", shown.join("\n")), 0, 0);
+  return new Text((ctx.isError ? theme.fg("error", "×") + " " : "") + theme.fg("toolOutput", shown.join("\n")), 0, 0);
 }
 
 function rendererFailure(component: Component, slot: string, error: unknown, theme: Theme): Component {
@@ -94,11 +91,25 @@ function rendererFailure(component: Component, slot: string, error: unknown, the
   return content;
 }
 
-const roundMessage: MessageRendererWrapper = (component, _message, _options, theme) => {
+function titleOf(name: string): string {
+  return stripTerminalSequences(name).replace(/[\u0000-\u001f\u007f-\u009f]/g, " ").trim();
+}
+
+const roundMessage: MessageRendererWrapper = (component, message, _options, theme) => {
   if (component instanceof RoundedFrame) return component;
   const content = new Container();
+  // Pi's default Markdown shell owns a redundant [type] label and a panel background.
+  if (component instanceof Box) {
+    const [label, spacer] = component.children;
+    if (label instanceof Text && spacer instanceof Spacer &&
+      stripTerminalSequences(label.render(visibleWidth(message.customType) + 2)[0] ?? "").trim() === `[${message.customType}]`) {
+      component.setBgFn(undefined);
+      component.removeChild(label);
+      component.removeChild(spacer);
+    }
+  }
   content.addChild(component);
-  return new RoundedFrame(content, theme, "customMessageBg");
+  return new RoundedFrame(content, titleOf(message.customType), theme, "customMessageLabel");
 };
 
 export function roundToolRenderers(name: string, base: ToolRenderers = {}): ToolRenderers {
@@ -106,21 +117,40 @@ export function roundToolRenderers(name: string, base: ToolRenderers = {}): Tool
   const rows = new WeakMap<object, Row>();
   const empty = new Container();
   const getRow = (theme: Theme, ctx: CallContext): Row => {
-    const color = ctx.isPartial ? "toolPendingBg" : ctx.isError ? "toolErrorBg" : "toolSuccessBg";
+    const color = ctx.isPartial ? "warning" : ctx.isError ? "error" : "success";
     let row = rows.get(ctx.state);
     if (!row) {
       const content = base.renderShell === "self" ? new Container() : new Box(ctx.outputPad, 0);
-      row = { frame: new RoundedFrame(content, theme, color) };
+      row = { frame: new RoundedFrame(content, titleOf(name), theme, color) };
       rows.set(ctx.state, row);
     }
     row.frame.theme = theme;
-    row.frame.background = color;
+    row.frame.tone = color;
     const content = row.frame.content;
     if (content instanceof Box) {
       content.setPaddingX(ctx.outputPad);
-      content.setBgFn((text) => theme.bg(color, text));
     }
     return row;
+  };
+  // Suppress only the delegate's styled heading, never matching words in its rendered output.
+  const delegateTheme = (theme: Theme, slot: "call" | "result", isError: boolean): Theme => {
+    let firstError = true;
+    return Object.assign(Object.create(theme), {
+      fg(token: ThemeColor, text: string) {
+        if (slot === "call" && token === "toolTitle" &&
+          (text === theme.bold(name) || text === theme.bold(name + " "))) return "";
+        if (slot === "result" && name === "todo" && /^(?:●|✗) /.test(text))
+          return theme.fg(token, text[0]) + text.slice(1);
+        if (slot === "result" && name === "read" && isError && firstError && token === "toolOutput" && text) {
+          firstError = false;
+          return theme.fg("error", "×") + " " + theme.fg(token, text);
+        }
+        return theme.fg(token, text);
+      },
+      bg(token: Parameters<Theme["bg"]>[0], text: string) {
+        return name === "edit" && ["toolPendingBg", "toolSuccessBg", "toolErrorBg"].includes(token) ? text : theme.bg(token, text);
+      },
+    });
   };
   const compose = (row: Row) => {
     row.frame.content.clear();
@@ -134,12 +164,12 @@ export function roundToolRenderers(name: string, base: ToolRenderers = {}): Tool
       const row = getRow(theme, ctx);
       try {
         row.call = base.renderCall
-          ? base.renderCall(args, theme, { ...ctx, lastComponent: row.callLast })
-          : fallbackCall(name, args, theme, ctx);
+          ? base.renderCall(args, delegateTheme(theme, "call", ctx.isError), { ...ctx, lastComponent: row.callLast })
+          : fallbackCall(args, ctx);
         row.callLast = row.call;
       } catch (error) {
         row.callLast = undefined;
-        row.call = rendererFailure(fallbackCall(name, args, theme, ctx), "call", error, theme);
+        row.call = rendererFailure(fallbackCall(args, ctx), "call", error, theme);
       }
       compose(row);
       return row.frame;
@@ -148,7 +178,7 @@ export function roundToolRenderers(name: string, base: ToolRenderers = {}): Tool
       const row = getRow(theme, ctx);
       try {
         row.result = base.renderResult
-          ? base.renderResult(result, options, theme, { ...ctx, lastComponent: row.resultLast })
+          ? base.renderResult(result, options, delegateTheme(theme, "result", ctx.isError), { ...ctx, lastComponent: row.resultLast })
           : fallbackResult(result, theme, ctx);
         row.resultLast = row.result;
       } catch (error) {
