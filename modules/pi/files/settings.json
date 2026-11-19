@@ -16,7 +16,7 @@
   },
   "subagents": {
     "defaultModel": "openai/gpt-6.2-sol",
-    "defaultThinking": "medium",
+    "defaultThinking": "high",
     "modelScope": {
       "enforce": true,
       "allow": [
@@ -46,7 +46,7 @@
         "defaultContext": "fresh"
       },
       "reviewer": {
-        "model": "openai/gpt-6-astra",
+        "model": "openai/gpt-6.2-astra",
         "thinking": "xhigh"
       },
       "context-builder": {
@@ -65,7 +65,7 @@
         "defaultContext": "fresh"
       },
       "oracle": {
-        "model": "openai/gpt-6-astra",
+        "model": "openai/gpt-6.2-astra",
         "defaultContext": "fresh"
       },
       "delegate": {
