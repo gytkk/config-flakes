@@ -1,5 +1,5 @@
 import type { ExtensionAPI, MessageRendererWrapper, Theme, ThemeBg, ToolRenderers } from "@earendil-works/pi-coding-agent";
-import { Box, Container, Text, mixColors, rgbColor, truncateToWidth, visibleWidth, type Component, type TuiMouseEvent } from "@earendil-works/pi-tui";
+import { Box, Container, Text, colorToOkhsl, okhslColor, truncateToWidth, visibleWidth, type Component, type TuiMouseEvent } from "@earendil-works/pi-tui";
 
 type CallContext = Parameters<NonNullable<ToolRenderers["renderCall"]>>[2];
 type ToolResult = Parameters<NonNullable<ToolRenderers["renderResult"]>>[0];
@@ -27,8 +27,8 @@ class RoundedFrame implements Component {
     this.contentHeight = lines.length;
     if (!lines.length) return [];
     const bg = this.theme.getBgAnsi(this.background);
-    const contrast = this.theme.appearance === "light" ? rgbColor(0, 0, 0) : rgbColor(255, 255, 255);
-    const color = mixColors(this.theme.colors[this.background], contrast, 0.15, "srgb");
+    const { h, s, l } = colorToOkhsl(this.theme.colors[this.background]);
+    const color = okhslColor(h, Math.min(1, s * 1.25), l + (l < 0.5 ? 0.10 : -0.10));
     const border = (text: string) => this.theme.style(text, { fg: color });
     const style = bg + border("│");
     const cache = this.cache;
@@ -36,14 +36,16 @@ class RoundedFrame implements Component {
       && cache.source.every((line, index) => line === lines[index])) return cache.lines;
     // Restore the panel background after child resets without replacing deliberate inner backgrounds.
     const fill = (text: string) => this.theme.bg(this.background, text.replace(/\x1b\[(?:0|49)?m/g, `$&${bg}`));
+    const rule = (left: string, right: string) =>
+      border(left) + fill(border("─".repeat(innerWidth))) + border(right);
     const framed = !this.inset ? lines.map((line) => fill(truncateToWidth(line, width, ""))) : [
-      border(`╭${"─".repeat(innerWidth)}╮`),
+      rule("╭", "╮"),
       ...lines.map((line) => {
         const text = truncateToWidth(line, innerWidth, "");
         const padded = text + " ".repeat(Math.max(0, innerWidth - visibleWidth(text)));
-        return border("│") + fill(padded) + "\x1b[0m" + border("│");
+        return fill(border("│") + padded + "\x1b[0m" + border("│"));
       }),
-      border(`╰${"─".repeat(innerWidth)}╯`),
+      rule("╰", "╯"),
     ];
     this.cache = { width, style, source: lines.slice(), lines: framed };
     return framed;
