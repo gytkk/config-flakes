@@ -22,6 +22,13 @@ describe("OpenAI context windows", () => {
     }
   });
 
+  test("applies the configured compaction budget to the foreground model", () => {
+    expect(settings.compaction.modelOverrides).toHaveProperty(
+      [`${settings.defaultProvider}/${settings.defaultModel}`],
+      { reserveTokens: 54_400, keepRecentTokens: 40_000 },
+    );
+  });
+
   test("Pi loads the overrides without replacing other model metadata", async () => {
     const create = (modelsPath: string | null) => ModelRuntime.create({
       credentials: new InMemoryCredentialStore(),

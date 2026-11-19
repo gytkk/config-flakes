@@ -26,6 +26,9 @@ if [[ $actual != "$expected" ]]; then
 fi
 
 # Real copies keep Bun's module resolution inside the isolated test tree.
+# Artifact tests require a temp root without symlink ancestors (macOS aliases /var).
+export TMPDIR
+TMPDIR=$(realpath "${TMPDIR:-/tmp}")
 temporary=$(mktemp -d)
 trap 'rm -rf "$temporary"' EXIT
 export PI_TEST_MODULE_CONFIG="$temporary/module-config.json"

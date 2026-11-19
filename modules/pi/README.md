@@ -62,7 +62,7 @@ Apply Home Manager manually to install the extension, then restart Pi or run `/r
 
 `files/settings.json` currently selects:
 
-- `openai/gpt-6-astra` with `high` thinking
+- `openai/gpt-6.2-astra` with `medium` thinking
 - the generated `one-half-light` theme
 - a startup header without the loaded-resource listing
 - a local status border directly above the open `╰─` prompt; the editor reserves three columns for the prompt while output padding stays at one column
@@ -81,11 +81,11 @@ Apply Home Manager and restart Pi to load the patched package; `/reload` alone d
 
 ### Context windows and automatic compaction
 
-`modules/pi/files/models.json` sets the configured OpenAI chat models, `gpt-6-astra`, `gpt-6.2-sol`, and `gpt-6-luna`, to a 1,000,000-token (1M) context window through `modelOverrides`. The overrides apply to parent and subagent sessions without changing authentication, endpoints, output limits, or other catalog metadata. They do not change the separate Luna classifier or the unused legacy `openai-codex` provider. This is Pi-side metadata for usage and compaction calculations, not a server capability change; the endpoint must accept the larger context.
+`modules/pi/files/models.json` sets the configured OpenAI chat models, `gpt-6.2-astra`, `gpt-6.2-sol`, and `gpt-6-luna`, to a 1,000,000-token (1M) context window through `modelOverrides`. The overrides apply to parent and subagent sessions without changing authentication, endpoints, output limits, or other catalog metadata. They do not change the separate Luna classifier or the unused legacy `openai-codex` provider. This is Pi-side metadata for usage and compaction calculations, not a server capability change; the endpoint must accept the larger context.
 
 Apply Home Manager to install the model configuration, then restart Pi. The local statusline shows the effective limit beside context usage, for example `11% / 1M`, and updates when the selected model changes. It uses the current usage metadata or the selected model before usage is known, rather than a hard-coded 1M label.
 
-`compaction.modelOverrides` configures `openai/gpt-6-astra` to reserve 54,400 tokens and retain roughly 40,000 recent tokens without summarization. With the 1,000,000-token context window, automatic compaction starts above 945,600 tokens. Other models use Pi's default compaction budgets. The reserve remains an absolute token count.
+`compaction.modelOverrides` configures `openai/gpt-6.2-astra` to reserve 54,400 tokens and retain roughly 40,000 recent tokens without summarization. With the 1,000,000-token context window, automatic compaction starts above 945,600 tokens. Other models use Pi's default compaction budgets. The reserve remains an absolute token count.
 
 ### ChatGPT authentication
 

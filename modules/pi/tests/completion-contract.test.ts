@@ -93,7 +93,7 @@ test("installed 0.84 discovery, structured_output, acceptance and configured /ru
       assert.equal(worker.thinking, 'high');
       const reviewer = discovery.agents.find(a => a.name === 'reviewer');
       assert.equal(reviewer.source, 'user');
-      assert.equal(reviewer.model, 'openai/gpt-6-astra');
+      assert.equal(reviewer.model, 'openai/gpt-6.2-astra');
       assert.equal(reviewer.thinking, 'xhigh');
       assert.equal(worker.inheritProjectContext, true);
       assert.equal(worker.inheritGlobalContext, false);

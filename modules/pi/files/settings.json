@@ -8,7 +8,7 @@
   "compaction": {
     "enabled": true,
     "modelOverrides": {
-      "openai/gpt-6-astra": {
+      "openai/gpt-6.2-astra": {
         "reserveTokens": 54400,
         "keepRecentTokens": 40000
       }
