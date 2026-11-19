@@ -140,5 +140,47 @@ vim.api.nvim_exec_autocmds("InsertEnter", { buffer = 0 })
 vim.api.nvim_exec_autocmds("CursorMovedI", { buffer = 0 })
 vim.wait(minuet.config.debounce + 50)
 assert(requests == 2, "Markdown must not request automatic inline AI")
-print("PASS: merged LazyVim/Blink setup, automatic Nix inline rendering, Comment highlight, Tab acceptance, menu/snippet fallback, Markdown filtering, throttle, and manual AI")
+
+vim.api.nvim_exec_autocmds("InsertLeave", { buffer = 0 })
+vim.api.nvim_set_current_buf(vim.api.nvim_create_buf(true, false))
+local nixLine = "{ value = ; }"
+vim.api.nvim_buf_set_lines(0, 0, -1, false, { nixLine })
+vim.api.nvim_win_set_cursor(0, { 1, 10 })
+vim.bo.filetype = "nix"
+assert(vim.b.minuet_virtual_text_auto_trigger)
+
+local utils = require("minuet.utils")
+local getContext = utils.get_context
+local contextReads = 0
+utils.get_context = function(...)
+  contextReads = contextReads + 1
+  return getContext(...)
+end
+
+local maxAutomaticBufferBytes = 256 * 1024
+local function setBufferSize(bytes)
+  vim.api.nvim_buf_set_lines(0, 1, -1, false, { string.rep(" ", bytes - #nixLine - 2) })
+  assert(vim.api.nvim_buf_get_offset(0, 2) == bytes)
+end
+
+vim.api.nvim_exec_autocmds("InsertEnter", { buffer = 0 })
+setBufferSize(maxAutomaticBufferBytes + 1)
+vim.wait(minuet.config.debounce + 50)
+assert(requests == 2 and contextReads == 0, "Growing past the limit during debounce must skip context collection")
+vim.api.nvim_exec_autocmds("CursorMovedI", { buffer = 0 })
+vim.wait(minuet.config.debounce + 50)
+assert(requests == 2 and contextReads == 0, "Cursor movement over the limit must skip context collection")
+
+assert(opts.keymap["<C-y>"][1](fakeCmp))
+assert(requests == 3 and contextReads == 1, "Manual AI must still collect context and request on a large buffer")
+respond({ "42" })
+assert(virtualtext.action.is_visible(), "Manual AI must render on a large buffer")
+virtualtext.action.dismiss()
+
+setBufferSize(maxAutomaticBufferBytes)
+vim.api.nvim_exec_autocmds("CursorMovedI", { buffer = 0 })
+assert(vim.wait(500, function()
+  return requests == 4
+end) and contextReads == 2, "Shrinking to the limit must restore automatic AI")
+print("PASS: merged LazyVim/Blink setup, Nix inline rendering, Comment highlight, Tab acceptance, menu/snippet fallback, Markdown filtering, throttle, Minuet byte limit, and manual AI")
 vim.cmd("qa!")

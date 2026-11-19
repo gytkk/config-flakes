@@ -21,6 +21,8 @@ local automaticFiletypes = {
   "zsh",
 }
 
+local maxAutomaticBufferBytes = 256 * 1024
+
 -- The vim module sets an empty key path when no OpenAI key is declared; AI is manual-only there.
 local hasOpenAIKey = vim.g.openai_api_key_path ~= ""
 
@@ -41,6 +43,11 @@ return {
       enable_predicates = {
         function()
           return vim.tbl_contains(automaticFiletypes, vim.bo.filetype)
+        end,
+        function()
+          -- Minuet reads the whole buffer before trimming context. Check its byte count without reading text.
+          local bytes = vim.api.nvim_buf_get_offset(0, vim.api.nvim_buf_line_count(0))
+          return bytes >= 0 and bytes <= maxAutomaticBufferBytes
         end,
       },
       blink = { enable_auto_complete = false },
