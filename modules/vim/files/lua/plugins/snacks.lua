@@ -89,7 +89,7 @@ return {
     gh = { enabled = true },
     gitbrowse = { enabled = true },
     image = { enabled = true },
-    indent = { enabled = true },
+    indent = { enabled = true, animate = { enabled = false } },
     input = { enabled = true },
     lazygit = { enabled = true },
     quickfile = { enabled = true },
