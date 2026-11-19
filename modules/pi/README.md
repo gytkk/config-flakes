@@ -33,6 +33,8 @@ Nix combines the selected settings with the `extensionPackages` selection in `mo
 
 `/settings` and package commands modify only the local settings file. Changes to managed keys last until the next Home Manager application; edit the selected settings file for general defaults or `extensionPackages` in `modules/pi/default.nix` for package selection. Close Pi before applying Home Manager to avoid concurrent settings writes. Other mutable configuration still uses out-of-store symlinks. Generated instructions and common settings change only after applying Home Manager.
 
+This repository's `.pi/settings.json` is a relative symlink to `modules/pi/files/settings.json`, so trusted Pi sessions in this checkout use the shared settings as project overrides, including on Devsisters devices. Changes to the shared file are reflected through the link without copying; editing the project file also edits the shared source.
+
 ## Extension selection
 
 `modules/pi/default.nix` declares the managed global extension selection in two places:

@@ -1,5 +1,1 @@
-{
-  "defaultProvider": "openai",
-  "defaultModel": "gpt-6.2-astra",
-  "defaultThinkingLevel": "medium"
-}
+../modules/pi/files/settings.json
