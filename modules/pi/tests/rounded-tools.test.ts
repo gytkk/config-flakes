@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  createCodemodeExtension, createEditToolDefinition, createReadToolDefinition, initTheme,
+  createBashToolDefinition, createCodemodeExtension, createEditToolDefinition, createReadToolDefinition, initTheme,
   ToolExecutionComponent, type ToolRenderers, type ToolRendererResolver, type Theme, type ThemeColor,
 } from "@earendil-works/pi-coding-agent";
 import {
@@ -205,6 +205,24 @@ describe("rounded tool composition", () => {
     expect(row.render(50)).toEqual([]);
     row.updateResult(textResult("not displayed"));
     expect(row.render(50)).toEqual([]);
+  });
+
+  test("shows only the first bash command line until the block expands", () => {
+    const args = { command: "set -eu\r\nprintf second\nprintf third", timeout: 15 };
+    const row = tool("bash", args, createBashToolDefinition(process.cwd()));
+    const render = () => plain(row.render(60)).join("\n");
+    expect(render()).toContain("$ set -eu … (timeout 15s)");
+    expect(render()).not.toContain("printf");
+    row.updateResult(textResult("command output"));
+    expect(render()).toContain("command output");
+    const lines = row.render(60);
+    expect(row.handleMouse(click(60, lines.length, 5, 2))?.handled).toBe(true);
+    expect(render()).toContain("printf second");
+    expect(render()).toContain("printf third");
+    row.setExpanded(false);
+    expect(render()).not.toContain("printf");
+    row.setExpanded(true);
+    expect(render()).toContain("printf third");
   });
 
   test("preserves expansion through clicks and explicit keyboard-driven updates", () => {

@@ -339,7 +339,7 @@ Apply Home Manager to install the patched Pi package, then restart Pi. `/reload`
 
 ## Background shell tasks
 
-Pi's built-in `bash` handles short non-interactive commands, including its native exit and timeout results. `pi-interactive-shell` loads only its extension (bundled skills and prompts are excluded), without overriding `bash`. The managed `modules/pi/files/interactive-shell.json` selects `defer: true`, `toolSchema: "lean"`, and `jev.enabled: false`. Call `enable_interactive_shell` when needed; `interactive_shell` becomes available on the next turn. Reload, new, resumed, and forked sessions reset activation. A CLI tool allowlist must include both names.
+Pi's built-in `bash` handles short non-interactive commands, including its native exit and timeout results. A collapsed Bash tool block shows the first line of a multiline command followed by `…`. Press `Ctrl+O` to toggle tool expansion, or click a block with a result to toggle just that block. Command output keeps its usual preview. `pi-interactive-shell` loads only its extension (bundled skills and prompts are excluded), without overriding `bash`. The managed `modules/pi/files/interactive-shell.json` selects `defer: true`, `toolSchema: "lean"`, and `jev.enabled: false`. Call `enable_interactive_shell` when needed; `interactive_shell` becomes available on the next turn. Reload, new, resumed, and forked sessions reset activation. A CLI tool allowlist must include both names.
 
 For long builds and tests, use a raw command in background dispatch:
 

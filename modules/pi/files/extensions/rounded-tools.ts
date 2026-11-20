@@ -162,6 +162,10 @@ export function roundToolRenderers(name: string, base: ToolRenderers = {}): Tool
     renderShell: "self",
     renderCall(args, theme, ctx) {
       const row = getRow(theme, ctx);
+      if (name === "bash" && !ctx.expanded && typeof args?.command === "string") {
+        const newline = args.command.search(/[\r\n]/);
+        if (newline !== -1) args = { ...args, command: args.command.slice(0, newline) + " …" };
+      }
       try {
         row.call = base.renderCall
           ? base.renderCall(args, delegateTheme(theme, "call", ctx.isError), { ...ctx, lastComponent: row.callLast })
