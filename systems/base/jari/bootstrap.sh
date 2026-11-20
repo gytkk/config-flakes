@@ -3,8 +3,13 @@
 set -euo pipefail
 
 checkout=/workspace/repos/gytkk/config-flakes
-if [[ ! -e /etc/NIXOS || ! -e /etc/nixos/jari/default.nix || $(id -un) != jari ]]; then
-  echo 'Run as jari on a NixOS worker after jari has installed its worker module.' >&2
+if [[ ! -e /etc/NIXOS || $(id -un) != jari ]]; then
+  echo 'Run as jari on a NixOS worker.' >&2
+  exit 1
+fi
+# jari installs its module by renaming a root-only staging directory.
+if ! sudo test -f /etc/nixos/jari/default.nix; then
+  echo 'Cannot verify /etc/nixos/jari/default.nix with sudo. Check worker provisioning and sudo access.' >&2
   exit 1
 fi
 changes=$(git -C "$checkout" status --porcelain)
