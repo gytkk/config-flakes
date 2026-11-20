@@ -192,7 +192,7 @@ An isolated configuration with the managed profiles passed live foreground smoke
 
 ## Global prompts and skills
 
-The [Pi adapter](../../agent-core/adapters/pi.md#progress-and-final-replies) directs routine progress to the task widget. Written updates explain findings, decisions, and blockers. Final replies lead with the result and use Markdown emphasis and theme-colored headings to make important details easier to find.
+The [Pi adapter](../../agent-core/adapters/pi.md#progress-and-final-replies) directs routine progress to the task widget. Routine replies lead with the result and usually take one or two sentences. Pi adds detail when requested or needed to explain evidence, risks, or next steps.
 
 `agent-core/rules/OPERATING.md` is rendered as `APPEND_SYSTEM.md`, so it augments Pi's maintained system prompt instead of replacing it. The generated `AGENTS.md` combines shared methodology, prose guidance, and `agent-core/adapters/pi.md` without duplicating the operating invariants.
 
