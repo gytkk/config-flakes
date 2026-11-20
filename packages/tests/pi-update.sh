@@ -12,36 +12,8 @@ mkdir -p "$APP_DIR" "$TEST_ROOT/bin" "$FIXTURE_SOURCE/nix" "$FIXTURE_SOURCE/pack
 cp "$SOURCE_ROOT/apps/pi/"{update.sh,patches.nix,herdr-file-links.patch,message-renderer-wrappers.patch,image-paste-labels.patch} "$APP_DIR/"
 mkdir -p "$TEST_ROOT/scripts" "$FIXTURE_SOURCE/packages/coding-agent/src/utils"
 cp "$SOURCE_ROOT/scripts/check-nix-patches.sh" "$TEST_ROOT/scripts/"
-cat > "$FIXTURE_SOURCE/packages/coding-agent/src/utils/open-browser.ts" <<'EOF'
-import { spawn } from "node:child_process";
-
-/**
- * Open a URL or file in the platform browser/default handler.
- *
- * This intentionally never invokes a shell. On Windows, do not use
- * `cmd /c start`: cmd.exe re-parses metacharacters (&, |, ^, ...) before
- * `start` runs, which would make attacker-controlled URLs injectable.
- */
-export function openBrowser(target: string): void {
-	const [cmd, args]: [string, string[]] =
-		process.platform === "darwin"
-			? ["open", [target]]
-			: ["xdg-open", [target]];
-	spawn(cmd, args).unref();
-}
-EOF
-mkdir -p "$FIXTURE_SOURCE/packages/tui/src"
-cat > "$FIXTURE_SOURCE/packages/tui/src/tui-alt-screen.ts" <<'EOF'
-				this.selectionAnchor = undefined;
-				this.selectionFocus = undefined;
-				try {
-					this.openUrl(clickedUrl);
-				} catch {
-					// URL activation is best-effort.
-				}
-EOF
 # Populate old-side contexts; rendering behavior has separate runtime suites.
-for patch in message-renderer-wrappers.patch image-paste-labels.patch; do
+for patch in herdr-file-links.patch message-renderer-wrappers.patch image-paste-labels.patch; do
 uv run --no-project python - "$APP_DIR/$patch" "$FIXTURE_SOURCE" <<'PY'
 import pathlib
 import re

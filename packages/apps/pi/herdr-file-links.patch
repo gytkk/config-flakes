@@ -13,6 +13,31 @@ diff --git a/packages/tui/src/tui-alt-screen.ts b/packages/tui/src/tui-alt-scree
  				} catch {
  					// URL activation is best-effort.
  				}
+@@ -1583,7 +1586,10 @@
+ 	}
+ 
+ 	private applySelectionHighlight(text: string): string {
+-		let result = "\x1b[7m";
++		const herdr = !!process.env.HC_TERMINAL_ID || process.env.HERDR_ENV === "1";
++		// Herdr selections use white on teal, including inside styled output.
++		const highlight = herdr ? "\x1b[27;38;2;255;255;255;48;2;14;116;144m" : "\x1b[7m";
++		let result = highlight;
+ 		let index = 0;
+ 		while (index < text.length) {
+ 			const ansi = extractAnsiCode(text, index);
+@@ -1593,10 +1599,10 @@
+ 				continue;
+ 			}
+ 			result += ansi.code;
+-			if (ansi.code.endsWith("m")) result += "\x1b[7m";
++			if (ansi.code.endsWith("m")) result += highlight;
+ 			index += ansi.length;
+ 		}
+-		return `${result}\x1b[27m`;
++		return result + (herdr ? "\x1b[39;49m" : "\x1b[27m");
+ 	}
+ 
+ 	private applySelection(screen: string[], layout = this.currentLayout): string[] {
 diff --git a/packages/coding-agent/src/utils/open-browser.ts b/packages/coding-agent/src/utils/open-browser.ts
 --- a/packages/coding-agent/src/utils/open-browser.ts
 +++ b/packages/coding-agent/src/utils/open-browser.ts
