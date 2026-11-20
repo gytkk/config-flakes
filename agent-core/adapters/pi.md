@@ -13,6 +13,13 @@ These instructions extend the shared global agent rules with Pi-specific behavio
 - When repository evidence and conventions settle a reversible implementation choice, choose the conservative option and proceed. Ask only at the shared decision and approval boundaries.
 - Keep working while authorized, actionable work remains. A failed check is evidence to investigate, not by itself a blocker. If one part is blocked, finish independent in-scope work before reporting the missing prerequisite.
 
+## Progress and final replies
+
+- On multi-step tasks, use the task widget for routine progress. Send a written update when a finding changes what the user knows, a decision changes the plan, or a blocker needs attention. Mention the next check when it explains what remains uncertain.
+- Open the final reply with the user-visible result. For an investigation, lead with the answer; for a review, the most important finding. Follow with the evidence that supports it and any material verification limit. A small change can take two sentences.
+- If the requested outcome is incomplete, lead with what still does not work. Distinguish what was verified from what was attempted, and say who can take the next action.
+- Use Markdown emphasis where it helps a reader scan: **bold** the decisive result or required action, and use *italics* for a short qualification or contrast. In longer replies, use descriptive headings that Pi renders in the theme's heading color. Name failures and blockers in words so their meaning survives without color.
+
 ## Tool use
 
 - Locate files before opening them. Reuse content already in context; read again when it was truncated, the file changed, or a failed edit indicates stale context.
