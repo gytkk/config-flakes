@@ -39,13 +39,17 @@ export function watchGitStatus(
         signal: controller.signal, timeout: 5000, maxBuffer: 4 * 1024 * 1024,
       });
       if (controller.signal.aborted) return;
-      if (result.code !== 0 || result.killed || result.truncated) {
-        if (!result.killed && !result.truncated && /not a git repository/i.test(result.stderr)) {
+      if (result.killed || result.truncated) {
+        update("git!");
+        return;
+      }
+      if (result.code !== 0) {
+        if (/not a git repository/i.test(result.stderr)) {
           lastError = "";
           update("");
           return;
         }
-        throw new Error(result.killed || result.truncated ? "Git status exceeded its time or output limit" : result.stderr.trim() || `Git status exited with code ${result.code}`);
+        throw new Error(result.stderr.trim() || `Git status exited with code ${result.code}`);
       }
       lastError = "";
       update(formatGitStatus(result.stdout));

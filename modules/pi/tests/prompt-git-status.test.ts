@@ -77,20 +77,20 @@ test("polls without overlapping queries and cancels late results on disposal", a
   expect(warn).not.toHaveBeenCalled();
 });
 
-test("reports failures once, rejects partial output, and recovers on later polls", async () => {
-  let result = { ...ok(" M incomplete\0"), truncated: true };
+test.each(["killed", "truncated"])("keeps %s polls out of notifications and recovers counts", async (limit) => {
+  let result = { ...ok(" M incomplete\0"), [limit]: true };
   const update = mock(() => {});
   const warn = mock(() => {});
   const exec = mock(async () => result);
   cleanups.push(watchGitStatus(exec as never, "/workspace", update, warn, 5));
   await until(() => exec.mock.calls.length >= 3);
   expect(update).toHaveBeenLastCalledWith("git!");
-  expect(warn).toHaveBeenCalledTimes(1);
+  expect(warn).not.toHaveBeenCalled();
   result = ok("?? new\0");
   await until(() => update.mock.calls.some(args => args[0] === "?1"));
   result = { ...ok(), code: 128, stderr: "fatal: not a git repository (or any of the parent directories): .git" };
   await until(() => update.mock.calls.some(args => args[0] === ""));
-  expect(warn).toHaveBeenCalledTimes(1);
+  expect(warn).not.toHaveBeenCalled();
 });
 
 test("handles rejected Git execution without an unhandled rejection", async () => {
