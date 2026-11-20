@@ -340,8 +340,6 @@ home-manager switch --flake .#pylv-denim
 home-manager switch --flake .#pylv-onyx
 
 home-manager switch --flake .#pylv-sepia
-
-home-manager switch --flake .#devsisters-jari
 ```
 
 ### Build without switching
@@ -350,24 +348,30 @@ home-manager switch --flake .#devsisters-jari
 home-manager build --flake .#devsisters-macbook
 ```
 
-### jari workers
+## jari workers
 
-`devsisters-jari` installs the common tools, Zsh, Git, and Neovim configuration on a Devsisters jari worker (Ubuntu on aarch64, user `jari`). A worker keeps its disk across sleep and wake, but every new worker starts without Nix or dotfiles. Run the [bootstrap script](systems/base/jari/bootstrap.sh) once per worker; rerunning it is safe:
+The ARM64 NixOS worker boots from jari's image. Its `/etc/nixos/configuration.nix` imports the image's boot settings and jari's worker services. Add `nixosModules.devsisters-jari` to that configuration so manual rebuilds and jari updates include the same user profile. There is no separate Home Manager switch or replacement host flake.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/gytkk/config-flakes/main/systems/base/jari/bootstrap.sh | bash
-```
+1. After jari finishes provisioning, clone this repository at `/workspace/repos/gytkk/config-flakes` as `jari` and select the commit you want to run. Keep the checkout there: Neovim and theme links refer to it.
+2. From the checkout, run the [bootstrap script](systems/base/jari/bootstrap.sh):
 
-The script installs Nix when `/nix` is missing, clones this repository to `/workspace/repos/gytkk/config-flakes` unless that checkout already exists, builds `devsisters-jari`, and activates it. Existing unmanaged files such as the stock `~/.bashrc` and `~/.profile` are kept with a `.pre-home-manager` suffix. It needs no SSH key: the build rewrites the `git+ssh` URLs of the private flake inputs to HTTPS, which jari's GitHub credential helper in `/etc/gitconfig` authenticates. Afterwards, apply changes with `home-manager switch --flake .#devsisters-jari` from that checkout.
+   ```bash
+   bash systems/base/jari/bootstrap.sh
+   ```
 
-The checkout must stay at `/workspace/repos/gytkk/config-flakes`, where jari clones `gytkk/config-flakes`: the environment's `flakeDirectory` in `systems/inventory.nix` points there instead of the `~/development/config-flakes` default, and the Neovim and theme links resolve into it.
+   The script uses jari's GitHub credential helper over HTTPS to fetch the locked inputs. It registers the reviewed revision and its input sources under `/etc/nixos/devsisters-jari.nix`. It does not edit the host configuration or switch the running system.
+3. Once per worker, use `sudoedit /etc/nixos/configuration.nix` to add `./devsisters-jari.nix` to the existing imports. Keep `./image.nix`, `./jari`, the existing state version, and any owner settings. Apply with:
 
-The profile also imports [the Devsisters tools](systems/base/devsisters/tools.nix) shared with the macOS profile: `kc2aws`, `wg-cli`, Vault, the Databricks CLI, Pantry, Ruby, tenv, and the `sign` and `dlg` scripts. Home Manager writes `url."https://github.com/".insteadOf` for `ssh://git@github.com/` and `git@github.com:` to `~/.config/git/config`. Git remotes and private flake inputs on GitHub therefore use HTTPS with jari's credential helper, because a worker has no SSH key. Before the first activation that writes this rule, pass it through the environment: `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=url.https://github.com/.insteadOf GIT_CONFIG_VALUE_0=ssh://git@github.com/ home-manager switch --flake .#devsisters-jari`.
+   ```bash
+   sudo nixos-rebuild switch
+   ```
+
+To adopt a new configuration revision, update the checkout, rerun the bootstrap script, and rebuild. To stop managing this profile, remove only its import and rebuild. The profile shares [the Devsisters tools](systems/base/devsisters/tools.nix) with the macOS profile and preserves jari's GitHub credential helper.
 
 jari starts shell tabs as `/bin/bash -l` and agents read `~/.bashrc` without a login shell, so [the jari profile](systems/base/jari/home.nix) manages bash as the entry point:
 
 - Before the interactive guard, `~/.bashrc` reorders `PATH` to jari's `/opt/jari/bin`, `/opt/jari-cli/node_modules/.bin`, and `/opt/node/bin`, then the Nix profiles, then the rest. jari's pinned agent CLIs and its `gh` wrapper therefore keep precedence over Nix packages. Zsh applies the same order.
-- Agent commands do not get that order: they keep the fixed `PATH` of jari's worker service, and Claude Code's shell snapshot re-exports it after sourcing `~/.bashrc`. Activation therefore links the Devsisters commands listed in `agentCommands` (`databricks`, `kc2aws`, `vault`, `pantry`) from the Nix profile into `/usr/local/bin` with passwordless sudo, and removes links into the profile that are no longer listed. Add a command there when an agent or automation script on the worker must run it.
+- Agents keep the worker service's fixed `PATH`. The [NixOS module](systems/base/jari/nixos.nix) installs `databricks`, `kc2aws`, `vault`, and `pantry` in the system profile, which the worker service already searches.
 - Interactive login shells on a terminal hand over to the Nix-installed Zsh. A shell with `NO_ZSH_HANDOFF=1` in its environment stays in bash, and `bash` typed inside Zsh stays bash.
 - New agent sessions and new shell tabs pick up the change; running ones keep their environment.
 

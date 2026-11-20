@@ -45,9 +45,9 @@
     homeModules = [ ./base/devsisters/session-mining.nix ];
   };
 
-  # jari worker (Ubuntu on aarch64). jari clones repositories under /workspace/repos.
+  # The worker image owns the host configuration and imports our NixOS module.
   "devsisters-jari" = {
-    kind = "home-only";
+    kind = "nixos-module";
     system = "aarch64-linux";
     username = "jari";
     homeDirectory = "/home/jari";

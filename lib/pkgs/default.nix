@@ -53,7 +53,7 @@ let
       config.allowUnfree = true;
       overlays = commonOverlays;
     };
-    # Home Manager only (devsisters-jari); outputs.nix exposes no packages, apps, or checks for it.
+    # User profile for the NixOS worker (devsisters-jari); outputs.nix exposes no packages, apps, or checks for it.
     "aarch64-linux" = import nixpkgs {
       localSystem = "aarch64-linux";
       config.allowUnfree = true;

@@ -93,7 +93,7 @@ secrets/secrets.nix               # Agenix recipient configuration
 Defined in `systems/inventory.nix` (single source of truth). `kind` field determines build type:
 
 - **devsisters-macbook / devsisters-macstudio**: ARM64 macOS, devsisters base, home-only
-- **devsisters-jari**: ARM64 Linux (Ubuntu jari worker), jari base, home-only. Checkout at `/workspace/repos/gytkk/config-flakes`; see [jari workers](README.md#jari-workers) before changing its shell, PATH, tmux, or agent settings
+- **devsisters-jari**: ARM64 NixOS worker. The image owns the host configuration and imports this repository's user profile through `nixosModules.devsisters-jari`. Checkout at `/workspace/repos/gytkk/config-flakes`; see [jari workers](README.md#jari-workers) before changing its shell, PATH, tmux, or agent settings
 - **pylv-denim**: x86_64 Linux/WSL, pylv base, home-only
 - **pylv-sepia**: x86_64 Linux/NixOS server, pylv base (with Disko, agenix, copyparty)
 - **pylv-onyx**: x86_64 Linux/NixOS, pylv base (with niri, DankMaterialShell, user-managed OpenClaw)

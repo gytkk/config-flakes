@@ -83,5 +83,6 @@ in
   apps = defaultApps;
   inherit checks;
 
+  nixosModules.devsisters-jari = import ./systems/base/jari/nixos.nix { inherit inputs; };
   inherit homeConfigurations nixosConfigurations;
 }

@@ -3,8 +3,8 @@ let
   inventory = import ../systems/inventory.nix;
 in
 {
-  # Home Manager 환경 설정 (모든 호스트)
-  allEnvironments = inventory;
+  # Image-owned hosts consume a NixOS module instead of a standalone generation.
+  allEnvironments = lib.filterAttrs (_: config: config.kind != "nixos-module") inventory;
 
   # NixOS 호스트 설정
   allHosts = lib.filterAttrs (_: config: config.kind == "nixos") inventory;

@@ -1,62 +1,23 @@
 #!/usr/bin/env bash
-# Install the devsisters-jari Home Manager environment on a jari worker.
-#
-# A worker keeps its disk across sleep and wake, but a new worker starts empty,
-# so this script is safe to run again at any time. It needs no SSH key or age
-# identity: private flake inputs are fetched over HTTPS with jari's GitHub
-# credential helper.
+# Prepare the profile import. Only the worker owner edits the live NixOS configuration.
 set -euo pipefail
 
-repoUrl="https://github.com/gytkk/config-flakes"
-# Must match flakeDirectory of devsisters-jari in systems/inventory.nix:
-# out-of-store symlinks (Neovim Lua, themes) point into this checkout.
-checkout="/workspace/repos/gytkk/config-flakes"
-environment="devsisters-jari"
-nixBin="/nix/var/nix/profiles/default/bin"
+checkout=/workspace/repos/gytkk/config-flakes
+if [[ ! -e /etc/NIXOS || ! -e /etc/nixos/jari/default.nix || $(id -un) != jari ]]; then
+  echo 'Run as jari on a NixOS worker after jari has installed its worker module.' >&2
+  exit 1
+fi
+changes=$(git -C "$checkout" status --porcelain)
+if [[ -n $changes ]]; then
+  echo "Review and commit changes in $checkout before installing system configuration." >&2
+  exit 1
+fi
 
-main() {
-  if [ "$(id -un)" != "jari" ]; then
-    echo "bootstrap: run as the jari user (current: $(id -un))" >&2
-    exit 1
-  fi
-
-  if [ ! -e /nix ]; then
-    echo "bootstrap: installing Nix (multi-user daemon)"
-    curl --proto '=https' --tlsv1.2 -fsSL https://nixos.org/nix/install | sh -s -- --daemon --yes
-  fi
-
-  # Neither agent shells nor a just-installed Nix have it on PATH, and the
-  # worker's /etc/nix/nix.conf does not enable flakes. Activation checks USER.
-  export USER="${USER:-jari}"
-  export PATH="$PATH:$nixBin"
-  export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
-}extra-experimental-features = nix-command flakes"
-
-  if [ -e "$checkout/.git" ]; then
-    echo "bootstrap: using existing checkout $checkout ($(git -C "$checkout" rev-parse --abbrev-ref HEAD))"
-  else
-    echo "bootstrap: cloning $repoUrl to $checkout"
-    mkdir -p "$(dirname "$checkout")"
-    git clone "$repoUrl" "$checkout"
-  fi
-
-  # The private flake inputs use git+ssh URLs. Until the first activation writes
-  # the same rewrite to the Git config, pass it through the environment.
-  echo "bootstrap: building $environment"
-  generation="$(
-    GIT_CONFIG_COUNT=1 \
-      GIT_CONFIG_KEY_0='url.https://github.com/.insteadOf' \
-      GIT_CONFIG_VALUE_0='ssh://git@github.com/' \
-      nix build "$checkout#homeConfigurations.$environment.activationPackage" \
-      --extra-experimental-features 'nix-command flakes' \
-      --no-link --print-out-paths
-  )"
-
-  # The stock Ubuntu ~/.bashrc and ~/.profile are moved aside instead of aborting the switch.
-  echo "bootstrap: activating $generation"
-  HOME_MANAGER_BACKUP_EXT="${HOME_MANAGER_BACKUP_EXT:-pre-home-manager}" "$generation/activate"
-
-  echo "bootstrap: done. Open a new shell tab and start new agent sessions to pick up the environment."
-}
-
-main "$@"
+# Fetch private inputs as jari. Keep the reviewed sources in the import's store closure
+# so unattended root rebuilds need neither the mutable checkout nor its Git credentials.
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=url.https://github.com/.insteadOf GIT_CONFIG_VALUE_0=ssh://git@github.com/
+revision=$(git -C "$checkout" rev-parse HEAD)
+module=$(nix eval --impure --raw --expr "let flake = builtins.getFlake \"git+file://$checkout?rev=$revision\"; in import (flake.outPath + \"/systems/base/jari/worker-import.nix\") flake")
+sudo nix-store --realise "$module" --add-root /etc/nixos/devsisters-jari.nix >/dev/null
+printf '%s\n' 'Keep ./image.nix and ./jari in /etc/nixos/configuration.nix and add ./devsisters-jari.nix to imports.' \
+  'Then run: sudo nixos-rebuild switch'
