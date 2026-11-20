@@ -350,23 +350,50 @@ home-manager build --flake .#devsisters-macbook
 
 ## jari workers
 
-The ARM64 NixOS worker boots from jari's image. Its `/etc/nixos/configuration.nix` imports the image's boot settings and jari's worker services. Add `nixosModules.devsisters-jari` to that configuration so manual rebuilds and jari updates include the same user profile. There is no separate Home Manager switch or replacement host flake.
+The worker image owns `/etc/nixos/configuration.nix`, its NixOS 26.05 channel, and the jari service definitions. The [checkout profile import](systems/base/jari/checkout-profile.nix) adds Home Manager to that configuration. It follows the committed local `main` branch of `/workspace/repos/gytkk/config-flakes`; it does not select a host by EC2 hostname. Both manual rebuilds and jari updates use the same configuration. Enable this import only if everyone who can write the checkout or its Git configuration is trusted to supply code to root. Keep the checkout there for the Neovim and theme links.
 
-1. After jari finishes provisioning, clone this repository at `/workspace/repos/gytkk/config-flakes` as `jari` and select the commit you want to run. Keep the checkout there: Neovim and theme links refer to it.
-2. From the checkout, run the [bootstrap script](systems/base/jari/bootstrap.sh):
+### Test without switching
 
-   ```bash
-   bash systems/base/jari/bootstrap.sh
-   ```
+Run these commands as `jari` on the NixOS worker, with the checkout on `main` and the checkout profile import available in that commit. This test assumes the stock image's imports (`./image.nix` and `./jari`), with no previous profile import or host flake. It does not edit `/etc/nixos`, change root's Git configuration, or activate a generation.
 
-   The script uses jari's GitHub credential helper over HTTPS to fetch the locked inputs. It registers the reviewed revision and its input sources under `/etc/nixos/devsisters-jari.nix`. It does not edit the host configuration or switch the running system.
-3. Once per worker, use `sudoedit /etc/nixos/configuration.nix` to add `./devsisters-jari.nix` to the existing imports. Keep `./image.nix`, `./jari`, the existing state version, and any owner settings. Apply with:
+```bash
+checkout=/workspace/repos/gytkk/config-flakes
+candidate=$(mktemp -d)
+git -C "$checkout" show main:systems/base/jari/checkout-profile.nix > "$candidate/checkout-profile.nix"
+printf '%s\n' '{ imports = [ /etc/nixos/configuration.nix ./checkout-profile.nix ]; }' > "$candidate/configuration.nix"
+(
+  cd "$candidate" &&
+  sudo -H env -u SUDO_UID GIT_TERMINAL_PROMPT=0 \
+    GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0="$checkout" \
+    GIT_CONFIG_KEY_1=url.https://github.com/devsisters/.insteadOf GIT_CONFIG_VALUE_1=ssh://git@github.com/devsisters/ \
+    NIX_PATH="nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixos:nixos-config=$candidate/configuration.nix" \
+    nixos-rebuild build &&
+  ls -L result/etc/systemd/system/{jari-worker,home-manager-jari}.service
+)
+```
 
-   ```bash
-   sudo nixos-rebuild switch
-   ```
+Proceed only if the build succeeds and both unit files are present. The Git settings above apply only to this test: they allow root to read this particular user-owned Git repository and fetch the locked private Devsisters inputs over HTTPS with jari's installed credential helper.
 
-To adopt a new configuration revision, update the checkout, rerun the bootstrap script, and rebuild. To stop managing this profile, remove only its import and rebuild. The profile shares [the Devsisters tools](systems/base/devsisters/tools.nix) with the macOS profile and preserves jari's GitHub credential helper.
+### Adopt the tested profile
+
+Once per worker, make the tested Git settings available to unattended rebuilds and install the reviewed import. Use a new destination; do not overwrite an existing owner module.
+
+```bash
+sudo -H git config --global --add safe.directory "$checkout"
+sudo -H git config --global --add url.https://github.com/devsisters/.insteadOf ssh://git@github.com/devsisters/
+sudo install -m 0644 "$candidate/checkout-profile.nix" /etc/nixos/checkout-profile.nix
+```
+
+Use `sudoedit /etc/nixos/configuration.nix` to add `./checkout-profile.nix` to the existing imports. Keep the image, jari, state version, and owner settings. If migrating from the [snapshot bootstrap](systems/base/jari/bootstrap.sh), replace its `./devsisters-jari.nix` import rather than loading the profile twice. Sites that need to approve each profile revision independently can keep the snapshot workflow.
+
+From the checkout on `main`, the normal update is:
+
+```bash
+git pull --ff-only && sudo nixos-rebuild switch
+systemctl status home-manager-jari.service --no-pager
+```
+
+Home Manager should report `active (exited)`. Open a new terminal tab for the updated shell. To detach the profile, remove only its import and rebuild. No standalone Home Manager switch, per-revision bootstrap, or `--flake` argument is needed.
 
 jari starts shell tabs as `/bin/bash -l` and agents read `~/.bashrc` without a login shell, so [the jari profile](systems/base/jari/home.nix) manages bash as the entry point:
 
