@@ -3,6 +3,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 
 const SLOT_COUNT = 7;
 const REFRESH_MS = 15_000;
+const REPORT_TIMEOUT_MS = 2_000;
 const TTL_MS = 45_000;
 const UPDATE_MS = 250;
 const SOURCE = "pi:herdr-subagents";
@@ -104,6 +105,7 @@ export default function (pi: ExtensionAPI): void {
   let draining = false;
   let pending: string[] | undefined;
   let warned = false;
+  let previousTimeout = false;
   let subscriptions: Array<() => void> = [];
 
   const tokens = () => ({
@@ -180,7 +182,14 @@ export default function (pi: ExtensionAPI): void {
         pending = undefined;
         const args = snapshot;
         try {
-          const result = await pi.exec(terminal ? socket ? "env" : "herdr-core" : binary, args, { timeout: 2_000 });
+          const result = await pi.exec(terminal ? socket ? "env" : "herdr-core" : binary, args, { timeout: REPORT_TIMEOUT_MS });
+          if (result.killed && !result.truncated) {
+            const retrySilently = active && !previousTimeout && !text(result.stderr);
+            previousTimeout = true;
+            if (retrySilently) continue;
+            throw new Error(text(result.stderr) || `metadata update timed out after ${REPORT_TIMEOUT_MS} ms`);
+          }
+          previousTimeout = false;
           if (result.code !== 0 || result.killed) {
             throw new Error(text(result.stderr) || `Herdr exited with code ${result.code}`);
           }

@@ -368,6 +368,29 @@ describe("Herdr extension reporting", () => {
     expect(reportTokens(harness.execCalls.at(-1)!.args).subagent_1).toBeNull();
   });
 
+  test("tolerates isolated metadata timeouts but warns on consecutive timeouts or a failed final clear", async () => {
+    let killed = true;
+    const notifications: string[] = [];
+    const harness = fakePi(async () => ({ code: 0, killed, stderr: "" }));
+    harness.install();
+    await startTui(harness, notifications);
+    expect(notifications).toEqual([]);
+    killed = false;
+    await harness.emit("agent_end");
+    killed = true;
+    await harness.emit("agent_end");
+    expect(notifications).toEqual([]);
+    await harness.emit("agent_end");
+    await harness.emit("agent_end");
+    const warning = "Herdr subagents: metadata update timed out after 2000 ms";
+    expect(notifications).toEqual([warning]);
+    killed = false;
+    await harness.emit("agent_end");
+    killed = true;
+    await harness.emit("session_shutdown");
+    expect(notifications).toEqual([warning, warning]);
+  });
+
   test("warns once for repeated failures and warns again after a successful retry", async () => {
     let shouldFail = true;
     const notifications: string[] = [];

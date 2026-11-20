@@ -242,7 +242,7 @@ Apply Home Manager and run `/reload` in Pi, or start a new Pi session inside Her
 
 The extension publishes display metadata only from the parent interactive Pi session inside Herdr. Completed, failed, interrupted, and detached foreground children disappear from the list. Session shutdown clears its tokens; active metadata expires after 45 seconds without refresh if Pi crashes. At most seven children fit in Herdr's 16-line layout. Larger groups show the first six children and an overflow count. Clicking any child line focuses the parent pane.
 
-The progress payload and slash events follow `pi-subagents` 0.84.0. Review this integration when updating that package. It does not import the package's internal modules or modify its execution behavior. Herdr failures produce a warning and leave Pi running.
+The progress payload and slash events follow `pi-subagents` 0.84.0. Review this integration when updating that package. It does not import the package's internal modules or modify its execution behavior. If a metadata update times out without an error message, Pi waits for the next update before warning. Consecutive timeouts, a timeout during shutdown, and other command errors produce a warning without interrupting Pi.
 
 Home Manager installs the extension. After applying the configuration, run `/reload` in Pi and `herdr server reload-config` for the [Herdr sidebar layout](../herdr/README.md#subagents). For a foreground smoke test, run `/run scout List the top-level files without changing anything` inside a Herdr Pi pane and verify that the child appears, updates, and disappears when finished. Run `bash modules/pi/tests/run.sh herdr-subagents.test.ts` for the isolated event and metadata tests.
 
