@@ -291,7 +291,7 @@ The behavior comes from `packages/apps/pi/image-paste-labels.patch`. Close Pi, a
 
 The directory badge blends a pale mint tint into the theme background; its text and Git colors retain their theme-derived contrast. The model badge keeps its separate theme-derived tint.
 
-Git counts use unstaged (`*`), staged (`+`), and untracked (`?`) files. The watcher polls every two seconds after the previous query finishes, counts individual untracked files, and treats merge conflicts as unresolved work. If a query exceeds its time or output limit, the status line shows `git!` without a notification and retries on the next poll. Other Git errors still produce a warning. Shutdown and reload cancel pending work.
+Git counts use unstaged (`*`), staged (`+`), and untracked (`?`) files. The watcher waits five seconds after each query finishes before starting the next one, counts individual untracked files, and treats merge conflicts as unresolved work. If a query exceeds its time or output limit, the status line shows `git!` without a notification and retries on the next poll. Other Git errors still produce a warning. Shutdown and reload cancel pending work.
 
 Fast mode and CodexBar retrieval remain independent status providers. The renderer consumes `codex-fast-mode` and `subscription-usage` through Pi's footer data provider and excludes them from aggregate extension statuses. It also works without either provider. The prompt border omits Lens's `LSP Inactive` status while retaining active and failed LSP statuses. Authentication, quota refresh/failure/stale handling, request payloads, child exclusion, and saved fast-mode toggles remain provider-owned.
 

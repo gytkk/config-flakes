@@ -28,7 +28,7 @@ export function watchGitStatus(
   cwd: string,
   update: (status: string) => void,
   warn: (message: string) => void,
-  intervalMs = 2000,
+  intervalMs = 5000,
 ): () => void {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
