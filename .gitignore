@@ -8,6 +8,9 @@ result-*
 # Codex critic runtime outputs
 .ai/
 
+# Cloudflare
+.cloudflare/
+
 # OMP settings write lock (resolved symlink target)
 /modules/omp/files/config.yml.lock
 
