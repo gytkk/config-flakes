@@ -127,6 +127,8 @@ in
       initContent =
         let
           earlyInit = lib.mkOrder 500 ''
+            ${builtins.readFile ./herdr-environment.zsh}
+
             # Load Nix if not ready
             if [[ ! $(command -v nix) && -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]]; then
               source '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'

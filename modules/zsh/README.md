@@ -19,6 +19,8 @@ This module configures Zsh, a Starship prompt, shell aliases, and tool integrati
 - **Tab Completion**: Enhanced completion system
 - **History Management**: 10,000 command history with deduplication and sharing
 
+A shell launched directly by Herdr Core clears inherited Herdr TUI pane variables so Pi reports to the Core terminal. A shell inside a nested Herdr TUI keeps its pane identity.
+
 ### Theme and appearance
 
 - **Starship**: `~/.config/starship.toml` links to the selected `themes/exports/starship/<theme-id>.toml` in the checkout
