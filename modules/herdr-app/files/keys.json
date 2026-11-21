@@ -2,8 +2,8 @@
   "global": {
     "cmd-[": "agent.prev",
     "cmd-]": "agent.next",
-    "alt-[": "space.prev",
-    "alt-]": "space.next",
+    "alt-[": "agent.prev",
+    "alt-]": "agent.next",
     "cmd-k": "space.prev",
     "cmd-j": "space.next",
     "alt-up": "space.prev",
