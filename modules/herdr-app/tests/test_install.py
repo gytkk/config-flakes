@@ -130,6 +130,14 @@ class InstallTests(unittest.TestCase):
             installer.install(ROOT / "files", home, copy_settings=True)
             self.assertEqual(settings.read_bytes(), expected)
             self.assertFalse(settings.is_symlink())
+            bindings = json.loads((home / "keys.json").read_text())["global"]
+            for key, action in {
+                "alt-h": "tab.prev",
+                "alt-j": "space.next",
+                "alt-k": "space.prev",
+                "alt-l": "tab.next",
+            }.items():
+                self.assertEqual(bindings[key], action)
             self.assertEqual(json.loads(settings.read_text())["colors"]["cursor"], "#0891B2")
             backup = home / "settings.json.home-manager.bak"
             self.assertEqual(backup.read_text(), original)
