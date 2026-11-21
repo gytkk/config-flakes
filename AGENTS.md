@@ -7,7 +7,6 @@ This is the `gytkk/config-flakes` repository: configuration and shared coding-ag
 - Worktrees are allowed. Configuration runtime checkout paths default to `~/development/config-flakes`, independently of the evaluation checkout. Before applying Home Manager or NixOS configuration from a worktree, set the environment's `flakeDirectory` in `systems/inventory.nix` or apply from the main checkout.
 - Keep environment composition in `systems/`: shared Home Manager defaults and profiles in `systems/base/`, NixOS host composition in `systems/hosts/`, and environment definitions in `systems/inventory.nix`. Reusable modules, libraries, packages, themes, and secrets remain at the repository root.
 - Application and hardware source, checks, and project instructions belong in the [separate repositories](README.md#config-flakes). Read the target repository's instructions and run its checks there; this repository owns configuration and host integration, not those projects' implementation.
-- Before changing OpenClaw resources or their paths, read [OpenClaw task routing](modules/openclaw/README.md#task-routing-across-repositories). Its independent workspace instructions, skills, and automation runbooks live outside this repository; shared coding-agent resources in `agent-core/` are not their replacement.
 - Commit completed, validated task changes unless the user requests otherwise. Do not push unless explicitly requested.
 
 For documentation changes, run `uv run --no-project scripts/check-paths.py` from the repository root; it checks `README.md` and `AGENTS.md`. Check additional changed Markdown files separately by passing their paths explicitly, since explicit arguments replace the default document list. Inline code paths must be repository-root-relative; the checker does not resolve project-relative code paths or validate anchors. Follow the affected subsystem's README for any additional checks. See [README.md](README.md) for repository navigation.
@@ -96,7 +95,7 @@ Defined in `systems/inventory.nix` (single source of truth). `kind` field determ
 - **devsisters-jari**: ARM64 NixOS worker. The image owns the host configuration and imports this repository's user profile through `nixosModules.devsisters-jari`. Checkout at `/workspace/repos/gytkk/config-flakes`; see [jari workers](README.md#jari-workers) before changing its shell, PATH, tmux, or agent settings
 - **pylv-denim**: x86_64 Linux/WSL, pylv base, home-only
 - **pylv-sepia**: x86_64 Linux/NixOS server, pylv base (with Disko, agenix, copyparty)
-- **pylv-onyx**: x86_64 Linux/NixOS, pylv base (with niri, DankMaterialShell, user-managed OpenClaw)
+- **pylv-onyx**: x86_64 Linux/NixOS, pylv base (with niri, DankMaterialShell)
 
 #### Base System
 
@@ -110,7 +109,7 @@ Defined in `systems/inventory.nix` (single source of truth). `kind` field determ
 
 Each module in `modules/` manages a specific tool. **When modifying settings for any tool, look in the corresponding module directory first.** `agent-core/` owns canonical agent instructions and shared skills. Runtime modules consume generated outputs and must not reimplement render or selection logic.
 
-Common NixOS modules live under `modules/nixos`; host-specific NixOS input modules and values live in `systems/hosts/<name>/configuration.nix`. `modules/openclaw` keeps the NixOS and Home Manager integration for the user-managed OpenClaw install. It does not own the OpenClaw package, mutable state, or user service.
+Common NixOS modules live under `modules/nixos`; host-specific NixOS input modules and values live in `systems/hosts/<name>/configuration.nix`.
 
 For theme-backed apps, prefer the canonical theme pipeline under `themes/` over app-local theme copies:
 
@@ -173,7 +172,6 @@ AI 코딩 에이전트 설정을 변경할 때 공통 지침, runtime adapter, s
 - **Claude Code** (`modules/claude/`): `gytkk` marketplace의 원본은 `modules/claude/marketplace/`다. 공통 prompt는 agent-core output을 사용하고 shared skill은 CLI global copy로 설치한다. Plugin과 marketplace 목록은 [Claude README](modules/claude/README.md)에서 확인한다.
 - **Codex CLI** (`modules/codex/`): 기본 설정은 `files/config.toml`에서 관리하고 최종 instruction은 agent-core output을 사용한다. Skill은 Pi와 `~/.agents/skills`를 공유한다.
 - **Pi** (`modules/pi/`): Settings와 extension은 module에서 관리하고 최종 instruction은 agent-core output을 사용한다. Skill은 Codex와 native pool을 공유한다.
-- **OpenClaw** (`modules/openclaw/`): Nix는 실행 경로와 service drop-in 등 host integration을 관리한다. OpenClaw의 지침, skill, plugin, 세션 기록은 코딩 에이전트와 독립적으로 관리한다. 기존 호스트에서 공통 연동을 해제할 때는 [OpenClaw README](modules/openclaw/README.md#removing-the-shared-agent-integration)를 읽는다. Mutable `openclaw.json`, workspace, auth/session state는 Nix가 소유하지 않는다.
 
 ### Package Management
 

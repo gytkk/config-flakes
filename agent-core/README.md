@@ -192,7 +192,7 @@ Runtime module은 `render.nix`가 만든 immutable tree에서 필요한 파일�
 
 ## Skill 설치와 복구
 
-OpenClaw는 공통 지침과 skill 설치 대상에 포함하지 않는다. 기존 integration과 session recorder의 제거 절차는 [OpenClaw migration](../modules/openclaw/README.md#removing-the-shared-agent-integration)을 따른다. 기존 설치 파일, ownership 기록과 backup은 자동 삭제하지 않는다. OpenClaw target을 포함한 이전 설치 영수증을 복구하려면 해당 영수증을 생성한 이전 installer revision을 사용한다.
+OpenClaw는 공통 지침과 skill 설치 대상에 포함하지 않는다. 기존 설치 파일, ownership 기록과 backup은 자동 삭제하지 않는다. OpenClaw target을 포함한 이전 설치 영수증을 복구하려면 해당 영수증을 생성한 이전 installer revision을 사용한다.
 
 정상 운영에서는 사용자가 Home Manager/NixOS switch를 실행하면 활성 agent 전체의 skill이 함께 설치되거나 갱신된다. 각 외부 source의 최신 full SHA는 한 작업에서 한 번 결정하여 모든 target에 공통으로 사용한다. 성공한 switch 뒤에 별도 설치 명령은 필요하지 않다. 직접 연결 명령을 실행하는 방식은 격리 probe, 복구와 명시적 SHA 재현에 사용한다. 이 명령에는 Node, npm, Git와 network 접근이 필요하다. Activation은 `XDG_STATE_HOME`을 Home Manager의 `xdg.stateHome`으로 설정하므로 직접 설치와 복구에도 같은 값을 사용한다. 아래 예시는 기본값이며 `xdg.stateHome`을 변경했다면 그 경로를 지정한다. 다음 `probe`는 임시 HOME에서 설치를 검증하고, 기존 host의 skill이나 credential을 변경하지 않는다. 영수증 파일은 새 경로여야 한다.
 

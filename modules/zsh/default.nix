@@ -4,13 +4,11 @@
   pkgs,
   themeExports,
   isWSL ? false,
-  osConfig ? null,
   ...
 }:
 
 let
   cfg = config.modules.zsh;
-  isPylvOnyx = osConfig != null && (osConfig.networking.hostName or null) == "pylv-onyx";
   locale = if isWSL then "C.UTF-8" else "en_US.UTF-8";
   nixCommandTiming = pkgs.writeShellScriptBin "nix-command-timing" ''
     exec ${pkgs.python3}/bin/python ${./nix-command-timing.py} "$@"
@@ -234,26 +232,10 @@ in
             fi
           '';
 
-          openclawCompletion = lib.mkIf isPylvOnyx (
-            lib.mkOrder 1100 ''
-              # OpenClaw completion is managed declaratively here so the CLI's
-              # one-shot installer does not get reverted by Home Manager.
-              if command -v openclaw > /dev/null; then
-                local_openclaw_completion_cache="$HOME/.openclaw/completions/openclaw.zsh"
-                if [[ ! -r "$local_openclaw_completion_cache" ]]; then
-                  openclaw completion --write-state >/dev/null 2>&1 || true
-                fi
-                # OpenClaw Completion
-                [[ -r "$local_openclaw_completion_cache" ]] && source "$local_openclaw_completion_cache"
-                unset local_openclaw_completion_cache
-              fi
-            ''
-          );
         in
         lib.mkMerge [
           earlyInit
           zshConfig
-          openclawCompletion
         ];
     };
 

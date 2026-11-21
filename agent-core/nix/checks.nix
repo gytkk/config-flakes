@@ -58,8 +58,6 @@ let
       onyx = nixosConfigurations.pylv-onyx.config;
       onyxHomeFiles = onyx.home-manager.users.gytkk.home.file;
       onyxSkillActivation = onyx.home-manager.users.gytkk.home.activation.installAgentSkills;
-      onyxOpenClawSystemdDropInMaterialization =
-        onyx.home-manager.users.gytkk.home.activation.materializeOpenClawSystemdDropIn.data;
       linuxMatches = [
         (lib.hasInfix "install --apply --target shared --target claude" onyxSkillActivation.data)
         (!(lib.hasInfix "--target openclaw" onyxSkillActivation.data))
@@ -84,8 +82,6 @@ let
         (
           !(builtins.hasAttr "systemd/user/openclaw-gateway.service.d/20-nix-runtime.conf" onyx.home-manager.users.gytkk.xdg.configFile)
         )
-        (lib.hasInfix "/home/gytkk/.config/systemd/user/openclaw-gateway.service.d/20-nix-runtime.conf" onyxOpenClawSystemdDropInMaterialization)
-        (lib.hasInfix "install -D -m 0644" onyxOpenClawSystemdDropInMaterialization)
         (!(builtins.hasAttr "codex/skills" onyx.environment.etc))
       ];
     in

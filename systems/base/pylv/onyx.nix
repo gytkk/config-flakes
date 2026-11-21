@@ -11,10 +11,7 @@
   imports = (lib.optional (!hasSystemNiriConfig) inputs.niri.homeModules.config) ++ [
     inputs.dms.homeModules.dank-material-shell
     inputs.dms.homeModules.niri
-    ../../../modules/openclaw/home.nix
   ];
-
-  modules.openclaw.enable = true;
 
   # DankMaterialShell
   programs.dank-material-shell = {

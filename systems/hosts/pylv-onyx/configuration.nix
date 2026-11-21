@@ -10,14 +10,8 @@
     inputs.niri.nixosModules.niri
     inputs.dms.nixosModules.dank-material-shell
     ./hardware-configuration.nix
-    ../../../modules/openclaw
     ../../../modules/nixos
   ];
-
-  modules.openclaw = {
-    enable = true;
-    lanInterface = "wlo1";
-  };
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.graceful = true;
