@@ -24,7 +24,6 @@ let
   ];
   deployMachineRecipients = adminRecipients ++ [ devsisters-macbook ];
   sepiaRecipients = adminRecipients ++ [ pylv-sepia ];
-  onyxRecipients = adminRecipients ++ [ pylv-onyx ];
   devsistersRecipients = adminRecipients ++ devsistersHosts;
   allEnvironmentRecipients = adminRecipients ++ allHosts ++ devsistersHosts;
 in
@@ -42,9 +41,6 @@ in
 
   # Cloudflare Tunnel token for pylv-sepia
   "cloudflare-tunnel-sepia-token.age".publicKeys = sepiaRecipients;
-
-  # Discord bot token for openclaw
-  "discord-bot-token.age".publicKeys = onyxRecipients;
 
   # Databricks OTEL token (devsisters environments only)
   "databricks-token.age".publicKeys = devsistersRecipients;
