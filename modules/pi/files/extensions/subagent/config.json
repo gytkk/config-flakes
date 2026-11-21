@@ -1,5 +1,6 @@
 {
   "asyncByDefault": false,
+  "timeoutMs": 7200000,
   "forceTopLevelAsync": false,
   "autoResume": false,
   "disabledFeatures": ["workflow-scripts"],
