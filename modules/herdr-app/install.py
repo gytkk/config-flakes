@@ -62,9 +62,11 @@ def install(source: Path, home: Path, *, copy_settings: bool = False) -> None:
     if not isinstance(current, dict) or any(not isinstance(section, dict) for section in current.values()):
         raise ValueError(f"Expected keybinding section objects in {keys_path}")
     layout = status_layout(home)
-    settings_content = (source / "settings.json").read_bytes() if copy_settings else None
-    if settings_content is not None:
-        json.loads(settings_content)
+    settings_content = None
+    if copy_settings:
+        settings = json.loads((source / "settings.json").read_text())
+        settings["zoom"] = 1.0
+        settings_content = (json.dumps(settings, indent=2) + "\n").encode()
     for section, bindings in managed.items():
         current.setdefault(section, {}).update(bindings)
     # Install the action's mod before publishing the shortcut that opens it.

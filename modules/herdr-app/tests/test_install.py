@@ -126,9 +126,11 @@ class InstallTests(unittest.TestCase):
             settings = home / "settings.json"
             original = '{"zoom": 1.2}\n'
             settings.write_text(original)
-            expected = (ROOT / "files/settings.json").read_bytes()
+            shared = json.loads((ROOT / "files/settings.json").read_text())
+            self.assertEqual(shared["zoom"], 0.9)
+            expected = {**shared, "zoom": 1.0}
             installer.install(ROOT / "files", home, copy_settings=True)
-            self.assertEqual(settings.read_bytes(), expected)
+            self.assertEqual(json.loads(settings.read_text()), expected)
             self.assertFalse(settings.is_symlink())
             bindings = json.loads((home / "keys.json").read_text())["global"]
             for key, action in {
@@ -147,7 +149,7 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(backup.read_text(), original)
             settings.unlink()
             installer.install(ROOT / "files", home, copy_settings=True)
-            self.assertEqual(settings.read_bytes(), expected)
+            self.assertEqual(json.loads(settings.read_text()), expected)
 
     def test_invalid_keys_leave_existing_mod_and_configuration_untouched(self):
         with tempfile.TemporaryDirectory() as directory:
