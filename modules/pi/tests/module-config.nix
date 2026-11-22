@@ -19,6 +19,8 @@ let
   evaluate =
     {
       herdrEnabled ? true,
+      recorderEnabled ? false,
+      recordPi ? true,
       pi ? { },
     }:
     let
@@ -42,6 +44,10 @@ let
           }
           // pi;
           modules.herdr.enable = herdrEnabled;
+          modules.agentSessionRecord = {
+            enable = recorderEnabled;
+            agents.pi.enable = recordPi;
+          };
           lib.file.mkOutOfStoreSymlink = path: path;
         };
         flakeDirectory = "/checkout";
@@ -69,6 +75,11 @@ let
 in
 {
   enabled = evaluate { };
+  recording = evaluate { recorderEnabled = true; };
+  piRecordingOff = evaluate {
+    recorderEnabled = true;
+    recordPi = false;
+  };
   disabled = evaluate { herdrEnabled = false; };
   devsisters = evaluate { pi.settingsFile = devsistersSettings; };
   # A jari worker: its own pinned Pi, started with jari-worker.service's fixed environment.

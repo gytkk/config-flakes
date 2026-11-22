@@ -38,7 +38,7 @@ class AgentSessionRecordTest(unittest.TestCase):
         self.home = self.root / "home"
         self.state = self.root / "state"
         self.archive = self.root / "archive"
-        self.fixtures = self.root / "fixtures"
+        self.fixtures = self.home / '.claude/projects/fixture'
         self.fake_ssh_dir = self.root / "fake-ssh-bin"
         self.fake_rsync_dir = self.root / "fake-rsync-bin"
         self.observation = self.root / "transport-observation"
@@ -287,8 +287,106 @@ raise SystemExit(1)
             {"received", "accepted"},
         )
 
+    def test_claude_rejects_unrelated_paths_and_symlinks(self) -> None:
+        recorder = Recorder(get_provider("claude"), self.environment())
+        outside = self.root / "session.jsonl"
+        self.write_json(outside, {"sessionId": "session", "type": "user"})
+        project = self.home / ".claude/projects/other"
+        project.mkdir(parents=True)
+        alias = project / outside.name
+        alias.symlink_to(outside)
+        wrong = project / "unrelated.jsonl"
+        self.write_json(wrong, {"sessionId": "unrelated", "type": "user"})
+        for path in (outside, alias, wrong):
+            recorder.process_payload(self.payload("invalid", "session", path))
+        self.assertEqual(list(self.archive.rglob("*.meta.json")), [])
+
+    def test_claude_late_transcript_and_persistent_miss(self) -> None:
+        from threading import Timer
+
+        project = self.home / ".claude/projects/project"
+        transcript = project / "delayed.jsonl"
+        recorder = Recorder(get_provider("claude"), self.environment())
+        timer = Timer(
+            0.1,
+            self.write_jsonl,
+            args=(transcript, {"sessionId": "delayed", "type": "user"}),
+        )
+        timer.start()
+        try:
+            recorder.process_payload(self.payload("late", "delayed", transcript))
+        finally:
+            timer.join()
+        self.find_meta("delayed")
+        recorder.process_payload(
+            self.payload("miss", "missing", project / "missing.jsonl")
+        )
+        self.assertEqual(
+            json.loads(
+                (recorder.attempt_dir / "hooks.jsonl").read_text().splitlines()[-1]
+            )["status"],
+            "failed",
+        )
+        empty = self.fixtures / "ephemeral.json"
+        self.write_json(empty, {"session_id": "ephemeral", "transcript_path": ""})
+        recorder.process_payload(empty)
+        self.assertEqual(
+            json.loads(
+                (recorder.attempt_dir / "hooks.jsonl").read_text().splitlines()[-1]
+            )["status"],
+            "skipped_ephemeral",
+        )
+        self.assertEqual(len(list(self.archive.rglob("*.meta.json"))), 1)
+
+    def test_claude_hook_respects_verified_opt_out_even_with_existing_file(
+        self,
+    ) -> None:
+        import io
+
+        from agent_session_hook import run_hook
+
+        recorder = Recorder(get_provider("claude"), self.environment())
+        body = {
+            "session_id": "missing",
+            "transcript_path": str(self.fixtures / "missing.jsonl"),
+            "reason": "other",
+            "_verified_no_persistence": True,
+        }
+        for verified, existing, expected in [
+            (True, False, "skipped_ephemeral"),
+            (False, False, "failed"),
+            (True, True, "skipped_ephemeral"),
+            (False, True, "accepted"),
+        ]:
+            if existing:
+                self.write_jsonl(
+                    Path(body["transcript_path"]), {"sessionId": "missing"}
+                )
+            with (
+                patch.dict(os.environ, self.environment()),
+                patch(
+                    "agent_session_hook.claude_no_persistence", return_value=verified
+                ),
+                patch("agent_session_hook.sys.stdin") as stdin,
+                patch("agent_session_hook.subprocess.Popen") as launch,
+            ):
+                stdin.buffer = io.BytesIO(json.dumps(body).encode())
+                run_hook(recorder.provider, "session-end", ["worker"])
+                payload = Path(launch.call_args.args[0][-1])
+                try:
+                    recorder.process_payload(payload)
+                finally:
+                    payload.unlink()
+            attempts = (recorder.attempt_dir / "hooks.jsonl").read_text().splitlines()
+            self.assertEqual(json.loads(attempts[-1])["status"], expected)
+            if expected == "accepted":
+                self.find_meta("missing")
+            else:
+                self.assertEqual(list(self.archive.iterdir()), [])
+                self.assertEqual(list(recorder.queue_dir.iterdir()), [])
+
     def test_local_privacy_check_redacts_identifying_fields(self) -> None:
-        transcript = self.fixtures / "privacy.jsonl"
+        transcript = self.fixtures / "privacy-session.jsonl"
         self.write_jsonl(
             transcript,
             {
@@ -357,6 +455,148 @@ raise SystemExit(1)
                 time.sleep(0.05)
         else:
             self.fail("Codex hook did not produce an archived session")
+
+    def test_pi_queues_only_visible_sanitized_text_then_confirms_storage(self) -> None:
+        session = "pi-example"
+        filename = f"2026-08-22T00-00-00-000Z_{session}.jsonl"
+        transcript = self.home / ".pi/agent/sessions/--workspace--" / filename
+        self.write_jsonl(
+            transcript,
+            {
+                "type": "session",
+                "version": 3,
+                "id": session,
+                "timestamp": "2026-08-22T00:00:00.000Z",
+                "cwd": "/workspace",
+            },
+            {"type": "custom", "data": {"private": "not-for-archive"}},
+            {
+                "type": "message",
+                "message": {
+                    "role": "toolResult",
+                    "content": [{"type": "text", "text": "not-for-archive"}],
+                },
+            },
+            {
+                "type": "message",
+                "message": {
+                    "role": "user",
+                    "content": [
+                        {"type": "image", "data": "not-for-archive"},
+                        {"type": "text", "text": "question"},
+                    ],
+                },
+            },
+            {
+                "type": "message",
+                "message": {
+                    "role": "assistant",
+                    "content": [
+                        {"type": "thinking", "thinking": "not-for-archive"},
+                        {"type": "toolCall", "arguments": {"value": "not-for-archive"}},
+                        {
+                            "type": "text",
+                            "text": "Visible person@example.test sk-test-abcdefghijklmnopqrstuvwxyz",
+                            "textSignature": "not-for-archive",
+                        },
+                    ],
+                },
+            },
+        )
+        self.run_worker(
+            "pi", self.payload("pi", session, transcript), failed_transport=True
+        )
+        queued = next((self.state / "queue").iterdir())
+        snapshot = (queued / "transcript.jsonl").read_text()
+        self.assertIn("Visible [REDACTED_EMAIL] [REDACTED_SECRET]", snapshot)
+        self.assertIn("question", snapshot)
+        for private in ("not-for-archive", "person@example.test", "sk-test-"):
+            self.assertNotIn(private, snapshot)
+        Recorder(
+            get_provider("codex"),
+            {**self.environment(), "AGENT_SESSION_RECORD_ENABLED_PROVIDERS": "codex"},
+        ).replay_queue()
+        self.assertTrue(queued.exists())
+        self.assertEqual(list(self.archive.iterdir()), [])
+        self.run_worker("codex", sweep=True)
+        meta = json.loads(self.find_meta(session).read_text())
+        self.assertEqual(meta["provider"], "pi")
+        self.assertEqual(meta["capture_receipt"]["status"], "stored")
+        self.assertFalse(queued.exists())
+
+    def test_pi_rejects_wrong_header_private_and_partial_json(self) -> None:
+        recorder = Recorder(get_provider("pi"), self.environment())
+        path = self.home / ".pi/agent/sessions/--project--/stamp_example.jsonl"
+        for overrides, tail, expected in [
+            ({"id": "other"}, "", "failed"),
+            ({"private": True}, "", "skipped_ephemeral"),
+            ({}, "not-json", "failed"),
+        ]:
+            self.write_jsonl(
+                path,
+                {"type": "session", "id": "example", "version": 3, **overrides},
+                {
+                    "type": "message",
+                    "message": {"role": "user", "content": "partial text"},
+                },
+            )
+            with path.open("a") as handle:
+                handle.write(tail)
+            recorder.process_payload(self.payload("pi", "example", path))
+            self.assertEqual(
+                json.loads(
+                    (recorder.attempt_dir / "hooks.jsonl").read_text().splitlines()[-1]
+                )["status"],
+                expected,
+            )
+            for directory in (self.archive, recorder.queue_dir, recorder.tmp_dir):
+                self.assertEqual(list(directory.iterdir()), [])
+
+    def test_pi_manual_replay_honors_provider_setting_and_skips_private_headers(
+        self,
+    ) -> None:
+        root = self.home / ".pi/agent/sessions/--workspace--"
+        for session, private in [("visible", False), ("private", True)]:
+            self.write_jsonl(
+                root / f"stamp_{session}.jsonl",
+                {"type": "session", "id": session, "version": 3, "private": private},
+                {"type": "message", "message": {"role": "user", "content": "question"}},
+            )
+        env = self.replay_environment()
+        command = [UV, "run", "--script", str(SUBJECT), "replay", "pi"]
+        disabled = subprocess.run(
+            command,
+            env={**env, "AGENT_SESSION_RECORD_ENABLED_PROVIDERS": "claude"},
+            check=False, capture_output=True,
+        )
+        self.assertEqual(list(self.archive.iterdir()), [])
+        self.assertIn(b"disabled", disabled.stderr)
+        subprocess.run(command, env=env, check=True, capture_output=True)
+        self.find_meta("visible")
+        self.assertEqual(len(list(self.archive.rglob("*.meta.json"))), 1)
+
+    def test_pi_replay_reports_invalid_inputs_and_archives_valid_session(self) -> None:
+        root = self.home / ".pi/agent/sessions/--workspace--"
+        root.mkdir(parents=True)
+        (root / "a_bad.jsonl").write_text("private-marker: not json\n")
+        self.write_jsonl(
+            root / "b_old.jsonl", {"type": "session", "version": 2, "id": "old"}
+        )
+        valid = root / "z_valid.jsonl"
+        self.write_jsonl(valid, {"type": "session", "version": 3, "id": "valid"})
+        (root / "c_link.jsonl").symlink_to(valid)
+        result = subprocess.run(
+            [UV, "run", "--script", str(SUBJECT), "replay", "pi"],
+            env=self.replay_environment(),
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.find_meta("valid")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("skipped invalid: 3", result.stderr)
+        self.assertNotIn("private-marker", result.stderr + result.stdout)
+        self.assertEqual(len(list(self.archive.rglob("*.meta.json"))), 1)
 
     def test_cli_rejects_invalid_provider_event_pair(self) -> None:
         result = subprocess.run(
@@ -485,7 +725,7 @@ raise SystemExit(1)
     def test_claude_captures_identified_subagent(self) -> None:
         parent_id = "claude-parent"
         child_id = "child-agent"
-        parent = self.fixtures / "claude-project" / f"{parent_id}.jsonl"
+        parent = self.fixtures / f"{parent_id}.jsonl"
         child = parent.with_suffix("") / "subagents" / f"agent-{child_id}.jsonl"
         self.write_jsonl(
             parent,
@@ -517,7 +757,7 @@ raise SystemExit(1)
     def test_empty_claude_subagent_is_preserved_and_excluded(self) -> None:
         parent_id = "claude-empty-parent"
         child_id = "empty-child"
-        parent = self.fixtures / "claude-project" / f"{parent_id}.jsonl"
+        parent = self.fixtures / f"{parent_id}.jsonl"
         child = parent.with_suffix("") / "subagents" / f"agent-{child_id}.jsonl"
         self.write_jsonl(
             parent,
@@ -539,7 +779,7 @@ raise SystemExit(1)
         self.assertFalse(child_meta["eligible_for_derivation"])
 
     def test_scope_selects_a_physically_separate_archive(self) -> None:
-        transcript = self.fixtures / "organization.jsonl"
+        transcript = self.fixtures / "organization-session.jsonl"
         self.write_jsonl(
             transcript,
             {"type": "user", "timestamp": "2026-08-22T01:30:00Z"},
@@ -556,7 +796,7 @@ raise SystemExit(1)
         )
 
     def test_same_session_is_archived_independently_per_scope(self) -> None:
-        transcript = self.fixtures / "scope-transition.jsonl"
+        transcript = self.fixtures / "shared-session.jsonl"
         self.write_jsonl(
             transcript,
             {"type": "user", "timestamp": "2026-08-22T01:45:00Z"},
@@ -624,7 +864,7 @@ raise SystemExit(1)
         self.assertEqual(child_meta["parent_run_id"], parent_meta["run_id"])
 
     def test_failed_transport_is_queued_then_replayed_with_receipt(self) -> None:
-        transcript = self.fixtures / "durable.jsonl"
+        transcript = self.fixtures / "durable-claude.jsonl"
         self.write_jsonl(
             transcript, {"type": "user", "timestamp": "2026-08-22T03:00:00Z"}
         )
@@ -657,7 +897,7 @@ raise SystemExit(1)
         self.assertEqual(attempts, {"queued", "stored"})
 
     def test_transport_timeout_retains_queue_for_retry(self) -> None:
-        transcript = self.fixtures / "timeout.jsonl"
+        transcript = self.fixtures / "timeout-claude.jsonl"
         self.write_jsonl(
             transcript, {"type": "user", "timestamp": "2026-08-22T03:00:00Z"}
         )
@@ -683,7 +923,7 @@ raise SystemExit(1)
         self.assertEqual(meta["capture_receipt"]["status"], "stored")
 
     def test_stored_snapshots_append_to_scope_manifest_ledger(self) -> None:
-        transcript = self.fixtures / "ledger.jsonl"
+        transcript = self.fixtures / "ledger-session.jsonl"
         self.write_jsonl(
             transcript,
             {"type": "user", "timestamp": "2026-08-22T03:15:00Z"},
@@ -722,7 +962,7 @@ raise SystemExit(1)
         self.assertEqual(len({entry["transcript_fingerprint"] for entry in entries}), 2)
 
     def test_replay_quarantines_modified_queue_transcript(self) -> None:
-        transcript = self.fixtures / "modified.jsonl"
+        transcript = self.fixtures / "modified-queue.jsonl"
         self.write_jsonl(
             transcript, {"type": "user", "timestamp": "2026-08-22T03:30:00Z"}
         )
@@ -741,7 +981,7 @@ raise SystemExit(1)
         self.assertTrue(any((self.state / "quarantine").iterdir()))
 
     def test_concurrent_duplicate_hooks_publish_one_queue_item(self) -> None:
-        transcript = self.fixtures / "concurrent.jsonl"
+        transcript = self.fixtures / "concurrent-duplicate.jsonl"
         self.write_jsonl(
             transcript, {"type": "user", "timestamp": "2026-08-22T03:45:00Z"}
         )
@@ -784,7 +1024,7 @@ raise SystemExit(1)
         self.assertIsNone(meta["parent_run_id"])
 
     def test_unknown_claude_relationship_is_not_inferred(self) -> None:
-        transcript = self.fixtures / "orphan/subagents/agent-orphan.jsonl"
+        transcript = self.fixtures / "hook-session/subagents/agent-orphan-agent.jsonl"
         self.write_jsonl(
             transcript,
             {
@@ -927,7 +1167,7 @@ raise SystemExit(1)
                         self.assertEqual(list(self.archive.iterdir()), [])
 
     def test_empty_transcript_is_archived_but_excluded_from_derivation(self) -> None:
-        transcript = self.fixtures / "empty.jsonl"
+        transcript = self.fixtures / "empty-session.jsonl"
         transcript.touch()
 
         self.run_worker(
@@ -965,7 +1205,7 @@ raise SystemExit(1)
         self.assertEqual(meta["redaction_status"], "succeeded")
 
     def test_claude_provider_normalizes_hook_captures(self) -> None:
-        parent = self.fixtures / "claude-project/provider-parent.jsonl"
+        parent = self.fixtures / "provider-parent.jsonl"
         child = parent.with_suffix("") / "subagents/agent-provider-child.jsonl"
         self.write_jsonl(
             parent,

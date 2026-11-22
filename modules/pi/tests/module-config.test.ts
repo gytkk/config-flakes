@@ -79,6 +79,13 @@ test("local extension names map to their existing checkout source", () => {
   expect(sources[`${prefix}prompt-ui`]).toBe("/checkout/modules/pi/files/extensions/prompt-ui");
 });
 
+test("session recording requires both the recorder and the Pi provider", () => {
+  const key = `${prefix}session-record.ts`;
+  expect(moduleConfig.enabled.extensionSources[key]).toBeUndefined();
+  expect(moduleConfig.piRecordingOff.extensionSources[key]).toBeUndefined();
+  expect(moduleConfig.recording.extensionSources[key]).toBe("/checkout/modules/pi/files/extensions/session-record.ts");
+});
+
 test("disabling Herdr removes only its official state extension", () => {
   const { [`${prefix}herdr-agent-state.ts`]: state, ...otherSources } = moduleConfig.enabled.extensionSources;
   expect(state).toBeDefined();

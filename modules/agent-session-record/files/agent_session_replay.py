@@ -10,8 +10,8 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from agent_session_config import load_config
-from agent_session_provider import ProviderAdapter
+from agent_session_config import load_config, provider_enabled
+from agent_session_provider import ProviderAdapter, safe_id
 
 
 def run_replay(provider: ProviderAdapter, worker_command: Sequence[str]) -> int:
@@ -21,6 +21,10 @@ def run_replay(provider: ProviderAdapter, worker_command: Sequence[str]) -> int:
         config = load_config(home)
     except ValueError as error:
         sys.stderr.write(f"{error}\n")
+        return 1
+
+    if not provider_enabled(config, provider.name):
+        sys.stderr.write(f"recording disabled for {provider.name}\n")
         return 1
 
     state_dir = Path(
@@ -50,10 +54,14 @@ def run_replay(provider: ProviderAdapter, worker_command: Sequence[str]) -> int:
         return 0
 
     uploaded = 0
-    failed = 0
+    failed = sessions.count(None)
+    if failed:
+        sys.stderr.write(f"skipped invalid: {failed}\n")
     for session in sessions:
-        if not session.session_id:
-            sys.stderr.write(f"skip (missing session id): {session.transcript}\n")
+        if session is None:
+            continue
+        if not safe_id(session.session_id):
+            sys.stderr.write(f"skip (invalid session id): {session.transcript}\n")
             failed += 1
             continue
         state_file = (

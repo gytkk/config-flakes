@@ -51,6 +51,12 @@ let
     "herdr-subagents.ts" = mkSymlink "files/extensions/herdr-subagents.ts";
     "terminal-title-reset.ts" = mkSymlink "files/extensions/terminal-title-reset.ts";
   }
+  //
+    lib.optionalAttrs
+      (config.modules.agentSessionRecord.enable && config.modules.agentSessionRecord.agents.pi.enable)
+      {
+        "session-record.ts" = mkSymlink "files/extensions/session-record.ts";
+      }
   // lib.optionalAttrs config.modules.herdr.enable {
     "herdr-agent-state.ts" = "${pkgs.herdr.src}/src/integration/assets/pi/herdr-agent-state.ts";
   };

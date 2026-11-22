@@ -27,6 +27,8 @@ The module also installs:
 - `pkgs.pi`, unless `modules.pi.installPackage` is off ([jari workers](#jari-workers))
 - `pkgs.mcp-nixos`
 
+When session recording and its Pi provider are enabled, Home Manager installs a shutdown extension without changing Pi settings. It passes only the persisted session's ID and path to the [session recorder](../agent-session-record/README.md). `--no-session` and session files outside the default store are skipped.
+
 `settings.json` is a private, writable regular file on each machine, not a checkout symlink. The Devsisters MacBook, Mac Studio, and Jari worker select `modules/pi/files/settings-devsisters.json`. The parent and native subagents default to `claude-sdk/claude-opus-5-5`, subagents reject models outside the Claude SDK provider, and bundled external CLI runners are disabled. Sign in with Claude Code on each Devsisters device. Trusted project settings can override these device defaults. Jari keeps its worker-pinned Pi binary. Other devices use `modules/pi/files/settings.json`.
 
 Nix combines the selected settings with the `extensionPackages` selection in `modules/pi/default.nix` to generate the common settings. Home Manager merges these into the local file before linking the new generation; common top-level keys take precedence, while other local keys are preserved except the retired managed `powerline`, `bashMode`, and `workingVibe` keys. Pi creates `deviceId` on first ChatGPT login and keeps it, `trackingId`, and `lastChangelogVersion` local. The sync rejects these fields in common settings. Existing symlink installations are migrated without writing their local state back to the checkout.

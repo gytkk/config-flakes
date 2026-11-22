@@ -74,6 +74,8 @@ An isolated PTY smoke run of Claude Code 2.1.325 with a stub model renders the o
 
 Inside Herdr TUI, Claude's Agents entry displays native subagents with a status icon, name, and actual model, followed by an excerpt of the latest assistant message in the generated Herdr theme's secondary text color. Before a message is available, the activity can show the tool name. Thinking blocks, tool arguments, and tool results are not displayed. Children share the parent's pane; this integration does not create terminal panes.
 
+The `SessionEnd` recording hook starts the [session recorder](../agent-session-record/README.md) synchronously so it can identify a Linux `--no-session-persistence` invocation before the producer exits. A verified opt-out skips capture even if the transcript already exists. The recorder detaches the upload worker; the hook does not wait for an upload.
+
 [settings.json](files/settings.json) connects `SessionStart`, `SubagentStart`, `SubagentStop`, `PostToolUse` for `Agent`, and `SessionEnd` to `~/.local/bin/claude-herdr-subagents`. The [helper](files/herdr-subagents/index.ts) runs one watcher per Herdr TUI pane or Desktop core terminal and reads the current session's parent and child JSONL records. Background children continue to be watched after the parent finishes responding. Agent results supply task descriptions; until a result is available, the name is the agent type and a short ID. Resuming the same child updates its existing row.
 
 JSONL reads use the [shared reader](../herdr/README.md#shared-jsonl-reader) also used by the Codex watcher. Nix packages the watcher and shared file together; transcript discovery and state projection remain in the Claude module.

@@ -5,7 +5,9 @@
 
 from __future__ import annotations
 
+import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -13,8 +15,8 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from agent_session_config import load_config
-from agent_session_provider import PROVIDERS, ProviderAdapter
+from agent_session_config import load_config, provider_enabled
+from agent_session_provider import ProviderAdapter
 
 
 def warn(path: Path, command: str, message: str) -> None:
@@ -26,6 +28,48 @@ def warn(path: Path, command: str, message: str) -> None:
         path.chmod(0o600)
     except OSError:
         pass
+
+
+def claude_no_persistence(pid: int, proc: Path = Path("/proc")) -> bool:
+    """Recognize the managed native Linux CLI, never an arbitrary ancestor's flag."""
+    if sys.platform != "linux":
+        return False
+    try:
+        for _ in range(4):
+            if pid <= 1:
+                break
+            process = proc / str(pid)
+            exe = os.readlink(process / "exe")
+            with (process / "cmdline").open("rb") as handle:
+                data = handle.read(65537)
+            if len(data) > 65536 or not data.endswith(b"\0"):
+                return False
+            args = data[:-1].split(b"\0")[1:]
+            if re.fullmatch(
+                r"/nix/store/[a-z0-9]{32}-claude-code-[^/]+/bin/(?:claude|\.claude-wrapped)",
+                exe,
+            ):
+                for arg in args:
+                    if arg == b"--no-session-persistence":
+                        return True
+                    # Stop before a prompt, option value, delimiter, or unknown grammar.
+                    if arg not in (b"-p", b"--print", b"--verbose"):
+                        break
+                return False
+            if Path(exe).name not in {"sh", "bash", "dash", "zsh"} or args != [
+                b"-c",
+                b"~/.local/bin/agent-session-record hook claude session-end",
+            ]:
+                return False
+            parent = re.search(
+                r"^PPid:\s*(\d+)$", (process / "status").read_text(), re.MULTILINE
+            )
+            if not parent:
+                break
+            pid = int(parent[1])
+    except (OSError, ValueError):
+        pass
+    return False
 
 
 def run_hook(
@@ -55,14 +99,7 @@ def run_hook(
     )
     warning_log = state_dir / "warnings.log"
     debug_log = state_dir / "debug.log"
-    enabled_providers = {
-        name.strip()
-        for name in config.get(
-            "AGENT_SESSION_RECORD_ENABLED_PROVIDERS", ",".join(PROVIDERS)
-        ).split(",")
-        if name.strip()
-    }
-    if provider.name not in enabled_providers:
+    if not provider_enabled(config, provider.name):
         if contract.returns_continue:
             print('{"continue":true}')
         return 0
@@ -71,7 +108,18 @@ def run_hook(
         descriptor, raw_payload = tempfile.mkstemp(prefix=f"{command}.")
         payload = Path(raw_payload)
         with os.fdopen(descriptor, "wb") as handle:
-            handle.write(sys.stdin.buffer.read())
+            data = sys.stdin.buffer.read()
+            if provider.name == "claude":
+                try:
+                    body = json.loads(data)
+                except (ValueError, UnicodeError):
+                    body = None  # Let the worker record the invalid payload.
+                if isinstance(body, dict):
+                    body.pop("_verified_no_persistence", None)
+                    if claude_no_persistence(os.getppid()):
+                        body["_verified_no_persistence"] = True
+                    data = json.dumps(body).encode()
+            handle.write(data)
     except OSError as error:
         warn(warning_log, command, f"failed to persist hook payload: {error}")
         if contract.returns_continue:

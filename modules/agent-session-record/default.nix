@@ -26,7 +26,9 @@ let
     AGENT_SESSION_RECORD_SSH_BIN = "${pkgs.openssh}/bin";
     AGENT_SESSION_RECORD_RSYNC_BIN = "${pkgs.rsync}/bin";
     AGENT_SESSION_RECORD_ENABLED_PROVIDERS = lib.concatStringsSep "," (
-      lib.optional cfg.agents.claude.enable "claude" ++ lib.optional cfg.agents.codex.enable "codex"
+      lib.optional cfg.agents.claude.enable "claude"
+      ++ lib.optional cfg.agents.codex.enable "codex"
+      ++ lib.optional cfg.agents.pi.enable "pi"
     );
   };
   disabledHook = pkgs.writeTextFile {
@@ -73,6 +75,11 @@ in
         type = lib.types.bool;
         default = true;
         description = "Enable Claude session transcript upload hooks";
+      };
+      pi.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Enable Pi session transcript recording";
       };
       codex.enable = lib.mkOption {
         type = lib.types.bool;

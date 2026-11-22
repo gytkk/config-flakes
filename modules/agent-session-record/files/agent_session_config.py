@@ -4,7 +4,13 @@ import json
 import os
 import re
 import shlex
+from collections.abc import Mapping
 from pathlib import Path
+
+
+def provider_enabled(config: Mapping[str, str], name: str) -> bool:
+    enabled = config.get("AGENT_SESSION_RECORD_ENABLED_PROVIDERS")
+    return enabled is None or name in (item.strip() for item in enabled.split(","))
 
 
 def read_shell_config(path: Path) -> dict[str, str]:

@@ -25,11 +25,14 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-from agent_session_config import load_config
+from agent_session_config import load_config, provider_enabled
 from agent_session_provider import (
     PROVIDERS,
     CaptureContext,
     CaptureSource,
+    ClaudeProvider,
+    EphemeralSession,
+    PiProvider,
     ProviderAdapter,
     get_provider,
 )
@@ -401,14 +404,20 @@ class Recorder:
             return any(pattern.search(value) for pattern, _ in STRING_REDACTIONS)
         return False
 
-    def redact_transcript(self, source: Path, destination: Path) -> bool:
+    def redact_transcript(self, source: Path, destination: Path, pi_session_id: str | None = None) -> bool:
         try:
             with (
                 source.open(encoding="utf-8") as input_handle,
                 destination.open("w", encoding="utf-8") as output_handle,
             ):
+                if pi_session_id is not None:
+                    PiProvider.check_header(json.loads(input_handle.readline()), pi_session_id)
                 for line in input_handle:
                     value = json.loads(line)
+                    if pi_session_id is not None:
+                        value = PiProvider.visible_message(value)
+                        if value is None:
+                            continue
                     redacted = self.redact_value(value)
                     if self.contains_sensitive_string(redacted):
                         return False
@@ -422,7 +431,7 @@ class Recorder:
                     )
             destination.chmod(0o600)
             return True
-        except (OSError, json.JSONDecodeError, UnicodeError):
+        except (OSError, TypeError, ValueError):
             destination.unlink(missing_ok=True)
             return False
 
@@ -1012,7 +1021,12 @@ class Recorder:
         os.close(fd)
         redacted = Path(raw_redacted)
         try:
-            if not self.redact_transcript(transcript, redacted):
+            pi_session_id = (
+                manifest["provider_session_id"]
+                if manifest["provider"] == "pi"
+                else None
+            )
+            if not self.redact_transcript(transcript, redacted, pi_session_id):
                 manifest["redaction_status"] = "failed"
                 manifest["privacy_check_status"] = "failed"
                 manifest["redacted_transcript_fingerprint"] = None
@@ -1024,6 +1038,9 @@ class Recorder:
                 )
                 self.append_capture_attempt(manifest, "redaction_failed")
                 return False
+            if redacted.stat().st_size == 0:
+                manifest["summary_status"] = "excluded"
+                manifest["derivation_exclusion_reason"] = "empty_transcript"
             manifest["redaction_status"] = "succeeded"
             manifest["privacy_check_status"] = "succeeded"
             manifest["redaction_policy_version"] = REDACTION_POLICY_VERSION
@@ -1090,6 +1107,9 @@ class Recorder:
                         f"related capture failed for {related['provider']}/"
                         f"{related['provider_session_id']}"
                     )
+        except EphemeralSession:
+            self.append_hook_attempt(payload_path, "skipped_ephemeral")
+            return
         except (OSError, TimeoutError, TypeError, ValueError) as error:
             self.record_failed_hook(payload_path, str(error))
             return
@@ -1135,9 +1155,12 @@ class Recorder:
         }
         try:
             adapter = get_provider(provider)
-            captures = adapter.captures_from_event(
-                payload, self.capture_context
-            )
+            if isinstance(adapter, ClaudeProvider):
+                captures = adapter.direct_captures(
+                    payload, item / "transcript.jsonl", session_id
+                )
+            else:
+                captures = adapter.captures_from_event(payload, self.capture_context)
             if not captures:
                 raise ValueError(f"{provider} queue item did not produce a capture")
             migrated = self.build_manifest(captures[0], adapter)
@@ -1165,6 +1188,11 @@ class Recorder:
                     if not manifest:
                         self.warn(f"queued manifest is invalid JSON: {item.name}")
                         self.quarantine(item)
+                        continue
+                    queued_provider = manifest.get("provider", manifest.get("agent"))
+                    if isinstance(queued_provider, str) and not provider_enabled(
+                        self.capture_context.config, queued_provider
+                    ):
                         continue
                     if "failed" in (
                         manifest.get("redaction_status"),

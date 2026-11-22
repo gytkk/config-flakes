@@ -95,8 +95,7 @@
           {
             "type": "command",
             "command": "~/.local/bin/agent-session-record hook claude session-end",
-            "timeout": 10,
-            "async": true
+            "timeout": 10
           }
         ]
       }

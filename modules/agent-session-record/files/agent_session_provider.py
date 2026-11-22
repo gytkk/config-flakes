@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+import re
+import time
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
@@ -61,7 +63,7 @@ class ProviderAdapter(Protocol):
 
     def discover_replay_sessions(
         self, home: Path, config: dict[str, str]
-    ) -> list[ReplaySession]: ...
+    ) -> Sequence[ReplaySession | None]: ...
 
     def replay_payload(self, session: ReplaySession) -> dict[str, Any]: ...
 
@@ -108,6 +110,26 @@ def first_jsonl_value(path: Path, reader: Any) -> str:
     return ""
 
 
+def safe_id(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", value) is not None
+    )
+
+
+def session_parts(path: Path, root: Path) -> tuple[str, ...]:
+    if not path.is_absolute() or not path.is_relative_to(root):
+        raise ValueError("transcript outside session directory")
+    relative = path.relative_to(root)
+    if ".." in relative.parts or path.resolve() != root.resolve() / relative:
+        raise ValueError("unsafe transcript path")
+    return relative.parts
+
+
+class EphemeralSession(Exception):
+    """The runtime explicitly reports that it has no transcript."""
+
+
 class ClaudeProvider:
     name = "claude"
     hook_events = ("session-end",)
@@ -118,7 +140,7 @@ class ClaudeProvider:
         raise ValueError(f"unsupported Claude hook event: {event}")
 
     def sessions_dir(self, home: Path, config: dict[str, str]) -> Path:
-        return home / ".claude/projects"
+        return Path(config.get('CLAUDE_CONFIG_DIR', home / '.claude')) / 'projects'
 
     def captures_from_event(
         self, payload: Mapping[str, object], context: CaptureContext
@@ -127,15 +149,53 @@ class ClaudeProvider:
         transcript_raw = payload.get("transcript_path")
         if not isinstance(session_id, str) or not isinstance(transcript_raw, str):
             raise TypeError("Claude payload missing session_id or transcript_path")
+        if transcript_raw == "":
+            raise EphemeralSession
         transcript = Path(transcript_raw)
-        if not transcript.is_file():
-            raise ValueError(f"Claude transcript missing: {transcript}")
-        if "subagents" in transcript.parts:
+        root = self.sessions_dir(context.home, dict(context.config))
+        parts = session_parts(transcript, root)
+        child = (
+            len(parts) == 4
+            and parts[2] == "subagents"
+            and transcript.name.startswith("agent-")
+        )
+        if not safe_id(session_id) or not (
+            (len(parts) == 2 and transcript.name == f"{session_id}.jsonl")
+            or (
+                child
+                and transcript.suffix == ".jsonl"
+                and session_id in (parts[1], transcript.stem[6:])
+            )
+        ):
+            raise ValueError("Claude transcript does not match session")
+        if payload.get("_verified_no_persistence") is True:
+            raise EphemeralSession
+        for delay in (0, 0.1, 0.3, 0.6):
+            if delay:
+                time.sleep(delay)
+            if transcript.is_file():
+                break
+        else:
+            raise ValueError("Claude transcript still missing after retry")
+        session_parts(transcript, root)
+        if child:
             parent_id = first_jsonl_value(
                 transcript, lambda item: item.get("sessionId")
             )
             return [self._subagent_capture(transcript, parent_id)]
 
+        return self.direct_captures(payload, transcript, session_id, root)
+
+    def direct_captures(
+        self,
+        payload: Mapping[str, object],
+        transcript: Path,
+        session_id: str,
+        root: Path | None = None,
+    ) -> list[CaptureSource]:
+        recorded_id = first_jsonl_value(transcript, lambda item: item.get("sessionId"))
+        if not safe_id(session_id) or (recorded_id and recorded_id != session_id):
+            raise ValueError('Claude transcript session id mismatch')
         model = first_jsonl_value(
             transcript,
             lambda item: (
@@ -167,8 +227,12 @@ class ClaudeProvider:
             )
         ]
         subagents = transcript.with_suffix("") / "subagents"
-        if subagents.is_dir():
+        if root is not None and subagents.is_dir():
+            session_parts(subagents, root)
             for child in sorted(subagents.glob("agent-*.jsonl")):
+                session_parts(child, root)
+                if not child.is_file():
+                    raise ValueError('invalid Claude subagent file')
                 captures.append(self._subagent_capture(child, session_id))
         return captures
 
@@ -187,10 +251,13 @@ class ClaudeProvider:
         agent_id = first_jsonl_value(transcript, lambda item: item.get("agentId"))
         if not agent_id and transcript.stem.startswith("agent-"):
             agent_id = transcript.stem.removeprefix("agent-")
-        if not agent_id:
-            raise ValueError(
-                f"Claude subagent transcript missing agent id: {transcript}"
-            )
+        if not safe_id(agent_id) or transcript.stem != f"agent-{agent_id}":
+            raise ValueError("Claude subagent transcript id mismatch")
+        recorded_parent = first_jsonl_value(
+            transcript, lambda item: item.get("sessionId")
+        )
+        if recorded_parent and recorded_parent != transcript.parent.parent.name:
+            raise ValueError('Claude subagent transcript parent mismatch')
         relationship = "identified" if parent_session_id else "unknown"
         model = first_jsonl_value(
             transcript,
@@ -223,8 +290,8 @@ class ClaudeProvider:
         self, home: Path, config: dict[str, str]
     ) -> list[ReplaySession]:
         projects_dir = self.sessions_dir(home, config)
-        transcripts = set(projects_dir.rglob("*.jsonl"))
-        direct = {path for path in transcripts if "subagents" not in path.parts}
+        transcripts = projects_dir.glob("*/*/subagents/agent-*.jsonl")
+        direct = set(projects_dir.glob('*/*.jsonl'))
         orphans: set[Path] = set()
         for path in transcripts:
             if path.parent.name != "subagents" or not path.name.startswith("agent-"):
@@ -235,6 +302,9 @@ class ClaudeProvider:
 
         sessions: list[ReplaySession] = []
         for transcript in sorted(direct | orphans):
+            session_parts(transcript, projects_dir)
+            if not transcript.is_file():
+                continue
             objects = jsonl_objects(transcript)
             if transcript.parent.name == "subagents":
                 session_id = next(
@@ -445,7 +515,144 @@ class CodexProvider:
         }
 
 
+class PiProvider:
+    name = "pi"
+    hook_events = ("session-shutdown",)
+
+    def hook_contract(self, event: str) -> HookContract:
+        if event not in self.hook_events:
+            raise ValueError("unsupported Pi hook event")
+        return HookContract(mode="payload", returns_continue=False)
+
+    def sessions_dir(self, home: Path, config: dict[str, str]) -> Path:
+        return home / ".pi/agent/sessions"
+
+    def captures_from_event(
+        self, payload: Mapping[str, object], context: CaptureContext
+    ) -> list[CaptureSource]:
+        path = payload.get("transcript_path")
+        session_id = payload.get("session_id")
+        if path in (None, "") or payload.get("private", False) is not False:
+            raise EphemeralSession
+        if (
+            not isinstance(path, str)
+            or not isinstance(session_id, str)
+            or not safe_id(session_id)
+        ):
+            raise ValueError("invalid Pi session reference")
+        transcript = Path(path)
+        parts = session_parts(
+            transcript, self.sessions_dir(context.home, dict(context.config))
+        )
+        if (
+            len(parts) != 2
+            or not (parts[0].startswith("--") and parts[0].endswith("--"))
+            or transcript.name.partition("_")[2] != f"{session_id}.jsonl"
+            or not transcript.is_file()
+        ):
+            raise ValueError("invalid Pi session file")
+        self.check_header(first_record(transcript), session_id)
+        return [
+            CaptureSource(
+                session_id=session_id,
+                transcript=transcript,
+                cwd="",
+                hook_event_name="ManualReplay" if payload.get("hook_event_name") == "ManualReplay" else "session_shutdown",
+                source="session-shutdown",
+                provider_identity=session_id,
+                parent_identity=None,
+                relationship_status="direct",
+                model="",
+                agent_role="direct",
+                started_at="",
+                termination_status="snapshot",
+            )
+        ]
+
+    @staticmethod
+    def check_header(value: object, session_id: str) -> None:
+        if (
+            not isinstance(value, dict)
+            or value.get("type") != "session"
+            or value.get("version") != 3
+            or value.get("id") != session_id
+        ):
+            raise ValueError("invalid Pi session header")
+        if value.get("private", False) is not False:
+            raise EphemeralSession
+
+    @staticmethod
+    def visible_message(value: object) -> dict | None:
+        if not isinstance(value, dict) or value.get("type") == "session":
+            raise ValueError("invalid Pi session entry")
+        if value.get("type") != "message":
+            return None
+        message = value.get("message")
+        if not isinstance(message, dict):
+            raise TypeError("invalid Pi message")
+        role = message.get("role")
+        if role not in ("user", "assistant"):
+            return None
+        content = message.get("content")
+        if isinstance(content, str) and role == "user":
+            text = [content]
+        elif isinstance(content, list):
+            text = []
+            for block in content:
+                if not isinstance(block, dict) or not isinstance(
+                    block.get("type"), str
+                ):
+                    raise TypeError("invalid Pi content block")
+                if block["type"] == "text":
+                    if not isinstance(block.get("text"), str):
+                        raise ValueError("invalid Pi text block")
+                    text.append(block["text"])
+        else:
+            raise ValueError("invalid Pi message content")
+        return {"role": role, "content": text} if text else None
+
+    def discover_replay_sessions(
+        self, home: Path, config: dict[str, str]
+    ) -> list[ReplaySession | None]:
+        root = self.sessions_dir(home, config)
+        sessions: list[ReplaySession | None] = []
+        for path in sorted(root.glob("--*--/*_*.jsonl")):
+            session_id = path.stem.partition("_")[2]
+            try:
+                session_parts(path, root)
+                if not path.is_file() or not safe_id(session_id):
+                    raise ValueError("invalid Pi session file")
+                self.check_header(first_record(path), session_id)
+            except EphemeralSession:
+                continue
+            except (OSError, ValueError, RuntimeError):
+                sessions.append(None)
+                continue
+            sessions.append(ReplaySession(session_id, path, ""))
+        return sessions
+
+    def replay_payload(self, session: ReplaySession) -> dict[str, Any]:
+        return {
+            "session_id": session.session_id,
+            "transcript_path": str(session.transcript),
+            "hook_event_name": "ManualReplay",
+        }
+
+    def discover_captures(self, context: CaptureContext) -> list[CaptureSource]:
+        return [
+            capture
+            for session in self.discover_replay_sessions(
+                context.home, dict(context.config)
+            )
+            if session is not None
+            for capture in self.captures_from_event(
+                self.replay_payload(session), context
+            )
+        ]
+
+
 PROVIDERS: dict[str, ProviderAdapter] = {
+    "pi": PiProvider(),
     "claude": ClaudeProvider(),
     "codex": CodexProvider(),
 }
