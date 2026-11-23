@@ -10,6 +10,7 @@
     inputs.niri.nixosModules.niri
     inputs.dms.nixosModules.dank-material-shell
     ./hardware-configuration.nix
+    ./hindsight.nix
     ../../../modules/nixos
   ];
 

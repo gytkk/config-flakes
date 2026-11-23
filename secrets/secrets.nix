@@ -42,6 +42,9 @@ in
   # Cloudflare Tunnel token for pylv-sepia
   "cloudflare-tunnel-sepia-token.age".publicKeys = sepiaRecipients;
 
+  "hindsight-cloudflare-token.age".publicKeys = adminRecipients ++ [ pylv-onyx ];
+  "hindsight-api-env.age".publicKeys = adminRecipients ++ [ pylv-onyx ];
+
   # Databricks OTEL token (devsisters environments only)
   "databricks-token.age".publicKeys = devsistersRecipients;
 
