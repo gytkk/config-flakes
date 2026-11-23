@@ -1,0 +1,14 @@
+{
+  "serverMode": "self-hosted",
+  "apiUrl": "https://memory.example.invalid",
+  "disabled": true,
+  "harnesses": { "pi": { "disabled": true } },
+  "optInOnly": true,
+  "mapPathToBank": { "~/development/config-flakes": "gytkk-config-flakes" },
+  "retainSessions": false,
+  "gitIngest": "none",
+  "autoSeed": false,
+  "codebaseSurvey": false,
+  "autoUpdate": false,
+  "autoInject": "none"
+}

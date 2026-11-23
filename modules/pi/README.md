@@ -473,6 +473,16 @@ The RPIV test requires the exact selected package with its runtime dependencies;
 
 For an interactive smoke check, use a disposable directory: create and update todos, inspect `/todos` and collapse the widget at narrow width, evaluate a variable across two Python cells, register a log and read it after deleting its source. `/python reset` must clear the variable.
 
+## Hindsight pilot for config-flakes
+
+[The upstream Pi client](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/coding-agents) can query one self-hosted memory bank from multiple devices. Home Manager does not install this client or activate the [pilot configuration](files/hindsight-pilot.example.json). The pilot starts with manual tool use: no automatic prompt injection, transcript retention or historical import, Git ingestion, or repository survey. An explicit memory query or write still sends its input to the configured server.
+
+On each device, start from the example when preparing `~/.hindsight/coding-agent.json`. If that file already exists, review and merge settings instead of replacing it: other agents can use the same file. Replace the `.invalid` URL with your authenticated HTTPS endpoint, and map the actual checkout root on that device to the same `gytkk-config-flakes` bank. The LAN and Tailscale addresses can differ; the server and bank must be the same. Supply credentials through `HINDSIGHT_API_TOKEN` in the Pi process environment, not the checkout. `mapPathToBank` opts in the directory tree and associated worktrees; do not map a parent containing unrelated repositories.
+
+Once the server is ready, the upstream install command for the reviewed version is `npx @vectorize-io/hindsight-coding-agents@0.8.8 install pi --server self-hosted --api-url "$HINDSIGHT_API_URL"`. Set that variable to the same endpoint first. The installer registers an extension in the device's Pi settings and installs a companion skill; do not pass `--import-conversations`. Review the resulting client configuration before starting Pi. Set only `harnesses.pi.disabled` to `false` to enable the pilot, keeping the top-level `disabled` flag set for other agents. Restart Pi after changing the config. Set the Pi flag back to `true` and restart to turn it off; disabling does not delete bank data.
+
+For a two-device check, save a non-sensitive test decision explicitly on one device, retrieve it from the other, and check that the Hindsight tools are absent in a fresh Pi session started outside the opted-in checkout. Enabling automatic retention or importing existing transcripts is a separate decision.
+
 ## MCP integration
 
 Home Manager uses `pi mcp add` to add `nixos` and `context7` only if their names are missing. On the first switch from the old checkout symlink, activation copies its contents into a private regular file before adding servers. Keep `modules/pi/files/mcp.json` available for devices that have not switched yet. Existing entries, including Plane and device-specific settings, are preserved. Fresh devices do not get Plane automatically.
