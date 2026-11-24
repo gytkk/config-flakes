@@ -5,16 +5,6 @@
     },
     "context7": {
       "url": "https://mcp.context7.com/mcp"
-    },
-    "plane": {
-      "url": "https://plane-mcp.teamdev.ai/mcp",
-      "description": "Read and update work items, projects, states, and links in the devsisters Plane workspace (plane.teamdev.ai)",
-      "oauth": {
-        "clientId": "plane",
-        "callbackPort": 8181,
-        "authServerMetadataUrl": "https://auth.devsisters.cloud/auth/realms/devsisters/.well-known/openid-configuration",
-        "scope": "openid email profile offline_access"
-      }
     }
   }
 }

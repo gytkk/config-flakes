@@ -25,7 +25,7 @@ ln -s "$tmp/legacy" "$file"
 seed
 [[ ! -L $file ]]
 cmp "$file" "$tmp/legacy"
-pi mcp remove plane
+pi mcp remove context7
 cmp "$tmp/legacy" "$root/files/mcp.json"
 seed
 jq -e '.mcpServers | has("plane") | not' "$file" >/dev/null

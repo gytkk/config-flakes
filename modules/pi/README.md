@@ -496,7 +496,22 @@ pi mcp add docs --url https://example.com/mcp
 pi mcp remove docs
 ```
 
-Removing a shared server makes activation add it again on the next switch. Disable it in `/mcp` instead if you want it to stay off. For Plane on a new device, copy the `plane` entry from the legacy file into the device's `mcpServers` object: Pi's add command does not expose the OAuth metadata URL and scope.
+Removing a shared server makes activation add it again on the next switch. Disable it in `/mcp` instead if you want it to stay off. Plane is opt-in. On a device that needs it, add this entry to the `mcpServers` object in `~/.pi/agent/mcp.json`. Pi's add command does not expose the OAuth metadata URL and scope.
+
+```json
+{
+  "plane": {
+    "url": "https://plane-mcp.teamdev.ai/mcp",
+    "description": "Read and update work items, projects, states, and links in the devsisters Plane workspace (plane.teamdev.ai)",
+    "oauth": {
+      "clientId": "plane",
+      "callbackPort": 8181,
+      "authServerMetadataUrl": "https://auth.devsisters.cloud/auth/realms/devsisters/.well-known/openid-configuration",
+      "scope": "openid email profile offline_access"
+    }
+  }
+}
+```
 
 Pi connects enabled servers in the background at startup. With the default `codemode` exposure, the model discovers and calls tools on demand without loading every schema into the prompt. Discovery is on demand; the connections are not.
 
