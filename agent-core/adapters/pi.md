@@ -1,59 +1,37 @@
 # Pi-specific rules
 
-These instructions extend the shared global agent rules with Pi-specific behavior.
-
-## Runtime safety
-
-- Pi is not sandboxed by default. Tools, extensions, and commands run with the
-  current user's filesystem and network permissions.
-
 ## Execution discipline
 
-- Treat user-reported failures as evidence. Investigate their cause rather than rerunning a failing command solely to confirm the report.
-- When repository evidence and conventions settle a reversible implementation choice, choose the conservative option and proceed. Ask only at the shared decision and approval boundaries.
-- Keep working while authorized, actionable work remains. A failed check is evidence to investigate, not by itself a blocker. If one part is blocked, finish independent in-scope work before reporting the missing prerequisite.
+- Pi tools, extensions, and commands run with the user's filesystem and network permissions by default.
+- Treat a reported failure as evidence. Use the next check to distinguish possible causes. If a prerequisite is blocked, finish independent authorized work before reporting what remains.
 
 ## Progress and final replies
 
-- Use the task widget for routine progress. Interrupt with prose only for a material finding, a change of plan, or a decision the user needs to make.
-- Give the answer, result, or most important review finding first. For routine requests, default to one or two sentences: the result and, for changes, a brief verification note. If work is blocked, name what remains and who can unblock it.
-- Expand when the user asks for detail or needs evidence, risks, or trade-offs to act. Use headings or bullets only when they make distinct points easier to scan. Stop once the request is answered.
-
-## Tool use
-
-- Locate files before opening them. Reuse content already in context; read again when it was truncated, the file changed, or a failed edit indicates stale context.
-- For symbol definitions and references, use available LSP navigation and check references before changing an exported symbol. With Lens, use `lsp_navigation`'s schema (one-based positions) and `lens_diagnostics`; unavailable or unconfirmed is not clean. If the server or capability is unavailable, use targeted source inspection and report the limitation.
-- Lens rename requires an explicit refactoring request, preview review, and approval before `apply: true`. Apply requests fresh server edits, not byte-fixed preview tokens; re-preview after intervening changes. `codeAction` only lists actions, not the former resolve/preview/apply workflow. Use approved ordinary edits or an editor for code-action changes and AST replacements: `ast_grep_replace` is preview-only under the managed no-autofix policy. Keep AST paths explicit and bounded. Server commands and file moves require their own authorization.
-- Before using Lens in a project, check its effective mutation settings and scoped project configuration. Project overrides can re-enable formatting/autofix; report a conflicting policy before editing, rather than enabling it or treating machine defaults as enforcement. Keep automatic installation, formatting, fixes, tests, and startup scans off.
-- Follow the active Pi tool schemas and extension guidance. Enable an on-demand provider when needed; do not assume another harness's tool names, URI schemes, or rendering features exist in Pi.
-- Use native `bash` for short non-interactive commands. For long builds/tests or input-driven CLIs, call `enable_interactive_shell` then `interactive_shell`. Dispatch builds/tests with `mode: "dispatch"`, `background: true`, and `handsFree: { autoExitOnQuiet: false }`; judge success from actual process exit, not silence. Use monitor mode only for a concrete output/state condition; keep semantic supervision and output selection off.
-- Use shell completion notifications and retained output instead of polling or rerunning the command to recover its result. Inspect live output only for a concrete progress or failure question. Timeout, supervision cancellation, process exit, and process-tree termination are distinct: report only the state the package confirms. Running shell tasks survive `/reload`, not Pi shutdown or session replacement. Interactive-shell logs require explicit artifact registration; native bash retention keeps its provenance checks.
-- Shell support grants no new delegation authority. Use the subagent contract below for authorized delegation, not interactive-shell `spawn`, `/spawn`, or shell-launched agent CLIs as an alternate launcher. The exception is herdr-core's `hc`, only when the user explicitly asks for Herdr or `hc` for that task: follow `hc --skill` for mechanics, make `hc` that task's only launcher, and apply the subagent rules below to its children. These instructions are not a security sandbox.
+- Use the task widget for routine progress. Interrupt for a material finding, a plan change, or a decision the user needs to make.
+- Lead with the result. For routine changes, a sentence on the outcome and one on verification usually suffice. Include the evidence, trade-offs, or unresolved decision the user needs to act.
 
 ## Verification evidence
 
-- Choose a check that exercises the changed behavior, not just the edited text. For UI changes, inspect the affected web, TUI, or CLI surface through the available runtime or project tools. If it cannot run, use the narrowest available fallback and state what remains unverified.
-- Reuse tests that cover the affected path. Add a regression test for an uncovered bug; for other changes, add durable tests for plausible consumer-visible failures rather than wording, source layout, or implementation wiring.
-- Distinguish observed results from inference. A child report, successful edit, or clean LSP diagnostics does not by itself prove runtime behavior. Report the checks actually run and their limits; apply the shared stopping rule once completion conditions are met.
+- For a substantive implementation, identify one plausible way it could pass existing checks but fail the user's requirement. Run the smallest check that distinguishes that failure from correct behavior. Reuse an existing test if it exercises the case; add a regression test for an uncovered bug.
+- For UI changes, exercise the affected web, TUI, or CLI surface. When the intended check cannot run, use the closest available check and state what it leaves unverified. Distinguish observed behavior from inference, including when reporting a child's findings.
+- For a design that would be costly to reverse, suggest an independent review before implementation if an objection could change the decision. Only with explicit user authorization, give one fresh-context, read-only reviewer the requirement, proposed design, and relevant code. Ask for the strongest concrete objection, if any. Verify it before changing the plan.
+
+## Tool use
+
+- Reuse current file reads. For symbol navigation, prefer LSP and check references before changing an exported symbol. If LSP is unavailable, inspect call sites and report the coverage gap. Probe changed paths with `lens_diagnostics` when cached results are absent or stale.
+- Check Lens's effective project configuration before use. Keep automatic installation, formatting, fixes, tests, and startup scans off; report conflicting overrides before editing. Rename requires an explicit refactoring request, preview, and approval. Re-preview after intervening edits because apply requests fresh server edits. Keep AST paths bounded and replacements preview-only; use approved ordinary edits for replacements and listed code actions. Server commands and file moves require separate authorization.
+- Use native `bash` for short commands and `interactive_shell` for long builds/tests or input-driven CLIs. Dispatch builds/tests with `mode: "dispatch"`, `background: true`, and `handsFree: { autoExitOnQuiet: false }`. Use monitor mode only for a concrete output or state condition; keep semantic supervision and output selection off.
+- Use completion notifications and retained output rather than polling or rerunning. Inspect live output for a specific progress or failure question. Report process exit only when confirmed; silence, timeout, and supervision cancellation do not establish exit. Register interactive-shell logs explicitly when an artifact is needed.
+- Use the subagent tool for authorized delegation, not a shell-launched agent or shell `spawn`. Only when the user explicitly requests Herdr or `hc`, follow `hc --skill`, use `hc` as the sole launcher for that task, and apply the same child constraints.
 
 ## Pi skills
 
-- When authoring Pi skills, use `writing-for-agents` for instruction design and the installed Pi package's `docs/skills.md` for Pi format and discovery. Store canonical shared skills under `agent-core/skills/` and declare exposure in `agent-core/manifest.toml`.
-- Express required capabilities in shared skills; keep Pi packages, settings, extensions, and optional UI metadata in `modules/pi/`.
+- When authoring Pi skills, use `writing-for-agents` for instruction design and the installed Pi package's skills documentation for format and discovery. In config-flakes, shared skill sources and selections belong in `agent-core/`; Pi packages, settings, extensions, and optional UI metadata belong in `modules/pi/`.
 
 ## Subagent context
 
-- Scope the task inline before delegating. Keep a small, bounded edit or a question already answerable from loaded context in the parent; delegate only a distinct slice whose result can change the implementation or decision, or when the user explicitly requests it.
-
-- Within an authorized task, choose foreground or background execution and run independent children in parallel within the configured limits. Review and feedback follow-ups, including explicit native resume, may continue within that task's scope; expand requirements or authority only with approval. Workflow scripts, nested delegation, schedules, missions, and automatic resume on reload remain disabled.
-- Give concurrent implementation workers separate worktrees and exclusive edit ownership. Use one writer per checkout, integrate shared-file changes sequentially, and preserve unrelated work. Creating a worktree does not authorize deleting it or applying configuration from it.
-- Report and diagnose launch or runtime failures before proposing a bounded retry through the supported subagent tool. Follow the active tool's recovery rules; do not silently switch models, providers, or execution modes, or recreate a child through a shell command.
-- Use native completion notifications for background children rather than polling or waiting in a loop. Account for every child as completed, blocked, failed, or cancelled before final integration; a notification alone does not verify its result.
-- Before delegation, check that the role's required tools have providers loaded
-  in the child. Tool names alone do not load extensions. Report a
-  missing capability instead of changing execution mode after a failed launch.
-- For an authorized delegation, read `references/contracts.md` in the discovered `parallel-research-merge` skill directory and use the relevant contract branch. Reading this reference for an implementation worker does not select the parallel research workflow or authorize delegation. If the reference is unavailable, report the missing resource rather than guessing its contents.
-- Default to fresh context. Include the task contract and relevant operating constraints in the child request: fresh children do not automatically inherit the parent's global instructions, operating addendum, or skill catalog. Use forked context only when the parent transcript is essential and cannot be summarized safely.
-- When a child persists a substantial output artifact, prefer `file-only`
-  output and read only the needed portions. Use inline output for short results
-  or when no output path is available.
+- Keep bounded edits and questions answerable from loaded context in the parent. For authorized delegation, scope a distinct task inline and read `references/contracts.md` in the discovered `parallel-research-merge` skill directory. Use the applicable branch; if the reference is missing, report it. Reading the worker contract does not invoke a research workflow or authorize delegation.
+- Check required tool providers before launch. Use fresh context unless the parent transcript is essential and cannot be summarized safely. Pass the task contract and relevant constraints: fresh children do not automatically inherit the parent's full instructions or skill catalog.
+- Independent children may run in parallel within configured limits. Give concurrent writers separate worktrees and exclusive edit ownership; integrate shared-file changes sequentially. Worktree creation does not authorize deletion or applying its configuration.
+- Use native completion notifications for background children. Reconcile each child's outcome and verify its evidence before integration. Prefer `file-only` for substantial saved artifacts and inline output for short results or when no output path is available.
+- Report and diagnose launch or runtime failures before proposing a bounded retry under the tool's recovery rules. Do not silently switch models, providers, or execution mode. Native resume and feedback stay within the authorized task; wider scope requires approval. Workflow scripts, nested delegation, schedules, missions, and automatic resume on reload remain disabled.

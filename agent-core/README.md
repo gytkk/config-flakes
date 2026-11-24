@@ -173,6 +173,8 @@ skills/
 
 Pi는 operating invariant를 `APPEND_SYSTEM.md`로 분리한다. `AGENTS.md`에는 공통 agent rule, prose rule, Pi adapter만 포함한다. Skill은 Codex와 같은 native shared pool을 사용하며 `~/.pi/agent/skills`에 별도 복사본을 설치하지 않는다.
 
+[Pi adapter의 검증 지침](adapters/pi.md#verification-evidence)에 따라 Pi는 주요 구현 변경에서 기존 검사를 통과해도 사용자 요구를 충족하지 못할 수 있는 사례를 골라 직접 확인한다. 되돌리는 비용이 큰 설계라면 구현 전에 독립 검토를 제안할 수 있지만, 사용자가 명시적으로 승인한 경우에만 읽기 전용 reviewer를 실행한다.
+
 ## Nix 연결
 
 `agent-core/nix/package.nix`는 wheel에 manifest와 canonical resource를 포함한 Python application을 만든다. `agent-core/nix/render.nix`는 runtime 이름을 받아 build derivation 안에서 renderer를 실행한다.
