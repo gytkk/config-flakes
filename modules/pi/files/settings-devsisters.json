@@ -1,6 +1,6 @@
 {
   "theme": "one-half-light",
-  "defaultProvider": "claude-sdk",
+  "defaultProvider": "anthropic",
   "quietStartup": "header",
   "defaultModel": "claude-opus-5-5",
   "defaultThinkingLevel": "high",
@@ -9,18 +9,18 @@
     "enabled": true
   },
   "subagents": {
-    "defaultModel": "claude-sdk/claude-opus-5-5",
+    "defaultModel": "anthropic/claude-opus-5-5",
     "defaultThinking": "high",
     "modelScope": {
       "enforce": true,
       "strict": true,
       "allow": [
-        "claude-sdk/*"
+        "anthropic/*"
       ]
     },
     "agentOverrides": {
       "scout": {
-        "model": "claude-sdk/claude-sonnet-5-5",
+        "model": "anthropic/claude-sonnet-5-5",
         "tools": [
           "read",
           "grep",
@@ -31,7 +31,7 @@
         ]
       },
       "researcher": {
-        "model": "claude-sdk/claude-fable-5-2",
+        "model": "anthropic/claude-fable-5-2",
         "thinking": "low"
       },
       "worker": {
@@ -39,11 +39,11 @@
         "defaultContext": "fresh"
       },
       "reviewer": {
-        "model": "claude-sdk/claude-opus-5-5",
+        "model": "anthropic/claude-opus-5-5",
         "thinking": "xhigh"
       },
       "oracle": {
-        "model": "claude-sdk/claude-fable-5-2",
+        "model": "anthropic/claude-fable-5-2",
         "defaultContext": "fresh"
       },
       "delegate": {

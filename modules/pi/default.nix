@@ -70,7 +70,6 @@ let
       skills = [ ];
       prompts = [ ];
     }
-    "npm:pi-claude-subscription@0.2.4"
     {
       source = "./packages/hindsight";
       skills = [ "skills/hindsight-coding-agent/SKILL.md" ];
