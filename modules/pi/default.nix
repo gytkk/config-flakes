@@ -42,7 +42,7 @@ let
                 "const lanDispatcher = null;"
             }
             function applyBankConfig(cfg, resolvedId, directory) {
-              return withSepiaToken(resolveBankConfig(cfg, resolvedId, directory), ${builtins.toJSON cfg.hindsightTokenFile});
+              return withSepiaToken(resolveBankConfig(cfg, resolvedId, directory), ${builtins.toJSON cfg.hindsightTokenFile}, ${builtins.toJSON cfg.hindsightLoopback});
             }
             function resolveBankConfig(cfg, resolvedId, directory) {''}
       '';
@@ -150,6 +150,7 @@ in
       default = null;
       description = "Cloudflare Access service credentials for the public Hindsight route.";
     };
+    hindsightLoopback = lib.mkEnableOption "loopback routing on the Hindsight server";
     hindsightLan = lib.mkEnableOption "direct LAN resolution for the Hindsight Pi client on denim";
     hindsightTokenFile = lib.mkOption {
       type = lib.types.nullOr lib.types.str;

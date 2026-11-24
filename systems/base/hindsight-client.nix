@@ -9,7 +9,6 @@
 let
   localServer = osConfig != null && osConfig.networking.hostName == "pylv-sepia";
   publicClient = !isWSL && !localServer;
-  clientFile = if localServer then "hindsight-client-local.json" else "hindsight-client.json";
   secrets = (if osConfig == null then config else osConfig).age.secrets;
 in
 {
@@ -24,9 +23,10 @@ in
     };
   };
   home.file.".hindsight/coding-agent.json" = lib.mkIf config.modules.pi.enable {
-    source = config.lib.file.mkOutOfStoreSymlink "${flakeDirectory}/modules/pi/files/${clientFile}";
+    source = config.lib.file.mkOutOfStoreSymlink "${flakeDirectory}/modules/pi/files/hindsight-client.json";
   };
   modules.pi.hindsightTokenFile = secrets.hindsight-client-token.path;
   modules.pi.hindsightLan = isWSL;
+  modules.pi.hindsightLoopback = localServer;
   modules.pi.hindsightAccessFile = lib.mkIf publicClient secrets.hindsight-cloudflare-access.path;
 }

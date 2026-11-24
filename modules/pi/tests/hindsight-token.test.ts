@@ -11,6 +11,7 @@ test("never reads the sepia credential for disabled banks, other URLs or cloud m
   for (const override of [{ disabled: true }, { serverMode: "cloud" }, { apiUrl: endpoint + ".invalid" }, { apiUrl: "https://example.org" }]) {
     const bank = { cfg: { ...cfg, ...override } };
     expect(withSepiaToken(bank, "/missing")).toBe(bank);
+    expect(withSepiaToken(bank, "/missing", true)).toBe(bank);
   }
 });
 
@@ -39,6 +40,9 @@ test("reads the current token for the resolved bank and rejects malformed creden
     for (const character of ["a", "b"]) {
       writeFileSync(path, character.repeat(64) + "\n");
       expect(withSepiaToken({ cfg }, path).cfg.apiToken).toBe(character.repeat(64));
+      const remote = { cfg: { ...cfg, apiUrl: "https://hindsight.pylv.dev" } };
+      expect(withSepiaToken(remote, path, true).cfg.apiUrl).toBe(endpoint);
+      expect(withSepiaToken(remote, path).cfg.apiUrl).toBe(remote.cfg.apiUrl);
     }
     writeFileSync(path, "invalid");
     expect(() => withSepiaToken({ cfg }, path)).toThrow("invalid agenix client token");

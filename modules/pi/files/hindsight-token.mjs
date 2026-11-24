@@ -10,12 +10,13 @@ function readSecret(secretPath) {
   return readFileSync(path, "utf8").trimEnd();
 }
 
-export function withSepiaToken(result, secretPath) {
+export function withSepiaToken(result, secretPath, loopback = false) {
   const cfg = result.cfg;
   if (cfg.disabled || cfg.serverMode !== "self-hosted" || ![publicOrigin, "http://127.0.0.1:8888"].includes(cfg.apiUrl.replace(/\/$/, ""))) return result;
   const token = readSecret(secretPath);
   if (!/^[0-9a-f]{64}$/.test(token)) throw new Error("Hindsight: invalid agenix client token");
-  return { ...result, cfg: { ...cfg, apiToken: token } };
+  const apiUrl = loopback ? "http://127.0.0.1:8888" : cfg.apiUrl;
+  return { ...result, cfg: { ...cfg, apiUrl, apiToken: token } };
 }
 
 export function sepiaRequest(base, url, init, accessFile, lanDispatcher) {
