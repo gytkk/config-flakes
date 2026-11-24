@@ -157,7 +157,7 @@ export default function (pi: ExtensionAPI): void {
       }
       const limit = (value: string) => Array.from(value).slice(0, 80).join("");
       const snapshot = active ? JSON.stringify({
-        version: 1, session, updatedAt: now, model: parentModel ?? "",
+        version: 1, session, editorSession: context?.sessionManager?.getSessionId(), updatedAt: now, model: parentModel ?? "",
         children: [...desktopChildren.values()].map(child => ({
           ...child, name: limit(child.name), model: limit(child.model), activity: limit(child.activity),
         })),

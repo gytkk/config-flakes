@@ -157,6 +157,15 @@ in
       pkgs.mcp-nixos
       pkgs.python3
       pkgs.ast-grep
+      (pkgs.writeShellScriptBin "pi-session-editor" ''
+        export PATH="$PATH":${
+          lib.makeBinPath [
+            pkgs.herdr-core
+            pkgs.neovim
+          ]
+        }
+        exec ${pkgs.python3}/bin/python3 ${./files/session-editor.py} "$@"
+      '')
     ];
 
     home.sessionVariables = sessionVariables;
