@@ -20,6 +20,7 @@ in
     lib.mkEnableOption "Hindsight token provisioning with the enrolled worker's SSH host identity";
 
   config = {
+    modules.jari.hindsightAgenix.enable = lib.mkDefault true;
     age = lib.mkIf config.modules.jari.hindsightAgenix.enable {
       identityPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
       secrets.hindsight-client-token = {
