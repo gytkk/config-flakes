@@ -1,0 +1,18 @@
+{
+  "disabled": true,
+  "harnesses": {
+    "pi": {
+      "disabled": false,
+      "serverMode": "self-hosted",
+      "apiUrl": "http://127.0.0.1:8888",
+      "optInOnly": true,
+      "mapPathToBank": { "~/development/config-flakes": "config-flakes" },
+      "retainSessions": false,
+      "autoInject": "none",
+      "gitIngest": "none",
+      "autoSeed": false,
+      "codebaseSurvey": false,
+      "autoUpdate": false
+    }
+  }
+}
