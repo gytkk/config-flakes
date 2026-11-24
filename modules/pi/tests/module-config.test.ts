@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,7 +27,7 @@ test("activation settings combine general settings with the explicit package sel
     "npm:pi-web-access@0.46.0",
     { source: "npm:pi-subagents@0.84.0", skills: [], prompts: [] },
     "npm:pi-claude-subscription@0.2.4",
-    { source: "./packages/hindsight", skills: ["skills/hindsight-coding-agent/SKILL.md"], extensions: [], prompts: [], themes: [] },
+    { source: "./packages/hindsight", skills: ["skills/hindsight-coding-agent/SKILL.md"], extensions: ["index.ts"], prompts: [], themes: [] },
   ]);
   expect(moduleConfig.enabled.activation).toEqual({ before: ["linkGeneration"], after: ["writeBoundary"] });
 });
@@ -72,10 +72,6 @@ test("local extension names map to their existing checkout source", () => {
   expect(sources[`${prefix}phase-tasks`]).toBeUndefined();
   expect(sources[`${prefix}herdr-agent-state.ts`]).toBe("/herdr/src/integration/assets/pi/herdr-agent-state.ts");
   for (const [target, source] of Object.entries(sources)) {
-    if (target === `${prefix}hindsight.ts`) {
-      expect(readFileSync(source, "utf8")).toContain("/fixtures/hindsight-coding-agents-0.8.8/dist/pi.js");
-      continue;
-    }
     if (target === `${prefix}herdr-agent-state.ts`) continue;
     expect(source).toBe(`/checkout/modules/pi/files/extensions/${target.slice(prefix.length)}`);
   }

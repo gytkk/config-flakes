@@ -46,6 +46,32 @@ This repository's `.pi/settings.json` is a relative symlink to `modules/pi/files
 
 Supporting files such as `modules/pi/files/extensions/subagent/config.json` remain separate from the extension entry points. Lens loads only from its pinned npm package; there is no local LSP or AST implementation or patched-source loader. These lists do not enumerate Pi's built-in extensions or resources added by project settings or command-line arguments.
 
+## Hindsight memory
+
+Home Manager installs the Pi extension and companion skill from `@vectorize-io/hindsight-coding-agents` 0.8.8. Installation alone does not enable memory. To opt in, merge the following settings into your private `~/.hindsight/coding-agent.json` (or the file named by `HINDSIGHT_CONFIG`). Replace the checkout path and bank name for your project:
+
+```json
+{
+  "harnesses": {
+    "pi": {
+      "disabled": false,
+      "serverMode": "self-hosted",
+      "apiUrl": "http://127.0.0.1:8888",
+      "optInOnly": true,
+      "mapPathToBank": { "~/development/config-flakes": "config-flakes" },
+      "retainSessions": false,
+      "autoInject": "none",
+      "gitIngest": "none",
+      "autoSeed": false,
+      "codebaseSurvey": false,
+      "autoUpdate": false
+    }
+  }
+}
+```
+
+Launch Pi with `HINDSIGHT_API_TOKEN` supplied privately from the [sepia service](../../systems/hosts/pylv-sepia/README.md#hindsight). Use the SSH tunnel described there when running Pi off-host. After applying the module, start a fresh session in the mapped checkout. Ask Pi to explicitly retain a non-sensitive fact, then recall it in a second fresh session in that checkout. This configuration does not automatically upload transcripts or backfill old sessions. Explicitly retained content is processed by the server's configured model provider.
+
 ## Korean conversation translation
 
 `modules/pi/files/extensions/korean-translation/` enables Korean/English translation in parent TUI sessions. It uses `openai/gpt-6-luna` through Pi's model registry and existing authentication, independently of the selected working model. `/translate off`, `/translate on`, and `/translate status` control the current branch; the setting survives reload, resume, and fork. New sessions start enabled. RPC, JSON, print mode, and subagent processes are unchanged.

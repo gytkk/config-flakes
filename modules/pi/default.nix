@@ -12,6 +12,12 @@ let
   agentCoreOutput = import ../../agent-core/nix/render.nix { inherit pkgs; } { runtime = "pi"; };
   mkSymlink = path: config.lib.file.mkOutOfStoreSymlink "${flakeDirectory}/modules/pi/${path}";
 
+  hindsightClient = pkgs.fetchzip {
+    name = "hindsight-coding-agents-0.8.8";
+    url = "https://registry.npmjs.org/@vectorize-io/hindsight-coding-agents/-/hindsight-coding-agents-0.8.8.tgz";
+    hash = "sha256-zuYTNIDn5XCuSnJjDKxpupjE440Hqw1YrPztLFDfA1s=";
+  };
+  hindsightPackage = ".pi/agent/packages/hindsight";
   extensionPackages = [
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0"
     {
@@ -39,7 +45,7 @@ let
     {
       source = "./packages/hindsight";
       skills = [ "skills/hindsight-coding-agent/SKILL.md" ];
-      extensions = [ ];
+      extensions = [ "index.ts" ];
       prompts = [ ];
       themes = [ ];
     }
@@ -161,6 +167,33 @@ in
         ".pi/agent/extensions/launch-environment.ts".source = launchEnvironment;
       }
       // {
+        "${hindsightPackage}/package.json".text = builtins.toJSON {
+          name = "hindsight-pi";
+          pi = {
+            extensions = [ "./index.ts" ];
+            skills = [ "./skills/hindsight-coding-agent/SKILL.md" ];
+          };
+        };
+        "${hindsightPackage}/skills/hindsight-coding-agent/SKILL.md".source =
+          "${hindsightClient}/skill/SKILL.md";
+        "${hindsightPackage}/index.ts".source = pkgs.writeText "hindsight-pi.ts" ''
+          import { readFileSync } from "node:fs";
+          import { homedir } from "node:os";
+          import { join } from "node:path";
+          import hindsight from "${hindsightClient}/dist/pi.js";
+
+          export default function (pi: Parameters<typeof hindsight>[0]) {
+            const path = process.env.HINDSIGHT_CONFIG || join(homedir(), ".hindsight", "coding-agent.json");
+            try {
+              // Other harnesses share this file. Only an explicit Pi opt-in enables its hooks.
+              if (JSON.parse(readFileSync(path, "utf8")).harnesses?.pi?.disabled !== false) return;
+            } catch (error) {
+              if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+              throw new Error(`Cannot read Hindsight configuration: ''${path}`);
+            }
+            return hindsight(pi);
+          }
+        '';
         ".pi/agent/AGENTS.md".source = "${agentCoreOutput}/AGENTS.md";
         ".pi/agent/APPEND_SYSTEM.md".source = "${agentCoreOutput}/APPEND_SYSTEM.md";
         ".pi/agent/agents/researcher.md".source = mkSymlink "agents/researcher.md";
