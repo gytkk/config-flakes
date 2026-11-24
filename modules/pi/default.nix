@@ -17,6 +17,20 @@ let
     url = "https://registry.npmjs.org/@vectorize-io/hindsight-coding-agents/-/hindsight-coding-agents-0.8.8.tgz";
     hash = "sha256-zuYTNIDn5XCuSnJjDKxpupjE440Hqw1YrPztLFDfA1s=";
   };
+  hindsightEntry =
+    if (cfg.hindsightTokenFile or null) == null then
+      "${hindsightClient}/dist/pi.js"
+    else
+      pkgs.runCommand "hindsight-pi-with-sepia-token.mjs" { } ''
+        substitute ${hindsightClient}/dist/pi.js "$out" --replace-fail \
+          'function applyBankConfig(cfg, resolvedId, directory) {' \
+          ${lib.escapeShellArg ''
+            import { withSepiaToken } from "${./files/hindsight-token.mjs}";
+            function applyBankConfig(cfg, resolvedId, directory) {
+              return withSepiaToken(resolveBankConfig(cfg, resolvedId, directory), ${builtins.toJSON cfg.hindsightTokenFile});
+            }
+            function resolveBankConfig(cfg, resolvedId, directory) {''}
+      '';
   hindsightPackage = ".pi/agent/packages/hindsight";
   extensionPackages = [
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0"
@@ -116,6 +130,12 @@ let
 in
 {
   options.modules.pi = {
+    hindsightTokenFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Runtime agenix credential for the sepia Hindsight endpoint.";
+    };
+
     enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -189,7 +209,7 @@ in
           import { readFileSync } from "node:fs";
           import { homedir } from "node:os";
           import { join } from "node:path";
-          import hindsight from "${hindsightClient}/dist/pi.js";
+          import hindsight from "${hindsightEntry}";
 
           export default function (pi: Parameters<typeof hindsight>[0]) {
             const path = process.env.HINDSIGHT_CONFIG || join(homedir(), ".hindsight", "coding-agent.json");

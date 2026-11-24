@@ -5,7 +5,10 @@
     username = "gytkk";
     homeDirectory = "/home/gytkk";
     profile = "pylv";
-    homeModules = [ ./base/pylv/sepia.nix ];
+    homeModules = [
+      ./base/pylv/sepia.nix
+      ./base/hindsight-client.nix
+    ];
   };
 
   "pylv-onyx" = {
@@ -14,7 +17,10 @@
     username = "gytkk";
     homeDirectory = "/home/gytkk";
     profile = "pylv";
-    homeModules = [ ./base/pylv/onyx.nix ];
+    homeModules = [
+      ./base/pylv/onyx.nix
+      ./base/hindsight-client.nix
+    ];
   };
 
   "pylv-denim" = {
@@ -24,7 +30,10 @@
     homeDirectory = "/home/gytkk";
     profile = "pylv";
     isWSL = true;
-    homeModules = [ ./base/pylv/denim.nix ];
+    homeModules = [
+      ./base/pylv/denim.nix
+      ./base/hindsight-client.nix
+    ];
   };
 
   "devsisters-macbook" = {
@@ -33,7 +42,10 @@
     username = "gyutak";
     homeDirectory = "/Users/gyutak";
     profile = "devsisters";
-    homeModules = [ ./base/devsisters/session-mining.nix ];
+    homeModules = [
+      ./base/devsisters/session-mining.nix
+      ./base/hindsight-client.nix
+    ];
   };
 
   "devsisters-macstudio" = {
@@ -42,7 +54,10 @@
     username = "gyutak";
     homeDirectory = "/Users/gyutak";
     profile = "devsisters";
-    homeModules = [ ./base/devsisters/session-mining.nix ];
+    homeModules = [
+      ./base/devsisters/session-mining.nix
+      ./base/hindsight-client.nix
+    ];
   };
 
   # The worker image owns the host configuration and imports our NixOS module.

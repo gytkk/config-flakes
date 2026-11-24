@@ -45,6 +45,8 @@ in
   # Databricks OTEL token (devsisters environments only)
   "databricks-token.age".publicKeys = devsistersRecipients;
 
+  "hindsight-client-token.age".publicKeys = allEnvironmentRecipients;
+
   # OpenAI API key for Neovim Minuet and Decisions clients
   "openai-api-key.age".publicKeys = allEnvironmentRecipients;
 }

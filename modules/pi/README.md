@@ -50,27 +50,16 @@ Supporting files such as `modules/pi/files/extensions/subagent/config.json` rema
 
 Home Manager installs the Pi extension and companion skill from `@vectorize-io/hindsight-coding-agents` 0.8.8. The [sepia client example](files/hindsight-sepia.example.json) enables only Pi in the mapped checkout, with explicit memory operations and no automatic session retention, historical import, Git ingestion, or prompt injection. Adjust the checkout path on each client. If you already have a Hindsight config, merge only the Pi section rather than replacing settings for other harnesses.
 
-The client needs the [sepia service](../../systems/hosts/pylv-sepia/README.md#hindsight)'s bearer token, not an OpenAI API key or ChatGPT login token. For a fresh client on sepia, run the following from the checkout in Bash. It refuses to replace an existing config and reads the key through a pipe without printing it:
+On pylv-denim, pylv-onyx, pylv-sepia, devsisters-macbook and devsisters-macstudio, agenix supplies the [sepia service](../../systems/hosts/pylv-sepia/README.md#hindsight)'s bearer token. The Pi extension reads the user-only file after resolving workspace and bank settings, and only for an enabled self-hosted client at `http://127.0.0.1:8888`. It does not export the token into Pi's environment or install it on jari. After activation, remove any old `harnesses.pi.apiToken` copy from your private config; no token belongs in Git or plain-text Nix expressions.
+
+To opt in a fresh client, run these commands from the checkout. The copy does not overwrite an existing config:
 
 ```bash
-(
-  set -euo pipefail
-  umask 077
-  dir="$HOME/.hindsight"
-  mkdir -p "$dir"
-  tmp=$(mktemp "$dir/.client.XXXXXXXX")
-  trap 'rm -f "$tmp"' EXIT
-  sudo -u hindsight cat /var/lib/hindsight/client-key |
-    jq -Rse --slurpfile cfg modules/pi/files/hindsight-sepia.example.json '
-      rtrimstr("\n") as $key | select($key | test("^[0-9a-f]{64}$")) |
-      $cfg[0] | .harnesses.pi.apiToken = $key' > "$tmp"
-  ln "$tmp" "$dir/coding-agent.json"
-)
+install -d -m 700 ~/.hindsight
+cp -n modules/pi/files/hindsight-sepia.example.json ~/.hindsight/coding-agent.json
 ```
 
-For an existing config, keep the token out of Git, Nix expressions, shell startup files, and chat. One alternative to a stored `harnesses.pi.apiToken` is to omit that field and launch just Pi with `HINDSIGHT_API_TOKEN="$(sudo -u hindsight cat /var/lib/hindsight/client-key)" pi` on sepia. Start from the mapped checkout. After a server key rotation, replace the private client copy or relaunch with the new environment value.
-
-When Pi runs on another machine, forward loopback port 8888 over SSH as described in the host guide. A tunnel provides transport, not API authentication. For fresh client setup, use the same pipeline on that machine, replacing the `sudo` command with `ssh -T gytkk@pylv-sepia 'sudo -n -u hindsight cat /var/lib/hindsight/client-key'`. Do not use a pseudo-terminal for the token transfer.
+On a remote client, start `ssh -N -o ExitOnForwardFailure=yes -L 8888:127.0.0.1:8888 gytkk@pylv-sepia` and keep the tunnel open while using Pi. Use this port only for that tunnel: a different service listening there could receive the token. No tunnel is needed on sepia. After rotating the server key, re-encrypt the new value for the same recipients, distribute the updated ciphertext, and reapply the client configurations.
 
 After applying the module, start a fresh Pi session and ask it to run `hindsight_diagnose`. Check the bank, endpoint, and token-in-use flag; the tool does not return the token. To test memory, explicitly retain a non-sensitive fact and recall it in a second fresh session in the same mapped checkout. Explicitly retained content is processed by the server's configured model provider.
 
