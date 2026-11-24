@@ -20,12 +20,12 @@ let
       pkgs.runCommand "hindsight-pi-with-sepia-token.mjs" { } ''
         substitute ${hindsightClient}/dist/pi.js "$out" \
           --replace-fail 'fetch(url2, { ...init, headers: this.headers(), ...dispatcher ? { dispatcher } : {} })' \
-            'fetch(url2, sepiaRequest(this.apiUrl, url2, { ...init, headers: this.headers(), ...dispatcher ? { dispatcher } : {} }, accessFile, lanDispatcher))' \
+            'fetch(url2, sepiaRequest(this.apiUrl, url2, { ...init, headers: this.headers(), ...dispatcher ? { dispatcher } : {} }, endpoint, lanDispatcher))' \
           --replace-fail \
           'function applyBankConfig(cfg, resolvedId, directory) {' \
           ${lib.escapeShellArg ''
             import { sepiaRequest, withSepiaToken } from "${./files/hindsight-token.mjs}";
-            const accessFile = ${builtins.toJSON cfg.hindsightAccessFile};
+            const endpoint = ${builtins.toJSON cfg.hindsightEndpoint};
             ${
               if cfg.hindsightLan then
                 ''
@@ -42,7 +42,7 @@ let
                 "const lanDispatcher = null;"
             }
             function applyBankConfig(cfg, resolvedId, directory) {
-              return withSepiaToken(resolveBankConfig(cfg, resolvedId, directory), ${builtins.toJSON cfg.hindsightTokenFile}, ${builtins.toJSON cfg.hindsightLoopback});
+              return withSepiaToken(resolveBankConfig(cfg, resolvedId, directory), ${builtins.toJSON cfg.hindsightTokenFile}, endpoint);
             }
             function resolveBankConfig(cfg, resolvedId, directory) {''}
       '';
@@ -145,12 +145,11 @@ let
 in
 {
   options.modules.pi = {
-    hindsightAccessFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
-      default = null;
-      description = "Cloudflare Access service credentials for the public Hindsight route.";
+    hindsightEndpoint = lib.mkOption {
+      type = lib.types.str;
+      default = "https://pylv-sepia.tailbbb9bf.ts.net";
+      description = "Private Hindsight origin for this host.";
     };
-    hindsightLoopback = lib.mkEnableOption "loopback routing on the Hindsight server";
     hindsightLan = lib.mkEnableOption "direct LAN resolution for the Hindsight Pi client on denim";
     hindsightTokenFile = lib.mkOption {
       type = lib.types.nullOr lib.types.str;

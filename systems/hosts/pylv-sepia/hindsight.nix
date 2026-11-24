@@ -77,6 +77,23 @@ in
     };
   };
   networking.firewall.interfaces.enp3s0.allowedTCPPorts = [ 443 ];
+  systemd.services.hindsight-tailnet = {
+    description = "Serve the Hindsight API over tailnet HTTPS";
+    wantedBy = [ "multi-user.target" ];
+    wants = [
+      "tailscaled.service"
+      "hindsight.service"
+    ];
+    after = [
+      "tailscaled.service"
+      "hindsight.service"
+    ];
+    serviceConfig = {
+      ExecStart = "${config.services.tailscale.package}/bin/tailscale serve --https=443 http://127.0.0.1:8888";
+      Restart = "always";
+      RestartSec = "10s";
+    };
+  };
   environment.systemPackages = [ hindsight ];
   users.groups.hindsight = { };
   users.users.hindsight = {

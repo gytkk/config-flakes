@@ -16,6 +16,7 @@ rec {
   codexbar = callPackage ./apps/codexbar/package.nix { };
   herdr = callPackage ./apps/herdr/package.nix { };
   herdr-core = callPackage ./apps/herdr-core/package.nix { };
+  hindsight-cli = callPackage ./apps/hindsight-cli/package.nix { };
   notion-cli = callPackage ./apps/notion-cli/package.nix { };
   ntn = notion-cli;
   pantry = callPackage ./apps/pantry/package.nix { };
