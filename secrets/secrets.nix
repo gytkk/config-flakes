@@ -8,6 +8,8 @@ let
   pylv-sepia = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC6EAZczgXONlXiwh946SidpRKSMw7fehg0u2L5SkHmd";
   pylv-onyx = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG8Iug3LblOeh1VqwAwzynFPo5PGkPBsmZBHTYIZxCsy";
 
+  jari-amber = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGYA/R9WDwhMA4FFxG0EBQxzi3HyAphejPgbx5gWf4ca";
+
   # Devsisters machine SSH public keys
   devsisters-macbook = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDdeZoty0uKpSDJ8sUGFwsMEEBYcuajo30lHlUHh8RMi";
   devsisters-macstudio = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHGIGT6Zgg4TW74umgyjlpk1b056LXDoC1kbBfPcqRuz";
@@ -47,7 +49,7 @@ in
 
   "hindsight-acme-dns.age".publicKeys = sepiaRecipients;
   "hindsight-cloudflare-access.age".publicKeys = allEnvironmentRecipients;
-  "hindsight-client-token.age".publicKeys = allEnvironmentRecipients;
+  "hindsight-client-token.age".publicKeys = allEnvironmentRecipients ++ [ jari-amber ];
 
   # OpenAI API key for Neovim Minuet and Decisions clients
   "openai-api-key.age".publicKeys = allEnvironmentRecipients;

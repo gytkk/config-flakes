@@ -102,7 +102,7 @@ Defined in `systems/inventory.nix` (single source of truth). `kind` field determ
 1. **`systems/base/default.nix`**: Common config. core modules, standard dev packages, programs
 2. **`systems/base/devsisters/home.nix`**: Devsisters tools from `systems/base/devsisters/tools.nix` (vault, kc2aws, wg-cli, ruby, databricks-cli, pantry, custom scripts) plus agenix-backed telemetry
 3. **`systems/base/pylv/home.nix`**: Minimal (inherits base)
-4. **`systems/base/jari/home.nix`**: Tools, shell, Git, and editor for jari workers, plus the shared Devsisters tools; private inputs are fetched over HTTPS, and agent runtimes other than Pi's settings, tmux, GUI modules, and agenix secrets stay off
+4. **`systems/base/jari/home.nix`**: Tools, shell, Git, and editor for jari workers, plus the shared Devsisters tools; private inputs are fetched over HTTPS, and agent runtimes other than Pi's settings, tmux, and GUI modules stay off. Only enrolled workers opt in to the agenix Hindsight token
 5. **`systems/base/pylv/sepia.nix`**: Home Manager additions for `pylv-sepia`; system configuration lives in `systems/hosts/pylv-sepia/configuration.nix`
 
 ### Module System

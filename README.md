@@ -400,7 +400,7 @@ The profile deliberately leaves these to jari or off:
 - Claude Code, Codex, OMP, Herdr, and agent session recording. jari pins the agent CLIs under `/opt` and keeps rewriting their settings in `~/.claude` and `~/.codex`, so no settings or instructions are installed for them.
 - tmux. Every jari tab runs under jari's own tmux server, which reads the default tmux configuration and must match the system tmux client.
 - GitHub credentials and `~/.gitconfig`. Git uses the credential helper from jari's `/etc/gitconfig`; Home Manager only writes `~/.config/git/config`, and values jari wrote to `~/.gitconfig` take precedence.
-- agenix secrets and the Databricks OpenTelemetry export. A worker has no age identity, so neither the OpenAI key nor the telemetry token is available: `with-openai` and AI commit subjects are not installed, and Neovim's AI suggestions are manual-only and report the missing key.
+- OpenAI and Databricks agenix secrets and the Databricks OpenTelemetry export. Enrolling a worker for Hindsight does not grant access to either credential: `with-openai` and AI commit subjects are not installed, and Neovim's AI suggestions are manual-only and report the missing key.
 - Scheduled Nix garbage collection. The `jari` user has no systemd user session; run `nix-collect-garbage --delete-older-than 14d` when needed.
 - GUI modules (Ghostty, Zed, Windows Terminal) and the `ko_KR.UTF-8` locale, which workers do not ship; the environment uses `C.UTF-8`.
 
