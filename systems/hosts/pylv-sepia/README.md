@@ -41,6 +41,26 @@ When applying this limit for the first time from a local checkout, pass it expli
 sudo nixos-rebuild switch --flake .#pylv-sepia --max-jobs 1
 ```
 
+## Hindsight
+
+[The native service](hindsight.nix) runs Hindsight 1.2.3 on loopback port 8888 with a dedicated PostgreSQL database and role. It uses ChatGPT plan authorization for LLM calls and computes embeddings locally with multilingual E5 small on CPU. There is no paid API-key fallback. The Nix build installs the [locked Linux CPython 3.12 wheels](hindsight-wheels.json) offline after fetching them and fetches the model by digest.
+
+After applying the configuration, forward the OAuth callback from your browser machine and sign in as the service user:
+
+```bash
+ssh -L 1455:127.0.0.1:1455 pylv-sepia
+sudo -H -u hindsight hindsight-admin chatgpt login --no-browser --enable-plan-usage
+```
+
+Open the printed URL in your local browser and approve plan usage. The service skips startup until its private credential file exists. On sepia, start it and verify readiness:
+
+```bash
+sudo systemctl start hindsight
+curl --fail http://127.0.0.1:8888/health/ready
+```
+
+Clients on other machines can use `ssh -N -L 8888:127.0.0.1:8888 pylv-sepia`. Authenticated API requests require the bearer token generated on first start in `/var/lib/hindsight/client-key`; keep it and the OAuth credentials private. Back up the Hindsight PostgreSQL database for memory recovery.
+
 ## Container services
 
 Podman runs the Ghost container declared in

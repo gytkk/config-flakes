@@ -12,6 +12,7 @@
     inputs.copyparty.nixosModules.default
     ./disk-config.nix
     ./ghost.nix
+    ./hindsight.nix
     ./trading-agent.nix
     ./astro-blog-legacy.nix
     ./menu.nix
