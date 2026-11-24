@@ -485,6 +485,8 @@ For a two-device check, save a non-sensitive test decision explicitly on one dev
 
 ## MCP integration
 
+The module uses [Pi's built-in MCP client](https://pi.dev/docs/latest/mcp) for local stdio and remote streamable HTTP servers. No adapter package is required.
+
 Home Manager uses `pi mcp add` to add `nixos` and `context7` only if their names are missing. On the first switch from the old checkout symlink, activation copies its contents into a private regular file before adding servers. Keep `modules/pi/files/mcp.json` available for devices that have not switched yet. Existing entries, including Plane and device-specific settings, are preserved. Fresh devices do not get Plane automatically.
 
 Use `pi mcp add` on the target device to add a server or replace its entire definition under the same name. For example:
@@ -496,9 +498,13 @@ pi mcp remove docs
 
 Removing a shared server makes activation add it again on the next switch. Disable it in `/mcp` instead if you want it to stay off. For Plane on a new device, copy the `plane` entry from the legacy file into the device's `mcpServers` object: Pi's add command does not expose the OAuth metadata URL and scope.
 
-Pi connects these servers in the background at session startup. Their default `codemode` exposure enables the built-in `codemode` tool, whose scripts discover and call server tools without loading every schema into the prompt. Use `/mcp` for connection status and `pi mcp list` for a standalone connection check. The module does not install `pi-mcp-adapter`, its `mcp`/`mcpScript` tools, or its footer status.
+Pi connects enabled servers in the background at startup. With the default `codemode` exposure, the model discovers and calls tools on demand without loading every schema into the prompt. Discovery is on demand; the connections are not.
 
-Cloudflare operations use the `cf` CLI installed by the common Home Manager profile. See [Cloudflare CLI setup](../../README.md#cloudflare-cli) for authentication and command discovery. Run `/reload` in an open Pi session after changing its MCP configuration.
+Use `/mcp` to inspect connections in a session or `pi mcp list` to check connections and tool discovery from the shell. To verify that a service can fulfill requests, run a read-only tool call through `codemode`. A server can list its tools even when a request fails because of a service quota or missing permissions.
+
+Run `/reload` in an open Pi session after changing its MCP configuration.
+
+Cloudflare operations use the `cf` CLI installed by the common Home Manager profile. See [Cloudflare CLI setup](../../README.md#cloudflare-cli) for authentication and command discovery.
 
 ## jari workers
 
