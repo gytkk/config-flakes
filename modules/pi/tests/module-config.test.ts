@@ -26,19 +26,20 @@ test("activation settings combine general settings with the explicit package sel
     { source: "npm:pi-interactive-shell@0.18.0", skills: [], prompts: [] },
     "npm:pi-web-access@0.46.0",
     { source: "npm:pi-subagents@0.84.0", skills: [], prompts: [] },
+    "npm:pi-claude-subscription@0.2.4",
     { source: "./packages/hindsight", skills: ["skills/hindsight-coding-agent/SKILL.md"], extensions: ["index.ts"], prompts: [], themes: [] },
   ]);
   expect(moduleConfig.enabled.activation).toEqual({ before: ["linkGeneration"], after: ["writeBoundary"] });
 });
 
-test("Devsisters selects Opus through the native Anthropic provider without changing package selection", () => {
+test("Devsisters selects Opus through Claude SDK without changing package selection", () => {
   const { defaultProvider, defaultModel, packages, subagents } = moduleConfig.devsisters.settings;
-  expect([defaultProvider, defaultModel]).toEqual(["anthropic", "claude-opus-5-5"]);
+  expect([defaultProvider, defaultModel]).toEqual(["claude-sdk", "claude-opus-5-5"]);
   expect(packages).toEqual(settings.packages);
-  expect(subagents.defaultModel).toBe("anthropic/claude-opus-5-5");
-  expect(subagents.modelScope).toEqual({ enforce: true, strict: true, allow: ["anthropic/*"] });
+  expect(subagents.defaultModel).toBe("claude-sdk/claude-opus-5-5");
+  expect(subagents.modelScope).toEqual({ enforce: true, strict: true, allow: ["claude-sdk/*"] });
   for (const role of Object.values(subagents.agentOverrides) as { model?: string }[]) {
-    if (role.model) expect(role.model).toMatch(/^anthropic\//);
+    if (role.model) expect(role.model).toMatch(/^claude-sdk\//);
   }
 });
 

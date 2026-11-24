@@ -63,6 +63,7 @@ describe("CodexBar weekly data", () => {
   test("maps model providers to subscription usage sources", () => {
     expect(usageProviderFor("openai")).toBe("codex");
     expect(usageProviderFor("openai-codex")).toBe("codex");
+    expect(usageProviderFor("claude-sdk")).toBe("claude");
     expect(usageProviderFor("anthropic")).toBe("claude");
     expect(usageProviderFor("google")).toBeUndefined();
     expect(usageProviderFor(undefined)).toBeUndefined();
@@ -283,7 +284,7 @@ describe("provider-aware usage", () => {
 
   test("fetches Claude usage through the CLI source with a longer timeout", async () => {
     setSystemTime(NOW);
-    const f = fixture("tui", byProvider(), "anthropic");
+    const f = fixture("tui", byProvider(), "claude-sdk");
     f.start();
     await f.command();
     expect(f.exec).toHaveBeenCalledTimes(1);
@@ -300,7 +301,7 @@ describe("provider-aware usage", () => {
     f.start();
     await f.command();
     expect(f.statuses.get("subscription-usage")).toContain("9%");
-    f.select("anthropic");
+    f.select("claude-sdk");
     expect(f.statuses.get("subscription-usage")).toBe("weekly loading...");
     await f.command();
     expect(f.statuses.get("subscription-usage")).toContain("27%");
@@ -320,7 +321,7 @@ describe("provider-aware usage", () => {
       return { unref() {} };
     }) as never);
     spyOn(globalThis, "clearInterval").mockImplementation(() => {});
-    const f = fixture("tui", byProvider(), "anthropic");
+    const f = fixture("tui", byProvider(), "claude-sdk");
     f.start();
     await Promise.resolve();
     expect(f.exec).toHaveBeenCalledTimes(1);

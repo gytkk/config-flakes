@@ -41,6 +41,7 @@ const SOURCES: Record<ProviderId, ProviderSource> = {
 const MODEL_PROVIDERS: Record<string, ProviderId> = {
   openai: "codex",
   "openai-codex": "codex",
+  "claude-sdk": "claude",
   anthropic: "claude",
 };
 
