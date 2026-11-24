@@ -59,7 +59,7 @@ sudo systemctl start hindsight
 curl --fail http://127.0.0.1:8888/health/ready
 ```
 
-Clients on other machines can use `ssh -N -L 8888:127.0.0.1:8888 pylv-sepia`. Authenticated API requests require the bearer token generated on first start in `/var/lib/hindsight/client-key`; keep it and the OAuth credentials private. Back up the Hindsight PostgreSQL database for memory recovery.
+The existing sepia Cloudflare Tunnel routes `hindsight.pylv.dev` directly to the loopback API. The dedicated Access application requires the Hindsight Pi service token and the connector verifies its Access audience. Nginx separately serves the same HTTPS hostname at `192.168.0.2:443` for LAN clients, with a DNS-01 certificate and a LAN subnet allowlist. Check the direct path with `curl --resolve hindsight.pylv.dev:443:192.168.0.2 https://hindsight.pylv.dev/health/ready`. See [Pi client routing](../../../modules/pi/README.md#hindsight-memory) for credentials. Authenticated API requests require the bearer token generated on first start in `/var/lib/hindsight/client-key`; keep it and the OAuth credentials private. Back up the Hindsight PostgreSQL database for memory recovery.
 
 ## Container services
 

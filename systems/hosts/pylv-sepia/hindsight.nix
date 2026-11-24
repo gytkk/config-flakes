@@ -48,6 +48,35 @@ let
   );
 in
 {
+  age.secrets.hindsight-acme-dns.file = ../../../secrets/hindsight-acme-dns.age;
+  security.acme.acceptTerms = true;
+  security.acme.certs."hindsight.pylv.dev" = {
+    dnsProvider = "cloudflare";
+    dnsResolver = "1.1.1.1:53";
+    credentialFiles.CF_DNS_API_TOKEN_FILE = config.age.secrets.hindsight-acme-dns.path;
+    group = "nginx";
+    reloadServices = [ "nginx.service" ];
+  };
+  services.nginx.virtualHosts."hindsight.pylv.dev" = {
+    listen = [
+      {
+        addr = "192.168.0.2";
+        port = 443;
+        ssl = true;
+      }
+    ];
+    onlySSL = true;
+    useACMEHost = "hindsight.pylv.dev";
+    locations."/" = {
+      proxyPass = "http://127.0.0.1:8888";
+      extraConfig = ''
+        allow 192.168.0.0/24;
+        deny all;
+        proxy_read_timeout 360s;
+      '';
+    };
+  };
+  networking.firewall.interfaces.enp3s0.allowedTCPPorts = [ 443 ];
   environment.systemPackages = [ hindsight ];
   users.groups.hindsight = { };
   users.users.hindsight = {

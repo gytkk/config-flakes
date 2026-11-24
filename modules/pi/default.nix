@@ -18,10 +18,29 @@ let
       "${hindsightClient}/dist/pi.js"
     else
       pkgs.runCommand "hindsight-pi-with-sepia-token.mjs" { } ''
-        substitute ${hindsightClient}/dist/pi.js "$out" --replace-fail \
+        substitute ${hindsightClient}/dist/pi.js "$out" \
+          --replace-fail 'fetch(url2, { ...init, headers: this.headers(), ...dispatcher ? { dispatcher } : {} })' \
+            'fetch(url2, sepiaRequest(this.apiUrl, url2, { ...init, headers: this.headers(), ...dispatcher ? { dispatcher } : {} }, accessFile, lanDispatcher))' \
+          --replace-fail \
           'function applyBankConfig(cfg, resolvedId, directory) {' \
           ${lib.escapeShellArg ''
-            import { withSepiaToken } from "${./files/hindsight-token.mjs}";
+            import { sepiaRequest, withSepiaToken } from "${./files/hindsight-token.mjs}";
+            const accessFile = ${builtins.toJSON cfg.hindsightAccessFile};
+            ${
+              if cfg.hindsightLan then
+                ''
+                  import undici from "${pkgs.pi}/lib/pi/node_modules/undici/index.js";
+                  const lanDispatcher = new undici.Agent({ headersTimeout: 0, bodyTimeout: 0, connect: {
+                    lookup(host, options, cb) {
+                      if (host !== "hindsight.pylv.dev") return cb(new Error("Unexpected Hindsight LAN hostname"));
+                      if (options.all) cb(null, [{address: "192.168.0.2", family: 4}]);
+                      else cb(null, "192.168.0.2", 4);
+                    }
+                  } });
+                ''
+              else
+                "const lanDispatcher = null;"
+            }
             function applyBankConfig(cfg, resolvedId, directory) {
               return withSepiaToken(resolveBankConfig(cfg, resolvedId, directory), ${builtins.toJSON cfg.hindsightTokenFile});
             }
@@ -126,6 +145,12 @@ let
 in
 {
   options.modules.pi = {
+    hindsightAccessFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Cloudflare Access service credentials for the public Hindsight route.";
+    };
+    hindsightLan = lib.mkEnableOption "direct LAN resolution for the Hindsight Pi client on denim";
     hindsightTokenFile = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;

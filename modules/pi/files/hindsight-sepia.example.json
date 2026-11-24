@@ -4,7 +4,7 @@
     "pi": {
       "disabled": false,
       "serverMode": "self-hosted",
-      "apiUrl": "http://127.0.0.1:8888",
+      "apiUrl": "https://hindsight.pylv.dev",
       "optInOnly": true,
       "mapPathToBank": { "~/development/config-flakes": "config-flakes" },
       "retainSessions": false,

@@ -52,7 +52,7 @@ The Pi package owns the companion skill. Older enabled sessions also copied it i
 
 Home Manager installs the Pi extension and companion skill from `@vectorize-io/hindsight-coding-agents` 0.8.8. The [sepia client example](files/hindsight-sepia.example.json) enables only Pi in the mapped checkout, with explicit memory operations and no automatic session retention, historical import, Git ingestion, or prompt injection. Adjust the checkout path on each client. If you already have a Hindsight config, merge only the Pi section rather than replacing settings for other harnesses.
 
-On pylv-denim, pylv-onyx, pylv-sepia, devsisters-macbook and devsisters-macstudio, agenix supplies the [sepia service](../../systems/hosts/pylv-sepia/README.md#hindsight)'s bearer token. The Pi extension reads the user-only file after resolving workspace and bank settings, and only for an enabled self-hosted client at `http://127.0.0.1:8888`. It does not export the token into Pi's environment or install it on jari. After activation, remove any old `harnesses.pi.apiToken` copy from your private config; no token belongs in Git or plain-text Nix expressions.
+On pylv-denim, pylv-onyx, pylv-sepia, devsisters-macbook and devsisters-macstudio, agenix supplies the [sepia service](../../systems/hosts/pylv-sepia/README.md#hindsight)'s bearer token. The Pi extension reads the user-only file after resolving workspace and bank settings, and only for an enabled self-hosted client at `https://hindsight.pylv.dev` or `http://127.0.0.1:8888`. It does not export the token into Pi's environment or install it on jari. After activation, remove any old `harnesses.pi.apiToken` copy from your private config; no token belongs in Git or plain-text Nix expressions.
 
 To opt in a fresh client, run these commands from the checkout. The copy does not overwrite an existing config:
 
@@ -61,7 +61,7 @@ install -d -m 700 ~/.hindsight
 cp -n modules/pi/files/hindsight-sepia.example.json ~/.hindsight/coding-agent.json
 ```
 
-On a remote client, start `ssh -N -o ExitOnForwardFailure=yes -L 8888:127.0.0.1:8888 gytkk@pylv-sepia` and keep the tunnel open while using Pi. Use this port only for that tunnel: a different service listening there could receive the token. No tunnel is needed on sepia. After rotating the server key, re-encrypt the new value for the same recipients, distribute the updated ciphertext, and reapply the client configurations.
+Remote clients use `https://hindsight.pylv.dev`; change `harnesses.pi.apiUrl` if your private config still points to the former SSH forward. On denim the Pi client connects directly to `192.168.0.2` with normal TLS hostname verification, without changing Windows or WSL DNS. The Macs and onyx use public DNS and attach their agenix-managed Cloudflare Access service credentials only to this origin; redirects are refused. On sepia itself use `http://127.0.0.1:8888`. No client needs an SSH forward. Rotate the Access service token before expiry and re-encrypt and distribute the updated credentials.
 
 After applying the module, start a fresh Pi session and ask it to run `hindsight_diagnose`. Check the bank, endpoint, and token-in-use flag; the tool does not return the token. To test memory, explicitly retain a non-sensitive fact and recall it in a second fresh session in the same mapped checkout. Explicitly retained content is processed by the server's configured model provider.
 
