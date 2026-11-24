@@ -1,5 +1,9 @@
 let
-  flake = builtins.getFlake (toString ../../..);
+  flake =
+    if builtins.hasAttr "getFlake" builtins then
+      (builtins.getAttr "getFlake" builtins) (toString ../../..)
+    else
+      throw "Pi module checks require Nix with flakes enabled";
   pkgs = import flake.inputs.nixpkgs { system = builtins.currentSystem; };
   lib = pkgs.lib.extend (_: _: import "${flake.inputs.home-manager}/lib" { lib = pkgs.lib; });
   defaultSettings =
