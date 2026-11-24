@@ -20,7 +20,7 @@ in
         export HINDSIGHT_API_URL=${lib.escapeShellArg endpoint}
         HINDSIGHT_API_KEY=$(< ${tokenPath})
         if [[ ! "$HINDSIGHT_API_KEY" =~ ^[0-9a-f]{64}$ ]]; then
-          echo "hindsight: invalid agenix client token" >&2
+          echo "hindsight: invalid client token" >&2
           exit 1
         fi
         export HINDSIGHT_API_KEY
