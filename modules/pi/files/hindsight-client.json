@@ -5,7 +5,7 @@
       "disabled": false,
       "serverMode": "self-hosted",
       "apiUrl": "https://hindsight.pylv.dev",
-      "optInOnly": true,
+      "optInOnly": false,
       "mapPathToBank": { "~/development/config-flakes": "config-flakes" },
       "retainSessions": true,
       "autoInject": "recall",
