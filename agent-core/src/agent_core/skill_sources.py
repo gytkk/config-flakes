@@ -30,6 +30,8 @@ def installation_plan(target: str) -> dict:
     selected = set(config["skills"])
     sources = []
     for source_id, source in manifest["skill_sources"].items():
+        if target == "shared" and source["kind"] == "local":
+            continue  # Home Manager links local shared skills individually.
         skills = {
             name: path
             for name, path in sorted(source["skills"].items())

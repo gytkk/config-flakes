@@ -20,7 +20,6 @@ herdr-core = "herdr-core"
 korean = "korean"
 openai-decisions = "openai-decisions"
 parallel-research-merge = "parallel-research-merge"
-pi-agent = "pi-agent"
 repeated-work-analyzer = "repeated-work-analyzer"
 research = "research"
 theme-template-authoring = "theme-template-authoring"
@@ -69,7 +68,7 @@ hunk-review = ".agents/skills/hunk-review"
 
 [skill_targets.shared]
 runtimes = ["codex", "pi"]
-skills = ["codebase-design", "code-review", "data-analysis", "data-visualization", "devils-advocate", "diagnosing-bugs", "domain-modeling", "find-skills", "grilling", "herdr-core", "hunk-review", "impeccable", "korean", "openai-decisions", "parallel-research-merge", "pi-agent", "prototype", "repeated-work-analyzer", "research", "tdd", "theme-template-authoring", "user-friction-review", "wizard", "writing-for-agents"]
+skills = ["codebase-design", "code-review", "data-analysis", "data-visualization", "devils-advocate", "diagnosing-bugs", "domain-modeling", "find-skills", "grilling", "herdr-core", "hunk-review", "impeccable", "korean", "openai-decisions", "parallel-research-merge", "prototype", "repeated-work-analyzer", "research", "tdd", "theme-template-authoring", "user-friction-review", "wizard", "writing-for-agents"]
 
 [skill_targets.claude]
 runtimes = ["claude"]

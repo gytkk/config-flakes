@@ -9,6 +9,18 @@ let
   targets =
     lib.optional (enabled [ "codex" ] || enabled [ "pi" ]) "shared"
     ++ lib.optional (enabled [ "claude" ]) "claude";
+  manifest = builtins.fromTOML (builtins.readFile ../../agent-core/manifest.toml);
+  sharedLinks = lib.mergeAttrsList (
+    lib.mapAttrsToList (
+      _: source:
+      lib.mapAttrs' (
+        name: path:
+        lib.nameValuePair ".agents/skills/${name}" {
+          source = ../../agent-core + "/${source.path}/${path}";
+        }
+      ) (lib.filterAttrs (name: _: builtins.elem name manifest.skill_targets.shared.skills) source.skills)
+    ) (lib.filterAttrs (_: source: source.kind == "local") manifest.skill_sources)
+  );
   python = pkgs.python3.withPackages (ps: [ (ps.toPythonModule pkgs.agent-core) ]);
   installer = pkgs.writeShellScript "install-agent-skills" ''
     export PATH="${
@@ -22,6 +34,7 @@ let
 in
 {
   config = lib.mkIf (targets != [ ]) {
+    home.file = lib.optionalAttrs (builtins.elem "shared" targets) sharedLinks;
     home.activation.installAgentSkills =
       lib.hm.dag.entryAfter ([ "linkGeneration" ] ++ lib.optional (enabled [ "codex" ]) "codexUserConfig")
         ''

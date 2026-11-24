@@ -74,7 +74,7 @@ Decisions API를 사용하는 기능은 `$openai-decisions` skill로 설계하�
 
 NixOS는 [system.nix](system.nix)의 `environment.etc`로 시스템 설정을 설치하고 Home Manager의 시스템 activation을 생략한다. `~/.codex/config.toml`은 사용자 설정을 보존하며 activation이 덮어쓰지 않는다.
 
-`~/.codex/AGENTS.md`는 agent-core의 immutable output을 사용한다. [Agent skills activation](../agent-skills/README.md)은 Home Manager switch마다 `skills@1.7.2`로 Codex/Pi 공통 경로인 `~/.agents/skills`의 skill을 설치하거나 갱신한다. 활성 agent 전체가 같은 작업에서 결정한 최신 외부 source SHA를 사용하며 activation에는 network가 필요하다. 기존 standalone 환경의 `/etc/codex/skills` 링크는 선언을 제거해도 남으므로, 최초 switch 전에 관리 대상과 backup을 확인하고 승인한 뒤 별도로 인계해야 중복 discovery와 설치 충돌을 피할 수 있다.
+`~/.codex/AGENTS.md`는 agent-core의 immutable output을 사용한다. [Agent skills activation](../agent-skills/README.md)은 Codex/Pi 공통 경로인 `~/.agents/skills`에서 로컬 skill은 개별 링크로 관리하고 외부 skill은 `skills@1.7.2`로 설치한다. 활성 agent 전체가 같은 작업에서 결정한 최신 외부 source SHA를 사용하며 activation에는 network가 필요하다. 기존 standalone 환경의 `/etc/codex/skills` 링크는 선언을 제거해도 남으므로, 최초 switch 전에 관리 대상과 backup을 확인하고 승인한 뒤 별도로 인계해야 중복 discovery와 설치 충돌을 피할 수 있다.
 
 Adapter 변경을 적용하려면 환경에 맞는 `home-manager switch --flake .#<environment>` 또는 `nixos-rebuild switch --flake .#<host>`를 사용자가 실행한 뒤 새 Codex 세션을 시작한다. 최초 skill 전환에는 [Agent core README](../../agent-core/README.md#skill-설치와-복구)의 backup과 소유권 인계가 필요하다. Switch가 성공하면 별도 CLI 설치 없이 discovery를 검증한다.
 

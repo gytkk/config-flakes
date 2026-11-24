@@ -2,7 +2,7 @@
 
 The common Home Manager profile imports [default.nix](default.nix) to install or update skills for enabled Codex, Claude, and Pi agents during each switch. Any enabled Codex or Pi module enables the shared target once; Claude enables its global copy target.
 
-One invocation of [the installation adapter](../../scripts/install-agent-skills.py) handles all selected targets after `linkGeneration` and, when Codex is enabled, `codexUserConfig`. Each external source resolves to one latest full SHA for that invocation, shared by every target. The module provides Node/npm, Git, and Python with the packaged canonical agent-core resources. Nix evaluation and builds do not fetch external skills; activation requires network access. Home Manager's `run` wrapper honors dry-run mode. Installation errors fail the switch and retain the adapter's backup and recovery safeguards.
+Home Manager links each selected local Codex/Pi skill directory from the Nix store into `~/.agents/skills/`. The parent directory remains user-managed. Edit local skills in the repository and switch to apply them. Claude's selected skills and external Codex/Pi skills still use the [installation adapter](../../scripts/install-agent-skills.py) after `linkGeneration`. It resolves each external source once across targets; activation needs network access for external sources.
 
 The shared target's manifest runtimes describe consumers, not Skills CLI agent IDs. The adapter keeps `--agent codex pi` to install into `~/.agents/skills`.
 
@@ -14,4 +14,11 @@ If installation damages an ownership record or CLI lock JSON, the failed receipt
 
 CLI and Git commands run in separate process groups with a 300-second timeout. Before collecting installation state or releasing the installer lock, the adapter kills remaining processes in the command's group and waits up to five seconds to reap its launcher. This also applies to interruptions and commands whose launcher exits while a child keeps output pipes open. Descendants that deliberately create another session or process group are outside this cleanup boundary.
 
-Before the first switch on an existing host, inspect and back up legacy skill links, files, CLI locks, and ownership records. Legacy discovery paths such as `/etc/codex/skills` and `~/.pi/agent/skills` still stop activation until they are handed off explicitly. Same-name skills in the target directories are replaced after backup. A normal successful switch needs no separate installation command. Direct adapter commands remain available for isolated probes, recovery, and explicit SHA replay. See [Agent core installation and recovery](../../agent-core/README.md#skill-설치와-복구) for the procedure and pending host verification.
+Before switching an existing shared pool from CLI copies to links, run the following from the **updated checkout**, using the same `XDG_STATE_HOME` as activation (normally `~/.local/state`). This one-time install backs up previously owned copies, including local edits and the retired `pi-agent` skill, and releases those paths from CLI ownership. Inspect the reported backup before switching. If an unowned directory still conflicts, preserve it separately; do not force Home Manager to overwrite it.
+
+```bash
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+uv run --project agent-core scripts/install-agent-skills.py install --target shared --apply
+```
+
+Fresh hosts do not need this step. On rollback, deactivate the Home Manager links before restoring CLI copies. See [installation and recovery](../../agent-core/README.md#skill-설치와-복구) for legacy discovery paths and receipt restoration.

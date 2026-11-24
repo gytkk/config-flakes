@@ -26,6 +26,21 @@ def test_plan_is_offline_and_does_not_consult_home(
     )
 
 
+def test_shared_cli_skips_only_home_manager_links() -> None:
+    manifest = core._load_manifest()
+    for target in ("shared", "claude"):
+        plan = skill_sources.installation_plan(target)
+        copied = {name for source in plan["sources"] for name in source["skills"]}
+        selected = set(manifest["skill_targets"][target]["skills"])
+        linked = {
+            name for source in manifest["skill_sources"].values()
+            if source["kind"] == "local" and target == "shared"
+            for name in source["skills"] if name in selected
+        }
+        assert copied == selected - linked
+        assert "pi-agent" not in selected
+
+
 def test_external_paths_need_no_local_directory() -> None:
     manifest = core._load_manifest()
     manifest["skill_sources"]["matt"]["skills"]["wizard"] = (

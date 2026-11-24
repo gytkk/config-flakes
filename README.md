@@ -162,7 +162,7 @@ Projects can use `rust-toolchain.toml` to select a different channel or componen
 
 ## Shared agent configuration
 
-`agent-core/` owns shared coding-agent rules, runtime adapters, local skills, and external skill source declarations. Nix installs generated instructions and extensions. [Agent skills activation](modules/agent-skills/README.md) installs or updates skills for all enabled agents on each Home Manager switch with pinned `skills@1.7.2`: Codex/Pi share the native pool and Claude uses global copies. Activation resolves the latest external source SHAs once for all targets and requires network access; Nix evaluation and builds remain offline for skill acquisition. See [Agent core](agent-core/README.md#skill-설치와-복구) for the one-time ownership handoff, recovery, and pending host migration gates. Run `nix run .#agent-core -- check` to validate canonical resources offline.
+`agent-core/` owns shared coding-agent rules, runtime adapters, skills, and source selections. Home Manager links repository-owned Codex/Pi skills individually into their shared pool. The pinned Skills CLI installs external shared skills and Claude's copies. See [agent skills activation](modules/agent-skills/README.md) for the one-time handoff before switching an existing host, and [agent core](agent-core/README.md) for validation and recovery.
 
 ## Codex Plugin for Claude Code
 

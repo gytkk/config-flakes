@@ -2,7 +2,7 @@
 
 ## 목적
 
-`agent-core/`는 coding-agent 공통 규칙과 runtime adapter, 로컬 skill, 외부 skill source 선언을 관리한다. Stdlib-only Python renderer는 지침 문서를 생성하고, `skill-plan`은 설치 대상과 source를 JSON으로 출력한다. 실제 skill 취득과 배치는 버전을 고정한 `skills@1.7.2` CLI가 담당한다.
+`agent-core/`는 coding-agent 공통 규칙과 runtime adapter, 로컬 skill, 외부 skill source 선언을 관리한다. Renderer는 지침 문서를 생성하고 `skill-plan`은 CLI로 설치할 대상을 출력한다. Home Manager는 Codex/Pi의 로컬 skill을 개별 링크로 설치하며, 외부 skill과 Claude 사본은 pinned Skills CLI로 설치한다. 기존 공유 디렉터리의 사본을 링크로 전환하기 전에는 [소유권 인계 절차](../modules/agent-skills/README.md)를 따른다.
 
 Runtime module은 생성 지침과 extension을 설치한다. [Agent skills module](../modules/agent-skills/README.md)은 Home Manager switch마다 활성 agent 전체의 skill을 설치하거나 갱신한다. [설치 연결 명령](../scripts/install-agent-skills.py)은 manifest의 선택 목록을 pinned CLI에 전달하고 설치 경로별 소유권, 충돌, 백업과 복구를 관리한다. Nix build와 evaluation은 외부 skill을 다운로드하지 않으며, activation에는 network 접근이 필요하다.
 
@@ -161,7 +161,7 @@ AGENTS.md
 skills/
 ```
 
-`AGENTS.md`는 공통 operating rule, 공통 agent rule, prose rule, 공통 위임 계약, Codex adapter 순서로 생성한다. Codex adapter는 native subagent의 명시적 모델 라우팅을 정의한다. Skill은 `--global --agent codex pi`로 `~/.agents/skills`에 설치한다. Nix는 `/etc/codex/config.toml`을 계속 관리하며 `/etc/codex/skills`를 관리하지 않는다.
+`AGENTS.md`는 공통 operating rule, 공통 agent rule, prose rule, 공통 위임 계약, Codex adapter 순서로 생성한다. Codex adapter는 native subagent의 명시적 모델 라우팅을 정의한다. Codex와 Pi는 `~/.agents/skills`를 공유한다. Home Manager는 로컬 skill을 개별 링크로 설치하고 CLI는 `--global --agent codex pi`로 외부 skill을 설치한다. Nix는 `/etc/codex/config.toml`을 계속 관리하며 `/etc/codex/skills`를 관리하지 않는다.
 
 ### Pi
 
@@ -218,7 +218,7 @@ uv run --project agent-core scripts/install-agent-skills.py install \
 
 소유권은 설치 경로와 이름별로 `$XDG_STATE_HOME/agent-core/skills` 또는 `~/.local/state/agent-core/skills`에 기록한다. 원본 SHA 또는 local content, 설치 파일의 hash와 mode, 추가한 `AGENT-CORE-SOURCE-LICENSE`를 구분해 기록한다. CLI의 이름별 global lock을 target별 소유권으로 간주하지 않는다. 설치 결과는 항상 manifest와 일치하도록 맞춘다. 설치본이 없거나 수정되었거나, 기록된 source가 manifest와 다르거나, 소유권 기록이 없는 동명 skill이 있으면 기존 디렉터리를 backup한 뒤 다시 설치한다. 선택 목록에서 빠진 기존 관리 항목은 backup한 뒤 삭제한다. 포괄적인 `skills update`는 사용하지 않는다.
 
-`diagnosing-bugs`, `codebase-design`, `research`는 로컬 수정본을 설치한다. 기존 소유권 기록이 `matt`이어도 다음 switch에서 기존 설치본을 backup한 뒤 로컬 수정본으로 교체한다.
+`diagnosing-bugs`, `codebase-design`, `research`는 로컬 수정본을 사용한다. CLI가 관리하던 공유 사본은 링크로 전환하기 전에 인계하고, Claude 사본은 기존과 같이 CLI로 설치한다.
 
 실제 설치 오류는 backup 경로를 출력한다. 다른 skill의 lock 항목을 보존하며 선택한 항목만 복구한다. Backup 이후 같은 이름의 lock이나 설치 파일, 소유권이 변경되었다면 복구를 중단한다. Symlink나 특수 파일을 남긴 비정상 실패는 기존 backup을 유지하고 수동 보존이 필요하다고 보고한다.
 

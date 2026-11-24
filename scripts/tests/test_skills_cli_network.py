@@ -374,7 +374,7 @@ def test_installer_real_cli_licenses_ownership_and_restore(
     monkeypatch.setenv("XDG_STATE_HOME", str(state))
     local_name = "code-review"
     local_root = probe.root / "local-source"
-    local_source = next(s for s in plans["shared"]["sources"] if s["kind"] == "local")
+    local_source = next(s for s in plans["claude"]["sources"] if s["kind"] == "local")
     shutil.copytree(
         Path(local_source["path"]) / local_source["skills"][local_name],
         local_root / local_name,
@@ -399,7 +399,7 @@ def test_installer_real_cli_licenses_ownership_and_restore(
                         "skills": {"find-skills": source["skills"]["find-skills"]},
                     }
                 )
-        assert len(chosen) == 2
+        assert len(chosen) == (2 if target == "claude" else 1)
         bounded.append({**plan, "sources": chosen})
         personal = probe.destination(target) / "personal-fixture"
         personal.mkdir(parents=True)
@@ -424,9 +424,12 @@ def test_installer_real_cli_licenses_ownership_and_restore(
         installed = files(destination / "find-skills")
         assert installed.pop("AGENT-CORE-SOURCE-LICENSE") == notice
         assert installed == expected
-        assert files(destination / local_name) == files(local_root / local_name)
+        if target == "claude":
+            assert files(destination / local_name) == files(local_root / local_name)
+        else:
+            assert not (destination / local_name).exists()
         owner = adapter.read_json(adapter.owner_path(state, destination))
-        assert set(owner["skills"]) == {local_name, "find-skills"}
+        assert set(owner["skills"]) == set(adapter.selected(plan))
         assert owner["skills"]["find-skills"]["revision"] == fixed[external["id"]]
         assert (
             owner["skills"]["find-skills"]["license_supplement"]
@@ -440,10 +443,8 @@ def test_installer_real_cli_licenses_ownership_and_restore(
     with (local_root / local_name / "SKILL.md").open("a") as handle:
         handle.write("\nIsolated integration fixture update.\n")
     second_backup = adapter.install(bounded, probe.home, state, fixed)
-    for plan in bounded:
-        assert files(probe.destination(plan["target"]) / local_name) == files(
-            local_root / local_name
-        )
+    assert files(probe.destination("claude") / local_name) == files(local_root / local_name)
+    assert not (probe.destination("shared") / local_name).exists()
     adapter.restore(second_backup, probe.home, state)
     for target, expected in before.items():
         assert files(probe.destination(target)) == expected

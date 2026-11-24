@@ -142,6 +142,23 @@ def fixture(tmp_path, monkeypatch):
     return plan, home, state, calls, fake_cli
 
 
+def test_release_shared_copy_before_linking_and_preserve_link_on_reinstall(fixture):
+    plan, home, state, _, _ = fixture
+    installer.install([plan], home, state, {})
+    destination = installer.location("shared", home)
+    (destination / "one/reference.md").write_text("local edit")
+    source = plan["sources"][0]
+    remaining = {**plan, "sources": [{**source, "skills": {"two": "two"}}]}
+    backup = installer.install([remaining], home, state, {})
+    assert (backup / "0/one/reference.md").read_text() == "local edit"
+    assert not (destination / "one").exists()
+    (destination / "one").symlink_to(Path(source["path"]) / "one")
+    (destination / "two/reference.md").unlink()  # Trigger a full reinstall.
+    installer.install([remaining], home, state, {})
+    assert (destination / "one").is_symlink()
+    assert (destination / "one/reference.md").read_text() == "original\n"
+
+
 def test_install_reinstall_user_change_and_independent_targets(fixture):
     plan, home, state, calls, _ = fixture
     installer.install([plan], home, state, {})
