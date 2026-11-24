@@ -7,7 +7,7 @@
       "apiUrl": "https://hindsight.pylv.dev",
       "optInOnly": true,
       "mapPathToBank": { "~/development/config-flakes": "config-flakes" },
-      "retainSessions": false,
+      "retainSessions": true,
       "autoInject": "none",
       "gitIngest": "none",
       "autoSeed": false,
