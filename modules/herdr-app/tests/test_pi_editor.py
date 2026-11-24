@@ -17,6 +17,18 @@ class DocumentTargetTest(unittest.TestCase):
             self.assertEqual(document(path.as_uri() + "#L2", cwd), (path, 2))
             self.assertEqual(document("Pi%20notes.md#missing", cwd), (path, 1))
 
+    def test_regular_files_with_and_without_extensions_and_diagnostic_suffixes(self):
+        with tempfile.TemporaryDirectory() as root:
+            cwd = Path(root).resolve()
+            for name in ["flake.nix", "Makefile", ".envrc", "-notes #1", "image.bin"]:
+                path = cwd / name
+                path.write_bytes(b"\xff")
+                self.assertEqual(document(name, cwd), (path, 1))
+                self.assertEqual(document(path.as_uri() + "#L5", cwd), (path, 5))
+            self.assertEqual(document("flake.nix:7:2", cwd), (cwd / "flake.nix", 7))
+            self.assertIsNone(document(".", cwd))
+            self.assertIsNone(document("missing", cwd))
+
     def test_does_not_follow_links_out_of_the_clicked_checkout(self):
         with tempfile.TemporaryDirectory() as root:
             cwd = Path(root).resolve() / "checkout"

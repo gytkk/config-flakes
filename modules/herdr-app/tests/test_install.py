@@ -24,7 +24,7 @@ class InstallTests(unittest.TestCase):
             settings.write_text(json.dumps(original_settings))
             layouts = home / "layouts"
             layouts.mkdir()
-            layout = {"id": "root", "custom": "keep", "terminal_padding": [14, 12], "children": [
+            layout = {"id": "root", "custom": "keep", "link_handlers": ["viewer"], "terminal_padding": [14, 12], "children": [
                 {"id": "main", "content": {"tab": "active", "pane": {
                     "gap": 8, "radius": 10, "header": {"height": 30},
                     "border": {"width": 4, "color": "border"},
@@ -41,13 +41,13 @@ class InstallTests(unittest.TestCase):
             installer.install(ROOT / "files", home)
             merged = json.loads(keys.read_text())
             self.assertEqual(merged["global"]["cmd-e"], "app.palette")
-            for key in ("cmd-[", "cmd-shift-["):
+            for key in ("cmd-[", "cmd-shift-[", "alt-["):
                 self.assertEqual(merged["global"][key], "agent.prev")
-            for key in ("cmd-]", "cmd-shift-]"):
+            for key in ("cmd-]", "cmd-shift-]", "alt-]"):
                 self.assertEqual(merged["global"][key], "agent.next")
-            for key in ("alt-up", "alt-[", "cmd-k"):
+            for key in ("alt-up", "cmd-k"):
                 self.assertEqual(merged["global"][key], "space.prev")
-            for key in ("alt-down", "alt-]", "cmd-j"):
+            for key in ("alt-down", "cmd-j"):
                 self.assertEqual(merged["global"][key], "space.next")
             self.assertEqual(merged["global"]["cmd-h"], "tab.prev")
             self.assertEqual(merged["global"]["cmd-l"], "tab.next")
@@ -69,7 +69,7 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(personal["children"][4]["content"]["mod"], "custom-spaces")
             self.assertEqual(personal["children"][5:], layout["children"][5:])
             self.assertEqual({path.name for path in (home / "mods").iterdir()},
-                             {"tui-prefix", "tui-spaces"})
+                             {"tui-prefix", "tui-spaces", "pi-editor"})
             personal["custom"] = "personal change"
             personal["children"][0]["content"]["pane"].update(gap=12, radius=6)
             personal["terminal_padding"] = [8, 6]
@@ -86,6 +86,7 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(settings.stat().st_mtime_ns, settings_changed)
             self.assertEqual(json.loads(backup.read_text()), original)
             reapplied = json.loads((layouts / "tui.json").read_text())
+            self.assertEqual(reapplied["link_handlers"], ["pi-editor", "viewer"])
             self.assertEqual(reapplied["custom"], "personal change")
             self.assertEqual(reapplied["children"][5:], layout["children"][5:])
             self.assertEqual(reapplied["terminal_padding"], [4, 4])

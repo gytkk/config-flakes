@@ -104,11 +104,11 @@ The personal `tui` layout replaces standard `spaces` blocks with [tui-spaces](..
 
 Herdr owns read tracking: viewing an agent clears its `done` state; the circle remains until no unread completions remain in that space. This is not a history of all completed turns, nor an indicator for metadata-only subagent rows. Installation preserves custom space mods and the shipped layout. The personal mod retains an Apache-2.0-licensed copy of App 0.1.15's Spaces implementation; review upstream changes when updating App versions.
 
-### Pi document links in Herdr App
+### Pi file links in Herdr App
 
-In Herdr App 0.1.17 or later, Ctrl-click (Cmd-click on macOS) a Markdown file link in a Pi terminal to open the document in the session's Neovim. For example, the [Pi Hindsight setup](../pi/README.md#hindsight-memory) uses a heading fragment. Links in Pi replies resolve from the clicked terminal's working directory, not from the desktop's checkout. A matching ATX heading or `#L42` selects a line; an unknown heading opens the document at the top.
+In Herdr App 0.1.17 or later, Cmd-click a file link in Pi on macOS (Ctrl-click elsewhere) to open Neovim in a new pane to the right of the clicked Pi pane, in the same tab and on the same machine. Any existing regular file under the clicked terminal's working directory is eligible, regardless of extension. Herdr must recognize the text as a link: use a relative path starting with `./` or an explicit file hyperlink for bare filenames. A line suffix such as `:42` or `#L42` selects a line; Markdown links also support heading fragments. Web links retain their normal handling.
 
-The [link handler](../herdr-app/files/mods/pi-editor/link.js) asks the Pi host to open an existing Markdown file under that working directory. Herdr shows the editor in a terminal peek. Close the peek to return to Pi without quitting Neovim; the next click reuses its buffers. Other Pi sessions get separate editors. Web links retain their normal handling. Apply the Herdr App module on the desktop and the Pi module on the terminal host, then restart Pi or run `/reload`. Use a personal layout with the `pi-editor` link handler enabled.
+Apply the Herdr App module on the desktop and the Pi module on the terminal host. Select the managed `tui` layout, or enable the [pi-editor link handler](../herdr-app/files/mods/pi-editor/link.js) in another personal layout. To check both routing and file support, Cmd-click a link to the checkout's [flake.nix](../../flake.nix) in a Pi reply and confirm that the original Pi pane stays open beside Neovim.
 
 ## Agent detection
 

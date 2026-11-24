@@ -1,1 +1,1 @@
-{"place":"none","link_handlers":[{"kind":"file","pattern":"(?i)\\.md(?:#[^?]*)?$"}]}
+{"place":"none","link_handlers":[{"kind":"file","pattern":".+"}]}

@@ -28,6 +28,8 @@ def replace(path: Path, content: bytes) -> bool:
 def status_layout(home: Path) -> dict:
     target = home / "layouts/tui.json"
     layout = json.loads((target if target.exists() else home / "layouts/main.json").read_text())
+    handlers = layout.setdefault("link_handlers", [])
+    layout["link_handlers"] = ["pi-editor", *(name for name in handlers if name != "pi-editor")]
     layout["terminal_padding"] = [4, 4]
     pending = [layout]
     has_status = False

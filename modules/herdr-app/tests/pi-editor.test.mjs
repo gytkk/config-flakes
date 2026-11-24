@@ -4,12 +4,16 @@ import { test } from "node:test";
 import vm from "node:vm";
 
 const source = await readFile(new URL("../files/mods/pi-editor/link.js", import.meta.url), "utf8");
-test("a remote Pi link opens the editor on the clicked machine, not the desktop", async () => {
+const manifest = JSON.parse(await readFile(new URL("../files/mods/pi-editor/mod.json", import.meta.url)));
+test("resolve on the clicked Pi host, then split that pane with literal Neovim arguments", async () => {
   const calls = [];
-  const session = "01234567-89ab-cdef-0123-456789abcdef";
+  const path = "/project/it's a file; $name.nix";
   const api = {
-    terminals: () => [{ address: "sepia/t4", labels: { "pi.subagents": JSON.stringify({ session }) } }],
-    exec: async (...args) => { calls.push(args); return { code: 0, stdout: "t9\n" }; },
+    terminals: () => [{ address: "sepia/t4", report: { app: "pi" } }],
+    exec: async (...args) => {
+      calls.push(args);
+      return args[1][0] === "missing" ? { code: 2 } : { code: 0, stdout: JSON.stringify({ path, line: 7 }) };
+    },
     run: (...args) => calls.push(args),
   };
   const mod = new vm.SourceTextModule(source);
@@ -17,12 +21,20 @@ test("a remote Pi link opens the editor on the clicked machine, not the desktop"
     for (const [k, v] of Object.entries(api)) this.setExport(k, v);
   }));
   await mod.evaluate();
-  const click = { link: { kind: "file", raw: "modules/pi/README.md#hindsight-memory" },
-    source: { cwd: "/project", machine: "sepia", terminal: "sepia/t4", pane: "p1" } };
+  const click = { link: { kind: "file", raw: "src/flake.nix#L7" },
+    source: { cwd: "/project", machine: "sepia", terminal: "sepia/t4", pane: "sepia/p1" } };
+  for (const name of ["src/flake.nix", "./Makefile", "./.gitignore"]) {
+    assert.ok(manifest.link_handlers.some(r => r.kind === "file" && new RegExp(r.pattern).test(name)));
+  }
   assert.equal(await mod.namespace.handleLink(click), "handled");
-  assert.deepEqual(calls, [["pi-session-editor", ["t4", session, click.link.raw], { cwd: "/project", on: "sepia" }],
-    ["terminal.peek", { terminal: "sepia/t9" }]]);
+  assert.deepEqual(calls, [["pi-session-editor", [click.link.raw], { cwd: "/project", on: "sepia" }],
+    ["pane.split", { pane: "sepia/p1", direction: "right", argv: ["nvim", "+7", "--", path] }]]);
+  click.link.raw = "missing";
+  assert.equal(await mod.namespace.handleLink(click), "pass");
+  click.link.kind = "url";
+  assert.equal(await mod.namespace.handleLink(click), "pass");
+  click.link.kind = "file";
   click.source.terminal = "sepia/t5";
   assert.equal(await mod.namespace.handleLink(click), "pass");
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
 });
