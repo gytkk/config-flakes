@@ -29,6 +29,7 @@ let
         pkgs = pkgs // {
           # Materialize only settings during evaluation, without building packages.
           writeText = builtins.toFile;
+          fetchzip = args: "/fixtures/${args.name}";
           herdr.src = "/herdr";
           pi.name = "pi";
         };

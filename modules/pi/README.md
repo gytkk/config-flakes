@@ -473,8 +473,6 @@ The RPIV test requires the exact selected package with its runtime dependencies;
 
 For an interactive smoke check, use a disposable directory: create and update todos, inspect `/todos` and collapse the widget at narrow width, evaluate a variable across two Python cells, register a log and read it after deleting its source. `/python reset` must clear the variable.
 
-## MCP integration
-
 The module uses [Pi's built-in MCP client](https://pi.dev/docs/latest/mcp) for local stdio and remote streamable HTTP servers. No adapter package is required.
 
 Home Manager uses `pi mcp add` to add `nixos` and `context7` only if their names are missing. On the first switch from the old checkout symlink, activation copies its contents into a private regular file before adding servers. Keep `modules/pi/files/mcp.json` available for devices that have not switched yet. Existing entries, including Plane and device-specific settings, are preserved. Fresh devices do not get Plane automatically.

@@ -30,6 +30,12 @@ let
   agentCoreOutputs = builtins.mapAttrs (_: systemPkgs: mkAgentCoreOutputs systemPkgs false) pkgs;
   agentCoreGoldenOutputs = builtins.mapAttrs (_: systemPkgs: mkAgentCoreOutputs systemPkgs true) pkgs;
 
+  noLegacyPiSkills =
+    files:
+    builtins.all (
+      file: file.target != ".pi/agent/skills" && !(lib.hasPrefix ".pi/agent/skills/" file.target)
+    ) (builtins.attrValues files);
+
   agentCoreSourcesMatch =
     system:
     let
@@ -43,7 +49,7 @@ let
         (toString homeFiles.".codex/AGENTS.md".source == "${output.codex}/AGENTS.md")
         (toString homeFiles.".pi/agent/AGENTS.md".source == "${output.pi}/AGENTS.md")
         (toString homeFiles.".pi/agent/APPEND_SYSTEM.md".source == "${output.pi}/APPEND_SYSTEM.md")
-        (!(builtins.hasAttr ".pi/agent/skills" homeFiles))
+        (noLegacyPiSkills homeFiles)
         (!(builtins.hasAttr ".agents/skills" homeFiles))
         (lib.hasInfix "install --apply --target shared --target claude" skillActivation.data)
         (!(lib.hasInfix "--target openclaw" skillActivation.data))
@@ -65,7 +71,7 @@ let
         (builtins.elem "codexUserConfig" onyxSkillActivation.after)
         (!(builtins.hasAttr ".agents/skills" onyxHomeFiles))
         (!(builtins.hasAttr ".claude/skills" onyxHomeFiles))
-        (!(builtins.hasAttr ".pi/agent/skills" onyxHomeFiles))
+        (noLegacyPiSkills onyxHomeFiles)
         (
           !(builtins.hasAttr "materializeOpenClawRuntimeTrees" onyx.home-manager.users.gytkk.home.activation)
         )
