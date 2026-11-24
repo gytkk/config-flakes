@@ -48,7 +48,7 @@ Supporting files such as `modules/pi/files/extensions/subagent/config.json` rema
 
 ## Hindsight memory
 
-The Pi package owns the companion skill. Older enabled sessions also copied it into `~/.pi/agent/skills/hindsight-coding-agent`. If Pi reports a collision, close those sessions, move the legacy copy outside Pi's discovery paths, and remove its parent directory only if empty before switching configurations. Leave the package copy in place.
+The Pi package owns the companion skill. Older enabled sessions also copied it into `~/.pi/agent/skills/hindsight-coding-agent`. If Pi reports a collision, close those sessions, move the legacy copy outside Pi's discovery paths, and leave the package copy in place. The shared installer accepts an empty `~/.pi/agent/skills` directory and leaves it untouched. A symlink or a directory with any remaining entries still requires an ownership handoff before switching configurations.
 
 Home Manager installs the Pi extension and companion skill from `@vectorize-io/hindsight-coding-agents` 0.8.8. The [sepia client example](files/hindsight-sepia.example.json) enables only Pi in the mapped checkout, with explicit memory operations and no automatic session retention, historical import, Git ingestion, or prompt injection. Adjust the checkout path on each client. If you already have a Hindsight config, merge only the Pi section rather than replacing settings for other harnesses.
 

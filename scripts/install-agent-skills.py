@@ -357,7 +357,15 @@ def preflight(plans, home, state):
     items = []
     for plan in plans:
         if plan["target"] == "shared":
-            for legacy in (LEGACY_CODEX_SKILLS, home / ".pi/agent/skills"):
+            pi_skills = home / ".pi/agent/skills"
+            for legacy in (LEGACY_CODEX_SKILLS, pi_skills):
+                if (
+                    legacy == pi_skills
+                    and not legacy.is_symlink()
+                    and legacy.is_dir()
+                    and not any(legacy.iterdir())
+                ):
+                    continue
                 if legacy.exists() or legacy.is_symlink():
                     raise ValidationError(
                         f"legacy skill path still active; complete ownership handoff first: {legacy}"

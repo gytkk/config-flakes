@@ -664,10 +664,34 @@ def test_partial_unsafe_output_keeps_failure_receipt_and_original_backup(
         installer.restore(failed, home, state)
 
 
-def test_legacy_discovery_path_requires_handoff_before_cli(fixture):
+def test_install_leaves_empty_pi_skills_directory_untouched(fixture):
     plan, home, state, calls, _ = fixture
     legacy = home / ".pi/agent/skills"
     legacy.mkdir(parents=True)
+    inode = legacy.stat().st_ino
+    installer.install([plan], home, state, {})
+    assert calls
+    assert legacy.stat().st_ino == inode
+    assert not list(legacy.iterdir())
+
+
+@pytest.mark.parametrize("kind", ["skill", "file", "symlink", "dangling", "codex"])
+def test_legacy_discovery_path_requires_handoff_before_cli(fixture, kind):
+    plan, home, state, calls, _ = fixture
+    legacy = home / ".pi/agent/skills"
+    legacy.parent.mkdir(parents=True)
+    if kind == "skill":
+        (legacy / "old").mkdir(parents=True)
+        (legacy / "old/SKILL.md").touch()
+    elif kind == "file":
+        legacy.touch()
+    elif kind in {"symlink", "dangling"}:
+        target = home / "old-skills"
+        if kind == "symlink":
+            target.mkdir()
+        legacy.symlink_to(target)
+    else:
+        installer.LEGACY_CODEX_SKILLS.mkdir(parents=True)
     with pytest.raises(
         installer.ValidationError, match="legacy skill path still active"
     ):
@@ -695,7 +719,7 @@ def test_probe_acquires_sources_without_touching_legacy_home(
     fixture, monkeypatch, tmp_path
 ):
     plan, home, state, calls, _ = fixture
-    (home / ".pi/agent/skills").mkdir(parents=True)
+    (home / ".pi/agent/skills/old").mkdir(parents=True)
     monkeypatch.setattr(installer.Path, "home", lambda: home)
     monkeypatch.setattr(installer, "installation_plan", lambda target: plan)
     output = tmp_path / "probe.json"
