@@ -1,6 +1,6 @@
 {
   "serverMode": "self-hosted",
-  "apiUrl": "https://memory.example.invalid",
+  "apiUrl": "https://hindsight.internal.pylv.dev:8443",
   "disabled": true,
   "harnesses": { "pi": { "disabled": true } },
   "optInOnly": true,
