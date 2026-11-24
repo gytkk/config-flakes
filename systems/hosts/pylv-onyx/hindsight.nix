@@ -48,6 +48,8 @@ in
   options.services.onyxHindsight.enable = lib.mkEnableOption "the private Hindsight pilot on Onyx";
 
   config = lib.mkIf cfg.enable {
+    networking.hosts."192.168.0.10" = [ host ];
+
     age.secrets = {
       hindsight-cloudflare-token.file = ../../../secrets/hindsight-cloudflare-token.age;
       hindsight-api-env.file = ../../../secrets/hindsight-api-env.age;
