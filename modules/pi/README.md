@@ -54,12 +54,7 @@ Home Manager installs the Pi extension and companion skill from `@vectorize-io/h
 
 On pylv-denim, pylv-onyx, pylv-sepia, devsisters-macbook and devsisters-macstudio, agenix supplies the [sepia service](../../systems/hosts/pylv-sepia/README.md#hindsight)'s bearer token. The Pi extension reads the user-only file after resolving workspace and bank settings, and only for an enabled self-hosted client at `https://hindsight.pylv.dev` or `http://127.0.0.1:8888`. It does not export the token into Pi's environment or install it on jari. After activation, remove any old `harnesses.pi.apiToken` copy from your private config; no token belongs in Git or plain-text Nix expressions.
 
-To opt in a fresh client, run these commands from the checkout. The copy does not overwrite an existing config:
-
-```bash
-install -d -m 700 ~/.hindsight
-cp -n modules/pi/files/hindsight-sepia.example.json ~/.hindsight/coding-agent.json
-```
+On these five devices, Home Manager creates `~/.hindsight/coding-agent.json` at activation if it is missing. It maps the configured config-flakes checkout to the `config-flakes` bank, uses loopback on sepia and HTTPS elsewhere, and leaves automatic retention off. The private, writable copy contains no token. Later switches preserve existing configs and symlinks, including an explicit Pi opt-out. If you set `HINDSIGHT_CONFIG`, Pi continues to use that file instead of the seeded default.
 
 Remote clients use `https://hindsight.pylv.dev`; change `harnesses.pi.apiUrl` if your private config still points to the former SSH forward. On denim the Pi client connects directly to `192.168.0.2` with normal TLS hostname verification, without changing Windows or WSL DNS. The Macs and onyx use public DNS and attach their agenix-managed Cloudflare Access service credentials only to this origin; redirects are refused. On sepia itself use `http://127.0.0.1:8888`. No client needs an SSH forward. Rotate the Access service token before expiry and re-encrypt and distribute the updated credentials.
 
