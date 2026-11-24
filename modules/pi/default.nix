@@ -12,11 +12,7 @@ let
   agentCoreOutput = import ../../agent-core/nix/render.nix { inherit pkgs; } { runtime = "pi"; };
   mkSymlink = path: config.lib.file.mkOutOfStoreSymlink "${flakeDirectory}/modules/pi/${path}";
 
-  hindsightClient = pkgs.fetchzip {
-    name = "hindsight-coding-agents-0.8.8";
-    url = "https://registry.npmjs.org/@vectorize-io/hindsight-coding-agents/-/hindsight-coding-agents-0.8.8.tgz";
-    hash = "sha256-zuYTNIDn5XCuSnJjDKxpupjE440Hqw1YrPztLFDfA1s=";
-  };
+  hindsightClient = import ./hindsight-client.nix { inherit pkgs; };
   hindsightEntry =
     if (cfg.hindsightTokenFile or null) == null then
       "${hindsightClient}/dist/pi.js"

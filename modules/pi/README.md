@@ -48,6 +48,8 @@ Supporting files such as `modules/pi/files/extensions/subagent/config.json` rema
 
 ## Hindsight memory
 
+The Pi package owns the companion skill. Older enabled sessions also copied it into `~/.pi/agent/skills/hindsight-coding-agent`. If Pi reports a collision, close those sessions, move the legacy copy outside Pi's discovery paths, and remove its parent directory only if empty before switching configurations. Leave the package copy in place.
+
 Home Manager installs the Pi extension and companion skill from `@vectorize-io/hindsight-coding-agents` 0.8.8. The [sepia client example](files/hindsight-sepia.example.json) enables only Pi in the mapped checkout, with explicit memory operations and no automatic session retention, historical import, Git ingestion, or prompt injection. Adjust the checkout path on each client. If you already have a Hindsight config, merge only the Pi section rather than replacing settings for other harnesses.
 
 On pylv-denim, pylv-onyx, pylv-sepia, devsisters-macbook and devsisters-macstudio, agenix supplies the [sepia service](../../systems/hosts/pylv-sepia/README.md#hindsight)'s bearer token. The Pi extension reads the user-only file after resolving workspace and bank settings, and only for an enabled self-hosted client at `http://127.0.0.1:8888`. It does not export the token into Pi's environment or install it on jari. After activation, remove any old `harnesses.pi.apiToken` copy from your private config; no token belongs in Git or plain-text Nix expressions.
