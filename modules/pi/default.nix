@@ -38,32 +38,7 @@ let
     "npm:pi-claude-subscription@0.2.4"
   ];
 
-  hindsightClient = pkgs.fetchzip {
-    name = "hindsight-coding-agents-0.8.8";
-    url = "https://registry.npmjs.org/@vectorize-io/hindsight-coding-agents/-/hindsight-coding-agents-0.8.8.tgz";
-    hash = "sha256-zuYTNIDn5XCuSnJjDKxpupjE440Hqw1YrPztLFDfA1s=";
-  };
   localExtensions = {
-    "hindsight.ts" = pkgs.writeText "hindsight.ts" ''
-      import { readFileSync } from "node:fs";
-      import { homedir } from "node:os";
-      import { join } from "node:path";
-      import hindsight from "${hindsightClient}/dist/pi.js";
-
-      export default function (pi: Parameters<typeof hindsight>[0]) {
-        const path = process.env.HINDSIGHT_CONFIG || join(homedir(), ".hindsight", "coding-agent.json");
-        try {
-          // Other harnesses share this file. Installing Pi must not opt it into their retention policy.
-          if (JSON.parse(readFileSync(path, "utf8"))?.harnesses?.pi?.disabled !== false) return;
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
-          throw new Error(`Cannot read Hindsight configuration: ''${path}`);
-        }
-        process.env.HINDSIGHT_SERVER_MODE ??= "self-hosted";
-        process.env.HINDSIGHT_API_URL ??= "https://hindsight.internal.pylv.dev:8443";
-        return hindsight(pi);
-      }
-    '';
     "auto-title.ts" = mkSymlink "files/extensions/auto-title.ts";
     "prompt-ui" = mkSymlink "files/extensions/prompt-ui";
     "codex-fast-mode.ts" = mkSymlink "files/extensions/codex-fast-mode.ts";
@@ -181,7 +156,6 @@ in
       // {
         ".pi/agent/AGENTS.md".source = "${agentCoreOutput}/AGENTS.md";
         ".pi/agent/APPEND_SYSTEM.md".source = "${agentCoreOutput}/APPEND_SYSTEM.md";
-        ".pi/agent/skills/hindsight-coding-agent/SKILL.md".source = "${hindsightClient}/skill/SKILL.md";
         ".pi/agent/agents/researcher.md".source = mkSymlink "agents/researcher.md";
         ".pi/agent/agents/reviewer.md".source = mkSymlink "agents/reviewer.md";
         ".pi/agent/agents/worker.md".source = mkSymlink "agents/worker.md";

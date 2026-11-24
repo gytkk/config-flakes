@@ -10,7 +10,6 @@
     inputs.niri.nixosModules.niri
     inputs.dms.nixosModules.dank-material-shell
     ./hardware-configuration.nix
-    ./hindsight.nix
     ../../../modules/nixos
   ];
 
@@ -40,7 +39,6 @@
 
   networking.networkmanager.enable = true;
   networking.hostName = "pylv-onyx";
-  services.onyxHindsight.enable = true;
 
   users.users.gytkk.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPSLJRqb27foz3LyICtfk8A+VyyjXdkjQOp6rG+MX28E u0_a391@localhost"
