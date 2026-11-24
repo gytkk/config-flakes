@@ -15,6 +15,8 @@ in
     }
   ];
 
+  services.tailscale.enable = true;
+
   home-manager = {
     useUserPackages = true;
     backupFileExtension = "pre-home-manager";

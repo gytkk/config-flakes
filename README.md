@@ -340,6 +340,8 @@ home-manager build --flake .#devsisters-macbook
 
 The worker image owns `/etc/nixos/configuration.nix`, its NixOS 26.05 channel, and the jari service definitions. The [checkout profile import](systems/base/jari/checkout-profile.nix) adds Home Manager to that configuration. It follows the committed local `main` branch of `/workspace/repos/gytkk/config-flakes`; it does not select a host by EC2 hostname. Both manual rebuilds and jari updates use the same configuration. Enable this import only if everyone who can write the checkout or its Git configuration is trusted to supply code to root. Keep the checkout there for the Neovim and theme links.
 
+The shared jari profile starts Tailscale at boot. To join a tailnet, run `sudo tailscale up` on each worker you want to enroll. Applying the profile does not enroll a worker by itself.
+
 ### Test without switching
 
 Run these commands as `jari` on the NixOS worker, with the checkout on `main` and the checkout profile import available in that commit. This test assumes the stock image's imports (`./image.nix` and `./jari`), with no previous profile import or host flake. It does not edit `/etc/nixos`, change root's Git configuration, or activate a generation.
