@@ -92,14 +92,14 @@ in
       HOME = "/var/lib/hindsight";
       HINDSIGHT_API_HOST = "127.0.0.1";
       HINDSIGHT_API_PORT = "8888";
-      HINDSIGHT_API_DATABASE_URL = "postgresql:///hindsight?host=/run/postgresql";
+      HINDSIGHT_API_DATABASE_URL = "postgresql://hindsight@/hindsight?host=/run/postgresql";
       HINDSIGHT_API_LLM_PROVIDER = "chatgpt";
       HINDSIGHT_API_LLM_MODEL = "gpt-6-luna";
       HINDSIGHT_API_EMBEDDINGS_PROVIDER = "onnx";
       HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_PATH = "${model}/model.onnx";
       HINDSIGHT_API_EMBEDDINGS_ONNX_TOKENIZER_NAME_OR_PATH = "${model}";
       HINDSIGHT_API_EMBEDDINGS_ONNX_DIMENSIONS = "384";
-      HINDSIGHT_API_RERANKER_PROVIDER = "none";
+      HINDSIGHT_API_RERANKER_PROVIDER = "rrf";
       HINDSIGHT_API_TENANT_EXTENSION = "hindsight_api.extensions.builtin.tenant:ApiKeyTenantExtension";
     };
     script = ''
