@@ -22,6 +22,10 @@
   time.timeZone = "Asia/Seoul";
   networking.hostName = "pylv-sepia";
 
+  users.users.gytkk.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIE1B9MdbIMPdJb68b3c57gJVfnCpY4aE4DfFsBsHvy4 jari@jari-amber"
+  ];
+
   # Concurrent package builds can exhaust this server's memory.
   nix.settings.max-jobs = 1;
 
