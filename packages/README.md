@@ -52,7 +52,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 
 | App | Version |
 |-----|---------|
-| claude-code | 2.1.331 |
+| claude-code | 2.1.332 |
 | codex | 0.172.0 |
 | codexbar | 0.85.0 |
 | gksdud | 2.1.0 |
