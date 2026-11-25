@@ -1,6 +1,6 @@
 ---
 name: herdr-core
-description: Start, message, wait on, and read programs and coding agents in persistent herdr-core terminals with `hc`. Use only when the user explicitly asks to use Herdr or hc. The runtime's own subagents remain the default for delegation.
+description: Start, message, wait on, and read programs and coding agents in persistent herdr-core terminals with `hc`. Use when the user explicitly requests Herdr or hc, or when the runtime's instructions select hc for parallel tasks.
 ---
 
 # herdr-core
