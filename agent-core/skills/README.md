@@ -31,7 +31,7 @@ The all-host migration gate preserves legacy-rendered skill files until approved
 
 [korean](korean/SKILL.md) restates the previous assistant answer in natural Korean while preserving its meaning, uncertainty, code, and links.
 
-[herdr-core](herdr-core/SKILL.md) points to the installed `hc --skill` manual for running programs and agents in persistent herdr-core terminals. Use it for explicit Herdr requests and when the [Pi adapter](../adapters/pi.md#tool-use) selects `hc` for parallel tasks. The runtime's delegation rules take precedence over the manual.
+[herdr-core](herdr-core/SKILL.md) points to the installed `hc --skill` manual for running programs and agents in persistent herdr-core terminals. Use it for explicit Herdr requests and when the [Pi adapter](../adapters/pi.md#delegation-and-orchestration) selects `hc` for parallel tasks. The runtime's delegation rules take precedence over the manual.
 
 [diagnosing-bugs](diagnosing-bugs/SKILL.md) is maintained locally to support evidence-based investigation when reproduction is unavailable, bounded intermittent and performance checks, and diagnosis-only requests. For existing shared copies, follow the [link handoff](../../modules/agent-skills/README.md) before switching. First-time legacy path ownership still requires the explicit handoff described in [Agent core](../README.md#skill-설치와-복구).
 

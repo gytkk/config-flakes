@@ -22,13 +22,20 @@
 - Check Lens's effective project configuration before use. Keep automatic installation, formatting, fixes, tests, and startup scans off; report conflicting overrides before editing. Rename requires an explicit refactoring request, preview, and approval. Re-preview after intervening edits because apply requests fresh server edits. Keep AST paths bounded and replacements preview-only; use approved ordinary edits for replacements and listed code actions. Server commands and file moves require separate authorization.
 - Use native `bash` for short commands and `interactive_shell` for long builds/tests or input-driven CLIs. Dispatch builds/tests with `mode: "dispatch"`, `background: true`, and `handsFree: { autoExitOnQuiet: false }`. Use monitor mode only for a concrete output or state condition; keep semantic supervision and output selection off.
 - Use completion notifications and retained output rather than polling or rerunning. Inspect live output for a specific progress or failure question. Report process exit only when confirmed; silence, timeout, and supervision cancellation do not establish exit. Register interactive-shell logs explicitly when an artifact is needed.
-- Before delegating from a Herdr terminal (`HC_TERMINAL_ID` is nonempty and `PI_SUBAGENT_CHILD` is not `1`), run `hc get "$HC_TERMINAL_ID"` and confirm it returns the current terminal as live. On success, follow `hc --skill` and use `hc` as the sole launcher for authorized parallel tasks under the same child constraints. If the user explicitly requests Herdr or `hc` and the preflight cannot pass, report the blocker instead of switching launchers. Otherwise, when Herdr is unavailable, use the subagent tool for authorized delegation. Use `hc wait --children` only for children of the current terminal; from another terminal, wait on each worker by ID.
 
 ## Pi skills
 
 - When authoring Pi skills, use `writing-for-agents` for instruction design and the installed Pi package's skills documentation for format and discovery. In config-flakes, shared skill sources and selections belong in `agent-core/`; Pi packages, settings, extensions, and optional UI metadata belong in `modules/pi/`.
 
-## Subagent context
+## Delegation and orchestration
+
+For authorized delegation from a parent session, use the launcher the user requested. If its preflight fails, report the blocker instead of switching. Otherwise, when no launcher was requested, use the first available route below:
+
+1. **jari chat tab:** When `JARI_TAB_ID` is nonempty, confirm that `jari orch list` succeeds for this tab and read `jari skill show orchestration`. Use `jari orch start` to create a new worker for each delegated task, including same-agent tasks. Follow the installed guide for dispatch and next-turn reports.
+2. **Herdr terminal:** When `HC_TERMINAL_ID` is nonempty and `PI_SUBAGENT_CHILD` is not `1`, run `hc get "$HC_TERMINAL_ID"` and confirm the current terminal is live. Follow `hc --skill` and use `hc` as the sole launcher. Use `hc wait --children` only from the parent terminal; elsewhere, wait by worker ID.
+3. **Other sessions:** Use Pi's native subagent tool.
+
+The following worker constraints apply to every launcher:
 
 - Keep bounded edits and questions answerable from loaded context in the parent. For authorized delegation, scope a distinct task inline and read `references/contracts.md` in the discovered `parallel-research-merge` skill directory. Use the applicable branch; if the reference is missing, report it. Reading the worker contract does not invoke a research workflow or authorize delegation.
 - Check required tool providers before launch. Use fresh context unless the parent transcript is essential and cannot be summarized safely. Pass the task contract and relevant constraints: fresh children do not automatically inherit the parent's full instructions or skill catalog.
