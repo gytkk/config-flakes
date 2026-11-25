@@ -83,6 +83,8 @@ Apply Home Manager manually to install the extension, then restart Pi or run `/r
 - the hardware terminal cursor for IME positioning
 - prompt-cache notices, with cache warming left at Pi's default `"streaming"` mode
 
+The module also exports `PI_CACHE_RETENTION=long`, because Pi has no settings key for cache retention. Pi then asks Anthropic for a 1-hour prompt cache instead of the 5-minute default, and OpenAI Responses models for their extended retention. A 1-hour Anthropic cache write costs more than a 5-minute one, but a session that pauses longer than five minutes rereads its prefix from the cache instead of writing it again. Restart Pi after applying Home Manager; subagents inherit the variable.
+
 Pi uses the default fullscreen mode and built-in keybindings: `Home` and `Ctrl+A` move to the input line's start, while `Ctrl+Home` moves to the top of the fullscreen conversation. The module does not install a keybindings file. The custom editor inherits Pi's input shortcuts; use `/attach` for shell sessions rather than the removed Down/Enter task item.
 
 ### File links in Herdr

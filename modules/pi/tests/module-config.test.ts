@@ -50,9 +50,13 @@ test("interactive shell uses managed lean, deferred, local-only configuration", 
 });
 
 test("Lens owns the canonical config and runtime installs are disabled", () => {
-  expect(moduleConfig.enabled.sessionVariables).toEqual({ PI_LENS_DISABLE_LSP_INSTALL: "1", PI_LENS_DISABLE_TOOL_INSTALL: "1" });
+  expect(moduleConfig.enabled.sessionVariables).toMatchObject({ PI_LENS_DISABLE_LSP_INSTALL: "1", PI_LENS_DISABLE_TOOL_INSTALL: "1" });
   expect(moduleConfig.enabled.lensConfigSource).toBe("/checkout/modules/pi/files/lens.json");
   expect(moduleConfig.enabled.legacyLspConfig).toBe(false);
+});
+
+test("prompt caching uses long retention", () => {
+  expect(moduleConfig.enabled.sessionVariables.PI_CACHE_RETENTION).toBe("long");
 });
 
 test("local prompt UI keeps hardware cursor settings without Powerline configuration", () => {

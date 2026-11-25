@@ -115,6 +115,8 @@ let
   sessionVariables = {
     PI_LENS_DISABLE_LSP_INSTALL = "1";
     PI_LENS_DISABLE_TOOL_INSTALL = "1";
+    # Pi has no settings key for this; "long" sends Anthropic cache_control.ttl "1h" instead of the 5-minute default.
+    PI_CACHE_RETENTION = "long";
   }
   # The Pi that runs lacks packages/apps/pi/patches.nix for good, so applying Home Manager cannot add what they add.
   // lib.optionalAttrs (!cfg.installPackage) { PI_UNPATCHED = "1"; };
