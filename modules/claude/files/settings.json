@@ -31,7 +31,7 @@
     ],
     "defaultMode": "acceptEdits"
   },
-  "model": "opus",
+  "model": "opus[1m]",
   "enableAllProjectMcpServers": true,
   "hooks": {
     "SessionStart": [
@@ -188,17 +188,8 @@
   "language": "english",
   "feedbackDrafts": "off",
   "spinnerTipsEnabled": false,
-  "subagentPromptCacheTtl": "1h",
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
-  "modelSettings": {
-    "claude-opus-5-5": {
-      "effortLevel": "high"
-    },
-    "claude-fable-5-2": {
-      "effortLevel": "medium"
-    }
-  },
   "tui": "fullscreen",
   "autoMemoryEnabled": true,
   "autoDreamEnabled": true,
@@ -206,5 +197,14 @@
   "theme": "light",
   "editorMode": "normal",
   "teammateMode": "auto",
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "subagentPromptCacheTtl": "1h",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "high"
+    },
+    "claude-fable-5-2": {
+      "effortLevel": "medium"
+    }
+  }
 }
