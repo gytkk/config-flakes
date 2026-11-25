@@ -90,7 +90,6 @@ let
     "python-kernel" = mkSymlink "files/extensions/python-kernel";
     "session-artifacts" = mkSymlink "files/extensions/session-artifacts";
     "agent-hub" = mkSymlink "files/extensions/agent-hub";
-    "herdr-subagents.ts" = mkSymlink "files/extensions/herdr-subagents.ts";
     "terminal-title-reset.ts" = mkSymlink "files/extensions/terminal-title-reset.ts";
   }
   //

@@ -252,23 +252,7 @@ Apply Home Manager manually to install the extension, then restart Pi or run `/r
 
 When both Pi and Herdr modules are enabled, Home Manager installs `herdr-agent-state.ts` from the pinned Herdr source into `~/.pi/agent/extensions/`. This official integration reports the parent TUI session's working, idle, and blocked states. `agent_start` marks it working; `agent_settled` marks it idle only after automatic retries, compaction, and queued continuations finish. Headless child sessions do not report parent state.
 
-Apply Home Manager and run `/reload` in Pi, or start a new Pi session inside Herdr, to load the integration. Home Manager owns this file; update it through the Herdr package pin rather than `herdr integration install pi`. The display metadata extension below does not report lifecycle state.
-
-### Herdr subagent sidebar
-
-`files/extensions/herdr-subagents.ts` reports the current parent session model and displays foreground `pi-subagents` children beneath their parent Pi entry in Herdr's expanded Agents sidebar. The parent row shows the agent name and model, updating when the selected model changes. Each child uses two lines: its agent name and resolved model, followed by its current tool and path, latest output, or assigned task. Both the `subagent` tool and `/run` foreground execution are supported. The layout hides pi-subagents' background summary; this extension does not enumerate background children.
-
-The extension publishes display metadata only from the parent interactive Pi session inside Herdr. Completed, failed, interrupted, and detached foreground children disappear from the list. Session shutdown clears its tokens; active metadata expires after 45 seconds without refresh if Pi crashes. At most seven children fit in Herdr's 16-line layout. Larger groups show the first six children and an overflow count. Clicking any child line focuses the parent pane.
-
-The progress payload and slash events follow `pi-subagents` 0.84.0. Review this integration when updating that package. It does not import the package's internal modules or modify its execution behavior. If a metadata update times out without an error message, Pi waits for the next update before warning. Consecutive timeouts, a timeout during shutdown, and other command errors produce a warning without interrupting Pi.
-
-Home Manager installs the extension. After applying the configuration, run `/reload` in Pi and `herdr server reload-config` for the [Herdr sidebar layout](../herdr/README.md#subagents). For a foreground smoke test, run `/run scout List the top-level files without changing anything` inside a Herdr Pi pane and verify that the child appears, updates, and disappears when finished. Run `bash modules/pi/tests/run.sh herdr-subagents.test.ts` for the isolated event and metadata tests.
-
-### Herdr Desktop
-
-The same extension publishes foreground `subagent` and `/run` child metadata using the parent core terminal's `pi.subagents` label. This repository does not install a Desktop mod to display these labels. `HC_TERMINAL_ID` identifies the terminal; `HC_TERMINAL_SOCKET` takes precedence over `HC_SOCKET`. A valid Herdr TUI pane uses only pane metadata, never the enclosing terminal label. Headless sessions and `PI_SUBAGENT_CHILD=1` processes do not report.
-
-Snapshots refresh every five seconds. Session replacement gets a fresh identity; shutdown removes the label after queued writes finish. Core labels are persistent, so activity excerpts can remain on disk after a crash until replaced or cleared. Run `bash modules/pi/tests/run.sh herdr-subagents.test.ts` for the reporter tests.
+Apply Home Manager and run `/reload` in Pi, or start a new Pi session inside Herdr, to load the integration. Home Manager owns this file; update it through the Herdr package pin rather than `herdr integration install pi`.
 
 ### OpenAI fast mode
 

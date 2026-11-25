@@ -68,9 +68,10 @@ test("local prompt UI keeps hardware cursor settings without Powerline configura
 
 test("local extension names map to their existing checkout source", () => {
   const sources = moduleConfig.enabled.extensionSources as Record<string, string>;
-  for (const name of ["auto-title.ts", "codex-fast-mode.ts", "subscription-usage.ts", "rounded-tools.ts", "herdr-subagents.ts", "terminal-title-reset.ts"]) {
+  for (const name of ["auto-title.ts", "codex-fast-mode.ts", "subscription-usage.ts", "rounded-tools.ts", "terminal-title-reset.ts"]) {
     expect(sources[`${prefix}${name}`]).toBeDefined();
   }
+  expect(sources[`${prefix}herdr-subagents.ts`]).toBeUndefined();
   expect(sources[`${prefix}pi-lsp`]).toBeUndefined();
   expect(sources[`${prefix}ast-transform`]).toBeUndefined();
   expect(sources[`${prefix}phase-tasks`]).toBeUndefined();

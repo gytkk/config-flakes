@@ -112,7 +112,7 @@ Apply the Herdr App module on the desktop and the Pi module on the terminal host
 
 ## Agent detection
 
-When both Pi and Herdr modules are enabled, the [Pi parent status integration](../pi/README.md#herdr-parent-status) reports working, idle, and blocked states through Herdr's bundled extension. Home Manager installs the version matched to the pinned Herdr package. Pi's model and subagent display metadata does not set the parent lifecycle state.
+When both Pi and Herdr modules are enabled, the [Pi parent status integration](../pi/README.md#herdr-parent-status) reports working, idle, and blocked states through Herdr's bundled extension. Home Manager installs the version matched to the pinned Herdr package.
 
 The packaged Herdr excludes direct `claude plugin ...`, `claude mcp ...`, `claude --version` / `-v`, and `claude --help` / `-h` invocations from process-based agent detection. Home Manager runs plugin and MCP management commands during `setupClaudeCode`; they do not represent an interactive Claude session. Normal Claude sessions, including resume and continue, remain detectable. Unrecognized argument layouts retain upstream detection behavior.
 
@@ -120,9 +120,9 @@ This behavior comes from [the local detection patch](../../packages/apps/herdr/c
 
 ## Subagents
 
-Agent entries in [files/config.toml](files/config.toml) show the agent name and reported model on their second row. Codex reads the parent's latest `turn_context.model`, Pi reports its current session model, and [Claude's status line](../claude/README.md#settingsjson) reports its selected model. Claude's model expires after 45 seconds without a status line update and may disappear while idle. Missing model metadata is hidden; agents without a model reporter show only their name. Parent rows do not display summaries or child counts.
+Agent entries in [files/config.toml](files/config.toml) show the agent name and reported model on their second row. Codex reads the parent's latest `turn_context.model`, and [Claude's status line](../claude/README.md#settingsjson) reports its selected model. Claude's model expires after 45 seconds without a status line update and may disappear while idle. Missing model metadata is hidden; agents without a model reporter show only their name. Parent rows do not display summaries or child counts.
 
-The Claude, Pi, and Codex layouts also display child names, models, and activity. The [Pi extension](../pi/README.md#herdr-subagent-sidebar) reports foreground children. The [Codex hook and watcher](../codex/README.md#herdr-subagent-sidebar) read direct child sessions from local rollout files. The [Claude hook and watcher](../claude/README.md#herdr-subagent-sidebar) read native child transcripts and parent results. Both watchers include subagents that continue in the background. Empty child rows are hidden.
+The Claude and Codex layouts also display child names, models, and activity. The [Codex hook and watcher](../codex/README.md#herdr-subagent-sidebar) read direct child sessions from local rollout files. The [Claude hook and watcher](../claude/README.md#herdr-subagent-sidebar) read native child transcripts and parent results. Both watchers include subagents that continue in the background. Empty child rows are hidden.
 
 Codex shows a colored status icon, name, and model on each child's first line, with an excerpt of its latest assistant message below it in the generated theme's secondary text color. The [local separator patch](../../packages/apps/herdr/sidebar-status-separator.patch) places one space after custom lifecycle and overflow icons, without a dot separator. Load this patch by applying Home Manager and restarting the Herdr server when its running tasks can be interrupted; config reload alone does not load binary changes. The excerpt is limited to 80 characters with an ellipsis when truncated; tool events preserve it, and task completion uses the final response when available. Fixed labels are English; messages retain their original language. Running, completed, interrupted, and failed are separate states. Terminal states remain visible for five seconds. Read failures show an unknown state and the last message. If the watcher dies or cannot reach Herdr, its last metadata expires within 15 seconds; expiration removes rows rather than generating an unknown icon.
 
@@ -130,7 +130,7 @@ The expanded TUI sidebar at desktop width supports seven children with two lines
 
 Claude uses the same two-line layout and status colors. Its `SubagentStop` hook is tentative: `○` remains until a parent result or task notification confirms completion, failure, or interruption. For Agent Teams, removal from a valid team configuration led by the current session also confirms interruption. Task descriptions replace agent types when an Agent result arrives, and messages update from child transcripts. Confirmed terminal states and stop-confirmation waits remain visible for ten seconds, and stale metadata expires within 15 seconds. Sidebar cleanup preserves worktrees.
 
-Apply Home Manager, run `herdr server reload-config`, and start a new Claude, Pi, or Codex session inside Herdr to load the integration.
+Apply Home Manager, run `herdr server reload-config`, and start a new Claude or Codex session inside Herdr to load the integration.
 
 ## Shared JSONL reader
 

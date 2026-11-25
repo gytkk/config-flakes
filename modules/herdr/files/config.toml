@@ -88,21 +88,3 @@ codex = [
   [{ token = "$subagent_7_status", fg = "#696c77", rules = [{ starts_with = "●", fg = "#4e974e", bold = true }, { starts_with = "✓", fg = "#0184bc" }, { starts_with = "■", fg = "#c18401" }, { starts_with = "×", fg = "#e45649", bold = true }] }, "$subagent_7"],
   ["$subagent_7_activity"],
 ]
-pi = [
-  ["state_icon", "machine", "workspace", "tab"],
-  ["agent", "$pi_model"],
-  ["$subagent_1"],
-  ["$subagent_1_activity"],
-  ["$subagent_2"],
-  ["$subagent_2_activity"],
-  ["$subagent_3"],
-  ["$subagent_3_activity"],
-  ["$subagent_4"],
-  ["$subagent_4_activity"],
-  ["$subagent_5"],
-  ["$subagent_5_activity"],
-  ["$subagent_6"],
-  ["$subagent_6_activity"],
-  ["$subagent_7"],
-  ["$subagent_7_activity"],
-]
