@@ -93,15 +93,16 @@ in
     nixGc.enable = lib.mkForce false;
   };
 
-  # Only workers provisioned for session retention link this preset into ~/.hindsight.
-  xdg.configFile."hindsight/jari-pi.json".text = builtins.toJSON (
-    let
-      preset = builtins.fromJSON (builtins.readFile ../../../modules/pi/files/hindsight-client.json);
-    in
-    lib.recursiveUpdate preset {
-      harnesses.pi.mapPathToBank."/workspace/repos/gytkk/config-flakes" = "config-flakes";
-    }
-  );
+  home.file.".hindsight/coding-agent.json" = lib.mkIf config.modules.pi.enable {
+    text = builtins.toJSON (
+      let
+        preset = builtins.fromJSON (builtins.readFile ../../../modules/pi/files/hindsight-client.json);
+      in
+      lib.recursiveUpdate preset {
+        harnesses.pi.mapPathToBank."/workspace/repos/gytkk/config-flakes" = "config-flakes";
+      }
+    );
+  };
 
   # Workers only ship the C.utf8 and en_US.utf8 locales.
   home.language.base = lib.mkForce "C.UTF-8";
