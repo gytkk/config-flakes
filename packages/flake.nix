@@ -98,17 +98,6 @@
           inherit (prev.stdenv.hostPlatform) isDarwin;
         };
 
-      legacyPackages = forEachSystem (
-        system:
-        let
-          packages = packagesFor system;
-        in
-        builtins.listToAttrs (
-          map (name: {
-            name = name;
-            value = packages.${name};
-          }) (appNamesFor system)
-        )
-      );
+      legacyPackages = forEachSystem packagesFor;
     };
 }

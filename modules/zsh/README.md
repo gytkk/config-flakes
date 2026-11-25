@@ -8,7 +8,7 @@ This module configures Zsh, a Starship prompt, shell aliases, and tool integrati
 - Configures Starship from the generated theme selected by `modules.commonTheme`
 - Enables syntax highlighting, autosuggestion, and completion
 - Provides development-focused aliases and tools integration
-- Integrates fzf (fuzzy finder) and direnv for enhanced workflow
+- Integrates the fzf fuzzy finder with Zsh
 
 ## Features
 
@@ -71,7 +71,7 @@ After applying the module, run `exec zsh -l`. To bypass timing, use `command hom
 
 - **fzf**: Fuzzy finder with Zsh integration
 - **zoxide**: Directory jumping with Zsh integration
-- **direnv**: Directory-based environment variable management
+- **direnv**: The [shared Home Manager base](../../systems/base/default.nix) enables direnv, its Zsh integration, and nix-direnv. If you import the Zsh module without the base, configure `programs.direnv` separately.
 - **uv**: Python package manager with shell completion
 
 ## Nix executable priority on macOS

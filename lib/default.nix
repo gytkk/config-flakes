@@ -5,7 +5,6 @@ in
 {
   inherit builders;
   environments = import ./environments.nix {
-    pkgs = nixpkgs;
-    lib = nixpkgs.lib;
+    inherit (nixpkgs) lib;
   };
 }

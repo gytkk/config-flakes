@@ -265,12 +265,5 @@ in
       enable = true;
       enableZshIntegration = true;
     };
-
-    # direnv configuration
-    programs.direnv = {
-      enable = true;
-      enableZshIntegration = true;
-      nix-direnv.enable = true;
-    };
   };
 }

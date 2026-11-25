@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ lib, ... }:
 let
   inventory = import ../systems/inventory.nix;
 in
