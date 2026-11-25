@@ -6,6 +6,7 @@
       "serverMode": "self-hosted",
       "apiUrl": "https://hindsight.pylv.dev",
       "optInOnly": false,
+      "bankIdTemplate": "{gitProject}",
       "mapPathToBank": { "~/development/config-flakes": "config-flakes" },
       "retainSessions": true,
       "autoInject": "recall",
