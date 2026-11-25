@@ -1,5 +1,9 @@
 {
   "disabled": true,
+  "banks": {
+    "ark2": { "bank": "ark" },
+    "ark3": { "bank": "ark" }
+  },
   "harnesses": {
     "pi": {
       "disabled": false,
