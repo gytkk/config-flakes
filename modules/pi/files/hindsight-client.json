@@ -1,14 +1,29 @@
 {
   "disabled": true,
   "banks": {
-    "ark2": { "bank": "ark" },
-    "ark3": { "bank": "ark" }
+    "config-flakes": {
+      "toolGuideExtra": "When a change depends on project history, search before asking the user. Name the affected host, module, path, or Nix option and ask for the missing fact: why an alternative was rejected, what failed last time, or which rollout check remains open. For example: 'After evaluating devsisters-jari, which Hindsight check still needed a live worker?' Read the matching page. If it leaves that question unanswered, ask hindsight_reflect the focused question. Verify current configuration in the checkout and deployment claims against runtime evidence."
+    },
+    "ark2": {
+      "bank": "ark"
+    },
+    "ark3": {
+      "bank": "ark"
+    }
   },
   "paths": {
-    "~/workspace/ark": { "apiUrl": "https://hindsight.dev.teamdev.ai" },
-    "~/workspace/ark2": { "apiUrl": "https://hindsight.dev.teamdev.ai" },
-    "~/workspace/ark3": { "apiUrl": "https://hindsight.dev.teamdev.ai" },
-    "~/workspace/jari": { "apiUrl": "https://hindsight.dev.teamdev.ai" }
+    "~/workspace/ark": {
+      "apiUrl": "https://hindsight.dev.teamdev.ai"
+    },
+    "~/workspace/ark2": {
+      "apiUrl": "https://hindsight.dev.teamdev.ai"
+    },
+    "~/workspace/ark3": {
+      "apiUrl": "https://hindsight.dev.teamdev.ai"
+    },
+    "~/workspace/jari": {
+      "apiUrl": "https://hindsight.dev.teamdev.ai"
+    }
   },
   "harnesses": {
     "pi": {
@@ -17,10 +32,16 @@
       "apiUrl": "https://hindsight.pylv.dev",
       "optInOnly": false,
       "bankIdTemplate": "{gitProject}",
-      "mapPathToBank": { "~/development/config-flakes": "config-flakes" },
+      "mapPathToBank": {
+        "~/development/config-flakes": "config-flakes"
+      },
       "retainSessions": true,
       "autoInject": "recall",
-      "recallOptions": { "types": null, "budget": "low", "max_tokens": 1000 },
+      "recallOptions": {
+        "types": null,
+        "budget": "low",
+        "max_tokens": 1000
+      },
       "toolGuideExtra": "When a task depends on a prior decision, an earlier attempt, or an unresolved issue, search Hindsight before asking the user to repeat the history. If search results are too shallow, use hindsight_reflect for a focused question. Treat memories as historical context; verify current behavior against the repository.",
       "gitIngest": "none",
       "autoSeed": false,
