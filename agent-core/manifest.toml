@@ -26,6 +26,15 @@ theme-template-authoring = "theme-template-authoring"
 user-friction-review = "user-friction-review"
 writing-for-agents = "writing-for-agents"
 
+[skill_sources.anthropic]
+kind = "git"
+url = "https://github.com/anthropics/skills.git"
+update = "latest-default-branch"
+license = "skills/web-artifacts-builder/LICENSE.txt"
+
+[skill_sources.anthropic.skills]
+web-artifacts-builder = "skills/web-artifacts-builder"
+
 [skill_sources.matt]
 kind = "git"
 url = "https://github.com/mattpocock/skills.git"
@@ -68,7 +77,7 @@ hunk-review = ".agents/skills/hunk-review"
 
 [skill_targets.shared]
 runtimes = ["codex", "pi"]
-skills = ["codebase-design", "code-review", "data-analysis", "data-visualization", "devils-advocate", "diagnosing-bugs", "domain-modeling", "find-skills", "grilling", "herdr-core", "hunk-review", "impeccable", "korean", "openai-decisions", "parallel-research-merge", "prototype", "repeated-work-analyzer", "research", "tdd", "theme-template-authoring", "user-friction-review", "wizard", "writing-for-agents"]
+skills = ["codebase-design", "code-review", "data-analysis", "data-visualization", "devils-advocate", "diagnosing-bugs", "domain-modeling", "find-skills", "grilling", "herdr-core", "hunk-review", "impeccable", "korean", "openai-decisions", "parallel-research-merge", "prototype", "repeated-work-analyzer", "research", "tdd", "theme-template-authoring", "user-friction-review", "web-artifacts-builder", "wizard", "writing-for-agents"]
 
 [skill_targets.claude]
 runtimes = ["claude"]

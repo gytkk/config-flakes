@@ -30,6 +30,8 @@ Hunk의 `hunk-review`는 `modem-dev/hunk`의 `.agents/skills/hunk-review`에서 
 
 `impeccable`은 `pbakaus/impeccable`의 `.agents/skills/impeccable`에서 취득하여 shared target에만 설치한다. Claude는 별도 공식 marketplace plugin을 사용하므로 Claude target에는 중복 설치하지 않는다.
 
+[web-artifacts-builder](https://github.com/anthropics/skills/tree/main/skills/web-artifacts-builder)는 Codex와 Pi에서 React 앱을 브라우저로 열 수 있는 단일 HTML 파일로 묶는다. Pi에 미리 보기 패널을 추가하지는 않는다. 프로젝트 초기화 스크립트는 pnpm이 없으면 npm으로 전역 설치를 시도한다.
+
 `runtimes.*.skills`와 기존 vendored tree는 이전 Nix generation의 복구와 최종 renderer 정리를 위해 남아 있다. 현재 module은 이 skill output을 설치하지 않는다. 모든 host의 Codex/Claude/Pi 전환과 실제 discovery 검증이 끝나기 전에는 이 fallback과 golden hash를 제거하거나 변경하지 않는다.
 
 공통 [data-analysis](skills/data-analysis/SKILL.md)는 지표 정의, 집계 단위, 조인과 코호트 검증을 다루고, [data-visualization](skills/data-visualization/SKILL.md)은 데이터에서 차트를 만들고 렌더링 결과를 확인하는 절차를 다룬다. [writing-for-agents](skills/writing-for-agents/SKILL.md)는 skill 호출 조건과 로드 여부, 실행 결과를 구분해 검증한다. [korean](skills/korean/SKILL.md)은 직전 답변을 의미와 불확실성을 유지하면서 자연스러운 한국어로 정리한다. 선별 근거와 원본 버전은 [shared skill catalog](skills/README.md)에 기록한다.
