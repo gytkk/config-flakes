@@ -73,7 +73,6 @@ in
       codex.enable = lib.mkDefault true;
       ghostty.enable = lib.mkDefault true;
       git.enable = lib.mkDefault true;
-      gksdud.enable = lib.mkDefault pkgs.stdenv.hostPlatform.isDarwin;
       herdr.enable = lib.mkDefault true;
       herdrApp.enable = lib.mkDefault (pkgs.stdenv.hostPlatform.isDarwin || isWSL);
       hunk.enable = lib.mkDefault true;

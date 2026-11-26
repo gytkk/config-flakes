@@ -1,6 +1,10 @@
 # gksdud
 
-`modules.gksdud.enable` installs [gksdud](https://github.com/codingnoye/gksdud) on macOS. The common base enables it on Darwin, including both `devsisters-macbook` and `devsisters-macstudio`. The module has no effect on Linux, even if the option is enabled explicitly.
+`modules.gksdud.enable` installs [gksdud](https://github.com/codingnoye/gksdud) on macOS. It is disabled by default. On the MacBook and Mac Studio, install the app from the [upstream releases](https://github.com/codingnoye/gksdud/releases) and manage its settings in the app. The module has no effect on Linux, even if the option is enabled explicitly.
+
+## Optional Home Manager installation
+
+With `modules.gksdud.enable = true`, the following instructions apply.
 
 The [app package](../../packages/apps/gksdud/package.nix) pins the universal release ZIP by version and hash and preserves its code signature. It requires macOS 13 or later. Home Manager links the store bundle at `~/Applications/gksdud.app`. This works with the repository's [disabled app copying](../../systems/base/compat/README.md).
 
