@@ -42,7 +42,6 @@ in
     ../../modules/codex
     ../../modules/ghostty
     ../../modules/git
-    ../../modules/gksdud
     ../../modules/herdr
     ../../modules/herdr-app
     ../../modules/hunk

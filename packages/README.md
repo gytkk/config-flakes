@@ -69,7 +69,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 - `nix build ./packages#packages.<system>.default` (the alphabetically first app, currently `claude-code`)
 - `nix run ./packages#apps.<system>.ntn`
 
-`gksdud` is exposed only on Darwin. Its signed universal app bundle supports Apple Silicon and Intel Macs running macOS 13 or later. Home Manager can install it through the [gksdud module](../modules/gksdud/README.md). Automatic startup is controlled by the app's own login-item option.
+`gksdud` is exposed only on Darwin. Its signed universal app bundle supports Apple Silicon and Intel Macs running macOS 13 or later.
 
 ## Adding new apps
 

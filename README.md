@@ -235,7 +235,7 @@ For a remote machine, use `cf auth login --no-browser`. Automation can supply `C
 
 ## macOS input switching
 
-[gksdud](modules/gksdud/README.md) manages Right Command Korean/English switching on macOS. The MacBook and Mac Studio use a manual installation; the Home Manager module is opt-in. The app controls automatic startup. See the module README for initial permissions and keyboard setup.
+For Right Command Korean/English switching on the MacBook and Mac Studio, install [gksdud from the upstream releases](https://github.com/codingnoye/gksdud/releases). Grant Accessibility access in System Settings and configure startup at login in the app.
 
 ## Ghostty config
 
