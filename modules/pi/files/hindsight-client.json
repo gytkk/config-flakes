@@ -4,6 +4,12 @@
     "ark2": { "bank": "ark" },
     "ark3": { "bank": "ark" }
   },
+  "paths": {
+    "~/workspace/ark": { "apiUrl": "https://hindsight.dev.teamdev.ai" },
+    "~/workspace/ark2": { "apiUrl": "https://hindsight.dev.teamdev.ai" },
+    "~/workspace/ark3": { "apiUrl": "https://hindsight.dev.teamdev.ai" },
+    "~/workspace/jari": { "apiUrl": "https://hindsight.dev.teamdev.ai" }
+  },
   "harnesses": {
     "pi": {
       "disabled": false,
