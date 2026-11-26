@@ -78,6 +78,7 @@ describe("prompt statusline", () => {
   test.each([
     ["---------- 0% (⏳ unknown)", ""],
     ["#--------- 10% (⏳ unknown)", "#"],
+    ["###------- 30% | Fable 22%", "###"],
     ["#######--- 79% (⏳ 3d 14h)", "#######"],
     ["########## 100% (⏳ unknown)", "##########"],
     ["weekly unavailable (/usage)", ""],

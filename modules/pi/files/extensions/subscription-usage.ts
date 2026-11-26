@@ -51,6 +51,7 @@ export function usageProviderFor(modelProvider: string | undefined): ProviderId 
 
 type WeeklyUsage = {
   remainingPercent: number;
+  fableRemainingPercent?: number;
   resetsAt: number | undefined;
   updatedAt: number;
 };
@@ -72,6 +73,10 @@ type Session = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function validPercent(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100;
 }
 
 export function parseWeeklyUsage(stdout: string, provider: ProviderId = "codex"): WeeklyUsage {
@@ -101,7 +106,7 @@ export function parseWeeklyUsage(stdout: string, provider: ProviderId = "codex")
     throw new Error("CodexBar returned a non-weekly secondary limit.");
   }
   const used = weekly.usedPercent;
-  if (typeof used !== "number" || !Number.isFinite(used) || used < 0 || used > 100) {
+  if (!validPercent(used)) {
     throw new Error("CodexBar returned an invalid weekly percentage.");
   }
   const updatedAt = typeof usage.updatedAt === "string" ? Date.parse(usage.updatedAt) : NaN;
@@ -115,7 +120,15 @@ export function parseWeeklyUsage(stdout: string, provider: ProviderId = "codex")
       throw new Error("CodexBar returned an invalid weekly reset time.");
     }
   }
-  return { remainingPercent: 100 - used, resetsAt, updatedAt };
+  const result: WeeklyUsage = { remainingPercent: 100 - used, resetsAt, updatedAt };
+  if (provider === "claude" && Array.isArray(usage.extraRateWindows)) {
+    const fable = usage.extraRateWindows.find((row: unknown) => isRecord(row) && row.id === "claude-weekly-scoped-fable");
+    const window = fable?.window;
+    if (fable?.usageKnown !== false && isRecord(window) && window.isSyntheticPlaceholder !== true && validPercent(window.usedPercent)) {
+      result.fableRemainingPercent = 100 - window.usedPercent;
+    }
+  }
+  return result;
 }
 
 function formatResetTime(timestamp: number): string {
@@ -143,6 +156,9 @@ export function formatWeeklyUsage(usage: WeeklyUsage, now = Date.now()): string 
   const filled = Math.floor(usage.remainingPercent / 10);
   const bar = "#".repeat(filled) + "-".repeat(10 - filled);
   const remaining = `${bar} ${Number(usage.remainingPercent.toFixed(1))}%`;
+  if (usage.fableRemainingPercent !== undefined) {
+    return `${remaining} | Fable ${Number(usage.fableRemainingPercent.toFixed(1))}%`;
+  }
   const hours = usage.resetsAt === undefined ? undefined : Math.floor((usage.resetsAt - now) / 3_600_000);
   const reset = hours === undefined ? "unknown" : `${Math.floor(hours / 24)}d ${hours % 24}h`;
   return `${remaining} (⏳ ${reset})`;

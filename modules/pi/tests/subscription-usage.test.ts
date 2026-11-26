@@ -77,6 +77,24 @@ describe("CodexBar weekly data", () => {
       .toThrow("Claude Code login");
   });
 
+  test("shows only known Fable quota next to Claude's weekly remaining quota", () => {
+    const format = (window: unknown, usageKnown = true, provider: "claude" | "codex" = "claude") => {
+      const entries = JSON.parse(payload({ usedPercent: 70, resetsAt: RESET }, provider));
+      entries[0].usage.extraRateWindows = [
+        { id: "claude-weekly-scoped-opus", window: { usedPercent: 5 } },
+        { id: "claude-weekly-scoped-fable", window, usageKnown },
+      ];
+      return formatWeeklyUsage(parseWeeklyUsage(JSON.stringify(entries), provider), NOW);
+    };
+    expect(format({ usedPercent: 78 })).toBe("###------- 30% | Fable 22%");
+    expect(format({ usedPercent: 100 })).toBe("###------- 30% | Fable 0%");
+    const fallback = "###------- 30% (⏳ 2d 15h)";
+    expect(format({ usedPercent: 0 }, false)).toBe(fallback);
+    expect(format({ usedPercent: 0, isSyntheticPlaceholder: true })).toBe(fallback);
+    expect(format({ usedPercent: 101 })).toBe(fallback);
+    expect(format({ usedPercent: 78 }, true, "codex")).toBe(fallback);
+  });
+
   test("reads the weekly lane, preserves zero, and ignores account fields", () => {
     const data = parseWeeklyUsage(payload());
     expect(data).toEqual({ remainingPercent: 9, resetsAt: Date.parse(RESET), updatedAt: NOW });
