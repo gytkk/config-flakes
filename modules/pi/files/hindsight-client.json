@@ -22,7 +22,9 @@
       "apiUrl": "https://hindsight.dev.teamdev.ai"
     },
     "~/workspace/jari": {
-      "apiUrl": "https://hindsight.dev.teamdev.ai"
+      "apiUrl": "https://hindsight.dev.teamdev.ai",
+      "autoSeed": true,
+      "gitIngest": "message"
     }
   },
   "harnesses": {

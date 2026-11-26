@@ -13,38 +13,46 @@ let
   mkSymlink = path: config.lib.file.mkOutOfStoreSymlink "${flakeDirectory}/modules/pi/${path}";
 
   hindsightClient = import ./hindsight-client.nix { inherit pkgs; };
-  hindsightEntry =
+  # Pi spawns dist/deepen.js beside its entry to seed a bank's Git log and pages, and that
+  # separate bundle resolves its own credentials, so both bundles get the same patch.
+  hindsightTokenPatch = file: urlVar: cfgVar: ''
+    substituteInPlace "$out/dist/${file}" \
+      --replace-fail 'fetch(${urlVar}, { ...init, headers: this.headers(), ...dispatcher ? { dispatcher } : {} })' \
+        'fetch(${urlVar}, sepiaRequest(this.apiUrl, ${urlVar}, { ...init, headers: this.headers(), ...dispatcher ? { dispatcher } : {} }, endpoint, lanDispatcher))' \
+      --replace-fail \
+      'function applyBankConfig(${cfgVar}, resolvedId, directory) {' \
+      ${lib.escapeShellArg ''
+        import { sepiaRequest, withSepiaToken } from "${./files/hindsight-token.mjs}";
+        const endpoint = ${builtins.toJSON cfg.hindsightEndpoint};
+        ${
+          if cfg.hindsightLan then
+            ''
+              import undici from "${pkgs.pi}/lib/pi/node_modules/undici/index.js";
+              const lanDispatcher = new undici.Agent({ headersTimeout: 0, bodyTimeout: 0, connect: {
+                lookup(host, options, cb) {
+                  if (host !== "hindsight.pylv.dev") return cb(new Error("Unexpected Hindsight LAN hostname"));
+                  if (options.all) cb(null, [{address: "192.168.0.2", family: 4}]);
+                  else cb(null, "192.168.0.2", 4);
+                }
+              } });
+            ''
+          else
+            "const lanDispatcher = null;"
+        }
+        function applyBankConfig(${cfgVar}, resolvedId, directory) {
+          return withSepiaToken(resolveBankConfig(${cfgVar}, resolvedId, directory), ${builtins.toJSON cfg.hindsightTokenFile}, endpoint);
+        }
+        function resolveBankConfig(${cfgVar}, resolvedId, directory) {''}
+  '';
+  hindsightClientWithToken =
     if (cfg.hindsightTokenFile or null) == null then
-      "${hindsightClient}/dist/pi.js"
+      hindsightClient
     else
-      pkgs.runCommand "hindsight-pi-with-sepia-token.mjs" { } ''
-        substitute ${hindsightClient}/dist/pi.js "$out" \
-          --replace-fail 'fetch(url2, { ...init, headers: this.headers(), ...dispatcher ? { dispatcher } : {} })' \
-            'fetch(url2, sepiaRequest(this.apiUrl, url2, { ...init, headers: this.headers(), ...dispatcher ? { dispatcher } : {} }, endpoint, lanDispatcher))' \
-          --replace-fail \
-          'function applyBankConfig(cfg, resolvedId, directory) {' \
-          ${lib.escapeShellArg ''
-            import { sepiaRequest, withSepiaToken } from "${./files/hindsight-token.mjs}";
-            const endpoint = ${builtins.toJSON cfg.hindsightEndpoint};
-            ${
-              if cfg.hindsightLan then
-                ''
-                  import undici from "${pkgs.pi}/lib/pi/node_modules/undici/index.js";
-                  const lanDispatcher = new undici.Agent({ headersTimeout: 0, bodyTimeout: 0, connect: {
-                    lookup(host, options, cb) {
-                      if (host !== "hindsight.pylv.dev") return cb(new Error("Unexpected Hindsight LAN hostname"));
-                      if (options.all) cb(null, [{address: "192.168.0.2", family: 4}]);
-                      else cb(null, "192.168.0.2", 4);
-                    }
-                  } });
-                ''
-              else
-                "const lanDispatcher = null;"
-            }
-            function applyBankConfig(cfg, resolvedId, directory) {
-              return withSepiaToken(resolveBankConfig(cfg, resolvedId, directory), ${builtins.toJSON cfg.hindsightTokenFile}, endpoint);
-            }
-            function resolveBankConfig(cfg, resolvedId, directory) {''}
+      pkgs.runCommand "hindsight-pi-client-with-sepia-token" { } ''
+        cp -r ${hindsightClient} "$out"
+        chmod -R u+w "$out"
+        ${hindsightTokenPatch "pi.js" "url2" "cfg"}
+        ${hindsightTokenPatch "deepen.js" "url" "cfg2"}
       '';
   hindsightPackage = ".pi/agent/packages/hindsight";
   extensionPackages = [
@@ -231,7 +239,7 @@ in
           import { readFileSync } from "node:fs";
           import { homedir } from "node:os";
           import { join } from "node:path";
-          import hindsight from "${hindsightEntry}";
+          import hindsight from "${hindsightClientWithToken}/dist/pi.js";
 
           export default function (pi: Parameters<typeof hindsight>[0]) {
             const path = process.env.HINDSIGHT_CONFIG || join(homedir(), ".hindsight", "coding-agent.json");
