@@ -86,8 +86,8 @@ describe("CodexBar weekly data", () => {
       ];
       return formatWeeklyUsage(parseWeeklyUsage(JSON.stringify(entries), provider), NOW);
     };
-    expect(format({ usedPercent: 78 })).toBe("###------- 30% | Fable 22%");
-    expect(format({ usedPercent: 100 })).toBe("###------- 30% | Fable 0%");
+    expect(format({ usedPercent: 78 })).toBe("###------- 30% / Fable 22% (⏳ 2d 15h)");
+    expect(format({ usedPercent: 100 })).toBe("###------- 30% / Fable 0% (⏳ 2d 15h)");
     const fallback = "###------- 30% (⏳ 2d 15h)";
     expect(format({ usedPercent: 0 }, false)).toBe(fallback);
     expect(format({ usedPercent: 0, isSyntheticPlaceholder: true })).toBe(fallback);
