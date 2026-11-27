@@ -202,6 +202,23 @@ describe("input, provider isolation, and output", () => {
     expect(h.ui.setWidget.mock.calls.at(-1)?.[1]).toBeUndefined();
   });
 
+  test("appends translated paragraphs to the visible preview in order", async () => {
+    const h = harness();
+    const first = "1. The check passed.\n\n";
+    const both = first + "2. The check passed.\n\n";
+    h.update(first);
+    await Bun.sleep(0);
+    h.update(both);
+    await Bun.sleep(0);
+    const widget = h.ui.setWidget.mock.calls.at(-1)?.[1]?.();
+    const lines = widget?.render(60).map(line => stripTerminalSequences(line).trim()).filter(Boolean);
+    expect(lines).toEqual(["1. 검사가 통과했습니다.", "2. 검사가 통과했습니다."]);
+    const result = await h.output(answer(both));
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0].data.text).toBe(both.replaceAll("The check passed.", "검사가 통과했습니다."));
+    expect(h.streamSimple).toHaveBeenCalledTimes(2);
+  });
+
   test("keeps quotes intact across streaming paragraph boundaries", async () => {
     const h = harness();
     h.update('The check passed. "English\n\n');

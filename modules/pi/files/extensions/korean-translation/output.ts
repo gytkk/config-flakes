@@ -25,7 +25,7 @@ export function outputTranslation(ctx: ExtensionContext, lifetime: AbortSignal, 
       signal.throwIfAborted();
       result.text += part.text + separator;
       if (part.usage) result.usage = addUsage(result.usage, part.usage);
-      if (show && part.text.trim()) preview(part.text);
+      if (show && part.text.trim()) preview(result.text);
     });
     void work.catch(() => {});
   }
