@@ -5,6 +5,8 @@ import {
 import { Container, Markdown, Text } from "@earendil-works/pi-tui";
 import { failureMessage, needsTranslation, translate, TRANSLATION_MODEL, type Translation } from "./translate";
 
+import { outputTranslation } from "./output";
+
 const ENTRY_TYPE = "korean-translation";
 const STATE_TYPE = "korean-translation-enabled";
 const INPUT_TIMEOUT_MS = 60_000;
@@ -17,7 +19,21 @@ export default function koreanTranslation(pi: ExtensionAPI) {
   let enabled = true;
   let lifetime = new AbortController();
 
+  let output: ReturnType<typeof outputTranslation> | undefined;
+  function clearOutput(ctx: ExtensionContext) {
+    if (!output) return;
+    output.cancel();
+    output = undefined;
+    ctx.ui.setWidget(ENTRY_TYPE, undefined);
+  }
+  function startOutput(ctx: ExtensionContext) {
+    return outputTranslation(ctx, lifetime.signal, OUTPUT_TIMEOUT_MS, text => {
+      ctx.ui.setWidget(ENTRY_TYPE, () => new Markdown(text, 1, 0, getMarkdownTheme()));
+    });
+  }
+
   function restore(ctx: ExtensionContext) {
+    clearOutput(ctx);
     enabled = true;
     for (const entry of ctx.sessionManager.getBranch()) {
       if (entry.type === "custom" && entry.customType === STATE_TYPE && typeof entry.data === "boolean") {
@@ -31,7 +47,8 @@ export default function koreanTranslation(pi: ExtensionAPI) {
     restore(ctx);
   });
   pi.on("session_tree", (_event, ctx) => restore(ctx));
-  pi.on("session_shutdown", () => lifetime.abort());
+  pi.on("session_shutdown", (_event, ctx) => { lifetime.abort(); clearOutput(ctx); });
+  pi.on("turn_start", (_event, ctx) => clearOutput(ctx));
 
   pi.registerCommand("translate", {
     description: "Korean/English translation: /translate [on|off|status]",
@@ -108,16 +125,25 @@ export default function koreanTranslation(pi: ExtensionAPI) {
     return { action: "transform", text: result.translation.text, images: event.images };
   });
 
-  pi.on("turn_end", async (event, ctx) => {
-    if (!enabled || ctx.mode !== "tui" || event.outcome !== "completed" || event.message.role !== "assistant") return;
+  pi.on("message_update", (event, ctx) => {
+    if (!enabled || ctx.mode !== "tui" || event.message.role !== "assistant") return;
+    const update = event.assistantMessageEvent;
+    if (update.type !== "text_delta" || !update.delta.includes("\n")) return;
     const text = event.message.content.filter(block => block.type === "text").map(block => block.text).join("\n\n");
-    if (!needsTranslation(text, "Korean")) return;
+    if (!/\n[ \t\r]*\n/.test(text)) return;
+    (output ??= startOutput(ctx)).update(text);
+  });
+
+  pi.on("turn_end", async (event, ctx) => {
+    if (!enabled || ctx.mode !== "tui" || event.outcome !== "completed" || event.message.role !== "assistant") { clearOutput(ctx); return; }
+    const text = event.message.content.filter(block => block.type === "text").map(block => block.text).join("\n\n");
+    if (!needsTranslation(text, "Korean")) { clearOutput(ctx); return; }
+    if (output && !output.matches(text)) clearOutput(ctx);
     const sessionSignal = lifetime.signal;
-    const signal = AbortSignal.any([sessionSignal, AbortSignal.timeout(OUTPUT_TIMEOUT_MS), ...(ctx.signal ? [ctx.signal] : [])]);
+    const current = output ??= startOutput(ctx);
     ctx.ui.setStatus(ENTRY_TYPE, "한국어로 번역 중...");
     try {
-      const translation = await translate(text, "Korean", ctx, signal);
-      signal.throwIfAborted();
+      const translation = await current.finish(text);
       return {
         entries: [...event.entries, {
           type: "custom" as const,
@@ -130,7 +156,10 @@ export default function koreanTranslation(pi: ExtensionAPI) {
         ctx.ui.notify(`응답 번역을 완료하지 못했습니다. 영어 원문은 그대로 유지됩니다. ${failureMessage(error)}`, "warning");
       }
     } finally {
-      if (!sessionSignal.aborted) ctx.ui.setStatus(ENTRY_TYPE, undefined);
+      if (output === current) {
+        clearOutput(ctx);
+        ctx.ui.setStatus(ENTRY_TYPE, undefined);
+      }
     }
   });
 }

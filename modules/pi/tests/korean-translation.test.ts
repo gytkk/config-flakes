@@ -28,7 +28,7 @@ function harness(sm = SessionManager.inMemory("/tmp/korean-translation-test"), m
   );
   const streamSimple = mock((model: unknown, context: unknown, options: unknown) => ({ result: () => respond(model, context, options) }));
   const ui = {
-    notify: mock(() => {}), setStatus: mock(() => {}),
+    notify: mock(() => {}), setStatus: mock(() => {}), setWidget: mock((_id: string, _factory?: () => Component) => {}),
     getEditorText: () => editor, setEditorText: (text: string) => { editor = text; },
     custom: (factory: Function) => new Promise(resolve => {
       loader = factory({ requestRender() {} }, theme, {}, (result: unknown) => { loader?.dispose?.(); loader = undefined; resolve(result); });
@@ -54,6 +54,7 @@ function harness(sm = SessionManager.inMemory("/tmp/korean-translation-test"), m
     ctx, ui, sm, streamSimple, append, emit, renderer, handlers,
     command: (args: string) => command.handler(args, ctx),
     input: (text = "설명해 주세요", extra = {}) => emit("input", { source: "interactive", text, ...extra }),
+    update: (text: string) => emit("message_update", { message: answer(text), assistantMessageEvent: { type: "text_delta", delta: text } }),
     output: (message = answer(), extra = {}) => emit("turn_end", { message, outcome: "completed", messageEntryId: "assistant-id", entries: [], ...extra }),
     respond: (fn: typeof respond) => { respond = fn; },
     cancelInput: () => loader?.handleInput?.("\x1b"),
@@ -167,6 +168,39 @@ describe("input, provider isolation, and output", () => {
     h.sm.appendCustomEntry(draft.customType, draft.data);
     expect(h.sm.buildSessionContext().messages).toEqual([original]);
     expect(h.ui.setStatus.mock.calls.at(-1)).toEqual(["korean-translation", undefined]);
+  });
+
+  test("renders a completed paragraph before turn end and saves it only once", async () => {
+    const h = harness();
+    const first = "The check passed.\n\n";
+    expect(h.update(first + "Still")).toBeUndefined();
+    h.update(first + "Still writing.");
+    await Bun.sleep(0);
+    expect(h.streamSimple).toHaveBeenCalledTimes(1);
+    const widget = h.ui.setWidget.mock.calls.at(-1)?.[1]?.();
+    expect(widget?.render(40).map(stripTerminalSequences).join("")).toContain("검사가 통과했습니다.");
+    expect(h.sm.getBranch()).toEqual([]);
+    const code = "```sh\necho hello\n\necho world\n```";
+    h.update(first + code.split("echo world")[0]);
+    await Bun.sleep(0);
+    expect(h.streamSimple).toHaveBeenCalledTimes(1);
+    const result = await h.output(answer(first + code + "\n\nThe check passed."));
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0].data.text).toBe(`검사가 통과했습니다.\n\n${code}\n\n검사가 통과했습니다.`);
+    expect(result.entries[0].data.usage.totalTokens).toBe(22);
+    expect(h.streamSimple).toHaveBeenCalledTimes(2);
+    expect(h.ui.setWidget.mock.calls.at(-1)?.[1]).toBeUndefined();
+  });
+
+  test("discards a pending preview on an aborted turn", async () => {
+    const h = harness();
+    h.respond(pending);
+    h.update("First paragraph.\n\n");
+    await Bun.sleep(0);
+    const signal = (h.streamSimple.mock.calls[0][2] as any).signal;
+    expect(await h.output(answer(), { outcome: "aborted" })).toBeUndefined();
+    expect(signal.aborted).toBe(true);
+    expect(h.ui.setWidget.mock.calls.filter(([, factory]) => factory)).toEqual([]);
   });
 
   test("requests English prose using a structured section without replacing the system prompt", () => {

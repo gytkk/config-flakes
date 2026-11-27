@@ -98,7 +98,7 @@ export function needsTranslation(text: string, language: Language): boolean {
   return language === "English" ? /[\p{Script=Hangul}]/u.test(prose) : /[A-Za-z]{2}/.test(prose);
 }
 
-function addUsage(total: Usage | undefined, next: Usage): Usage {
+export function addUsage(total: Usage | undefined, next: Usage): Usage {
   if (!total) return structuredClone(next);
   for (const key of ["input", "output", "cacheRead", "cacheWrite", "cacheWrite1h", "reasoning", "totalTokens"] as const) {
     if (next[key] !== undefined) total[key] = (total[key] ?? 0) + next[key];
