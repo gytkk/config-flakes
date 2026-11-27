@@ -3,6 +3,13 @@ return {
     "stevearc/conform.nvim",
     opts = function(_, opts)
       opts.default_format_opts = { timeout_ms = 1000, lsp_format = "fallback" }
+      opts.formatters = opts.formatters or {}
+      opts.formatters.lukeed_tidy = {
+        command = vim.fn.stdpath("data") .. "/lukeed-tidy/tidy",
+        args = function(_, ctx)
+          return { "up", "--stdin=" .. ctx.filename, "--lang", vim.bo[ctx.buf].filetype }
+        end,
+      }
       opts.formatters_by_ft = {
         nix = { "nixfmt" },
         go = { "gofmt" },
@@ -11,8 +18,8 @@ return {
         javascriptreact = { "biome" },
         typescript = { "biome" },
         typescriptreact = { "biome" },
-        json = { "biome" },
-        jsonc = { "biome" },
+        json = { "lukeed_tidy" },
+        jsonc = { "lukeed_tidy" },
         css = { "biome" },
         yaml = { "prettier" },
         markdown = { "prettier" },
