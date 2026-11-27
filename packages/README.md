@@ -61,7 +61,7 @@ The [trading-agent repository](https://github.com/gytkk/trading-agent) owns its 
 | hindsight-cli | 1.2.3 |
 | notion-cli | 0.23.31 |
 | pantry | main-69de978b5555 |
-| pi | 1.6.1 |
+| pi | 1.7.0 |
 
 ## Build entrypoints
 
