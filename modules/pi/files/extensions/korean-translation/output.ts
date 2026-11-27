@@ -1,25 +1,11 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { addUsage, MAX_TEXT_BYTES, needsTranslation, translate, TranslationError, type Translation } from "./translate";
+import { addUsage, MAX_TEXT_BYTES, needsTranslation, replaceLiterals, translate, TranslationError, type Translation } from "./translate";
 
 // Only cut at a finished blank line outside literal spans. An unfinished line may still become a fence.
 function completedPrefix(text: string) {
+  const masked = replaceLiterals(text, span => "x".repeat(span.length - Number(span.endsWith("\n"))) + (span.endsWith("\n") ? "\n" : ""), true);
   let end = 0;
-  let fence = "";
-  let inline = "";
-  for (const match of text.matchAll(/[^\n]*\n/g)) {
-    const line = match[0];
-    if (fence) {
-      const close = line.trim();
-      if (close.startsWith(fence) && [...close].every(char => char === fence[0])) fence = "";
-      continue;
-    }
-    const opening = /^ {0,3}(`{3,}|~{3,})/.exec(line);
-    if (opening) fence = opening[1];
-    else if (!inline && !line.trim()) end = match.index + line.length;
-    else for (const [ticks] of line.matchAll(/`+/g)) {
-      if (!inline || ticks === inline) inline = inline ? "" : ticks;
-    }
-  }
+  for (const match of masked.matchAll(/^[\t \r]*\n/gm)) end = match.index + match[0].length;
   return end;
 }
 

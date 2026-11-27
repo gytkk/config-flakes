@@ -115,6 +115,16 @@ describe("literal preservation", () => {
     }
   });
 
+  test("protects quoted prose but translates surrounding contractions", () => {
+    const literals = ['"한국어입니다"', "'don't translate this'", "`keep this`"].join(" ");
+    expect(needsTranslation(literals, "English")).toBe(false);
+    expect(needsTranslation(literals, "Korean")).toBe(false);
+    const source = "Don't change " + literals + " if it's quoted.";
+    const masked = protectText(source);
+    expect(masked.prose).toBe("Don't change    if it's quoted.");
+    expect(masked.restore(masked.text)).toBe(source);
+  });
+
   test("detects prose rather than code, paths, command prefixes, or links", () => {
     expect(needsTranslation("```py\nprint('한국어')\n```", "English")).toBe(false);
     expect(needsTranslation("`한국어` https://example.com/한국어", "English")).toBe(false);
@@ -190,6 +200,16 @@ describe("input, provider isolation, and output", () => {
     expect(result.entries[0].data.usage.totalTokens).toBe(22);
     expect(h.streamSimple).toHaveBeenCalledTimes(2);
     expect(h.ui.setWidget.mock.calls.at(-1)?.[1]).toBeUndefined();
+  });
+
+  test("keeps quotes intact across streaming paragraph boundaries", async () => {
+    const h = harness();
+    h.update('The check passed. "English\n\n');
+    await Bun.sleep(0);
+    expect(h.streamSimple).not.toHaveBeenCalled();
+    const source = 'The check passed. "English\n\ninside"';
+    const result = await h.output(answer(source));
+    expect(result.entries[0].data.text).toContain('"English\n\ninside"');
   });
 
   test("discards a pending preview on an aborted turn", async () => {
